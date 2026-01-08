@@ -1179,3 +1179,34 @@ export const promotionApi = {
   rejectProposal: (id: string) => 
     fetchAPI<{status: string}>(`/promotions/${id}/reject`, { method: 'POST' })
 }
+
+// =============================================
+// 分析總覽 API
+// =============================================
+
+export interface CommandCenterStats {
+  orders_to_ship: number
+  unread_messages: number
+  pending_price_reviews: number
+  pending_promotion_reviews: number
+  unread_alerts: number
+  monthly_revenue: number
+  monthly_profit: number
+}
+
+export interface ActivityItem {
+  type: string
+  title: string
+  desc: string
+  time: string
+}
+
+export interface CommandCenterResponse {
+  stats: CommandCenterStats
+  recent_activity: ActivityItem[]
+}
+
+export const analyticsApi = {
+  getCommandCenter: () =>
+    fetchAPI<CommandCenterResponse>('/analytics/command-center')
+}
