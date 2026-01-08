@@ -8,7 +8,7 @@ from app.models.inbox import Conversation, Message
 from app.models.pricing import PriceProposal
 from app.models.finance import Settlement
 from app.models.promotion import PromotionProposal
-from app.models.notification import PriceAlert
+from app.models.competitor import PriceAlert
 
 class AnalyticsService:
     def __init__(self, db: AsyncSession):
