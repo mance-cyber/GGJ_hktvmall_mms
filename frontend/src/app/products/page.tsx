@@ -271,8 +271,7 @@ export default function ProductsPage() {
           open={!!configProduct}
           onOpenChange={(open) => !open && setConfigProduct(null)}
           productId={configProduct.id}
-          pr
-oductName={configProduct.name}
+          productName={configProduct.name}
           currentConfig={{
             cost: configProduct.cost,
             min_price: configProduct.min_price,

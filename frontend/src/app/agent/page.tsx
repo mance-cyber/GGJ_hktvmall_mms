@@ -275,4 +275,34 @@ function ClarificationCard({
               return (
                 <button
                   key={option.value}
-                  onClick={()
+                  onClick={() => {
+                    if (opt.type !== 'text') {
+                      onSelect(opt.slot_name, option.value, opt.type)
+                    }
+                  }}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-sm transition-all",
+                    isSelected
+                      ? "bg-blue-500 text-white shadow-md"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  )}
+                >
+                  {option.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+      <Button
+        onClick={onSubmit}
+        disabled={!allRequired || isLoading}
+        className="w-full"
+      >
+        {isLoading ? "處理中..." : "確認"}
+      </Button>
+    </div>
+  )
+}
+
+
