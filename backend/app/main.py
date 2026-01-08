@@ -35,17 +35,19 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # CORS 設定 - 允許所有來源（開發階段）
-    # 生產環境應該設置具體的域名列表
+    # CORS 設定
+    # 注意：allow_credentials=True 時不能使用 allow_origins=["*"]
+    # 必須明確指定允許的來源
     allowed_origins = [
         "http://localhost:3000",
+        "http://localhost:8000",
         "https://ggj-front.zeabur.app",
-        "https://*.zeabur.app",
+        "https://ggj-back.zeabur.app",
     ]
     
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # 開發階段允許所有來源
+        allow_origins=allowed_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

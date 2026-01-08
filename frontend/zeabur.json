@@ -9,9 +9,9 @@
   "ports": [3000],
   "env": {
     "NEXT_PUBLIC_API_URL": {
-      "description": "Backend API URL",
+      "description": "Backend API URL (must include /api/v1 suffix)",
       "required": true,
-      "default": "https://api.your-domain.com"
+      "default": "https://ggj-back.zeabur.app/api/v1"
     },
     "NEXT_PUBLIC_ENV": {
       "description": "Environment",
