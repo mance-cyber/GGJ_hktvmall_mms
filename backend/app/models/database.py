@@ -40,10 +40,10 @@ async_session_maker = async_sessionmaker(
 
 async def init_db():
     """初始化數據庫（創建表）"""
+    from app.models import competitor, product, notification, scrape_config, import_job, analytics, content, category, system
+    
     async with engine.begin() as conn:
-        # 在生產環境中應使用 Alembic 遷移
-        # await conn.run_sync(Base.metadata.create_all)
-        pass
+        await conn.run_sync(Base.metadata.create_all)
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
