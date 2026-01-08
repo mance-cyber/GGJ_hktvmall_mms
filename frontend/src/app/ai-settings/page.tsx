@@ -536,7 +536,31 @@ export default function AISettingsPage() {
           </div>
         </div>
 
-        {/* Model Note */}
+        <div className="flex justify-end pt-4">
+          <Button
+            onClick={handleSaveAll}
+            disabled={saveMutation.isPending}
+          >
+            {saveMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            ) : (
+              <Check className="w-4 h-4 mr-2" />
+            )}
+            保存模型設定
+          </Button>
+        </div>
+
+        {saveMutation.isSuccess && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="p-3 rounded-lg bg-green-50 text-green-700 flex items-center gap-2"
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            <span className="text-sm font-medium">模型設定已保存</span>
+          </motion.div>
+        )}
+
         <div className="mt-6 p-4 rounded-xl bg-blue-50/50 border border-blue-100">
           <div className="flex items-start gap-3">
             <Zap className="w-5 h-5 text-blue-500 mt-0.5" />
