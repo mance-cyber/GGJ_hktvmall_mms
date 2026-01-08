@@ -299,4 +299,24 @@ class IntentClassifier:
             
             intent_str = result.get("intent", "UNKNOWN")
             try:
-         
+                intent = IntentType(intent_str)
+            except ValueError:
+                intent = IntentType.UNKNOWN
+            
+            entities = result.get("entities", [])
+            confidence = result.get("confidence", 0.7)
+            reasoning = result.get("reasoning", "")
+            
+            return IntentResult(
+                intent=intent,
+                entities=entities,
+                confidence=confidence,
+                reasoning=reasoning
+            )
+        except Exception as e:
+            return IntentResult(
+                intent=IntentType.UNKNOWN,
+                entities=[],
+                confidence=0,
+                reasoning=f"AI 識別失敗: {str(e)}"
+            )
