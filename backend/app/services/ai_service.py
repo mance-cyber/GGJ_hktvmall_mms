@@ -386,6 +386,81 @@ class AIAnalysisService:
                 error=f"API 調用失敗: {str(e)}"
             )
 
+    async def call_ai(self, prompt: str, max_tokens: int = 2048) -> AIResponse:
+        """
+        調用 AI API（異步版本）
+
+        用於 Agent 服務中的意圖識別和報告生成
+        """
+        if not self.config.api_key:
+            return AIResponse(
+                content="",
+                model="",
+                success=False,
+                error="API Key 未設定"
+            )
+
+        model = self.config.insights_model
+
+        try:
+            # 使用較短的超時時間，避免長時間等待
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    f"{self.base_url}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.config.api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": model,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "max_tokens": max_tokens,
+                    }
+                )
+
+                if response.status_code != 200:
+                    error_text = response.text[:300] if response.text else "Unknown error"
+                    return AIResponse(
+                        content="",
+                        model=model,
+                        success=False,
+                        error=f"API 錯誤 ({response.status_code}): {error_text}"
+                    )
+
+                data = response.json()
+                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                usage = data.get("usage", {})
+                tokens = usage.get("total_tokens", 0)
+
+                return AIResponse(
+                    content=content,
+                    model=model,
+                    tokens_used=tokens,
+                    success=True
+                )
+
+        except httpx.ConnectError:
+            return AIResponse(
+                content="",
+                model=model,
+                success=False,
+                error="無法連接到 API 服務器"
+            )
+        except httpx.TimeoutException:
+            return AIResponse(
+                content="",
+                model=model,
+                success=False,
+                error="API 請求超時（60秒）"
+            )
+        except Exception as e:
+            return AIResponse(
+                content="",
+                model=model,
+                success=False,
+                error=f"API 調用失敗: {str(e)}"
+            )
+
     def generate_data_insights(self, data: Dict[str, Any]) -> AIResponse:
         """
         生成數據摘要
