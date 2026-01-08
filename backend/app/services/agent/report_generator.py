@@ -526,46 +526,33 @@ class ReportGenerator:
 
     def _generate_sales_section(self, data: Dict[str, Any]) -> str:
         if not data.get("success", False):
-            return "## 💰 銷售數據
+            return "## 💰 銷售數據\n\n⚠️ 無法獲取數據\n"
 
-⚠️ 無法獲取數據
-"
-        
         result = data.get("data", {})
         val = result.get("value", 0)
         currency = result.get("currency", "HKD")
         metric = result.get("metric", "revenue")
         period = result.get("period", "")
-        
-        metric_name = "總營收" if metric == "revenue" else "淨利潤"
-        
-        return f"## 💰 {metric_name} ({period})
 
-# {currency} ${val:,.2f}
-"
+        metric_name = "總營收" if metric == "revenue" else "淨利潤"
+
+        return f"## 💰 {metric_name} ({period})\n\n# {currency} ${val:,.2f}\n"
 
     def _generate_finance_top_products(self, data: Dict[str, Any]) -> tuple:
         if not data.get("success", False):
-            return "## 🏆 銷售排行
+            return "## 🏆 銷售排行\n\n⚠️ 無法獲取數據\n", None
 
-⚠️ 無法獲取數據
-", None
-            
         result = data.get("data", {})
         items = result.get("items", [])
         title = result.get("title", "Top Products")
-        
-        if not items:
-            return "## 🏆 銷售排行
 
-暫無數據
-", None
-            
-        lines = [f"## 🏆 {title}
-"]
+        if not items:
+            return "## 🏆 銷售排行\n\n暫無數據\n", None
+
+        lines = [f"## 🏆 {title}\n"]
         for i, item in enumerate(items, 1):
             lines.append(f"{i}. **{item['name']}**: {item['value']}")
-            
+
         chart = ChartData(
             type="bar",
             title=title,
@@ -575,5 +562,4 @@ class ReportGenerator:
                 "yKeys": [{"key": "value", "color": "#8884d8", "name": "數值"}]
             }
         )
-        return "
-".join(lines), chart
+        return "\n".join(lines), chart
