@@ -51,6 +51,7 @@ const navigationGroups = [
     items: [
       { name: 'AI 助手', href: '/agent', icon: MessageSquare, description: '對話式數據分析', highlight: true },
       { name: '市場應對中心', href: '/market-response', icon: Globe, description: 'SKU 分析與競品配對' },
+      { name: '智能推廣', href: '/promotions', icon: Sparkles, description: 'AI 促銷建議' },
       { name: '競品監測', href: '/competitors', icon: Eye, description: '追蹤對手價格變動' },
       { name: '價格趨勢', href: '/trends', icon: TrendingUp, description: '歷史價格走勢圖' },
     ]

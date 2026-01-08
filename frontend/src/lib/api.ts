@@ -1134,3 +1134,48 @@ export const financeApi = {
   getProfitSummary: () =>
     fetchAPI<ProfitSummary>('/finance/profit-summary')
 }
+
+// =============================================
+// 智能推廣 API
+// =============================================
+
+export interface PromotionProposal {
+  id: string
+  product_id: string
+  product_name?: string
+  product_sku?: string
+  promotion_type: string
+  original_price: number
+  discount_percent: number
+  discounted_price: number
+  projected_profit: number
+  projected_margin: number
+  start_date: string
+  end_date: string
+  reason: string
+  marketing_copy: string
+  status: string
+}
+
+export interface PromotionStats {
+  active_count: number
+  pending_count: number
+  avg_discount: number
+}
+
+export const promotionApi = {
+  getSuggestions: () => 
+    fetchAPI<PromotionProposal[]>('/promotions/suggestions'),
+    
+  generateSuggestions: () => 
+    fetchAPI<{status: string, generated_count: number}>('/promotions/generate', { method: 'POST' }),
+    
+  getStats: () =>
+    fetchAPI<PromotionStats>('/promotions/stats'),
+    
+  approveProposal: (id: string) => 
+    fetchAPI<{status: string}>(`/promotions/${id}/approve`, { method: 'POST' }),
+    
+  rejectProposal: (id: string) => 
+    fetchAPI<{status: string}>(`/promotions/${id}/reject`, { method: 'POST' })
+}

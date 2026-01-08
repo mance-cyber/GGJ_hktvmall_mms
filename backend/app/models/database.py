@@ -75,7 +75,8 @@ async def init_db():
         pricing,
         order,
         inbox,
-        finance # Added finance model
+        finance,
+        promotion # Added promotion model
     )
     
     try:
