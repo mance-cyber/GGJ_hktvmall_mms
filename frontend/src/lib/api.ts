@@ -964,3 +964,45 @@ export interface AgentProductCategory {
   has_types: boolean
   example_query: string
 }
+
+// =============================================
+// 智能定價 API
+// =============================================
+
+export interface PriceProposal {
+  id: string
+  product_id: string
+  product_name?: string
+  product_sku?: string
+  status: 'pending' | 'approved' | 'rejected' | 'executed' | 'failed'
+  current_price: number | null
+  proposed_price: number | null
+  final_price: number | null
+  reason: string | null
+  created_at: string
+  ai_model_used: string | null
+}
+
+export interface ProductPricingConfig {
+  cost?: number
+  min_price?: number
+  max_price?: number
+  auto_pricing_enabled?: boolean
+}
+
+export const pricingApi = {
+  getPendingProposals: () => 
+    fetchAPI<PriceProposal[]>('/pricing/proposals/pending'),
+    
+  approveProposal: (id: string) => 
+    fetchAPI<PriceProposal>(`/pricing/proposals/${id}/approve`, { method: 'POST' }),
+    
+  rejectProposal: (id: string) => 
+    fetchAPI<PriceProposal>(`/pricing/proposals/${id}/reject`, { method: 'POST' }),
+    
+  updateProductConfig: (productId: string, config: ProductPricingConfig) =>
+    fetchAPI<{status: string}>(`/pricing/products/${productId}/config`, {
+      method: 'POST',
+      body: JSON.stringify(config)
+    })
+}

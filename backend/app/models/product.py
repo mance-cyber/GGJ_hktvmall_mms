@@ -26,6 +26,12 @@ class Product(Base):
     brand: Mapped[Optional[str]] = mapped_column(String(255))
     price: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2))
     cost: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), comment="成本價")
+    
+    # 定價保護欄位
+    min_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), comment="最低售價 (保護價)")
+    max_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), comment="最高售價")
+    auto_pricing_enabled: Mapped[bool] = mapped_column(Boolean, default=False, comment="是否啟用 AI 自動定價")
+
     stock_quantity: Mapped[int] = mapped_column(Integer, default=0)
     status: Mapped[str] = mapped_column(String(50), default="active", comment="active, inactive, pending")
     images: Mapped[Optional[list]] = mapped_column(JSONB, default=[])
@@ -57,6 +63,7 @@ class Product(Base):
     history: Mapped[List["ProductHistory"]] = relationship(back_populates="product", cascade="all, delete-orphan")
     competitor_mappings: Mapped[List["ProductCompetitorMapping"]] = relationship(back_populates="product", cascade="all, delete-orphan")
     ai_contents: Mapped[List["AIContent"]] = relationship(back_populates="product")
+    price_proposals: Mapped[List["PriceProposal"]] = relationship(back_populates="product")
 
     __table_args__ = (
         Index("idx_products_sku", "sku"),
@@ -107,3 +114,4 @@ class ProductCompetitorMapping(Base):
 
 # 避免循環導入
 from app.models.content import AIContent
+# from app.models.pricing import PriceProposal  # 注意: 這裡不能循環導入，只能使用字串引用 "PriceProposal"

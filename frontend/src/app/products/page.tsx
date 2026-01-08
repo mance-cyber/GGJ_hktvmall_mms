@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api, OwnProduct } from '@/lib/api'
+import { api } from '@/lib/api'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -19,7 +19,8 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
-  ArrowUpDown
+  ArrowUpDown,
+  Settings2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -40,6 +41,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { PriceConfigDialog } from '@/components/pricing/price-config-dialog'
 
 export default function ProductsPage() {
   const queryClient = useQueryClient()
@@ -47,6 +49,7 @@ export default function ProductsPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
+  const [configProduct, setConfigProduct] = useState<any>(null)
   
   const { data: productsData, isLoading, error } = useQuery({
     queryKey: ['products', page, search, statusFilter, categoryFilter],
@@ -194,8 +197,13 @@ export default function ProductsPage() {
                   <td className="px-6 py-4">
                     <StatusBadge status={product.status} />
                   </td>
-                  <td className="px-6 py-4 text-right font-mono font-medium text-slate-700">
-                    ${product.price?.toFixed(2) || '-'}
+                  <td className="px-6 py-4 text-right">
+                    <div className="font-mono font-medium text-slate-700">${product.price?.toFixed(2) || '-'}</div>
+                    {product.auto_pricing_enabled && (
+                      <Badge variant="outline" className="ml-2 text-[10px] h-4 px-1 border-blue-200 text-blue-600 bg-blue-50">
+                        AI
+                      </Badge>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <span className={cn("font-medium", product.stock_quantity < 10 ? "text-red-500" : "text-slate-600")}>
@@ -211,6 +219,9 @@ export default function ProductsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-[160px]">
                         <DropdownMenuLabel>操作</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => setConfigProduct(product)}>
+                          <Settings2 className="mr-2 h-4 w-4" /> 定價設定
+                        </DropdownMenuItem>
                         <DropdownMenuItem>
                           <Edit className="mr-2 h-4 w-4" /> 編輯
                         </DropdownMenuItem>
@@ -254,6 +265,26 @@ export default function ProductsPage() {
           </div>
         </div>
       </div>
+
+      {configProduct && (
+        <PriceConfigDialog
+          open={!!configProduct}
+          onOpenChange={(open) => !open && setConfigProduct(null)}
+          productId={configProduct.id}
+          pr
+oductName={configProduct.name}
+          currentConfig={{
+            cost: configProduct.cost,
+            min_price: configProduct.min_price,
+            max_price: configProduct.max_price,
+            auto_pricing_enabled: configProduct.auto_pricing_enabled
+          }}
+          onSuccess={() => {
+            setConfigProduct(null)
+            queryClient.invalidateQueries({ queryKey: ['products'] })
+          }}
+        />
+      )}
     </div>
   )
 }

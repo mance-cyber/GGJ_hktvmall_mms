@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api, PriceAlert } from '@/lib/api'
+import { api, pricingApi } from '@/lib/api'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -28,11 +28,13 @@ import {
   CheckCircle2,
   XCircle,
   Plus,
-  BarChart3
+  BarChart3,
+  DollarSign
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { PricingProposalList } from '@/components/pricing/proposal-card'
 
 // =============================================
 // 主頁面
@@ -60,6 +62,12 @@ export default function DashboardPage() {
   const { data: products } = useQuery({
     queryKey: ['own-products'],
     queryFn: () => api.getProducts(1, 100),
+  })
+
+  const { data: pendingProposals, refetch: refetchProposals } = useQuery({
+    queryKey: ['pending-proposals'],
+    queryFn: () => pricingApi.getPendingProposals(),
+    // refetchInterval: 10000
   })
 
   const markReadMutation = useMutation({
@@ -109,7 +117,7 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center space-x-3">
-          <Button variant="outline" onClick={() => refetchAlerts()} className="glass-card">
+          <Button variant="outline" onClick={() => { refetchAlerts(); refetchProposals(); }} className="glass-card">
             <RefreshCw className="w-4 h-4 mr-2" />
             刷新數據
           </Button>
@@ -177,7 +185,7 @@ export default function DashboardPage() {
           <div className="px-6 py-4 bg-orange-100/50 border-b border-orange-200 flex items-center justify-between">
             <h2 className="font-bold text-orange-800 flex items-center">
               <AlertTriangle className="w-5 h-5 mr-2" />
-              待處理事項
+              待處理警報
               <Badge className="ml-2 bg-orange-500">{alerts?.unread_count}</Badge>
             </h2>
             <Link href="/alerts">
@@ -239,6 +247,31 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* 左側：快速操作 + 最近活動 */}
         <div className="lg:col-span-2 space-y-6">
+        
+          {/* AI 智能改價待辦 */}
+          {pendingProposals && pendingProposals.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="glass-panel rounded-2xl p-6 border-2 border-primary/20 bg-primary/5"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-slate-800 flex items-center">
+                  <DollarSign className="w-5 h-5 mr-2 text-primary" />
+                  AI 智能定價建議
+                  <Badge className="ml-2 bg-primary">{pendingProposals.length}</Badge>
+                </h2>
+                <Badge variant="outline" className="bg-white border-primary/20 text-primary">
+                  需要審批
+                </Badge>
+              </div>
+              <PricingProposalList 
+                proposals={pendingProposals} 
+                onUpdate={refetchProposals} 
+              />
+            </motion.div>
+          )}
+        
           {/* 快速操作 */}
           <div className="glass-panel rounded-2xl p-6 border border-white/40">
             <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
@@ -461,159 +494,103 @@ function QuickAction({
   }
 
   return (
-    <Link href={href}>
-      <motion.div
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className={cn(
-          "flex flex-col items-center justify-center p-4 rounded-xl transition-all cursor-pointer",
-          colors[color]
-        )}
-      >
+    <Link href={href} className="block">
+      <div className={cn(
+        "flex flex-col items-center justify-center p-4 rounded-xl transition-colors text-center h-full",
+        colors[color]
+      )}>
         <Icon className="w-6 h-6 mb-2" />
         <span className="text-sm font-medium">{label}</span>
-      </motion.div>
+      </div>
     </Link>
+  )
+}
+
+function AlertRow({ alert, onMarkRead }: { alert: any, onMarkRead: () => void }) {
+  const isDrop = alert.alert_type === 'price_drop'
+  
+  return (
+    <div className={cn(
+      "px-6 py-3 flex items-start gap-3 hover:bg-slate-50 transition-colors cursor-pointer",
+      !alert.is_read && "bg-blue-50/30"
+    )} onClick={onMarkRead}>
+      <div className={cn(
+        "p-1.5 rounded-full mt-1 flex-shrink-0",
+        isDrop ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
+      )}>
+        {isDrop ? <TrendingDown className="w-3 h-3" /> : <TrendingUp className="w-3 h-3" />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between items-start">
+          <p className="text-sm font-medium text-slate-800 line-clamp-1">{alert.product_name}</p>
+          <span className="text-xs text-slate-400 whitespace-nowrap ml-2">
+            {new Date(alert.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-xs text-slate-500">{alert.competitor_name}</span>
+          <span className={cn(
+            "text-xs font-bold px-1.5 py-0.5 rounded",
+            isDrop ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+          )}>
+            {isDrop ? '-' : '+'}{Math.abs(alert.change_percent).toFixed(1)}%
+          </span>
+          <span className="text-xs font-mono text-slate-600">
+            ${alert.old_price} → ${alert.new_price}
+          </span>
+        </div>
+      </div>
+      {!alert.is_read && (
+        <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
+      )}
+    </div>
+  )
+}
+
+function ActionableAlertRow({ alert, onMarkRead }: { alert: any, onMarkRead: () => void }) {
+  return (
+    <div className="px-6 py-3 flex items-center justify-between hover:bg-orange-50/50 transition-colors">
+      <div className="flex items-center gap-3">
+        <div className="p-2 bg-orange-100 rounded-lg text-orange-600">
+          <AlertCircle className="w-4 h-4" />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-slate-800">{alert.product_name}</p>
+          <p className="text-xs text-slate-500">
+            {alert.competitor_name}: <span className="text-red-600 font-bold">${alert.new_price}</span>
+            <span className="mx-1 text-slate-300">|</span>
+            跌幅 {Math.abs(alert.change_percent).toFixed(1)}%
+          </p>
+        </div>
+      </div>
+      <Button size="sm" variant="outline" className="text-xs h-8 border-orange-200 text-orange-700 hover:bg-orange-100" onClick={onMarkRead}>
+        <Check className="w-3 h-3 mr-1" />
+        已閱
+      </Button>
+    </div>
   )
 }
 
 function CompetitorRow({ competitor }: { competitor: any }) {
   return (
-    <Link href={`/competitors/${competitor.id}`}>
-      <div className="flex items-center justify-between px-6 py-4 hover:bg-slate-50/80 transition-colors group">
-        <div className="flex items-center space-x-4">
-          <div className="w-10 h-10 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl flex items-center justify-center">
-            <Building2 className="w-5 h-5 text-slate-500" />
-          </div>
-          <div>
-            <h3 className="font-medium text-slate-800 group-hover:text-blue-600 transition-colors">
-              {competitor.name}
-            </h3>
-            <p className="text-sm text-slate-500">{competitor.platform}</p>
-          </div>
-        </div>
-        <div className="flex items-center space-x-4">
-          <div className="text-right">
-            <p className="text-sm font-bold text-slate-700">{competitor.product_count}</p>
-            <p className="text-xs text-slate-400">監測商品</p>
-          </div>
-          <Badge 
-            variant={competitor.is_active ? "default" : "secondary"}
-            className={competitor.is_active ? "bg-green-100 text-green-700" : ""}
-          >
-            {competitor.is_active ? '活躍' : '停用'}
-          </Badge>
-          <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
-        </div>
-      </div>
-    </Link>
-  )
-}
-
-function AlertRow({
-  alert,
-  onMarkRead,
-}: {
-  alert: PriceAlert
-  onMarkRead: () => void
-}) {
-  const alertTypeConfig: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
-    price_drop: { icon: TrendingDown, color: 'text-green-600', bg: 'bg-green-100' },
-    price_increase: { icon: TrendingUp, color: 'text-red-600', bg: 'bg-red-100' },
-    out_of_stock: { icon: AlertTriangle, color: 'text-orange-600', bg: 'bg-orange-100' },
-    back_in_stock: { icon: CheckCircle2, color: 'text-blue-600', bg: 'bg-blue-100' },
-  }
-
-  const config = alertTypeConfig[alert.alert_type] || {
-    icon: Bell,
-    color: 'text-slate-600',
-    bg: 'bg-slate-100'
-  }
-  const Icon = config.icon
-
-  return (
-    <div className={cn(
-      "px-6 py-3 hover:bg-slate-50/80 transition-colors",
-      !alert.is_read && "bg-blue-50/30"
-    )}>
-      <div className="flex items-start space-x-3">
-        <div className={cn("p-1.5 rounded-lg mt-0.5", config.bg)}>
-          <Icon className={cn("w-4 h-4", config.color)} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-slate-800 truncate">{alert.product_name}</p>
-          <p className="text-xs text-slate-500">{alert.competitor_name}</p>
-          <div className="flex items-center mt-1 text-xs">
-            {alert.change_percent && (
-              <span className={cn(
-                "font-bold",
-                alert.change_percent > 0 ? 'text-red-600' : 'text-green-600'
-              )}>
-                {alert.change_percent > 0 ? '+' : ''}{alert.change_percent.toFixed(1)}%
-              </span>
-            )}
-            <span className="mx-2 text-slate-300">·</span>
-            <span className="text-slate-400">
-              {new Date(alert.created_at).toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          </div>
-        </div>
-        {!alert.is_read && (
-          <button
-            onClick={(e) => { e.preventDefault(); onMarkRead(); }}
-            className="p-1.5 hover:bg-slate-200 rounded-lg transition-colors"
-            title="標記已讀"
-          >
-            <Eye className="w-4 h-4 text-slate-400" />
-          </button>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function ActionableAlertRow({
-  alert,
-  onMarkRead,
-}: {
-  alert: PriceAlert
-  onMarkRead: () => void
-}) {
-  const alertTypeConfig: Record<string, { icon: React.ElementType; color: string; action: string }> = {
-    price_drop: { icon: TrendingDown, color: 'text-green-600', action: '查看降價詳情' },
-    price_increase: { icon: TrendingUp, color: 'text-red-600', action: '分析漲價原因' },
-    out_of_stock: { icon: XCircle, color: 'text-orange-600', action: '查看缺貨商品' },
-    back_in_stock: { icon: CheckCircle2, color: 'text-blue-600', action: '查看補貨商品' },
-  }
-
-  const config = alertTypeConfig[alert.alert_type] || {
-    icon: Bell,
-    color: 'text-slate-600',
-    action: '查看詳情'
-  }
-  const Icon = config.icon
-
-  return (
-    <div className="px-6 py-4 flex items-center justify-between hover:bg-orange-50/50 transition-colors">
-      <div className="flex items-center space-x-4">
-        <div className={cn("p-2 rounded-lg bg-white shadow-sm", config.color)}>
-          <Icon className="w-5 h-5" />
+    <div className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors group">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-lg">
+          {competitor.name.substring(0, 1)}
         </div>
         <div>
-          <p className="font-medium text-slate-800">{alert.product_name}</p>
-          <p className="text-sm text-slate-500">{alert.competitor_name}</p>
+          <h3 className="text-sm font-medium text-slate-800">{competitor.name}</h3>
+          <p className="text-xs text-slate-500">{competitor.product_count} 個監測商品</p>
         </div>
       </div>
-      <div className="flex items-center space-x-2">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={onMarkRead}
-          className="text-orange-600 border-orange-200 hover:bg-orange-100"
-        >
-          {config.action}
-          <ArrowRight className="w-4 h-4 ml-1" />
-        </Button>
+      <div className="flex items-center gap-3">
+        <div className="text-right">
+          <p className="text-xs text-slate-400">最近更新</p>
+          <p className="text-xs font-medium text-slate-600">
+            {competitor.last_scraped_at ? new Date(competitor.last_scraped_at).toLocaleDateString() : '從未'}
+          </p>
+        </div>
+        <ExternalLink className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors cursor-pointer" />
       </div>
     </div>
   )

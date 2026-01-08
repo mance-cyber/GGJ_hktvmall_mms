@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Sidebar, MobileBottomNav } from '@/components/Sidebar'
 import { QueryProvider } from '@/components/QueryProvider'
+import { Toaster } from '@/components/ui/toaster'
 
 export const metadata: Metadata = {
   title: 'GoGoJap AI 營運系統',
@@ -31,6 +32,7 @@ export default function RootLayout({
             </main>
             <MobileBottomNav />
           </div>
+          <Toaster />
         </QueryProvider>
       </body>
     </html>

@@ -18,6 +18,12 @@ class ProductBase(BaseModel):
     brand: Optional[str] = Field(None, max_length=255)
     price: Optional[Decimal] = Field(None, ge=0)
     cost: Optional[Decimal] = Field(None, ge=0)
+    
+    # 定價保護
+    min_price: Optional[Decimal] = Field(None, ge=0)
+    max_price: Optional[Decimal] = Field(None, ge=0)
+    auto_pricing_enabled: bool = Field(default=False)
+    
     stock_quantity: int = Field(default=0, ge=0)
     status: str = Field(default="active")
     images: List[str] = Field(default=[])
@@ -37,6 +43,11 @@ class ProductUpdate(BaseModel):
     brand: Optional[str] = Field(None, max_length=255)
     price: Optional[Decimal] = Field(None, ge=0)
     cost: Optional[Decimal] = Field(None, ge=0)
+    
+    min_price: Optional[Decimal] = Field(None, ge=0)
+    max_price: Optional[Decimal] = Field(None, ge=0)
+    auto_pricing_enabled: Optional[bool] = None
+    
     stock_quantity: Optional[int] = Field(None, ge=0)
     status: Optional[str] = None
     images: Optional[List[str]] = None

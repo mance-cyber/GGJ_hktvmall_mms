@@ -4,7 +4,7 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import competitors, products, content, analytics, scrape, categories, telegram, market_response, ai_settings, agent, hktvmall
+from app.api.v1 import competitors, products, content, analytics, scrape, categories, telegram, market_response, ai_settings, agent, hktvmall, pricing
 
 api_router = APIRouter()
 
@@ -89,4 +89,11 @@ api_router.include_router(
     hktvmall.router,
     prefix="/hktvmall",
     tags=["HKTVmall 集成"]
+)
+
+# 智能定價
+api_router.include_router(
+    pricing.router,
+    prefix="/pricing",  # Final URL: /api/v1/pricing/...
+    tags=["智能定價"]
 )
