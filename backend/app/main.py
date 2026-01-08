@@ -45,12 +45,18 @@ def create_app() -> FastAPI:
         "https://ggj-back.zeabur.app",
     ]
     
+    # 如果在生产环境且 DEBUG=False，添加通配符支持（临时）
+    # 生产环境强制允许所有来源以解决 preflight 问题
+    if not settings.debug:
+        allowed_origins = ["*"]
+    
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,
-        allow_credentials=True,
+        allow_credentials=False if allowed_origins == ["*"] else True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["*"],
     )
 
     # 註冊 API 路由
