@@ -43,6 +43,7 @@ const navigationGroups = [
     items: [
       { name: '訂單管理', href: '/orders', icon: Truck, description: '訂單同步與出貨' },
       { name: '客服收件箱', href: '/inbox', icon: MessageSquare, description: '客戶查詢' },
+      { name: '財務中心', href: '/finance', icon: DollarSign, description: '利潤與結算' },
     ]
   },
   {

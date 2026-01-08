@@ -4,7 +4,7 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import competitors, products, content, analytics, scrape, categories, telegram, market_response, ai_settings, agent, hktvmall, pricing, orders, inbox
+from app.api.v1 import competitors, products, content, analytics, scrape, categories, telegram, market_response, ai_settings, agent, hktvmall, pricing, orders, inbox, finance
 
 api_router = APIRouter()
 
@@ -110,4 +110,11 @@ api_router.include_router(
     inbox.router,
     prefix="/inbox",
     tags=["客服收件箱"]
+)
+
+# 財務管理
+api_router.include_router(
+    finance.router,
+    prefix="/finance",
+    tags=["財務管理"]
 )

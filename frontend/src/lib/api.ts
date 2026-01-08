@@ -1083,3 +1083,54 @@ export const inboxApi = {
       body: JSON.stringify({ content, is_draft })
     })
 }
+
+// =============================================
+// 財務管理 API
+// =============================================
+
+export interface SettlementItem {
+  id: string
+  order_number: string
+  sku: string
+  product_name: string | null
+  quantity: number
+  item_price: number
+  commission_rate: number
+  commission_amount: number
+  transaction_date: string
+}
+
+export interface Settlement {
+  id: string
+  statement_no: string
+  cycle_start: string
+  cycle_end: string
+  settlement_date: string
+  total_sales_amount: number
+  total_commission: number
+  total_shipping_fee: number
+  other_deductions: number
+  net_settlement_amount: number
+  status: string
+  items: SettlementItem[]
+}
+
+export interface ProfitSummary {
+  total_revenue: number
+  total_commission: number
+  total_profit: number
+  profit_margin: number
+  period_start: string
+  period_end: string
+}
+
+export const financeApi = {
+  syncMockData: () => 
+    fetchAPI<{status: string, message: string}>('/finance/sync-mock', { method: 'POST' }),
+
+  getSettlements: (limit: number = 10) =>
+    fetchAPI<Settlement[]>(`/finance/settlements?limit=${limit}`),
+
+  getProfitSummary: () =>
+    fetchAPI<ProfitSummary>('/finance/profit-summary')
+}
