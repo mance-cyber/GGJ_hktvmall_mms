@@ -115,7 +115,24 @@ class ReportGenerator:
             if overview_table:
                 tables.append(overview_table)
         
-        # 處理價格趨勢
+        
+        # 處理銷售數據 (Finance)
+        if "query_sales" in tool_results:
+            sales_section = self._generate_sales_section(
+                tool_results["query_sales"]
+            )
+            sections.append(sales_section)
+
+        # 處理熱門產品 (Finance/Sales)
+        if "query_top_products" in tool_results:
+            top_section, top_chart = self._generate_finance_top_products(
+                tool_results["query_top_products"]
+            )
+            sections.append(top_section)
+            if top_chart:
+                charts.append(top_chart)
+
+# 處理價格趨勢
         if "price_trend" in tool_results:
             trend_section, trend_chart = self._generate_trend_section(
                 tool_results["price_trend"]
@@ -506,3 +523,57 @@ class ReportGenerator:
             summary_parts.append("包含價格趨勢分析")
         
         return "；".join(summary_parts) if summary_parts else "市場分析報告"
+
+    def _generate_sales_section(self, data: Dict[str, Any]) -> str:
+        if not data.get("success", False):
+            return "## 💰 銷售數據
+
+⚠️ 無法獲取數據
+"
+        
+        result = data.get("data", {})
+        val = result.get("value", 0)
+        currency = result.get("currency", "HKD")
+        metric = result.get("metric", "revenue")
+        period = result.get("period", "")
+        
+        metric_name = "總營收" if metric == "revenue" else "淨利潤"
+        
+        return f"## 💰 {metric_name} ({period})
+
+# {currency} ${val:,.2f}
+"
+
+    def _generate_finance_top_products(self, data: Dict[str, Any]) -> tuple:
+        if not data.get("success", False):
+            return "## 🏆 銷售排行
+
+⚠️ 無法獲取數據
+", None
+            
+        result = data.get("data", {})
+        items = result.get("items", [])
+        title = result.get("title", "Top Products")
+        
+        if not items:
+            return "## 🏆 銷售排行
+
+暫無數據
+", None
+            
+        lines = [f"## 🏆 {title}
+"]
+        for i, item in enumerate(items, 1):
+            lines.append(f"{i}. **{item['name']}**: {item['value']}")
+            
+        chart = ChartData(
+            type="bar",
+            title=title,
+            data=items,
+            config={
+                "xKey": "name",
+                "yKeys": [{"key": "value", "color": "#8884d8", "name": "數值"}]
+            }
+        )
+        return "
+".join(lines), chart

@@ -20,6 +20,8 @@ from .tools import (
     PriceTrendTool,
     PriceComparisonTool,
     CompetitorCompareTool,
+    QuerySalesTool,
+    QueryTopProductsTool
 )
 
 
@@ -49,6 +51,11 @@ class ToolExecutor:
         IntentType.MARKET_OVERVIEW: ["product_overview", "price_trend", "top_products", "competitor_compare"],
         IntentType.GENERATE_REPORT: ["product_overview", "price_trend", "competitor_compare", "top_products"],
         IntentType.MARKETING_STRATEGY: ["product_overview", "price_trend", "competitor_compare", "top_products"],
+        
+        # New Intents
+        IntentType.FINANCE_ANALYSIS: ["query_sales", "query_top_products"],
+        IntentType.ORDER_QUERY: ["query_sales"],
+        IntentType.INVENTORY_QUERY: ["query_top_products"],
     }
     
     def __init__(self, db: AsyncSession):
@@ -62,6 +69,8 @@ class ToolExecutor:
             "price_trend": PriceTrendTool(db),
             "price_comparison": PriceComparisonTool(db),
             "competitor_compare": CompetitorCompareTool(db),
+            "query_sales": QuerySalesTool(db),
+            "query_top_products": QueryTopProductsTool(db),
         }
     
     def get_execution_plan(
@@ -69,16 +78,7 @@ class ToolExecutor:
         intent: IntentType,
         slots: AnalysisSlots
     ) -> ExecutionPlan:
-        """
-        獲取執行計劃
-        
-        Args:
-            intent: 意圖類型
-            slots: 槽位
-        
-        Returns:
-            執行計劃
-        """
+        """獲取執行計劃"""
         # 獲取該意圖需要的工具
         tools = self.INTENT_TOOL_MAPPING.get(intent, [])
         
@@ -86,8 +86,8 @@ class ToolExecutor:
         if not slots.include_competitors and "competitor_compare" in tools:
             tools = [t for t in tools if t != "competitor_compare"]
         
-        # 根據分析維度調整
-        if slots.analysis_dimensions:
+        # 根據分析維度調整 (僅適用於產品分析意圖)
+        if slots.analysis_dimensions and intent in [IntentType.MARKET_OVERVIEW, IntentType.PRICE_ANALYSIS]:
             dimension_tools = {
                 "price_overview": ["product_overview"],
                 "price_trend": ["price_trend"],
@@ -116,23 +116,14 @@ class ToolExecutor:
         intent: IntentType,
         slots: AnalysisSlots
     ) -> Dict[str, ToolResult]:
-        """
-        執行工具並返回結果
-        
-        Args:
-            intent: 意圖類型
-            slots: 槽位
-        
-        Returns:
-            工具執行結果
-        """
+        """執行工具並返回結果"""
         plan = self.get_execution_plan(intent, slots)
         
         if not plan.tools:
             return {}
         
         # 準備參數
-        base_params = self._prepare_params(slots)
+        base_params = self._prepare_params(slots, intent)
         
         if plan.parallel:
             # 並行執行
@@ -143,13 +134,13 @@ class ToolExecutor:
         
         return results
     
-    def _prepare_params(self, slots: AnalysisSlots) -> Dict[str, Any]:
+    def _prepare_params(self, slots: AnalysisSlots, intent: IntentType) -> Dict[str, Any]:
         """準備工具參數"""
         params = {
             "products": slots.products,
         }
         
-        # 時間範圍
+        # 時間範圍映射
         time_days = {
             "7d": 7,
             "30d": 30,
@@ -158,6 +149,23 @@ class ToolExecutor:
             "all": 3650,
         }
         params["days"] = time_days.get(slots.time_range, 30)
+        
+        # Finance Tool Params
+        if intent == IntentType.FINANCE_ANALYSIS:
+            params["metric"] = "revenue" # Default
+            params["period"] = "last_30_days" # Default
+            params["by"] = "revenue"
+            
+            # Simple heuristic for metric based on keywords in potential future slots
+            # For now default to revenue
+        
+        if intent == IntentType.ORDER_QUERY:
+            params["metric"] = "revenue"
+            params["period"] = "this_month"
+            
+        if intent == IntentType.INVENTORY_QUERY:
+            params["by"] = "sales" # Show top selling implies stock movement
+            params["limit"] = 10
         
         # 產品細節
         if slots.product_details:
@@ -180,7 +188,32 @@ class ToolExecutor:
         for name in tool_names:
             tool = self.tools.get(name)
             if tool:
-                tasks.append(self._execute_tool(name, tool, params))
+                # Filter params based on tool requirements
+                tool_params = {}
+                schema = tool.get_schema()
+                required_params = schema.get("parameters", {}).get("required", [])
+                all_param_names = schema.get("parameters", {}).get("properties", {}).keys()
+                
+                for p in all_param_names:
+                    if p in params:
+                        tool_params[p] = params[p]
+                
+                # If specific tool params missing, use defaults or skip (in real system, would ask user)
+                # Hack for now: QuerySalesTool needs metric/period
+                if name == "query_sales":
+                    tool_params.setdefault("metric", "revenue")
+                    tool_params.setdefault("period", "last_30_days")
+                if name == "query_top_products":
+                    tool_params.setdefault("by", "sales")
+                    tool_params.setdefault("limit", 5)
+                
+                # Base params for product tools
+                if "days" in all_param_names:
+                    tool_params["days"] = params["days"]
+                if "products" in all_param_names:
+                    tool_params["products"] = params["products"]
+
+                tasks.append(self._execute_tool(name, tool, tool_params))
         
         if not tasks:
             return {}
@@ -200,71 +233,4 @@ class ToolExecutor:
                 else:
                     result_dict[name] = result
         
-        return result_dict
-    
-    async def _execute_sequential(
-        self,
-        tool_names: List[str],
-        params: Dict[str, Any]
-    ) -> Dict[str, ToolResult]:
-        """順序執行工具"""
-        results = {}
-        
-        for name in tool_names:
-            tool = self.tools.get(name)
-            if tool:
-                result = await self._execute_tool(name, tool, params)
-                results[name] = result
-        
-        return results
-    
-    async def _execute_tool(
-        self,
-        name: str,
-        tool: BaseTool,
-        params: Dict[str, Any]
-    ) -> ToolResult:
-        """執行單個工具"""
-        try:
-            return await tool.safe_execute(**params)
-        except Exception as e:
-            return ToolResult(
-                tool_name=name,
-                success=False,
-                error=str(e)
-            )
-    
-    def aggregate_results(
-        self,
-        results: Dict[str, ToolResult]
-    ) -> Dict[str, Any]:
-        """
-        聚合工具結果
-        
-        將多個工具的結果合併為統一格式，供報告生成使用
-        """
-        aggregated = {
-            "success": True,
-            "data": {},
-            "errors": [],
-            "metadata": {
-                "tools_executed": list(results.keys()),
-                "total_execution_time_ms": 0,
-            }
-        }
-        
-        for name, result in results.items():
-            if result.success:
-                aggregated["data"][name] = result.data
-            else:
-                aggregated["errors"].append({
-                    "tool": name,
-                    "error": result.error
-                })
-            
-            aggregated["metadata"]["total_execution_time_ms"] += result.execution_time_ms
-        
-        if aggregated["errors"]:
-            aggregated["success"] = len(aggregated["errors"]) < len(results)
-        
-        return aggregated
+       

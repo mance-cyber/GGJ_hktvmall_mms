@@ -28,6 +28,11 @@ class IntentType(Enum):
     GENERATE_REPORT = "generate_report"
     MARKETING_STRATEGY = "marketing_strategy"
     
+    # 營運類 (New)
+    FINANCE_ANALYSIS = "finance_analysis"
+    ORDER_QUERY = "order_query"
+    INVENTORY_QUERY = "inventory_query"
+    
     # 對話類
     CLARIFICATION = "clarification"
     FOLLOWUP = "followup"
@@ -89,6 +94,15 @@ class IntentClassifier:
         IntentType.MARKETING_STRATEGY: [
             "marketing", "推廣", "策略", "點樣賣", "點推",
         ],
+        IntentType.FINANCE_ANALYSIS: [
+            "利潤", "賺", "收入", "營收", "profit", "revenue", "sales", "財務", "賺錢"
+        ],
+        IntentType.ORDER_QUERY: [
+            "訂單", "order", "未出貨", "待處理", "shipping", "ship"
+        ],
+        IntentType.INVENTORY_QUERY: [
+            "庫存", "存貨", "stock", "inventory", "缺貨", "無貨"
+        ],
         IntentType.GREETING: [
             "你好", "hello", "hi", "哈囉", "早晨", "午安",
         ],
@@ -113,6 +127,9 @@ class IntentClassifier:
 - MARKET_OVERVIEW: 市場概覽（例：「我想睇和牛同海膽嘅資料」）
 - GENERATE_REPORT: 生成報告（例：「幫我出份報告」）
 - MARKETING_STRATEGY: Marketing 策略（例：「點樣推廣呢個產品？」）
+- FINANCE_ANALYSIS: 財務分析（例：「上個月賺幾多？」「利潤趨勢」）
+- ORDER_QUERY: 訂單查詢（例：「有幾多單未出貨？」「今日幾多單？」）
+- INVENTORY_QUERY: 庫存查詢（例：「邊啲貨就快賣曬？」）
 - CLARIFICATION: 用戶回答澄清問題（例：「全部部位」「淨係睇刺身」）
 - FOLLOWUP: 追問（例：「仲有呢？」「詳細啲？」）
 - GREETING: 問候（例：「你好」）
@@ -282,20 +299,4 @@ class IntentClassifier:
             
             intent_str = result.get("intent", "UNKNOWN")
             try:
-                intent = IntentType(intent_str.lower())
-            except ValueError:
-                intent = IntentType.UNKNOWN
-            
-            return IntentResult(
-                intent=intent,
-                entities=result.get("entities", []),
-                confidence=result.get("confidence", 0.5),
-                reasoning=result.get("reasoning", "")
-            )
-        except Exception as e:
-            return IntentResult(
-                intent=IntentType.UNKNOWN,
-                entities=[],
-                confidence=0,
-                reasoning=f"AI 識別失敗: {str(e)}"
-            )
+         
