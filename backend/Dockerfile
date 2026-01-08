@@ -51,12 +51,8 @@ COPY --chown=appuser:appuser . .
 # 切換到非 root 用戶
 USER appuser
 
-# 健康檢查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
-
-# 暴露端口
+# 暴露端口（Zeabur 會自動注入 PORT 環境變量）
 EXPOSE 8000
 
-# 啟動命令
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+# 啟動命令 - 使用 shell 形式以支持環境變量
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2
