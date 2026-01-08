@@ -225,8 +225,7 @@ class HKTVMallClient:
                 logger.error(f"HKTVmall Request Failed: {str(e)}")
                 raise
 
-    async def get_product_
-details(self, sku_codes: Union[str, List[str]]) -> Dict:
+    async def get_product_details(self, sku_codes: Union[str, List[str]]) -> Dict:
         if isinstance(sku_codes, str):
             sku_codes = [sku_codes]
         return await self._request("POST", "/product/hktv/products/queryByProductCode", data={"storeCode": self.store_code, "skuCodes": sku_codes})

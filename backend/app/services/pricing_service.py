@@ -217,8 +217,7 @@ class PricingService:
                         reason=f"競爭對手 {target_comp.name} 降價至 ${min_comp_price}，建議跟進 (已扣除安全利潤)",
                         model="rule_based_v1"
                     )
-                    generated_count += 
-1
+                    generated_count += 1
                     
         return generated_count
 

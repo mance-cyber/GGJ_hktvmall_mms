@@ -9,7 +9,7 @@ from app.schemas.pricing import PriceProposalResponse, ProductPricingConfig
 from app.models.product import Product
 from sqlalchemy import update
 
-router = APIRouter(prefix="/pricing", tags=["pricing"])
+router = APIRouter()
 
 @router.get("/proposals/pending", response_model=List[PriceProposalResponse])
 async def get_pending_proposals(db: AsyncSession = Depends(get_db)):
