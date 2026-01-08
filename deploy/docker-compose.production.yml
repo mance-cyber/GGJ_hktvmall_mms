@@ -1,0 +1,117 @@
+# =============================================
+# GoGoJap HKTVmall AI System - 生產環境部署
+# =============================================
+# 此文件供甲方運行容器使用
+# 鏡像由技術方提供，甲方無需接觸源代碼
+# =============================================
+
+version: '3.8'
+
+services:
+  # ==================== 前端服務 ====================
+  frontend:
+    image: ${REGISTRY_URL}/gogojap-frontend:${VERSION:-latest}
+    container_name: gogojap-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+      - NEXT_PUBLIC_ENV=production
+    depends_on:
+      - backend
+    networks:
+      - gogojap-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==================== 後端 API 服務 ====================
+  backend:
+    image: ${REGISTRY_URL}/gogojap-backend:${VERSION:-latest}
+    container_name: gogojap-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=production
+      - DEBUG=false
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - R2_ACCESS_KEY=${R2_ACCESS_KEY}
+      - R2_SECRET_KEY=${R2_SECRET_KEY}
+      - R2_BUCKET=${R2_BUCKET}
+      - R2_ENDPOINT=${R2_ENDPOINT}
+    depends_on:
+      - redis
+    networks:
+      - gogojap-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==================== Celery Worker ====================
+  celery-worker:
+    image: ${REGISTRY_URL}/gogojap-backend:${VERSION:-latest}
+    container_name: gogojap-celery-worker
+    restart: unless-stopped
+    command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=2
+    environment:
+      - APP_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    depends_on:
+      - redis
+      - backend
+    networks:
+      - gogojap-network
+
+  # ==================== Celery Beat (定時任務) ====================
+  celery-beat:
+    image: ${REGISTRY_URL}/gogojap-backend:${VERSION:-latest}
+    container_name: gogojap-celery-beat
+    restart: unless-stopped
+    command: celery -A app.tasks.celery_app beat --loglevel=info
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+      - celery-worker
+    networks:
+      - gogojap-network
+
+  # ==================== Redis ====================
+  redis:
+    image: redis:7-alpine
+    container_name: gogojap-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - gogojap-network
+    command: redis-server --appendonly yes
+
+# ==================== 網絡 ====================
+networks:
+  gogojap-network:
+    driver: bridge
+
+# ==================== 數據卷 ====================
+volumes:
+  redis_data:
+    driver: local

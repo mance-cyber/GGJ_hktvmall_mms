@@ -1,0 +1,48 @@
+{
+  "$schema": "https://schema.zeabur.app/template.json",
+  "name": "gogojap-backend",
+  "description": "GoGoJap HKTVmall AI System - Backend API",
+  "build": {
+    "type": "dockerfile",
+    "dockerfile": "Dockerfile"
+  },
+  "ports": [8000],
+  "env": {
+    "DATABASE_URL": {
+      "description": "PostgreSQL connection string (auto-injected by Zeabur)",
+      "required": true
+    },
+    "REDIS_URL": {
+      "description": "Redis connection string (auto-injected by Zeabur)",
+      "required": true
+    },
+    "SECRET_KEY": {
+      "description": "App secret key for JWT/session",
+      "required": true
+    },
+    "ANTHROPIC_API_KEY": {
+      "description": "Anthropic Claude API key",
+      "required": true
+    },
+    "FIRECRAWL_API_KEY": {
+      "description": "Firecrawl API key for web scraping",
+      "required": false
+    },
+    "HKTVMALL_ACCESS_TOKEN": {
+      "description": "HKTVmall MMS API access token",
+      "required": false
+    },
+    "HKTVMALL_STORE_CODE": {
+      "description": "HKTVmall store code",
+      "required": false
+    },
+    "HKTV_CONNECTOR_TYPE": {
+      "description": "HKTVmall connector type: mock or real",
+      "default": "mock"
+    }
+  },
+  "healthcheck": {
+    "path": "/health",
+    "port": 8000
+  }
+}

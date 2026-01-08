@@ -1,0 +1,25 @@
+{
+  "$schema": "https://schema.zeabur.app/template.json",
+  "name": "gogojap-frontend",
+  "description": "GoGoJap HKTVmall AI System - Frontend",
+  "build": {
+    "type": "dockerfile",
+    "dockerfile": "Dockerfile"
+  },
+  "ports": [3000],
+  "env": {
+    "NEXT_PUBLIC_API_URL": {
+      "description": "Backend API URL",
+      "required": true,
+      "default": "https://api.your-domain.com"
+    },
+    "NEXT_PUBLIC_ENV": {
+      "description": "Environment",
+      "default": "production"
+    }
+  },
+  "healthcheck": {
+    "path": "/",
+    "port": 3000
+  }
+}

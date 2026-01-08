@@ -1,0 +1,43 @@
+# =============================================
+# HKTVmall AI 營運系統 - 本地開發環境
+# =============================================
+
+version: '3.8'
+
+services:
+  # PostgreSQL 數據庫
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hktv
+      POSTGRES_PASSWORD: hktv_dev_password
+      POSTGRES_DB: hktv_ops
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hktv -d hktv_ops"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 緩存/任務隊列
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:

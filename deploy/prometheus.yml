@@ -1,0 +1,32 @@
+# =============================================
+# Prometheus 配置
+# =============================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'gogojap-monitor'
+
+# ==================== 抓取配置 ====================
+scrape_configs:
+  # Prometheus 自身
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Node Exporter（主機指標）
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # cAdvisor（容器指標）
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  # GoGoJap Backend（如果暴露 metrics）
+  - job_name: 'gogojap-backend'
+    static_configs:
+      - targets: ['backend:8000']
+    metrics_path: '/metrics'

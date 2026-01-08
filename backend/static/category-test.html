@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>類別抓取功能測試</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-weight: 500;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        button.success {
+            background: #28a745;
+        }
+        button.success:hover {
+            background: #218838;
+        }
+        .result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .result pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 12px;
+        }
+        .category-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .category-card {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            background: #fafafa;
+        }
+        .category-card h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .category-card p {
+            margin: 5px 0;
+            font-size: 13px;
+            color: #666;
+        }
+        .category-card button {
+            margin-top: 10px;
+            font-size: 12px;
+            padding: 6px 12px;
+        }
+        .loading {
+            color: #007bff;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗂️ 類別抓取功能測試</h1>
+
+        <!-- 創建類別 -->
+        <div class="section">
+            <h2>1. 創建類別數據庫</h2>
+            <div class="form-group">
+                <label>類別名稱</label>
+                <input type="text" id="categoryName" placeholder="例如：和牛類" value="測試類別">
+            </div>
+            <div class="form-group">
+                <label>描述</label>
+                <textarea id="categoryDesc" placeholder="類別描述（可選）">這是一個測試類別</textarea>
+            </div>
+            <div class="form-group">
+                <label>HKTVmall 類別 URL</label>
+                <input type="text" id="categoryUrl" placeholder="https://www.hktvmall.com/..." value="https://www.hktvmall.com/hktv/zh">
+            </div>
+            <button onclick="createCategory()">創建類別</button>
+            <div id="createResult" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- 類別列表 -->
+        <div class="section">
+            <h2>2. 類別列表</h2>
+            <button onclick="loadCategories()">刷新列表</button>
+            <div id="categoryList" class="category-list"></div>
+        </div>
+
+        <!-- 商品列表 -->
+        <div class="section">
+            <h2>3. 查看商品</h2>
+            <div class="form-group">
+                <label>類別 ID</label>
+                <input type="text" id="productCategoryId" placeholder="從上方複製類別 ID">
+            </div>
+            <button onclick="loadProducts()">查看商品</button>
+            <div id="productResult" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- AI 分析 -->
+        <div class="section">
+            <h2>4. AI 分析</h2>
+            <div class="form-group">
+                <label>類別 ID</label>
+                <input type="text" id="analyzeCategoryId" placeholder="從上方複製類別 ID">
+            </div>
+            <div class="form-group">
+                <label>分析類型</label>
+                <select id="analysisType">
+                    <option value="summary">數據摘要</option>
+                    <option value="trend">趨勢預測</option>
+                </select>
+            </div>
+            <button class="success" onclick="triggerAnalysis()">開始分析</button>
+            <button onclick="viewReports()">查看報告</button>
+            <div id="analysisResult" class="result" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api/v1';
+
+        // 創建類別
+        async function createCategory() {
+            const name = document.getElementById('categoryName').value;
+            const description = document.getElementById('categoryDesc').value;
+            const url = document.getElementById('categoryUrl').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/categories`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name,
+                        description,
+                        hktv_category_url: url,
+                        scrape_frequency: 'weekly'
+                    })
+                });
+
+                const data = await response.json();
+                showResult('createResult', data);
+
+                if (response.ok) {
+                    alert(`類別創建成功！ID: ${data.id}`);
+                    loadCategories();
+                }
+            } catch (error) {
+                showResult('createResult', { error: error.message });
+            }
+        }
+
+        // 加載類別列表
+        async function loadCategories() {
+            const container = document.getElementById('categoryList');
+            container.innerHTML = '<p class="loading">載入中...</p>';
+
+            try {
+                const response = await fetch(`${API_BASE}/categories`);
+                const data = await response.json();
+
+                if (data.items && data.items.length > 0) {
+                    container.innerHTML = data.items.map(cat => `
+                        <div class="category-card">
+                            <h3>${cat.name}</h3>
+                            <p><strong>ID:</strong> ${cat.id}</p>
+                            <p><strong>商品數:</strong> ${cat.total_products}</p>
+                            <p><strong>狀態:</strong> ${cat.is_active ? '啟用' : '停用'}</p>
+                            <p><strong>最後抓取:</strong> ${cat.last_scraped_at || '未抓取'}</p>
+                            <button onclick="triggerScrape('${cat.id}', '${cat.name}')">觸發抓取</button>
+                            <button onclick="viewStats('${cat.id}')">查看統計</button>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p>暫無類別</p>';
+                }
+            } catch (error) {
+                container.innerHTML = `<p style="color:red;">載入失敗: ${error.message}</p>`;
+            }
+        }
+
+        // 觸發抓取
+        async function triggerScrape(categoryId, categoryName) {
+            if (!confirm(`確定要抓取「${categoryName}」的商品嗎？`)) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/categories/${categoryId}/scrape`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ category_id: categoryId, max_products: 50 })
+                });
+
+                const data = await response.json();
+                alert(data.message || '抓取任務已啟動');
+            } catch (error) {
+                alert(`抓取失敗: ${error.message}`);
+            }
+        }
+
+        // 查看統計
+        async function viewStats(categoryId) {
+            try {
+                const response = await fetch(`${API_BASE}/categories/${categoryId}/stats`);
+                const data = await response.json();
+
+                alert(`統計數據:\n\n總商品: ${data.total_products}\n可用商品: ${data.available_products}\n平均價格: HK$${data.avg_price}\n價格區間: HK$${data.min_price} - HK$${data.max_price}\n品牌數: ${data.brands_count}`);
+            } catch (error) {
+                alert(`載入失敗: ${error.message}`);
+            }
+        }
+
+        // 加載商品列表
+        async function loadProducts() {
+            const categoryId = document.getElementById('productCategoryId').value;
+            if (!categoryId) {
+                alert('請輸入類別 ID');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/categories/${categoryId}/products?page=1&page_size=20`);
+                const data = await response.json();
+                showResult('productResult', data);
+            } catch (error) {
+                showResult('productResult', { error: error.message });
+            }
+        }
+
+        // 觸發 AI 分析
+        async function triggerAnalysis() {
+            const categoryId = document.getElementById('analyzeCategoryId').value;
+            const analysisType = document.getElementById('analysisType').value;
+
+            if (!categoryId) {
+                alert('請輸入類別 ID');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/categories/${categoryId}/analyze`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        category_id: categoryId,
+                        analysis_type: analysisType,
+                        model: 'claude-sonnet-4-20250514'
+                    })
+                });
+
+                const data = await response.json();
+                showResult('analysisResult', data);
+
+                if (response.ok) {
+                    alert('AI 分析任務已啟動！請稍後查看報告。');
+                }
+            } catch (error) {
+                showResult('analysisResult', { error: error.message });
+            }
+        }
+
+        // 查看報告
+        async function viewReports() {
+            const categoryId = document.getElementById('analyzeCategoryId').value;
+            if (!categoryId) {
+                alert('請輸入類別 ID');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/categories/${categoryId}/reports?limit=5`);
+                const data = await response.json();
+                showResult('analysisResult', data);
+            } catch (error) {
+                showResult('analysisResult', { error: error.message });
+            }
+        }
+
+        // 顯示結果
+        function showResult(elementId, data) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+
+        // 頁面載入時自動加載類別列表
+        window.onload = () => {
+            loadCategories();
+        };
+    </script>
+</body>
+</html>
