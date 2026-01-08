@@ -706,9 +706,6 @@ export interface OwnProduct {
   brand: string | null
   price: number | null
   cost: number | null
-  min_price: number | null
-  max_price: number | null
-  auto_pricing_enabled: boolean
   stock_quantity: number
   status: string
   images: string[] | null
