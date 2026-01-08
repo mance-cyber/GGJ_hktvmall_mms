@@ -29,13 +29,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { ModelCombobox } from '@/components/ui/model-combobox'
 import { cn } from '@/lib/utils'
 
 // =============================================
@@ -495,48 +489,19 @@ export default function AISettingsPage() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Insights Model */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-purple-500" />
               <Label className="text-slate-700 font-medium">數據摘要模型</Label>
             </div>
-            <Select value={insightsModel} onValueChange={setInsightsModel}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="選擇模型..." />
-              </SelectTrigger>
-              <SelectContent>
-                {/* 從 API 獲取的模型 */}
-                {fetchedModels.length > 0 && (
-                  <>
-                    <div className="px-2 py-1.5 text-xs font-semibold text-green-600 bg-green-50">
-                      ✓ API 可用模型 ({fetchedModels.length})
-                    </div>
-                    {fetchedModels.map((model) => (
-                      <SelectItem key={`fetched-${model.id}`} value={model.id}>
-                        <div className="flex flex-col">
-                          <span className="font-medium">{model.name}</span>
-                          <span className="text-xs text-muted-foreground">{model.owned_by || model.id}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                    <div className="my-1 border-t" />
-                  </>
-                )}
-                {/* 預設模型列表 */}
-                <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 bg-slate-50">
-                  預設模型
-                </div>
-                {models?.map((model) => (
-                  <SelectItem key={model.id} value={model.id}>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{model.name}</span>
-                      <span className="text-xs text-muted-foreground">{model.description}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <ModelCombobox
+              value={insightsModel}
+              onValueChange={setInsightsModel}
+              fetchedModels={fetchedModels}
+              presetModels={models || []}
+              placeholder="選擇模型..."
+              searchPlaceholder="搜尋模型..."
+            />
             {insightsModel === 'custom' && (
               <Input
                 placeholder="輸入自定義模型名稱..."
@@ -547,48 +512,19 @@ export default function AISettingsPage() {
             )}
           </div>
 
-          {/* Strategy Model */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Target className="w-4 h-4 text-blue-500" />
               <Label className="text-slate-700 font-medium">策略生成模型</Label>
             </div>
-            <Select value={strategyModel} onValueChange={setStrategyModel}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="選擇模型..." />
-              </SelectTrigger>
-              <SelectContent>
-                {/* 從 API 獲取的模型 */}
-                {fetchedModels.length > 0 && (
-                  <>
-                    <div className="px-2 py-1.5 text-xs font-semibold text-green-600 bg-green-50">
-                      ✓ API 可用模型 ({fetchedModels.length})
-                    </div>
-                    {fetchedModels.map((model) => (
-                      <SelectItem key={`fetched-${model.id}`} value={model.id}>
-                        <div className="flex flex-col">
-                          <span className="font-medium">{model.name}</span>
-                          <span className="text-xs text-muted-foreground">{model.owned_by || model.id}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                    <div className="my-1 border-t" />
-                  </>
-                )}
-                {/* 預設模型列表 */}
-                <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 bg-slate-50">
-                  預設模型
-                </div>
-                {models?.map((model) => (
-                  <SelectItem key={model.id} value={model.id}>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{model.name}</span>
-                      <span className="text-xs text-muted-foreground">{model.description}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <ModelCombobox
+              value={strategyModel}
+              onValueChange={setStrategyModel}
+              fetchedModels={fetchedModels}
+              presetModels={models || []}
+              placeholder="選擇模型..."
+              searchPlaceholder="搜尋模型..."
+            />
             {strategyModel === 'custom' && (
               <Input
                 placeholder="輸入自定義模型名稱..."
