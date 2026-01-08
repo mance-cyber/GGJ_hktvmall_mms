@@ -42,8 +42,11 @@ async def init_db():
     """初始化數據庫（創建表）"""
     from app.models import competitor, product, notification, scrape_config, import_job, analytics, content, category, system
     
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception:
+        pass
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
