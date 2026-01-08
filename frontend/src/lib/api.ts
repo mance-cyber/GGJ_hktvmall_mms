@@ -1006,3 +1006,80 @@ export const pricingApi = {
       body: JSON.stringify(config)
     })
 }
+
+// =============================================
+// 訂單 API
+// =============================================
+
+export interface OrderItem {
+  id: string
+  sku_code: string
+  product_name: string
+  quantity: number
+  unit_price: number | null
+  subtotal: number | null
+}
+
+export interface Order {
+  id: string
+  order_number: string
+  order_date: string
+  ship_by_date: string | null
+  status: string
+  hktv_status: string | null
+  total_amount: number | null
+  delivery_mode: string | null
+  customer_region: string | null
+  items: OrderItem[]
+}
+
+export interface OrderListResponse {
+  data: Order[]
+  total: number
+  page: number
+  limit: number
+}
+
+export const orderApi = {
+  getOrders: (page: number = 1, status?: string) => 
+    fetchAPI<OrderListResponse>(`/orders?page=${page}&limit=20${status ? `&status=${status}` : ''}`),
+    
+  syncOrders: (days: number = 7) => 
+    fetchAPI<{status: string, synced_count: number}>(`/orders/sync?days=${days}`, { method: 'POST' })
+}
+
+// =============================================
+// 客服收件箱 API
+// =============================================
+
+export interface Message {
+  id: string
+  content: string
+  sender_type: string
+  ai_generated: boolean
+  is_draft: boolean
+  sent_at: string
+}
+
+export interface Conversation {
+  id: string
+  subject: string
+  customer_name: string
+  status: string
+  last_message_at: string
+  last_message?: Message
+}
+
+export const inboxApi = {
+  sync: () => fetchAPI<{status: string, synced_count: number}>('/inbox/sync', { method: 'POST' }),
+  
+  getConversations: () => fetchAPI<Conversation[]>('/inbox/conversations'),
+  
+  getMessages: (id: string) => fetchAPI<Message[]>(`/inbox/conversations/${id}/messages`),
+  
+  sendMessage: (id: string, content: string, is_draft: boolean = false) =>
+    fetchAPI<Message>(`/inbox/conversations/${id}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ content, is_draft })
+    })
+}

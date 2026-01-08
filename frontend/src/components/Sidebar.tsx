@@ -19,7 +19,9 @@ import {
   ChevronRight,
   Globe,
   Brain,
-  MessageSquare
+  MessageSquare,
+  Truck,
+  DollarSign
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
@@ -34,6 +36,13 @@ const navigationGroups = [
     title: '總覽',
     items: [
       { name: '儀表板', href: '/', icon: LayoutDashboard },
+    ]
+  },
+  {
+    title: '營運中心',
+    items: [
+      { name: '訂單管理', href: '/orders', icon: Truck, description: '訂單同步與出貨' },
+      { name: '客服收件箱', href: '/inbox', icon: MessageSquare, description: '客戶查詢' },
     ]
   },
   {
@@ -100,186 +109,161 @@ export function Sidebar() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // 路由變化時關閉移動端菜單
-  useEffect(() => {
-    setIsMobileOpen(false)
-  }, [pathname])
-
-  // 移動端菜單按鈕
-  const MobileMenuButton = () => (
-    <button
-      onClick={() => setIsMobileOpen(!isMobileOpen)}
-      className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200"
-    >
-      {isMobileOpen ? (
-        <X className="w-6 h-6 text-gray-600" />
-      ) : (
-        <Menu className="w-6 h-6 text-gray-600" />
-      )}
-    </button>
-  )
-
-  // 側邊欄內容
-  const SidebarContent = () => (
-    <>
-      {/* Logo */}
-      <div className="flex items-center h-16 px-6 border-b border-gray-200">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30">
-            <span className="text-white font-bold text-sm">AI</span>
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">GoGoJap</h1>
-            <p className="text-xs text-gray-500">AI 營運系統</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation - 分組顯示 */}
-      <nav className="mt-4 px-3 flex-1 overflow-y-auto">
-        {navigationGroups.map((group, groupIdx) => (
-          <div key={group.title} className={cn(groupIdx > 0 && "mt-6")}>
-            {/* 分組標題 */}
-            <h3 className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              {group.title}
-            </h3>
-            
-            <ul className="space-y-1">
-              {group.items.map((item) => {
-                const isActive = pathname === item.href ||
-                  (item.href !== '/' && pathname.startsWith(item.href))
-                const showBadge = item.href === '/alerts' && unreadCount > 0
-
-                return (
-                  <li key={item.name}>
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        "flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium",
-                        "transition-all duration-200",
-                        isActive
-                          ? 'bg-blue-50 text-blue-700 shadow-sm'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      )}
-                    >
-                      <div className="flex items-center">
-                        <item.icon className={cn(
-                          "w-5 h-5 mr-3 transition-colors",
-                          isActive ? 'text-blue-600' : 'text-gray-400'
-                        )} />
-                        {item.name}
-                      </div>
-                      
-                      {/* 未讀警報徽章 */}
-                      {showBadge && (
-                        <motion.span
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full"
-                        >
-                          {unreadCount > 99 ? '99+' : unreadCount}
-                        </motion.span>
-                      )}
-                      
-                      {/* Active 指示器 */}
-                      {isActive && (
-                        <ChevronRight className="w-4 h-4 text-blue-400" />
-                      )}
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        ))}
-      </nav>
-
-      {/* Footer */}
-      <div className="p-4 border-t border-gray-200">
-        <div className="text-xs text-gray-500 text-center">
-          <p>GoGoJap 營運系統</p>
-          <p className="mt-1">v1.0.0</p>
-        </div>
-      </div>
-    </>
-  )
-
   return (
     <>
-      {/* 移動端菜單按鈕 */}
-      <MobileMenuButton />
+      {/* Mobile Trigger */}
+      {isMobile && (
+        <div className="fixed top-4 left-4 z-50">
+          <button
+            onClick={() => setIsMobileOpen(!isMobileOpen)}
+            className="p-2 bg-white rounded-lg shadow-lg border border-slate-100 text-slate-600"
+          >
+            {isMobileOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+      )}
 
-      {/* 桌面端側邊欄 */}
-      <div className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 bg-white shadow-lg border-r border-gray-200 z-40">
-        <SidebarContent />
-      </div>
-
-      {/* 移動端側邊欄 */}
+      {/* Sidebar Container */}
       <AnimatePresence>
-        {isMobileOpen && (
-          <>
-            {/* 遮罩層 */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsMobileOpen(false)}
-              className="lg:hidden fixed inset-0 bg-black/50 z-40"
-            />
-            
-            {/* 側邊欄 */}
-            <motion.div
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="lg:hidden fixed inset-y-0 left-0 w-64 bg-white shadow-xl z-50 flex flex-col"
-            >
-              <SidebarContent />
-            </motion.div>
-          </>
+        {(!isMobile || isMobileOpen) && (
+          <motion.aside
+            initial={isMobile ? { x: -300 } : false}
+            animate={{ x: 0 }}
+            exit={isMobile ? { x: -300 } : false}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className={cn(
+              "fixed top-0 left-0 h-screen bg-white/80 backdrop-blur-xl border-r border-white/20 shadow-xl z-40 overflow-y-auto w-64",
+              "flex flex-col"
+            )}
+          >
+            {/* Logo */}
+            <div className="p-6 border-b border-slate-100/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/20">
+                  G
+                </div>
+                <div>
+                  <h1 className="font-bold text-xl text-slate-800 tracking-tight">GoGoJap</h1>
+                  <p className="text-xs text-slate-500 font-medium">AI 營運系統</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <nav className="flex-1 p-4 space-y-6">
+              {navigationGroups.map((group) => (
+                <div key={group.title}>
+                  <h3 className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                    {group.title}
+                  </h3>
+                  <div className="space-y-1">
+                    {group.items.map((item) => {
+                      const isActive = pathname === item.href
+                      const Icon = item.icon
+                      
+                      return (
+                        <Link
+                          key={item.name}
+                          href={item.href}
+                          onClick={() => isMobile && setIsMobileOpen(false)}
+                        >
+                          <div className={cn(
+                            "group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200",
+                            isActive 
+                              ? "bg-blue-50 text-blue-600 shadow-sm" 
+                              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                          )}>
+                            <Icon className={cn(
+                              "mr-3 h-5 w-5 transition-colors",
+                              isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600",
+                              item.highlight && !isActive && "text-amber-500"
+                            )} />
+                            <div className="flex-1">
+                              <span>{item.name}</span>
+                              {item.description && (
+                                <p className="text-[10px] text-slate-400 font-normal line-clamp-1 opacity-0 group-hover:opacity-100 transition-opacity h-0 group-hover:h-auto">
+                                  {item.description}
+                                </p>
+                              )}
+                            </div>
+                            {item.name === '警報中心' && unreadCount > 0 && (
+                              <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-auto animate-pulse">
+                                {unreadCount}
+                              </span>
+                            )}
+                            {isActive && <ChevronRight className="w-4 h-4 text-blue-400 ml-auto" />}
+                          </div>
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </nav>
+
+            {/* User Profile */}
+            <div className="p-4 border-t border-slate-100/50 bg-slate-50/50">
+              <div className="flex items-center gap-3 px-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-slate-200 to-slate-300 border-2 border-white shadow-sm" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-700 truncate">Administrator</p>
+                  <p className="text-xs text-slate-500 truncate">admin@gogojap.com</p>
+                </div>
+                <Link href="/settings">
+                  <Settings className="w-4 h-4 text-slate-400 hover:text-slate-600 cursor-pointer" />
+                </Link>
+              </div>
+            </div>
+          </motion.aside>
         )}
-      </AnimatePresence>
+      </AnimatePres
+ence>
     </>
   )
 }
 
 // =============================================
-// 輔助組件：移動端底部導航
+// 移動端底部導航
 // =============================================
 
 export function MobileBottomNav() {
   const pathname = usePathname()
   
-  const quickNav = [
+  // 只顯示核心功能
+  const mainNavItems = [
     { name: '首頁', href: '/', icon: LayoutDashboard },
+    { name: '訂單', href: '/orders', icon: Truck },
     { name: '警報', href: '/alerts', icon: Bell },
-    { name: '競品', href: '/competitors', icon: Eye },
-    { name: '設定', href: '/settings', icon: Settings },
+    { name: '商品', href: '/products', icon: Package },
   ]
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 safe-area-bottom">
-      <nav className="flex items-center justify-around py-2">
-        {quickNav.map((item) => {
-          const isActive = pathname === item.href ||
-            (item.href !== '/' && pathname.startsWith(item.href))
+    <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-slate-200 px-6 py-2 lg:hidden z-50 safe-area-pb">
+      <div className="flex justify-between items-center">
+        {mainNavItems.map((item) => {
+          const isActive = pathname === item.href
+          const Icon = item.icon
           
           return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                "flex flex-col items-center py-1 px-3 rounded-lg transition-colors",
-                isActive ? 'text-blue-600' : 'text-gray-500'
-              )}
-            >
-              <item.icon className="w-6 h-6" />
-              <span className="text-xs mt-1 font-medium">{item.name}</span>
+            <Link key={item.name} href={item.href}>
+              <div className="flex flex-col items-center p-2">
+                <div className={cn(
+                  "p-1.5 rounded-lg transition-colors",
+                  isActive ? "bg-blue-50 text-blue-600" : "text-slate-400"
+                )}>
+                  <Icon size={24} />
+                </div>
+                <span className={cn(
+                  "text-[10px] font-medium mt-1",
+                  isActive ? "text-blue-600" : "text-slate-400"
+                )}>
+                  {item.name}
+                </span>
+              </div>
             </Link>
           )
         })}
-      </nav>
+      </div>
     </div>
   )
 }
