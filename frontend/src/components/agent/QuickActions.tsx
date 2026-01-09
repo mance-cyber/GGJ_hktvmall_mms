@@ -113,7 +113,7 @@ export function QuickActions({ onAction, disabled }: QuickActionsProps) {
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-3 flex flex-wrap gap-2">
+            <div className="px-4 pb-3 flex gap-2 overflow-x-auto scrollbar-hide sm:flex-wrap">
               {QUICK_ACTIONS.map((action) => (
                 <motion.button
                   key={action.id}
@@ -123,7 +123,7 @@ export function QuickActions({ onAction, disabled }: QuickActionsProps) {
                   disabled={disabled}
                   className={cn(
                     "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium",
-                    "text-white shadow-sm transition-all",
+                    "text-white shadow-sm transition-all whitespace-nowrap flex-shrink-0",
                     "disabled:opacity-50 disabled:cursor-not-allowed",
                     `bg-gradient-to-r ${action.color}`,
                     "hover:shadow-md"

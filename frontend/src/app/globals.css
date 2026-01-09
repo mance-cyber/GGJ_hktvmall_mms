@@ -273,6 +273,16 @@
   background: rgba(168, 85, 247, 0.4);
 }
 
+/* 隱藏滾動條 */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
+}
+
 /* 安全區域（iOS） */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom);

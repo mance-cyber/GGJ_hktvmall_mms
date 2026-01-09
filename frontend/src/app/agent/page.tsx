@@ -49,6 +49,7 @@ import {
 } from 'recharts'
 import { ConversationList } from '@/components/agent/ConversationList'
 import { QuickActions } from '@/components/agent/QuickActions'
+import { toast } from '@/components/ui/use-toast'
 
 // =============================================
 // Types
@@ -379,6 +380,7 @@ export default function AgentPage() {
   const [selections, setSelections] = useState<Record<string, string | string[]>>({})
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   // 獲取建議
   const { data: suggestionsData } = useQuery({
@@ -457,6 +459,14 @@ export default function AgentPage() {
       } else {
         setPendingClarification(null)
       }
+    },
+    onError: (error: Error) => {
+      setMessages(prev => prev.filter(m => m.type !== 'thinking'))
+      toast({
+        variant: 'destructive',
+        title: '哎呀，出錯啦！',
+        description: error.message || '無法處理你嘅請求，請稍後再試',
+      })
     }
   })
 
@@ -488,6 +498,14 @@ export default function AgentPage() {
       } else {
         setPendingClarification(null)
       }
+    },
+    onError: (error: Error) => {
+      setMessages(prev => prev.filter(m => m.type !== 'thinking'))
+      toast({
+        variant: 'destructive',
+        title: '哎呀，出錯啦！',
+        description: error.message || '無法處理你嘅選擇，請稍後再試',
+      })
     }
   })
 
@@ -570,12 +588,44 @@ export default function AgentPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // 鍵盤快捷鍵
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+      const modKey = isMac ? e.metaKey : e.ctrlKey
+
+      // Cmd/Ctrl + K: 新對話
+      if (modKey && e.key === 'k') {
+        e.preventDefault()
+        handleNewConversation()
+        inputRef.current?.focus()
+      }
+
+      // Cmd/Ctrl + /: 聚焦輸入框
+      if (modKey && e.key === '/') {
+        e.preventDefault()
+        inputRef.current?.focus()
+      }
+
+      // Escape: 取消焦點
+      if (e.key === 'Escape') {
+        inputRef.current?.blur()
+        setIsSidebarOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
   const handleNewConversation = () => {
     setMessages([])
     setConversationId(null)
     setPendingClarification(null)
     setSelections({})
     setIsSidebarOpen(false)
+    // 自動聚焦輸入框
+    setTimeout(() => inputRef.current?.focus(), 100)
   }
 
   const isLoading = chatMutation.isPending || clarifyMutation.isPending
@@ -652,9 +702,24 @@ export default function AgentPage() {
               <h2 className="text-xl font-semibold text-slate-700 mb-2">
                 Hey！我係 Jap仔 🙋‍♂️
               </h2>
-              <p className="text-slate-500 mb-6 max-w-md">
+              <p className="text-slate-500 mb-4 max-w-md">
                 你嘅日本產品專家！我可以幫你分析產品數據、比較競爭對手價格、生成市場報告，有咩問題隨時話我知～
               </p>
+              {/* 鍵盤快捷鍵提示 - 只在桌面顯示 */}
+              <div className="hidden sm:flex items-center gap-4 text-xs text-slate-400 mb-6">
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">⌘K</kbd>
+                  <span>新對話</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">⌘/</kbd>
+                  <span>聚焦輸入</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">Esc</kbd>
+                  <span>取消</span>
+                </span>
+              </div>
               
               {/* Suggestions */}
               {suggestionsData?.suggestions && suggestionsData.suggestions.length > 0 && (
@@ -851,10 +916,11 @@ export default function AgentPage() {
           <div className="max-w-3xl mx-auto">
             <div className="flex gap-2">
               <Input
+                ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                placeholder="同 Jap仔 傾下計～"
+                placeholder="同 Jap仔 傾下計..."
                 disabled={isLoading || !!pendingClarification}
                 className="flex-1"
               />
