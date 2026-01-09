@@ -21,6 +21,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from app.models.database import async_session_maker
 from app.models.product import Product
 from app.models.competitor import Competitor, CompetitorProduct, PriceSnapshot
+from app.models.pricing import PriceProposal
+from app.models.content import AIContent
 
 
 # =============================================
