@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     google_client_id: str = Field(default="", alias="GOOGLE_CLIENT_ID")
     # 允許登入的 Google 郵箱白名單（逗號分隔，留空表示允許所有）
     google_allowed_emails: str = Field(default="", alias="GOOGLE_ALLOWED_EMAILS")
+    # 角色映射（逗號分隔）
+    google_admin_emails: str = Field(default="", alias="GOOGLE_ADMIN_EMAILS")
+    google_operator_emails: str = Field(default="", alias="GOOGLE_OPERATOR_EMAILS")
 
     # Cloudflare R2
     r2_access_key: str = Field(default="", alias="R2_ACCESS_KEY")

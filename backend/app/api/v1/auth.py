@@ -97,12 +97,24 @@ async def login_google(
         # Generate a random password since they use Google
         random_password = secrets.token_urlsafe(32)
         hashed_password = security.get_password_hash(random_password)
-        
+
+        # 根據郵箱分配角色
+        email_lower = email.lower()
+        admin_emails = [e.strip().lower() for e in settings.google_admin_emails.split(",") if e.strip()]
+        operator_emails = [e.strip().lower() for e in settings.google_operator_emails.split(",") if e.strip()]
+
+        if email_lower in admin_emails:
+            role = UserRole.ADMIN
+        elif email_lower in operator_emails:
+            role = UserRole.OPERATOR
+        else:
+            role = UserRole.VIEWER
+
         user = User(
             email=email,
             hashed_password=hashed_password,
             full_name=id_info.get("name"),
-            role=UserRole.VIEWER, # Default role
+            role=role,
             is_active=True,
         )
         db.add(user)

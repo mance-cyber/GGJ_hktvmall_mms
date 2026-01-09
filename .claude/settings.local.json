@@ -116,7 +116,11 @@
       "Bash(python -m py_compile:*)",
       "Bash(psql:*)",
       "Bash(uvicorn:*)",
-      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: 實現 Google OAuth 登入與用戶認證系統\n\n- 新增 Google OAuth 登入功能（使用 @react-oauth/google）\n- 實現 JWT 認證機制（後端 security.py + deps.py）\n- 新增用戶模型與 RBAC 角色管理（admin/operator/viewer）\n- 新增 Google 帳戶白名單限制功能\n- 新增 AppShell 組件，登入頁面不顯示側邊欄\n- 未登入用戶自動跳轉到登入頁面\n- 新增 users 資料表遷移腳本\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: 實現 Google OAuth 登入與用戶認證系統\n\n- 新增 Google OAuth 登入功能（使用 @react-oauth/google）\n- 實現 JWT 認證機制（後端 security.py + deps.py）\n- 新增用戶模型與 RBAC 角色管理（admin/operator/viewer）\n- 新增 Google 帳戶白名單限制功能\n- 新增 AppShell 組件，登入頁面不顯示側邊欄\n- 未登入用戶自動跳轉到登入頁面\n- 新增 users 資料表遷移腳本\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: 添加 email-validator 依賴修復生產環境錯誤\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: 添加 jwt-decode 依賴修復前端構建錯誤\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: 新增角色映射功能，根據郵箱自動分配 admin/operator 角色\n\n- 新增 GOOGLE_ADMIN_EMAILS 環境變數\n- 新增 GOOGLE_OPERATOR_EMAILS 環境變數\n- 首次 Google 登入時根據郵箱自動分配角色\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }
