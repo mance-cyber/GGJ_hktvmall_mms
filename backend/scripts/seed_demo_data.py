@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.models.database import async_session_factory
+from app.models.database import async_session_maker
 from app.models.product import Product
 from app.models.competitor import Competitor, CompetitorProduct, PriceSnapshot
 
@@ -198,7 +198,7 @@ DEMO_COMPETITORS = [
 
 async def seed_demo_data():
     """插入測試數據"""
-    async with async_session_factory() as db:
+    async with async_session_maker() as db:
         print("=" * 50)
         print("開始插入測試數據...")
         print("=" * 50)
@@ -309,7 +309,7 @@ async def seed_demo_data():
 
 async def clean_demo_data():
     """清理測試數據"""
-    async with async_session_factory() as db:
+    async with async_session_maker() as db:
         print("🗑️  清理所有測試數據...")
 
         # 先刪除有外鍵依賴的表
