@@ -671,43 +671,54 @@ export default function AgentPage() {
                    message.suggestions.length > 0 && (
                     <div className="ml-11 mt-3">
                       <div className="flex flex-wrap gap-2">
-                        {message.suggestions.map((suggestion, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={() => {
-                              const userMessage: Message = {
-                                id: Date.now().toString(),
-                                role: 'user',
-                                type: 'message',
-                                content: suggestion.text,
-                                timestamp: new Date()
-                              }
-                              setMessages(prev => [...prev, userMessage])
-                              const thinkingMessage: Message = {
-                                id: 'thinking',
-                                role: 'assistant',
-                                type: 'thinking',
-                                content: '等我睇睇...',
-                                timestamp: new Date()
-                              }
-                              setMessages(prev => [...prev, thinkingMessage])
-                              chatMutation.mutate(suggestion.text)
-                            }}
-                            disabled={isLoading}
-                            className={cn(
-                              "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm",
-                              "bg-gradient-to-r from-purple-50 to-pink-50",
-                              "border border-purple-200 hover:border-purple-400",
-                              "text-purple-700 hover:text-purple-900",
-                              "transition-all hover:shadow-sm",
-                              "disabled:opacity-50 disabled:cursor-not-allowed"
-                            )}
-                          >
-                            <span>{suggestion.icon}</span>
-                            <span>{suggestion.text}</span>
-                          </button>
-                        ))}
+                        {message.suggestions.map((suggestion, i) => {
+                          // 檢查是否為「開新話題」按鈕
+                          const isNewTopicButton = suggestion.text.includes('問其他嘢')
+
+                          return (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => {
+                                if (isNewTopicButton) {
+                                  // 開新對話
+                                  handleNewConversation()
+                                } else {
+                                  // 延伸當前對話
+                                  const userMessage: Message = {
+                                    id: Date.now().toString(),
+                                    role: 'user',
+                                    type: 'message',
+                                    content: suggestion.text,
+                                    timestamp: new Date()
+                                  }
+                                  setMessages(prev => [...prev, userMessage])
+                                  const thinkingMessage: Message = {
+                                    id: 'thinking',
+                                    role: 'assistant',
+                                    type: 'thinking',
+                                    content: '等我睇睇...',
+                                    timestamp: new Date()
+                                  }
+                                  setMessages(prev => [...prev, thinkingMessage])
+                                  chatMutation.mutate(suggestion.text)
+                                }
+                              }}
+                              disabled={isLoading}
+                              className={cn(
+                                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm",
+                                "transition-all hover:shadow-sm",
+                                "disabled:opacity-50 disabled:cursor-not-allowed",
+                                isNewTopicButton
+                                  ? "bg-slate-100 border border-slate-300 hover:border-slate-400 text-slate-600 hover:text-slate-800"
+                                  : "bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 hover:border-purple-400 text-purple-700 hover:text-purple-900"
+                              )}
+                            >
+                              <span>{suggestion.icon}</span>
+                              <span>{suggestion.text}</span>
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
                   )}

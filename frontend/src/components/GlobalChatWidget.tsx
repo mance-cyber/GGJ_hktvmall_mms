@@ -334,7 +334,8 @@ function MiniChatBox({
   onFeedback,
   attachments,
   onAttach,
-  onRemoveAttachment
+  onRemoveAttachment,
+  onNewConversation
 }: {
   messages: ChatMessage[]
   input: string
@@ -351,6 +352,7 @@ function MiniChatBox({
   attachments: FileAttachment[]
   onAttach: (files: FileList) => void
   onRemoveAttachment: (id: string) => void
+  onNewConversation: () => void
 }) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -519,17 +521,31 @@ function MiniChatBox({
                 {/* Follow-up Suggestions */}
                 {msg.role === 'assistant' && msg.suggestions && msg.suggestions.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
-                    {msg.suggestions.map((suggestion, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => setInput(suggestion.text)}
-                        className="flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-purple-50 border border-purple-200 text-purple-700 hover:bg-purple-100 hover:border-purple-300 transition-colors"
-                      >
-                        <span>{suggestion.icon}</span>
-                        <span>{suggestion.text}</span>
-                      </button>
-                    ))}
+                    {msg.suggestions.map((suggestion, i) => {
+                      const isNewTopicButton = suggestion.text.includes('問其他嘢')
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => {
+                            if (isNewTopicButton) {
+                              onNewConversation()
+                            } else {
+                              setInput(suggestion.text)
+                            }
+                          }}
+                          className={cn(
+                            "flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-colors",
+                            isNewTopicButton
+                              ? "bg-slate-100 border border-slate-300 text-slate-600 hover:bg-slate-200"
+                              : "bg-purple-50 border border-purple-200 text-purple-700 hover:bg-purple-100 hover:border-purple-300"
+                          )}
+                        >
+                          <span>{suggestion.icon}</span>
+                          <span>{suggestion.text}</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 )}
               </div>
@@ -706,6 +722,13 @@ export function GlobalChatWidget() {
     setIsOpen(false)
   }
 
+  // 開新對話
+  const handleNewConversation = () => {
+    setMessages([])
+    setConversationId(null)
+    setInput('')
+  }
+
   // 訊息反饋
   const handleFeedback = (messageId: string, type: 'like' | 'dislike') => {
     setMessages(prev => prev.map(msg => {
@@ -779,6 +802,7 @@ export function GlobalChatWidget() {
             attachments={attachments}
             onAttach={handleAttach}
             onRemoveAttachment={handleRemoveAttachment}
+            onNewConversation={handleNewConversation}
           />
         )}
       </AnimatePresence>

@@ -143,41 +143,52 @@ export default function MarketResponsePage() {
 
       {/* Feature Introduction Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <FeatureCard 
-          icon={Eye}
-          title="競品監測"
-          description="自動追蹤 HKTVmall 競爭對手的價格變動，當價格波動超過閾值時即時通知。"
-          color="blue"
-        />
-        <FeatureCard 
-          icon={Target}
-          title="SKU 自動配對"
-          description="AI 智能配對您的 SKU 與競品商品，自動識別相同或相似產品。"
-          color="purple"
-        />
-        <FeatureCard 
-          icon={TrendingUp}
-          title="價格趨勢分析"
-          description="追蹤歷史價格走勢，識別最佳調價時機與市場週期規律。"
-          color="green"
-        />
-        <FeatureCard 
-          icon={Bell}
-          title="智能警報"
-          description="自訂價格警報規則，競品降價、缺貨、新品上架即時推送通知。"
-          color="orange"
-        />
-        <FeatureCard 
-          icon={Sparkles}
-          title="AI 文案生成"
-          description="根據商品特性與競品描述，AI 自動生成優化的商品標題與描述。"
-          color="pink"
-        />
-        <FeatureCard 
+        <Link href="/competitors">
+          <FeatureCard
+            icon={Eye}
+            title="競品監測"
+            description="自動追蹤 HKTVmall 競爭對手的價格變動，當價格波動超過閾值時即時通知。"
+            color="blue"
+          />
+        </Link>
+        <Link href="/products">
+          <FeatureCard
+            icon={Target}
+            title="SKU 自動配對"
+            description="AI 智能配對您的 SKU 與競品商品，自動識別相同或相似產品。"
+            color="purple"
+          />
+        </Link>
+        <Link href="/ai-analysis">
+          <FeatureCard
+            icon={TrendingUp}
+            title="價格趨勢分析"
+            description="追蹤歷史價格走勢，識別最佳調價時機與市場週期規律。"
+            color="green"
+          />
+        </Link>
+        <Link href="/alerts">
+          <FeatureCard
+            icon={Bell}
+            title="智能警報"
+            description="自訂價格警報規則，競品降價、缺貨、新品上架即時推送通知。"
+            color="orange"
+          />
+        </Link>
+        <Link href="/agent">
+          <FeatureCard
+            icon={Sparkles}
+            title="AI 文案生成"
+            description="根據商品特性與競品描述，AI 自動生成優化的商品標題與描述。"
+            color="pink"
+          />
+        </Link>
+        <FeatureCard
           icon={FileBarChart}
           title="報表匯出"
           description="一鍵匯出市場分析報告，支援 Excel、PDF 格式，方便團隊分享。"
           color="cyan"
+          onClick={handleExportReport}
         />
       </div>
 
@@ -231,34 +242,42 @@ export default function MarketResponsePage() {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="SKU 總數" 
-          value={stats?.total_skus || 0} 
-          icon={Package}
-          color="blue"
-          trend="GogoJap 商品庫"
-        />
-        <StatCard 
-          title="已監測競品" 
-          value={stats?.products_with_competitors || 0} 
-          icon={Layers}
-          color="purple"
-          trend="自動配對中"
-        />
-        <StatCard 
-          title="當季商品" 
-          value={stats?.seasonal_products || 0} 
-          icon={ThermometerSun}
-          color="orange"
-          trend="季節限定"
-        />
-        <StatCard 
-          title="待處理警報" 
-          value={stats?.unread_alerts || 0} 
-          icon={Zap}
-          color="red"
-          trend="需要關注"
-        />
+        <Link href="/products">
+          <StatCard
+            title="SKU 總數"
+            value={stats?.total_skus || 0}
+            icon={Package}
+            color="blue"
+            trend="GogoJap 商品庫"
+          />
+        </Link>
+        <Link href="/competitors">
+          <StatCard
+            title="已監測競品"
+            value={stats?.products_with_competitors || 0}
+            icon={Layers}
+            color="purple"
+            trend="自動配對中"
+          />
+        </Link>
+        <Link href="/products">
+          <StatCard
+            title="當季商品"
+            value={stats?.seasonal_products || 0}
+            icon={ThermometerSun}
+            color="orange"
+            trend="季節限定"
+          />
+        </Link>
+        <Link href="/alerts">
+          <StatCard
+            title="待處理警報"
+            value={stats?.unread_alerts || 0}
+            icon={Zap}
+            color="red"
+            trend="需要關注"
+          />
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -278,7 +297,9 @@ export default function MarketResponsePage() {
             {categoriesLoading ? (
               <div className="col-span-2 py-12 flex justify-center"><Loader2 className="animate-spin" /></div>
             ) : categoryData.map((cat, idx) => (
-              <CategoryCard key={idx} category={cat} index={idx} />
+              <Link key={idx} href="/categories">
+                <CategoryCard category={cat} index={idx} />
+              </Link>
             ))}
           </div>
         </div>
@@ -377,7 +398,7 @@ function StatCard({
 
 function CategoryCard({ category, index }: { category: CategoryData, index: number }) {
   return (
-    <div className="flex items-center p-4 rounded-xl bg-slate-50/50 border border-slate-100 hover:border-blue-200 transition-all">
+    <div className="flex items-center p-4 rounded-xl bg-slate-50/50 border border-slate-100 hover:border-blue-200 hover:bg-blue-50/50 transition-all cursor-pointer">
       <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm text-lg font-bold text-slate-300 mr-4">
         {index + 1}
       </div>
@@ -403,16 +424,18 @@ function CategoryCard({ category, index }: { category: CategoryData, index: numb
 // 功能介紹卡片組件
 // =============================================
 
-function FeatureCard({ 
-  icon: Icon, 
-  title, 
-  description, 
-  color 
-}: { 
+function FeatureCard({
+  icon: Icon,
+  title,
+  description,
+  color,
+  onClick
+}: {
   icon: any
   title: string
   description: string
   color: 'blue' | 'purple' | 'green' | 'orange' | 'pink' | 'cyan'
+  onClick?: () => void
 }) {
   const colorMap = {
     blue: {
@@ -450,9 +473,10 @@ function FeatureCard({
   const colors = colorMap[color]
 
   return (
-    <motion.div 
+    <motion.div
       whileHover={{ y: -2, scale: 1.01 }}
       transition={{ duration: 0.2 }}
+      onClick={onClick}
       className={cn(
         "p-4 rounded-xl border transition-all cursor-pointer",
         colors.bg,
