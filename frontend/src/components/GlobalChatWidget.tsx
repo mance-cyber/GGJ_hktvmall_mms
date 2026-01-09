@@ -39,6 +39,11 @@ import Link from 'next/link'
 // Types
 // =============================================
 
+interface FollowUpSuggestion {
+  text: string
+  icon: string
+}
+
 interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
@@ -46,6 +51,7 @@ interface ChatMessage {
   timestamp: Date
   feedback?: 'like' | 'dislike' | null
   attachments?: FileAttachment[]
+  suggestions?: FollowUpSuggestion[]
 }
 
 interface FileAttachment {

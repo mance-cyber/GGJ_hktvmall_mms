@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { api, AgentChatResponse, AgentSlotOption } from '@/lib/api'
+import { api, AgentChatResponse, AgentSlotOption, AgentFollowUpSuggestion } from '@/lib/api'
 import { motion, AnimatePresence } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -61,6 +61,7 @@ interface Message {
   content: string
   options?: AgentSlotOption[]
   charts?: any[]
+  suggestions?: AgentFollowUpSuggestion[]  // 後續建議按鈕
   timestamp: Date
 }
 
@@ -396,11 +397,12 @@ export default function AgentPage() {
         content: response.content,
         options: response.options,
         charts: response.charts,
+        suggestions: response.suggestions,
         timestamp: new Date()
       }
-      
+
       setMessages(prev => [...prev, newMessage])
-      
+
       if (response.type === 'clarification') {
         setPendingClarification(newMessage)
         setSelections({})
@@ -418,7 +420,7 @@ export default function AgentPage() {
     }),
     onSuccess: (response) => {
       setMessages(prev => prev.filter(m => m.type !== 'thinking'))
-      
+
       const newMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
@@ -426,11 +428,12 @@ export default function AgentPage() {
         content: response.content,
         options: response.options,
         charts: response.charts,
+        suggestions: response.suggestions,
         timestamp: new Date()
       }
-      
+
       setMessages(prev => [...prev, newMessage])
-      
+
       if (response.type === 'clarification') {
         setPendingClarification(newMessage)
         setSelections({})
@@ -647,8 +650,8 @@ export default function AgentPage() {
                   )}
                   
                   {/* Clarification Card */}
-                  {message.type === 'clarification' && 
-                   message.options && 
+                  {message.type === 'clarification' &&
+                   message.options &&
                    pendingClarification?.id === message.id && (
                     <div className="ml-11 mt-3">
                       <ClarificationCard
@@ -658,6 +661,54 @@ export default function AgentPage() {
                         onSubmit={handleClarifySubmit}
                         isLoading={isLoading}
                       />
+                    </div>
+                  )}
+
+                  {/* Follow-up Suggestions */}
+                  {message.role === 'assistant' &&
+                   message.type !== 'thinking' &&
+                   message.suggestions &&
+                   message.suggestions.length > 0 && (
+                    <div className="ml-11 mt-3">
+                      <div className="flex flex-wrap gap-2">
+                        {message.suggestions.map((suggestion, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => {
+                              const userMessage: Message = {
+                                id: Date.now().toString(),
+                                role: 'user',
+                                type: 'message',
+                                content: suggestion.text,
+                                timestamp: new Date()
+                              }
+                              setMessages(prev => [...prev, userMessage])
+                              const thinkingMessage: Message = {
+                                id: 'thinking',
+                                role: 'assistant',
+                                type: 'thinking',
+                                content: '等我睇睇...',
+                                timestamp: new Date()
+                              }
+                              setMessages(prev => [...prev, thinkingMessage])
+                              chatMutation.mutate(suggestion.text)
+                            }}
+                            disabled={isLoading}
+                            className={cn(
+                              "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm",
+                              "bg-gradient-to-r from-purple-50 to-pink-50",
+                              "border border-purple-200 hover:border-purple-400",
+                              "text-purple-700 hover:text-purple-900",
+                              "transition-all hover:shadow-sm",
+                              "disabled:opacity-50 disabled:cursor-not-allowed"
+                            )}
+                          >
+                            <span>{suggestion.icon}</span>
+                            <span>{suggestion.text}</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

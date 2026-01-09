@@ -948,6 +948,11 @@ export interface AgentChartData {
   }
 }
 
+export interface AgentFollowUpSuggestion {
+  text: string
+  icon: string
+}
+
 export interface AgentChatResponse {
   type: 'thinking' | 'message' | 'clarification' | 'report' | 'error'
   content: string
@@ -962,6 +967,7 @@ export interface AgentChatResponse {
     generated_at: string
   }
   charts?: AgentChartData[]
+  suggestions?: AgentFollowUpSuggestion[]  // 後續建議按鈕
 }
 
 export interface AgentConversationState {

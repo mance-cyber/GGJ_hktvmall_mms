@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 import {
   Search,
   BarChart3,
@@ -22,23 +23,18 @@ import {
   Sparkles,
   Bell,
   FileBarChart,
-  Target
+  Target,
+  Download
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/components/ui/use-toast'
 
 // =============================================
 // Interfaces
 // =============================================
-
-interface MrcStats {
-  total_skus: number
-  products_with_competitors: number
-  seasonal_products: number
-  unread_alerts: number
-}
 
 interface CategoryData {
   name: string
@@ -46,64 +42,80 @@ interface CategoryData {
   percentage: number
 }
 
-interface SeasonalProduct {
-  id: string
-  name: string
-  season: string
-  status: string
-  price: number
-  image_url?: string
-}
-
-interface SearchResult {
-  id: string
-  name: string
-  sku: string
-  category: string
-  price: number
-  stock_status: string
-}
-
 // =============================================
 // Page Component
 // =============================================
 
 export default function MarketResponsePage() {
+  const { toast } = useToast()
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
 
   // Handle search debounce
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
-    // Simple debounce logic could be added here, currently just setting state
-    // In a real app, use a debounce hook
     const timeoutId = setTimeout(() => {
       setDebouncedQuery(e.target.value)
     }, 500)
     return () => clearTimeout(timeoutId)
   }
 
-  // Fetch Data
-  const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ['mrc-stats'],
-    queryFn: () => api.getMrcStatsOverview(),
+  // 匯出報告功能
+  const handleExportReport = () => {
+    toast({
+      title: '功能開發中',
+      description: '報告匯出功能即將推出，敬請期待！',
+    })
+  }
+
+  // 使用現有 API 獲取數據
+  const { data: products } = useQuery({
+    queryKey: ['products-for-mrc'],
+    queryFn: () => api.getProducts(1, 100),
+  })
+
+  const { data: competitors } = useQuery({
+    queryKey: ['competitors-for-mrc'],
+    queryFn: () => api.getCompetitors(),
+  })
+
+  const { data: alerts } = useQuery({
+    queryKey: ['alerts-for-mrc'],
+    queryFn: () => api.getAlerts(false, undefined, 10),
   })
 
   const { data: categories, isLoading: categoriesLoading } = useQuery({
-    queryKey: ['mrc-categories'],
-    queryFn: () => api.getMrcCategories(),
+    queryKey: ['categories-for-mrc'],
+    queryFn: () => api.getCategories(1, 20),
   })
 
-  const { data: seasonalProducts, isLoading: seasonalLoading } = useQuery({
-    queryKey: ['mrc-seasonal'],
-    queryFn: () => api.getMrcSeasonalProducts(),
-  })
+  // 計算統計數據
+  const stats = {
+    total_skus: products?.total || 0,
+    products_with_competitors: competitors?.data?.reduce((sum, c) => sum + c.product_count, 0) || 0,
+    seasonal_products: products?.data?.filter((p) => p.status === 'active').length || 0,
+    unread_alerts: alerts?.unread_count || 0,
+  }
 
-  const { data: searchResults, isLoading: searchLoading } = useQuery({
-    queryKey: ['mrc-search', debouncedQuery],
-    queryFn: () => api.searchMrcProducts(debouncedQuery),
-    enabled: debouncedQuery.length > 0,
-  })
+  // 搜索結果使用現有商品數據過濾
+  const searchResults = debouncedQuery.length > 0
+    ? products?.data?.filter((p) =>
+        p.name?.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+        p.sku?.toLowerCase().includes(debouncedQuery.toLowerCase())
+      ) || []
+    : []
+  const searchLoading = false
+
+  // 季節性商品（使用現有商品數據）
+  const seasonalProducts = products?.data?.slice(0, 5) || []
+  const seasonalLoading = !products
+
+  // 分類數據轉換
+  const categoryData = categories?.items?.map((cat, idx) => ({
+    name: cat.name,
+    count: cat.total_products,
+    percentage: Math.min(100, (cat.total_products / (products?.total || 1)) * 100 * 5),
+  })) || []
 
   return (
     <div className="space-y-8 animate-fade-in-up p-6">
@@ -122,7 +134,8 @@ export default function MarketResponsePage() {
           <Badge variant="outline" className="px-3 py-1 bg-blue-50 text-blue-700 border-blue-200">
             <Zap className="w-3 h-3 mr-1 fill-blue-700" /> 即時數據
           </Badge>
-          <Button variant="outline" className="glass-card">
+          <Button variant="outline" className="glass-card" onClick={handleExportReport}>
+            <Download className="w-4 h-4 mr-2" />
             匯出報告
           </Button>
         </div>
@@ -186,23 +199,25 @@ export default function MarketResponsePage() {
           <div className="absolute top-full left-0 right-0 mt-2 bg-white/90 backdrop-blur-xl rounded-xl border border-slate-200 shadow-xl z-50 overflow-hidden max-h-[400px] overflow-y-auto">
             {searchResults.length > 0 ? (
               <div className="divide-y divide-slate-100">
-                {searchResults.map((product: SearchResult) => (
-                  <div key={product.id} className="p-4 hover:bg-blue-50/50 transition-colors flex items-center justify-between cursor-pointer group">
-                    <div>
-                      <h4 className="font-medium text-slate-800 group-hover:text-primary transition-colors">{product.name}</h4>
-                      <p className="text-xs text-slate-500 flex items-center gap-2 mt-1">
-                        <Badge variant="secondary" className="text-[10px] h-5">{product.sku}</Badge>
-                        <span>{product.category}</span>
-                      </p>
+                {searchResults.map((product) => (
+                  <Link key={product.id} href={`/products`}>
+                    <div className="p-4 hover:bg-blue-50/50 transition-colors flex items-center justify-between cursor-pointer group">
+                      <div>
+                        <h4 className="font-medium text-slate-800 group-hover:text-primary transition-colors">{product.name}</h4>
+                        <p className="text-xs text-slate-500 flex items-center gap-2 mt-1">
+                          <Badge variant="secondary" className="text-[10px] h-5">{product.sku}</Badge>
+                          <span>{product.category || '未分類'}</span>
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-slate-800">${Number(product.price || 0).toFixed(2)}</p>
+                        <p className={cn(
+                          "text-xs",
+                          product.status === 'active' ? "text-green-600" : "text-red-500"
+                        )}>{product.status === 'active' ? '有貨' : '缺貨'}</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-slate-800">${product.price}</p>
-                      <p className={cn(
-                        "text-xs",
-                        product.stock_status === 'in_stock' ? "text-green-600" : "text-red-500"
-                      )}>{product.stock_status === 'in_stock' ? '有貨' : product.stock_status === 'out_of_stock' ? '缺貨' : product.stock_status}</p>
-                    </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (
@@ -254,13 +269,15 @@ export default function MarketResponsePage() {
               <BarChart3 className="w-5 h-5 text-primary" />
               分類分佈
             </h2>
-            <Button variant="ghost" size="sm">查看全部</Button>
+            <Link href="/categories">
+              <Button variant="ghost" size="sm">查看全部</Button>
+            </Link>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {categoriesLoading ? (
               <div className="col-span-2 py-12 flex justify-center"><Loader2 className="animate-spin" /></div>
-            ) : categories?.map((cat: CategoryData, idx: number) => (
+            ) : categoryData.map((cat, idx) => (
               <CategoryCard key={idx} category={cat} index={idx} />
             ))}
           </div>
@@ -271,39 +288,42 @@ export default function MarketResponsePage() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
               <ThermometerSun className="w-5 h-5 text-orange-500" />
-              當季精選
+              熱門商品
             </h2>
-            <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-200 border-none">當季</Badge>
+            <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-200 border-none">精選</Badge>
           </div>
 
           <div className="space-y-4">
             {seasonalLoading ? (
               <div className="py-12 flex justify-center"><Loader2 className="animate-spin" /></div>
-            ) : seasonalProducts?.slice(0, 5).map((product: SeasonalProduct) => (
-              <div key={product.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/50 hover:bg-white/80 transition-all cursor-pointer group border border-transparent hover:border-orange-100">
-                <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 relative">
-                  {/* Placeholder for image */}
-                  <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-                    <Package className="w-6 h-6" />
+            ) : seasonalProducts.map((product) => (
+              <Link key={product.id} href="/products">
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-white/50 hover:bg-white/80 transition-all cursor-pointer group border border-transparent hover:border-orange-100">
+                  <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 relative">
+                    <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                      <Package className="w-6 h-6" />
+                    </div>
                   </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-slate-800 truncate group-hover:text-orange-600 transition-colors">
-                    {product.name}
-                  </h4>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-xs text-muted-foreground">{product.season}</span>
-                    <span className="font-bold text-sm">${product.price}</span>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-slate-800 truncate group-hover:text-orange-600 transition-colors">
+                      {product.name}
+                    </h4>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-xs text-muted-foreground">{product.status === 'active' ? '有貨' : '缺貨'}</span>
+                      <span className="font-bold text-sm">${Number(product.price || 0).toFixed(0)}</span>
+                    </div>
                   </div>
+                  <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-orange-500 transition-colors" />
                 </div>
-                <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-orange-500 transition-colors" />
-              </div>
+              </Link>
             ))}
           </div>
           
-          <Button className="w-full mt-4 bg-white hover:bg-orange-50 text-orange-600 border border-orange-200 shadow-sm" variant="outline">
-            查看所有當季商品
-          </Button>
+          <Link href="/products">
+            <Button className="w-full mt-4 bg-white hover:bg-orange-50 text-orange-600 border border-orange-200 shadow-sm" variant="outline">
+              查看所有商品
+            </Button>
+          </Link>
         </div>
       </div>
     </div>

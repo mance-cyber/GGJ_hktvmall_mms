@@ -26,6 +26,7 @@ from .persona import (
     get_thinking,
     get_success,
     get_error,
+    get_follow_up_suggestions,
 )
 
 
@@ -118,8 +119,9 @@ class AgentResponse:
     options: Optional[List[Dict]] = None
     report: Optional[Dict] = None
     charts: Optional[List[Dict]] = None
+    suggestions: Optional[List[Dict]] = None  # 後續建議按鈕
     state: Optional[AgentState] = None
-    
+
     def to_dict(self) -> Dict[str, Any]:
         result = {
             "type": self.type.value,
@@ -132,6 +134,8 @@ class AgentResponse:
             result["report"] = self.report
         if self.charts:
             result["charts"] = self.charts
+        if self.suggestions:
+            result["suggestions"] = self.suggestions
         return result
 
 
@@ -296,21 +300,37 @@ class AgentService:
         if intent_result.intent == IntentType.GREETING:
             response_content = self._get_greeting_response()
             await self._save_message(conversation_id, "assistant", response_content, "message")
+            # 問候後的建議
+            greeting_suggestions = [
+                {"text": "今日訂單點樣？", "icon": "📦"},
+                {"text": "有咩警報？", "icon": "🔔"},
+                {"text": "本月營收幾多？", "icon": "💰"},
+                {"text": "分析和牛價格", "icon": "🥩"},
+            ]
             yield AgentResponse(
                 type=ResponseType.MESSAGE,
                 content=response_content,
                 conversation_id=conversation_id,
+                suggestions=greeting_suggestions,
                 state=state
             )
             return
-        
+
         if intent_result.intent == IntentType.HELP:
             response_content = self._get_help_response()
             await self._save_message(conversation_id, "assistant", response_content, "message")
+            # 幫助後的建議
+            help_suggestions = [
+                {"text": "睇今日訂單", "icon": "📦"},
+                {"text": "查警報", "icon": "🚨"},
+                {"text": "分析價格", "icon": "📊"},
+                {"text": "比較競爭對手", "icon": "⚔️"},
+            ]
             yield AgentResponse(
                 type=ResponseType.MESSAGE,
                 content=response_content,
                 conversation_id=conversation_id,
+                suggestions=help_suggestions,
                 state=state
             )
             return
@@ -326,10 +346,18 @@ class AgentService:
 
 或者話我知你想做咩，我盡量幫你！"""
             await self._save_message(conversation_id, "assistant", response_content, "message")
+            # 未知意圖的建議
+            unknown_suggestions = [
+                {"text": "今日訂單點樣？", "icon": "📦"},
+                {"text": "本月賺幾多？", "icon": "💰"},
+                {"text": "有咩警報？", "icon": "🔔"},
+                {"text": "分析和牛價格", "icon": "🥩"},
+            ]
             yield AgentResponse(
                 type=ResponseType.MESSAGE,
                 content=response_content,
                 conversation_id=conversation_id,
+                suggestions=unknown_suggestions,
                 state=state
             )
             return
@@ -363,10 +391,17 @@ class AgentService:
             await self._update_conversation_state(conversation_id, state.slots, state.current_intent)
             await self._save_message(conversation_id, "assistant", response_content, "message")
 
+            # 獲取後續建議
+            follow_up = get_follow_up_suggestions(
+                intent_result.intent.value,
+                {"products": state.slots.products}
+            )
+
             yield AgentResponse(
                 type=ResponseType.MESSAGE,
                 content=response_content,
                 conversation_id=conversation_id,
+                suggestions=follow_up,
                 state=state
             )
             return
@@ -443,16 +478,23 @@ class AgentService:
         
         await self._update_conversation_state(conversation_id, state.slots, state.current_intent)
         await self._save_message(
-            conversation_id, "assistant", report.markdown, 
+            conversation_id, "assistant", report.markdown,
             "report", {"charts": [c.__dict__ for c in report.charts]}
         )
-        
+
+        # 報告後的建議
+        report_suggestions = get_follow_up_suggestions(
+            state.current_intent.value if state.current_intent else "default",
+            {"products": state.slots.products}
+        )
+
         yield AgentResponse(
             type=ResponseType.REPORT,
             content=report.markdown,
             conversation_id=conversation_id,
             report=report.to_dict(),
             charts=[c.__dict__ for c in report.charts],
+            suggestions=report_suggestions,
             state=state
         )
 
