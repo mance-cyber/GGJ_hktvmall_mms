@@ -25,7 +25,8 @@ import {
   Zap,
   Plus,
   Menu,
-  Clock
+  Clock,
+  ArrowDown
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -379,7 +380,9 @@ export default function AgentPage() {
   const [pendingClarification, setPendingClarification] = useState<Message | null>(null)
   const [selections, setSelections] = useState<Record<string, string | string[]>>({})
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [showScrollButton, setShowScrollButton] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   // 獲取建議
@@ -618,6 +621,19 @@ export default function AgentPage() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
+  // 滾動檢測
+  const handleScroll = () => {
+    const container = messagesContainerRef.current
+    if (!container) return
+
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100
+    setShowScrollButton(!isNearBottom && messages.length > 3)
+  }
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
   const handleNewConversation = () => {
     setMessages([])
     setConversationId(null)
@@ -677,18 +693,26 @@ export default function AgentPage() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile Header */}
         <div className="md:hidden flex items-center gap-2 p-3 border-b bg-white">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="icon"
             onClick={() => setIsSidebarOpen(true)}
+            aria-label="開啟對話列表"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-5 h-5" aria-hidden="true" />
           </Button>
           <span className="font-medium text-slate-700">Jap仔 🇯🇵</span>
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div
+          ref={messagesContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto p-4 space-y-4 relative"
+          role="log"
+          aria-live="polite"
+          aria-label="對話訊息"
+        >
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center px-4">
               <div className="w-24 h-24 mb-4">
@@ -878,6 +902,22 @@ export default function AgentPage() {
             </AnimatePresence>
           )}
           <div ref={messagesEndRef} />
+
+          {/* 滾動到底部按鈕 */}
+          <AnimatePresence>
+            {showScrollButton && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                onClick={scrollToBottom}
+                className="fixed bottom-32 right-6 md:right-10 w-10 h-10 rounded-full bg-purple-600 text-white shadow-lg hover:bg-purple-700 transition-colors flex items-center justify-center z-10"
+                aria-label="滾動到底部"
+              >
+                <ArrowDown className="w-5 h-5" />
+              </motion.button>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Quick Actions */}
@@ -923,16 +963,18 @@ export default function AgentPage() {
                 placeholder="同 Jap仔 傾下計..."
                 disabled={isLoading || !!pendingClarification}
                 className="flex-1"
+                aria-label="輸入訊息"
               />
               <Button
                 onClick={handleSend}
                 disabled={!input.trim() || isLoading || !!pendingClarification}
                 className="bg-purple-600 hover:bg-purple-700"
+                aria-label={isLoading ? "發送中" : "發送訊息"}
               >
                 {isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                 ) : (
-                  <Send className="w-4 h-4" />
+                  <Send className="w-4 h-4" aria-hidden="true" />
                 )}
               </Button>
             </div>
