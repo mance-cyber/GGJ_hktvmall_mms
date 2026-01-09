@@ -198,20 +198,30 @@ class IntentClassifier:
         使用規則識別意圖
         """
         message_lower = message.lower()
-        
+
         # 提取實體
         entities = self._extract_entities(message)
+
+        # Debug logging
+        print(f"[IntentClassifier] 輸入: {message}")
+        print(f"[IntentClassifier] 提取實體: {entities}")
+        print(f"[IntentClassifier] 產品名稱庫大小: {len(self.product_names)}")
         
         # 計算每個意圖的匹配分數
         scores = {}
+        matched_keywords = []
         for intent, keywords in self.INTENT_KEYWORDS.items():
             score = 0
             for keyword in keywords:
                 if keyword.lower() in message_lower:
                     score += 1
+                    matched_keywords.append((intent.value, keyword))
             if score > 0:
                 scores[intent] = score
-        
+
+        print(f"[IntentClassifier] 匹配關鍵詞: {matched_keywords}")
+        print(f"[IntentClassifier] 意圖分數: {[(k.value, v) for k, v in scores.items()]}")
+
         # 如果沒有匹配
         if not scores:
             # 檢查是否只有產品名稱（默認為市場概覽）
