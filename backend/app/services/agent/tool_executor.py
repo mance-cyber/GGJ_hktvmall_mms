@@ -232,5 +232,78 @@ class ToolExecutor:
                     )
                 else:
                     result_dict[name] = result
-        
-       
+
+        return result_dict
+
+    async def _execute_tool(
+        self,
+        name: str,
+        tool: BaseTool,
+        params: Dict[str, Any]
+    ) -> ToolResult:
+        """執行單個工具"""
+        try:
+            return await tool.execute(**params)
+        except Exception as e:
+            return ToolResult(
+                tool_name=name,
+                success=False,
+                error=f"工具執行失敗: {str(e)}"
+            )
+
+    async def _execute_sequential(
+        self,
+        tool_names: List[str],
+        params: Dict[str, Any]
+    ) -> Dict[str, ToolResult]:
+        """順序執行工具"""
+        results = {}
+
+        for name in tool_names:
+            tool = self.tools.get(name)
+            if tool:
+                # 與 _execute_parallel 相同的參數處理邏輯
+                tool_params = {}
+                schema = tool.get_schema()
+                all_param_names = schema.get("parameters", {}).get("properties", {}).keys()
+
+                for p in all_param_names:
+                    if p in params:
+                        tool_params[p] = params[p]
+
+                # 工具特定預設值
+                if name == "query_sales":
+                    tool_params.setdefault("metric", "revenue")
+                    tool_params.setdefault("period", "last_30_days")
+                if name == "query_top_products":
+                    tool_params.setdefault("by", "sales")
+                    tool_params.setdefault("limit", 5)
+
+                if "days" in all_param_names:
+                    tool_params["days"] = params.get("days", 30)
+                if "products" in all_param_names:
+                    tool_params["products"] = params.get("products", [])
+
+                results[name] = await self._execute_tool(name, tool, tool_params)
+
+        return results
+
+    def aggregate_results(self, results: Dict[str, ToolResult]) -> Dict[str, Any]:
+        """聚合工具執行結果"""
+        aggregated = {
+            "success": all(r.success for r in results.values()),
+            "data": {},
+            "errors": []
+        }
+
+        for name, result in results.items():
+            if result.success:
+                aggregated["data"][name] = result.data
+            else:
+                aggregated["errors"].append({
+                    "tool": name,
+                    "error": result.error
+                })
+
+        return aggregated
+
