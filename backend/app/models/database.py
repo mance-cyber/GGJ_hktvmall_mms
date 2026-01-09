@@ -76,7 +76,8 @@ async def init_db():
         order,
         inbox,
         finance,
-        promotion # Added promotion model
+        promotion,
+        user
     )
     
     try:

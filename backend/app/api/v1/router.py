@@ -4,9 +4,20 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import competitors, products, content, analytics, scrape, categories, telegram, market_response, ai_settings, agent, hktvmall, pricing, orders, inbox, finance, promotions
+from app.api.v1 import (
+    competitors, products, content, analytics, scrape, categories, 
+    telegram, market_response, ai_settings, agent, hktvmall, 
+    pricing, orders, inbox, finance, promotions, auth
+)
 
 api_router = APIRouter()
+
+# 認證
+api_router.include_router(
+    auth.router,
+    prefix="/auth",
+    tags=["認證"]
+)
 
 # 競品監測
 api_router.include_router(

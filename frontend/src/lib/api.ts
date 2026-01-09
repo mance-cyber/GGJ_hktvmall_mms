@@ -6,12 +6,18 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
 async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}${endpoint}`
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options?.headers as Record<string, string>),
+  }
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
   const response = await fetch(url, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
+    headers,
   })
 
   if (!response.ok) {
@@ -1209,4 +1215,49 @@ export interface CommandCenterResponse {
 export const analyticsApi = {
   getCommandCenter: () =>
     fetchAPI<CommandCenterResponse>('/analytics/command-center')
+}
+
+// =============================================
+// 認證 API
+// =============================================
+
+export interface LoginResponse {
+  access_token: string
+  token_type: string
+}
+
+export interface User {
+  id: string
+  email: string
+  full_name?: string
+  role: string
+  is_active: boolean
+}
+
+export const authApi = {
+  login: (data: any) => {
+    const formData = new URLSearchParams();
+    formData.append('username', data.username);
+    formData.append('password', data.password);
+    return fetchAPI<LoginResponse>('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formData.toString(),
+    });
+  },
+    
+  loginGoogle: (credential: string) => 
+    fetchAPI<LoginResponse>('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ credential }),
+    }),
+
+  register: (data: any) => 
+    fetchAPI<User>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  getMe: () => 
+    fetchAPI<User>('/auth/me'),
 }

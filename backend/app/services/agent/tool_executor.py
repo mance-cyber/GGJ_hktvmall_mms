@@ -21,7 +21,15 @@ from .tools import (
     PriceComparisonTool,
     CompetitorCompareTool,
     QuerySalesTool,
-    QueryTopProductsTool
+    QueryTopProductsTool,
+    # 新增工具
+    FinanceSummaryTool,
+    SettlementQueryTool,
+    OrderStatsTool,
+    OrderSearchTool,
+    AlertQueryTool,
+    AlertActionTool,
+    NotificationSendTool,
 )
 
 
@@ -42,6 +50,7 @@ class ToolExecutor:
     
     # 意圖 -> 工具映射
     INTENT_TOOL_MAPPING = {
+        # 產品相關
         IntentType.PRODUCT_SEARCH: ["product_search"],
         IntentType.PRODUCT_DETAIL: ["product_search"],
         IntentType.PRICE_ANALYSIS: ["product_overview", "price_comparison"],
@@ -51,18 +60,34 @@ class ToolExecutor:
         IntentType.MARKET_OVERVIEW: ["product_overview", "price_trend", "top_products", "competitor_compare"],
         IntentType.GENERATE_REPORT: ["product_overview", "price_trend", "competitor_compare", "top_products"],
         IntentType.MARKETING_STRATEGY: ["product_overview", "price_trend", "competitor_compare", "top_products"],
-        
-        # New Intents
-        IntentType.FINANCE_ANALYSIS: ["query_sales", "query_top_products"],
-        IntentType.ORDER_QUERY: ["query_sales"],
+
+        # 訂單相關
+        IntentType.ORDER_STATS: ["order_stats"],
+        IntentType.ORDER_SEARCH: ["order_search"],
+
+        # 財務相關
+        IntentType.FINANCE_SUMMARY: ["finance_summary"],
+        IntentType.SETTLEMENT_QUERY: ["settlement_query"],
+
+        # 警報相關
+        IntentType.ALERT_QUERY: ["alert_query"],
+        IntentType.ALERT_ACTION: ["alert_action"],
+
+        # 通知相關
+        IntentType.SEND_NOTIFICATION: ["notification_send"],
+
+        # 舊意圖 (保留向後兼容)
+        IntentType.FINANCE_ANALYSIS: ["finance_summary", "query_sales"],
+        IntentType.ORDER_QUERY: ["order_stats"],
         IntentType.INVENTORY_QUERY: ["query_top_products"],
     }
     
     def __init__(self, db: AsyncSession):
         self.db = db
-        
+
         # 初始化所有工具
         self.tools: Dict[str, BaseTool] = {
+            # 產品工具
             "product_overview": ProductOverviewTool(db),
             "product_search": ProductSearchTool(db),
             "top_products": TopProductsTool(db),
@@ -71,6 +96,17 @@ class ToolExecutor:
             "competitor_compare": CompetitorCompareTool(db),
             "query_sales": QuerySalesTool(db),
             "query_top_products": QueryTopProductsTool(db),
+            # 訂單工具
+            "order_stats": OrderStatsTool(db),
+            "order_search": OrderSearchTool(db),
+            # 財務工具
+            "finance_summary": FinanceSummaryTool(db),
+            "settlement_query": SettlementQueryTool(db),
+            # 警報工具
+            "alert_query": AlertQueryTool(db),
+            "alert_action": AlertActionTool(db),
+            # 通知工具 (不需要 db)
+            "notification_send": NotificationSendTool(),
         }
     
     def get_execution_plan(

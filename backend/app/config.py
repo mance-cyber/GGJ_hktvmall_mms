@@ -28,6 +28,11 @@ class Settings(BaseSettings):
     anthropic_api_key: str = Field(default="", alias="ANTHROPIC_API_KEY")
     ai_model: str = Field(default="claude-sonnet-4-20250514", alias="AI_MODEL")
 
+    # Google Auth
+    google_client_id: str = Field(default="", alias="GOOGLE_CLIENT_ID")
+    # 允許登入的 Google 郵箱白名單（逗號分隔，留空表示允許所有）
+    google_allowed_emails: str = Field(default="", alias="GOOGLE_ALLOWED_EMAILS")
+
     # Cloudflare R2
     r2_access_key: str = Field(default="", alias="R2_ACCESS_KEY")
     r2_secret_key: str = Field(default="", alias="R2_SECRET_KEY")

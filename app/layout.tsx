@@ -3,6 +3,7 @@ import { Noto_Sans_TC } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ToastProvider } from "@/components/providers/toast-provider";
+import { AuthProvider } from "@/components/providers/auth-provider";
 
 // ==================== 字體配置 ====================
 
@@ -60,9 +61,11 @@ export default function RootLayout({
       <body className={notoSansTC.className}>
         {/* React Query Provider */}
         <QueryProvider>
-          {children}
-          {/* Toast 通知 */}
-          <ToastProvider />
+          <AuthProvider>
+            {children}
+            {/* Toast 通知 */}
+            <ToastProvider />
+          </AuthProvider>
         </QueryProvider>
       </body>
     </html>

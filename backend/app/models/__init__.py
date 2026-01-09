@@ -11,11 +11,14 @@ from app.models.scrape_config import ScrapeConfig
 from app.models.import_job import ImportJob, ImportJobItem
 from app.models.analytics import PriceAnalytics, MarketReport
 from app.models.notification import Notification, Webhook
+from app.models.user import User
 
 __all__ = [
     # 數據庫
     "Base",
     "get_db",
+    # 用戶
+    "User",
     # 競品監測
     "Competitor",
     "CompetitorProduct",

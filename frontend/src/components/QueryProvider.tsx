@@ -2,7 +2,9 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
+import { GoogleOAuthProvider } from "@react-oauth/google"
 import { ScrapeProvider } from '@/contexts/scrape-context'
+import { AuthProvider } from '@/components/providers/auth-provider'
 import { GlobalScrapeIndicator } from '@/components/global-scrape-indicator'
 import { KeyboardShortcutsDialog } from '@/components/keyboard-shortcuts-dialog'
 import { useGlobalShortcuts } from '@/hooks/use-keyboard-shortcuts'
@@ -45,14 +47,21 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
       })
   )
 
+  // Use environment variable or fallback to mock for development
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "mock-client-id-for-dev"
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <ScrapeProvider>
-        <GlobalShortcutsProvider>
-          {children}
-          <GlobalScrapeIndicator />
-        </GlobalShortcutsProvider>
-      </ScrapeProvider>
-    </QueryClientProvider>
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <ScrapeProvider>
+            <GlobalShortcutsProvider>
+              {children}
+              <GlobalScrapeIndicator />
+            </GlobalShortcutsProvider>
+          </ScrapeProvider>
+        </QueryClientProvider>
+      </AuthProvider>
+    </GoogleOAuthProvider>
   )
 }

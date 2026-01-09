@@ -16,23 +16,38 @@ class IntentType(Enum):
     # 產品查詢
     PRODUCT_SEARCH = "product_search"
     PRODUCT_DETAIL = "product_detail"
-    
+
     # 分析類
     PRICE_ANALYSIS = "price_analysis"
     TREND_ANALYSIS = "trend_analysis"
     COMPETITOR_ANALYSIS = "competitor_analysis"
     BRAND_ANALYSIS = "brand_analysis"
     MARKET_OVERVIEW = "market_overview"
-    
+
     # 報告類
     GENERATE_REPORT = "generate_report"
     MARKETING_STRATEGY = "marketing_strategy"
-    
-    # 營運類 (New)
+
+    # 營運類 - 訂單
+    ORDER_STATS = "order_stats"
+    ORDER_SEARCH = "order_search"
+
+    # 營運類 - 財務
+    FINANCE_SUMMARY = "finance_summary"
+    SETTLEMENT_QUERY = "settlement_query"
+
+    # 營運類 - 警報
+    ALERT_QUERY = "alert_query"
+    ALERT_ACTION = "alert_action"
+
+    # 營運類 - 通知
+    SEND_NOTIFICATION = "send_notification"
+
+    # 營運類 (舊，保留向後兼容)
     FINANCE_ANALYSIS = "finance_analysis"
     ORDER_QUERY = "order_query"
     INVENTORY_QUERY = "inventory_query"
-    
+
     # 對話類
     CLARIFICATION = "clarification"
     FOLLOWUP = "followup"
@@ -94,11 +109,43 @@ class IntentClassifier:
         IntentType.MARKETING_STRATEGY: [
             "marketing", "推廣", "策略", "點樣賣", "點推",
         ],
+        # 訂單相關
+        IntentType.ORDER_STATS: [
+            "幾多單", "訂單統計", "未出貨", "待處理", "訂單數", "today order",
+            "今日訂單", "今日幾多", "幾張單", "order stats", "pending orders"
+        ],
+        IntentType.ORDER_SEARCH: [
+            "搵訂單", "查訂單", "訂單號", "order number", "order search",
+            "訂單詳情", "邊張單", "which order", "搵單", "查單",
+            "order id", "order #"
+        ],
+        # 財務相關
+        IntentType.FINANCE_SUMMARY: [
+            "營收", "收入", "利潤", "淨利", "賺幾多", "財務摘要", "賺錢",
+            "revenue", "profit", "income", "earnings", "財務報告"
+        ],
+        IntentType.SETTLEMENT_QUERY: [
+            "結算", "結算單", "settlement", "結帳", "對帳", "帳單"
+        ],
+        # 警報相關
+        IntentType.ALERT_QUERY: [
+            "警報", "提醒", "價格警報", "庫存警報", "alert", "警示",
+            "price alert", "缺貨提醒", "有咩警報"
+        ],
+        IntentType.ALERT_ACTION: [
+            "標記已讀", "全部已讀", "mark read", "清除警報", "dismiss"
+        ],
+        # 通知相關
+        IntentType.SEND_NOTIFICATION: [
+            "發通知", "發telegram", "send notification", "通知我",
+            "提醒我", "發訊息", "send message", "telegram"
+        ],
+        # 舊意圖 (保留向後兼容)
         IntentType.FINANCE_ANALYSIS: [
-            "利潤", "賺", "收入", "營收", "profit", "revenue", "sales", "財務", "賺錢"
+            "利潤分析", "財務分析", "sales analysis"
         ],
         IntentType.ORDER_QUERY: [
-            "訂單", "order", "未出貨", "待處理", "shipping", "ship"
+            "訂單查詢"
         ],
         IntentType.INVENTORY_QUERY: [
             "庫存", "存貨", "stock", "inventory", "缺貨", "無貨"
@@ -127,8 +174,13 @@ class IntentClassifier:
 - MARKET_OVERVIEW: 市場概覽（例：「我想睇和牛同海膽嘅資料」）
 - GENERATE_REPORT: 生成報告（例：「幫我出份報告」）
 - MARKETING_STRATEGY: Marketing 策略（例：「點樣推廣呢個產品？」）
-- FINANCE_ANALYSIS: 財務分析（例：「上個月賺幾多？」「利潤趨勢」）
-- ORDER_QUERY: 訂單查詢（例：「有幾多單未出貨？」「今日幾多單？」）
+- ORDER_STATS: 訂單統計（例：「今日有幾多單？」「未出貨訂單」「待處理幾多單？」）
+- ORDER_SEARCH: 訂單搜索（例：「幫我搵訂單 1234567」「查下呢張單」）
+- FINANCE_SUMMARY: 財務摘要（例：「上個月營收幾多？」「今月賺幾多？」「利潤率」）
+- SETTLEMENT_QUERY: 結算查詢（例：「最近嘅結算單」「上期結算幾多？」）
+- ALERT_QUERY: 警報查詢（例：「有咩價格警報？」「有無缺貨提醒？」）
+- ALERT_ACTION: 警報操作（例：「全部標記已讀」「清除警報」）
+- SEND_NOTIFICATION: 發送通知（例：「發個 Telegram 通知」「提醒我」）
 - INVENTORY_QUERY: 庫存查詢（例：「邊啲貨就快賣曬？」）
 - CLARIFICATION: 用戶回答澄清問題（例：「全部部位」「淨係睇刺身」）
 - FOLLOWUP: 追問（例：「仲有呢？」「詳細啲？」）

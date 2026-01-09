@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
-import { Sidebar, MobileBottomNav } from '@/components/Sidebar'
 import { QueryProvider } from '@/components/QueryProvider'
+import { AppShell } from '@/components/AppShell'
 import { Toaster } from '@/components/ui/toaster'
 
 export const metadata: Metadata = {
@@ -25,13 +25,9 @@ export default function RootLayout({
     <html lang="zh-HK">
       <body className="antialiased bg-slate-50">
         <QueryProvider>
-          <div className="flex min-h-screen">
-            <Sidebar />
-            <main className="flex-1 p-4 lg:p-6 lg:ml-64 pb-20 lg:pb-6">
-              {children}
-            </main>
-            <MobileBottomNav />
-          </div>
+          <AppShell>
+            {children}
+          </AppShell>
           <Toaster />
         </QueryProvider>
       </body>

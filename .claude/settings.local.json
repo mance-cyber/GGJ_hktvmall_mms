@@ -110,7 +110,13 @@
       "Bash(\"C:/Users/ktphi/.bun/bin/bun.exe\" --version)",
       "Bash(\"C:/Users/ktphi/miniconda3/python.exe\" -m uvicorn app.main:app --reload --port 8000)",
       "Bash(python -m uvicorn:*)",
-      "Bash(alembic upgrade:*)"
+      "Bash(alembic upgrade:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: 修復 report_generator.py 多行字串語法錯誤\n\n修正 Python 字串字面量中使用原始換行符導致的語法錯誤，\n改用 \\\\n 轉義字元確保語法正確。\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: 添加 call_ai 異步方法修復 Agent 延遲問題\n\n- 新增 AIAnalysisService.call_ai\\(\\) 異步方法\n- 設置 60 秒超時避免長時間等待\n- 修復 intent_classifier 和 report_generator 調用缺失方法的問題\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(python -m py_compile:*)",
+      "Bash(psql:*)",
+      "Bash(uvicorn:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: 實現 Google OAuth 登入與用戶認證系統\n\n- 新增 Google OAuth 登入功能（使用 @react-oauth/google）\n- 實現 JWT 認證機制（後端 security.py + deps.py）\n- 新增用戶模型與 RBAC 角色管理（admin/operator/viewer）\n- 新增 Google 帳戶白名單限制功能\n- 新增 AppShell 組件，登入頁面不顯示側邊欄\n- 未登入用戶自動跳轉到登入頁面\n- 新增 users 資料表遷移腳本\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }
