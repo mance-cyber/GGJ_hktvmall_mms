@@ -9,7 +9,6 @@ import remarkGfm from 'remark-gfm'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
 import {
   Send,
-  Bot,
   User,
   Loader2,
   Sparkles,
@@ -148,11 +147,11 @@ function ThinkingMessage() {
       className="flex gap-3"
     >
       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
-        <Bot className="w-4 h-4 text-white" />
+        <span className="text-sm">🇯🇵</span>
       </div>
       <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm border flex items-center gap-2">
         <Loader2 className="w-4 h-4 animate-spin text-purple-500" />
-        <span className="text-slate-500">分析緊你嘅問題...</span>
+        <span className="text-slate-500">等我睇睇...</span>
       </div>
     </motion.div>
   )
@@ -278,7 +277,7 @@ function MessageBubble({ message }: { message: Message }) {
           ? "bg-gradient-to-br from-cyan-500 to-blue-500" 
           : "bg-gradient-to-br from-purple-500 to-pink-500"
       )}>
-        {isUser ? <User className="w-4 h-4 text-white" /> : <Bot className="w-4 h-4 text-white" />}
+        {isUser ? <User className="w-4 h-4 text-white" /> : <span className="text-sm">🇯🇵</span>}
       </div>
       <div className={cn(
         "max-w-[80%] rounded-2xl px-4 py-3 shadow-sm",
@@ -584,7 +583,7 @@ export default function AgentPage() {
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <span className="font-medium text-slate-700">AI 助手</span>
+          <span className="font-medium text-slate-700">Jap仔 🇯🇵</span>
         </div>
 
         {/* Messages Area */}
@@ -600,10 +599,10 @@ export default function AgentPage() {
                 />
               </div>
               <h2 className="text-xl font-semibold text-slate-700 mb-2">
-                我係你嘅 AI 助手
+                Hey！我係 Jap仔 🙋‍♂️
               </h2>
               <p className="text-slate-500 mb-6 max-w-md">
-                我可以幫你分析產品數據、比較競爭對手價格、生成市場報告
+                你嘅日本產品專家！我可以幫你分析產品數據、比較競爭對手價格、生成市場報告，有咩問題隨時話我知～
               </p>
               
               {/* Suggestions */}
@@ -707,7 +706,7 @@ export default function AgentPage() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                placeholder="輸入你嘅問題..."
+                placeholder="同 Jap仔 傾下計～"
                 disabled={isLoading || !!pendingClarification}
                 className="flex-1"
               />

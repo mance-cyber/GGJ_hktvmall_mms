@@ -3,12 +3,13 @@
 // =============================================
 // 全局浮動聊天組件
 // 右下角常駐 Chatbot 按鈕 + 迷你聊天框
+// 功能：聲音提醒、附件上傳、訊息反饋、頁面感知、可拖曳
 // =============================================
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useDragControls, PanInfo } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { usePathname } from 'next/navigation'
@@ -16,12 +17,18 @@ import {
   MessageCircle,
   X,
   Send,
-  Bot,
   User,
   Loader2,
   Minimize2,
   Maximize2,
-  ExternalLink
+  ExternalLink,
+  Paperclip,
+  Image as ImageIcon,
+  ThumbsUp,
+  ThumbsDown,
+  Volume2,
+  VolumeX,
+  GripVertical
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -37,31 +44,143 @@ interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
   timestamp: Date
+  feedback?: 'like' | 'dislike' | null
+  attachments?: FileAttachment[]
+}
+
+interface FileAttachment {
+  id: string
+  name: string
+  type: string
+  url: string
+  size: number
 }
 
 // =============================================
-// 浮動按鈕組件
+// 頁面感知建議配置
+// =============================================
+
+const PAGE_SUGGESTIONS: Record<string, string[]> = {
+  '/': [
+    '今日營業額幾多？',
+    '有冇需要關注嘅警報？',
+    '最近訂單情況點樣？'
+  ],
+  '/dashboard': [
+    '今日銷售數據點樣？',
+    '邊個產品賣得最好？',
+    '同上星期比較下'
+  ],
+  '/products': [
+    '邊個產品需要補貨？',
+    '價格有冇競爭力？',
+    '產品銷量排行榜'
+  ],
+  '/competitors': [
+    '競爭對手最新價格？',
+    '邊個競爭對手最有威脅？',
+    '價格差異分析'
+  ],
+  '/alerts': [
+    '有幾多個未處理警報？',
+    '最緊急嘅警報係咩？',
+    '警報趨勢分析'
+  ],
+  '/orders': [
+    '今日訂單數量？',
+    '有冇異常訂單？',
+    '訂單完成率幾多？'
+  ],
+  '/analytics': [
+    '本月營收趨勢？',
+    '用戶行為分析',
+    '轉化率點樣？'
+  ]
+}
+
+const DEFAULT_SUGGESTIONS = [
+  '今日訂單點樣？',
+  '比較下競爭對手價格',
+  '邊個產品賣得最好？'
+]
+
+// =============================================
+// 聲音提醒 Hook
+// =============================================
+
+function useNotificationSound() {
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [soundEnabled, setSoundEnabled] = useState(true)
+
+  useEffect(() => {
+    // 創建音頻元素
+    audioRef.current = new Audio()
+    // 使用簡單的提示音（Base64 編碼的短音效）
+    audioRef.current.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleQwVhMHV1IFnGgY0teleRgIMNYPBrpFJAA88kNPaejoCC0+h4OuVWgwMTYzL1olCAAhEgtbsmUIJFDyG1vGfVQsOPX3W9KFQDBg+fdH7p1kRGT1y0gCrXRUhQW7NCrBhGSREZcwMtGQdKkNfyQ+3aCAyQ1jEE7xtJDpDT74Wv3MqRENGtxnDeTBRQz6wHMh/N1xBNKgfzYY+aD4qoSLRjEZzPCCaJtaST3o7E5Im3ZlYgTgKiSzknl6HMwKAMOugZJAu/XU17aVqmCr3Zzb1r3SjJ/NnNvq3gKkh8Gc5/8GIrxzuaD0Dyo2zGupqQg/Qk7gc8W1GFNqYwCL5cUgb35jJK/x3TiDincwu/ntRJ+mjzjMDgVQr7KjWPQmFWTDwrN5CDI9gNPu24EYTkmM9/sDiSBybZz4Bx+dMIqBrQQnK600kpm9FDtHuUCepc0wU1/FWK7B3Uh3b9Fwxt3tbI+D7YTW/f18o5wBmOMGBZDvLhmhA6DzShGlL7EDoSNmLb0vuTedO8lD0VPha/2EBaQlvEHYXfR2DJIoqkDCWNp08o0KpSK9OtVS7WsFgx2bNbNNy2XjffuWE64rxi/eRAJgGngyoEq8YtR67JMEqxy/NNdM71teleQ8VhMHV1IFnGgY0teleRgIMNYPBrpFJAA88kNPaejoCC0+h4OuVWgwMTYzL1olCAAhEgtbsmUIJFDyG1vGfVQsOPX3W9KFQDBg+fdH7p1kRGT1y0gCrXRUhQW7NCrBhGSREZcwMtGQdKkNfyQ+3aCAyQ1jEE7xtJDpDT74Wv3MqRENGtxnDeTBRQz6wHMh/N1xBNKgfzYY+aD4qoSLRjEZzPCCaJtaST3o7E5Im3ZlYgTgKiSzknl6HMwKAMOugZJAu'
+    audioRef.current.volume = 0.5
+
+    // 從 localStorage 讀取設定
+    const saved = localStorage.getItem('chatbot-sound-enabled')
+    if (saved !== null) {
+      setSoundEnabled(saved === 'true')
+    }
+  }, [])
+
+  const playSound = useCallback(() => {
+    if (soundEnabled && audioRef.current) {
+      audioRef.current.currentTime = 0
+      audioRef.current.play().catch(() => {
+        // 忽略自動播放限制錯誤
+      })
+    }
+  }, [soundEnabled])
+
+  const toggleSound = useCallback(() => {
+    setSoundEnabled(prev => {
+      const newValue = !prev
+      localStorage.setItem('chatbot-sound-enabled', String(newValue))
+      return newValue
+    })
+  }, [])
+
+  return { soundEnabled, toggleSound, playSound }
+}
+
+// =============================================
+// 浮動按鈕組件（可拖曳）
 // =============================================
 
 function FloatingButton({
   isOpen,
   onClick,
-  hasUnread
+  hasUnread,
+  position,
+  onDragEnd
 }: {
   isOpen: boolean
   onClick: () => void
   hasUnread: boolean
+  position: { x: number; y: number }
+  onDragEnd: (info: PanInfo) => void
 }) {
+  const dragControls = useDragControls()
+
   return (
     <motion.button
+      drag
+      dragControls={dragControls}
+      dragMomentum={false}
+      dragElastic={0.1}
+      onDragEnd={(_, info) => onDragEnd(info)}
       onClick={onClick}
+      style={{ x: position.x, y: position.y }}
       className={cn(
         "w-14 h-14 rounded-full shadow-lg flex items-center justify-center",
-        "transition-all duration-300 hover:scale-110",
+        "transition-colors duration-300 hover:shadow-xl",
         "bg-gradient-to-br from-purple-600 to-pink-500",
-        "text-white relative"
+        "text-white relative cursor-grab active:cursor-grabbing"
       )}
-      whileHover={{ scale: 1.1 }}
+      whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
       aria-label={isOpen ? "關閉聊天" : "開啟聊天"}
     >
@@ -94,9 +213,99 @@ function FloatingButton({
         <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-pulse" />
       )}
 
+      {/* 拖曳提示 */}
+      <span className="absolute -left-1 -top-1 w-3 h-3 opacity-0 group-hover:opacity-50">
+        <GripVertical className="w-3 h-3" />
+      </span>
+
       {/* 光環效果 */}
-      <span className="absolute inset-0 rounded-full bg-purple-400 animate-ping opacity-20" />
+      {!isOpen && (
+        <span className="absolute inset-0 rounded-full bg-purple-400 animate-ping opacity-20" />
+      )}
     </motion.button>
+  )
+}
+
+// =============================================
+// 訊息反饋組件
+// =============================================
+
+function MessageFeedback({
+  messageId,
+  feedback,
+  onFeedback
+}: {
+  messageId: string
+  feedback: 'like' | 'dislike' | null | undefined
+  onFeedback: (messageId: string, type: 'like' | 'dislike') => void
+}) {
+  return (
+    <div className="flex items-center gap-1 mt-1">
+      <button
+        type="button"
+        onClick={() => onFeedback(messageId, 'like')}
+        className={cn(
+          "p-1 rounded hover:bg-green-100 transition-colors",
+          feedback === 'like' && "bg-green-100 text-green-600"
+        )}
+        title="有幫助"
+      >
+        <ThumbsUp className={cn("w-3 h-3", feedback === 'like' ? "fill-current" : "")} />
+      </button>
+      <button
+        type="button"
+        onClick={() => onFeedback(messageId, 'dislike')}
+        className={cn(
+          "p-1 rounded hover:bg-red-100 transition-colors",
+          feedback === 'dislike' && "bg-red-100 text-red-600"
+        )}
+        title="需要改進"
+      >
+        <ThumbsDown className={cn("w-3 h-3", feedback === 'dislike' ? "fill-current" : "")} />
+      </button>
+    </div>
+  )
+}
+
+// =============================================
+// 附件預覽組件
+// =============================================
+
+function AttachmentPreview({
+  attachments,
+  onRemove
+}: {
+  attachments: FileAttachment[]
+  onRemove?: (id: string) => void
+}) {
+  if (attachments.length === 0) return null
+
+  return (
+    <div className="flex flex-wrap gap-2 p-2 bg-slate-50 rounded-lg">
+      {attachments.map((file) => (
+        <div
+          key={file.id}
+          className="relative group flex items-center gap-2 bg-white rounded-lg px-2 py-1 border text-xs"
+        >
+          {file.type.startsWith('image/') ? (
+            <ImageIcon className="w-3 h-3 text-purple-500" />
+          ) : (
+            <Paperclip className="w-3 h-3 text-slate-500" />
+          )}
+          <span className="max-w-[100px] truncate">{file.name}</span>
+          {onRemove && (
+            <button
+              type="button"
+              onClick={() => onRemove(file.id)}
+              className="opacity-0 group-hover:opacity-100 transition-opacity"
+              title="移除附件"
+            >
+              <X className="w-3 h-3 text-slate-400 hover:text-red-500" />
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -112,7 +321,14 @@ function MiniChatBox({
   isLoading,
   onClose,
   isExpanded,
-  onToggleExpand
+  onToggleExpand,
+  suggestions,
+  soundEnabled,
+  onToggleSound,
+  onFeedback,
+  attachments,
+  onAttach,
+  onRemoveAttachment
 }: {
   messages: ChatMessage[]
   input: string
@@ -122,12 +338,27 @@ function MiniChatBox({
   onClose: () => void
   isExpanded: boolean
   onToggleExpand: () => void
+  suggestions: string[]
+  soundEnabled: boolean
+  onToggleSound: () => void
+  onFeedback: (messageId: string, type: 'like' | 'dislike') => void
+  attachments: FileAttachment[]
+  onAttach: (files: FileList) => void
+  onRemoveAttachment: (id: string) => void
 }) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      onAttach(e.target.files)
+      e.target.value = '' // Reset input
+    }
+  }
 
   return (
     <motion.div
@@ -137,7 +368,6 @@ function MiniChatBox({
       transition={{ duration: 0.2 }}
       className={cn(
         "bg-white shadow-2xl border overflow-hidden flex flex-col",
-        // 移動端全屏，桌面端浮動
         "fixed inset-4 bottom-20 rounded-2xl",
         "sm:relative sm:inset-auto sm:bottom-auto",
         isExpanded
@@ -148,15 +378,29 @@ function MiniChatBox({
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-pink-500 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-            <Bot className="w-5 h-5 text-white" />
+          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-lg">
+            🇯🇵
           </div>
           <div>
-            <h3 className="text-white font-medium text-sm">AI 助手</h3>
-            <p className="text-white/70 text-xs">隨時為你服務</p>
+            <h3 className="text-white font-medium text-sm">Jap仔</h3>
+            <p className="text-white/70 text-xs">你嘅日本產品專家 ✨</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
+          {/* 聲音開關 */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggleSound}
+            className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20"
+            title={soundEnabled ? "關閉聲音" : "開啟聲音"}
+          >
+            {soundEnabled ? (
+              <Volume2 className="w-4 h-4" />
+            ) : (
+              <VolumeX className="w-4 h-4" />
+            )}
+          </Button>
           <Link href="/agent">
             <Button
               variant="ghost"
@@ -194,16 +438,16 @@ function MiniChatBox({
       <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-50">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-4">
-            <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center mb-3">
-              <Bot className="w-8 h-8 text-purple-500" />
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center mb-3 text-3xl">
+              🇯🇵
             </div>
-            <h4 className="font-medium text-slate-700 mb-1">有咩可以幫到你？</h4>
+            <h4 className="font-medium text-slate-700 mb-1">Hey！我係 Jap仔 🙋‍♂️</h4>
             <p className="text-sm text-slate-500">
-              問我任何關於產品、價格、競爭對手嘅問題
+              有咩可以幫到你？問我啦！
             </p>
-            {/* 快捷建議 */}
+            {/* 頁面感知建議 */}
             <div className="mt-4 space-y-2 w-full">
-              {['今日訂單點樣？', '比較下競爭對手價格', '邊個產品賣得最好？'].map((suggestion, i) => (
+              {suggestions.map((suggestion, i) => (
                 <button
                   key={i}
                   onClick={() => setInput(suggestion)}
@@ -234,23 +478,37 @@ function MiniChatBox({
                 {msg.role === 'user' ? (
                   <User className="w-3.5 h-3.5 text-white" />
                 ) : (
-                  <Bot className="w-3.5 h-3.5 text-white" />
+                  <span className="text-xs">🇯🇵</span>
                 )}
               </div>
-              <div className={cn(
-                "max-w-[80%] rounded-xl px-3 py-2 text-sm",
-                msg.role === 'user'
-                  ? "bg-gradient-to-br from-cyan-500 to-blue-500 text-white rounded-tr-sm"
-                  : "bg-white border shadow-sm rounded-tl-sm"
-              )}>
-                {msg.role === 'assistant' ? (
-                  <div className="prose prose-sm max-w-none">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {msg.content}
-                    </ReactMarkdown>
-                  </div>
-                ) : (
-                  <p>{msg.content}</p>
+              <div className="max-w-[80%]">
+                <div className={cn(
+                  "rounded-xl px-3 py-2 text-sm",
+                  msg.role === 'user'
+                    ? "bg-gradient-to-br from-cyan-500 to-blue-500 text-white rounded-tr-sm"
+                    : "bg-white border shadow-sm rounded-tl-sm"
+                )}>
+                  {/* 附件預覽 */}
+                  {msg.attachments && msg.attachments.length > 0 && (
+                    <AttachmentPreview attachments={msg.attachments} />
+                  )}
+                  {msg.role === 'assistant' ? (
+                    <div className="prose prose-sm max-w-none">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    <p>{msg.content}</p>
+                  )}
+                </div>
+                {/* 訊息反饋 - 只顯示在 AI 回覆 */}
+                {msg.role === 'assistant' && (
+                  <MessageFeedback
+                    messageId={msg.id}
+                    feedback={msg.feedback}
+                    onFeedback={onFeedback}
+                  />
                 )}
               </div>
             </motion.div>
@@ -265,13 +523,13 @@ function MiniChatBox({
             className="flex gap-2"
           >
             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-              <Bot className="w-3.5 h-3.5 text-white" />
+              <span className="text-xs">🇯🇵</span>
             </div>
             <div className="bg-white border shadow-sm rounded-xl rounded-tl-sm px-3 py-2">
               <div className="flex items-center gap-1">
                 <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" />
-                <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce delay-100" />
-                <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce delay-200" />
+                <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce [animation-delay:0.1s]" />
+                <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce [animation-delay:0.2s]" />
               </div>
             </div>
           </motion.div>
@@ -280,20 +538,48 @@ function MiniChatBox({
         <div ref={messagesEndRef} />
       </div>
 
+      {/* 附件預覽區 */}
+      {attachments.length > 0 && (
+        <div className="border-t px-3 py-2">
+          <AttachmentPreview attachments={attachments} onRemove={onRemoveAttachment} />
+        </div>
+      )}
+
       {/* Input */}
       <div className="border-t bg-white p-3">
         <div className="flex gap-2">
+          {/* 附件按鈕 */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*,.pdf,.doc,.docx,.txt"
+            onChange={handleFileSelect}
+            className="hidden"
+            title="上傳附件"
+            aria-label="上傳附件"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => fileInputRef.current?.click()}
+            className="h-9 w-9 text-slate-500 hover:text-purple-600"
+            title="上傳附件"
+          >
+            <Paperclip className="w-4 h-4" />
+          </Button>
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && onSend()}
-            placeholder="輸入訊息..."
+            placeholder="同 Jap仔 傾下計～"
             disabled={isLoading}
             className="flex-1 text-sm"
           />
           <Button
             onClick={onSend}
-            disabled={!input.trim() || isLoading}
+            disabled={(!input.trim() && attachments.length === 0) || isLoading}
             size="icon"
             className="bg-purple-600 hover:bg-purple-700 h-9 w-9"
           >
@@ -321,8 +607,16 @@ export function GlobalChatWidget() {
   const [input, setInput] = useState('')
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [hasUnread, setHasUnread] = useState(false)
+  const [attachments, setAttachments] = useState<FileAttachment[]>([])
+  const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0 })
 
-  // 發送訊息 (必須在所有條件返回之前調用所有 Hooks)
+  // 聲音提醒
+  const { soundEnabled, toggleSound, playSound } = useNotificationSound()
+
+  // 頁面感知建議
+  const suggestions = PAGE_SUGGESTIONS[pathname] || DEFAULT_SUGGESTIONS
+
+  // 發送訊息
   const chatMutation = useMutation({
     mutationFn: (content: string) => api.agentChat({
       content,
@@ -337,10 +631,14 @@ export function GlobalChatWidget() {
         id: Date.now().toString(),
         role: 'assistant',
         content: response.content,
-        timestamp: new Date()
+        timestamp: new Date(),
+        feedback: null
       }
 
       setMessages(prev => [...prev, assistantMessage])
+
+      // 播放聲音提醒
+      playSound()
 
       // 如果聊天框關閉，設置未讀
       if (!isOpen) {
@@ -350,18 +648,30 @@ export function GlobalChatWidget() {
   })
 
   const handleSend = () => {
-    if (!input.trim() || chatMutation.isPending) return
+    if ((!input.trim() && attachments.length === 0) || chatMutation.isPending) return
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
       content: input.trim(),
-      timestamp: new Date()
+      timestamp: new Date(),
+      attachments: attachments.length > 0 ? [...attachments] : undefined
     }
 
     setMessages(prev => [...prev, userMessage])
-    chatMutation.mutate(input.trim())
+
+    // 如果有附件，將附件信息加入訊息
+    let messageContent = input.trim()
+    if (attachments.length > 0) {
+      const attachmentNames = attachments.map(a => a.name).join(', ')
+      messageContent = messageContent
+        ? `${messageContent}\n\n[附件: ${attachmentNames}]`
+        : `[附件: ${attachmentNames}]`
+    }
+
+    chatMutation.mutate(messageContent)
     setInput('')
+    setAttachments([])
   }
 
   const handleOpen = () => {
@@ -373,6 +683,51 @@ export function GlobalChatWidget() {
     setIsOpen(false)
   }
 
+  // 訊息反饋
+  const handleFeedback = (messageId: string, type: 'like' | 'dislike') => {
+    setMessages(prev => prev.map(msg => {
+      if (msg.id === messageId) {
+        return {
+          ...msg,
+          feedback: msg.feedback === type ? null : type
+        }
+      }
+      return msg
+    }))
+    // TODO: 發送反饋到後端
+    console.log(`Message ${messageId} feedback: ${type}`)
+  }
+
+  // 附件處理
+  const handleAttach = (files: FileList) => {
+    const newAttachments: FileAttachment[] = Array.from(files).map(file => ({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      name: file.name,
+      type: file.type,
+      url: URL.createObjectURL(file),
+      size: file.size
+    }))
+    setAttachments(prev => [...prev, ...newAttachments])
+  }
+
+  const handleRemoveAttachment = (id: string) => {
+    setAttachments(prev => {
+      const attachment = prev.find(a => a.id === id)
+      if (attachment) {
+        URL.revokeObjectURL(attachment.url)
+      }
+      return prev.filter(a => a.id !== id)
+    })
+  }
+
+  // 拖曳結束處理
+  const handleDragEnd = (info: PanInfo) => {
+    setButtonPosition(prev => ({
+      x: prev.x + info.offset.x,
+      y: prev.y + info.offset.y
+    }))
+  }
+
   // 在 Agent 頁面不顯示此組件（避免重複）
   if (pathname === '/agent') {
     return null
@@ -381,7 +736,6 @@ export function GlobalChatWidget() {
   return (
     <div className={cn(
       "fixed z-50 flex flex-col items-end gap-4",
-      // 移動端避開底部導航，桌面端正常位置
       "bottom-24 right-4 sm:bottom-6 sm:right-6"
     )}>
       <AnimatePresence>
@@ -395,6 +749,13 @@ export function GlobalChatWidget() {
             onClose={handleClose}
             isExpanded={isExpanded}
             onToggleExpand={() => setIsExpanded(!isExpanded)}
+            suggestions={suggestions}
+            soundEnabled={soundEnabled}
+            onToggleSound={toggleSound}
+            onFeedback={handleFeedback}
+            attachments={attachments}
+            onAttach={handleAttach}
+            onRemoveAttachment={handleRemoveAttachment}
           />
         )}
       </AnimatePresence>
@@ -403,6 +764,8 @@ export function GlobalChatWidget() {
         isOpen={isOpen}
         onClick={isOpen ? handleClose : handleOpen}
         hasUnread={hasUnread}
+        position={buttonPosition}
+        onDragEnd={handleDragEnd}
       />
     </div>
   )

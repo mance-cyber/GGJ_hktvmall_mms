@@ -17,6 +17,16 @@ from .slot_manager import SlotManager, AnalysisSlots, SlotStatus, SlotCompletene
 from .tool_executor import ToolExecutor
 from .report_generator import ReportGenerator, Report
 from .mock_data import is_mock_mode_enabled, MockResponseGenerator
+from .persona import (
+    RESPONSE_TEMPLATES,
+    format_order_stats,
+    format_finance_summary,
+    format_alert_summary,
+    get_greeting,
+    get_thinking,
+    get_success,
+    get_error,
+)
 
 
 class ResponseType(Enum):
@@ -26,6 +36,41 @@ class ResponseType(Enum):
     CLARIFICATION = "clarification"
     REPORT = "report"
     ERROR = "error"
+
+
+# =============================================
+# 意圖分類配置
+# =============================================
+
+# 直接執行的意圖（不需要產品槽位）
+DIRECT_ACTION_INTENTS = {
+    IntentType.ORDER_STATS,
+    IntentType.ORDER_SEARCH,
+    IntentType.FINANCE_SUMMARY,
+    IntentType.SETTLEMENT_QUERY,
+    IntentType.ALERT_QUERY,
+    IntentType.ALERT_ACTION,
+    IntentType.SEND_NOTIFICATION,
+    IntentType.ADD_COMPETITOR,
+    IntentType.ADD_PRODUCT,
+    IntentType.NAVIGATE,
+    IntentType.INVENTORY_QUERY,
+    IntentType.FINANCE_ANALYSIS,
+    IntentType.ORDER_QUERY,
+}
+
+# 需要產品槽位的意圖
+PRODUCT_REQUIRED_INTENTS = {
+    IntentType.PRODUCT_SEARCH,
+    IntentType.PRODUCT_DETAIL,
+    IntentType.PRICE_ANALYSIS,
+    IntentType.TREND_ANALYSIS,
+    IntentType.COMPETITOR_ANALYSIS,
+    IntentType.BRAND_ANALYSIS,
+    IntentType.MARKET_OVERVIEW,
+    IntentType.GENERATE_REPORT,
+    IntentType.MARKETING_STRATEGY,
+}
 
 
 @dataclass
@@ -236,7 +281,7 @@ class AgentService:
         
         yield AgentResponse(
             type=ResponseType.THINKING,
-            content="分析緊你嘅問題...",
+            content=get_thinking(),
             conversation_id=conversation_id,
             state=state
         )
@@ -271,7 +316,15 @@ class AgentService:
             return
         
         if intent_result.intent == IntentType.UNKNOWN:
-            response_content = "唔好意思，我唔太明你嘅意思。你可以試下話俾我知你想分析啲咩產品？例如「我想睇和牛嘅資料」。"
+            response_content = """唔好意思，我唔係好明你嘅意思 😅
+
+不如試下咁問：
+• 「今日訂單點樣？」
+• 「本月賺幾多？」
+• 「有咩警報？」
+• 「分析和牛價格」
+
+或者話我知你想做咩，我盡量幫你！"""
             await self._save_message(conversation_id, "assistant", response_content, "message")
             yield AgentResponse(
                 type=ResponseType.MESSAGE,
@@ -280,41 +333,82 @@ class AgentService:
                 state=state
             )
             return
-        
+
+        # =============================================
+        # 直接執行的意圖（不需要產品槽位）
+        # =============================================
+        if intent_result.intent in DIRECT_ACTION_INTENTS:
+            yield AgentResponse(
+                type=ResponseType.THINKING,
+                content="查詢緊數據...",
+                conversation_id=conversation_id,
+                state=state
+            )
+
+            # 直接執行工具
+            tool_results = await self.tool_executor.execute(
+                intent=state.current_intent,
+                slots=state.slots
+            )
+
+            aggregated = self.tool_executor.aggregate_results(tool_results)
+
+            # 生成簡潔回覆
+            response_content = self._format_direct_action_response(
+                intent=state.current_intent,
+                data=aggregated["data"],
+                errors=aggregated["errors"]
+            )
+
+            await self._update_conversation_state(conversation_id, state.slots, state.current_intent)
+            await self._save_message(conversation_id, "assistant", response_content, "message")
+
+            yield AgentResponse(
+                type=ResponseType.MESSAGE,
+                content=response_content,
+                conversation_id=conversation_id,
+                state=state
+            )
+            return
+
+        # =============================================
+        # 需要產品槽位的意圖
+        # =============================================
         yield AgentResponse(
             type=ResponseType.THINKING,
             content="提取緊查詢條件...",
             conversation_id=conversation_id,
             state=state
         )
-        
+
         extracted_slots = self.slot_manager.extract_slots(
             message=message,
             entities=intent_result.entities
         )
         state.slots = self.slot_manager.merge_slots(state.slots, extracted_slots)
-        
-        completeness = self.slot_manager.check_completeness(state.slots)
-        
-        if not completeness.is_complete:
-            clarification = self.slot_manager.generate_clarification_message(
-                completeness.clarification_needed
-            )
-            state.pending_clarifications = completeness.clarification_needed
-            await self._update_conversation_state(conversation_id, state.slots, state.current_intent)
-            await self._save_message(
-                conversation_id, "assistant", clarification["message"], 
-                "clarification", {"options": clarification["options"]}
-            )
-            yield AgentResponse(
-                type=ResponseType.CLARIFICATION,
-                content=clarification["message"],
-                conversation_id=conversation_id,
-                options=clarification["options"],
-                state=state
-            )
-            return
-        
+
+        # 只有需要產品的意圖才檢查完整性
+        if intent_result.intent in PRODUCT_REQUIRED_INTENTS:
+            # 只在真正缺少必要信息時才問
+            if not state.slots.products:
+                clarification = {
+                    "message": "想分析邊啲產品呀？🤔\n\n例如：和牛、三文魚、海膽、日本零食...\n\n直接話我知就得！",
+                    "options": []
+                }
+                await self._update_conversation_state(conversation_id, state.slots, state.current_intent)
+                await self._save_message(
+                    conversation_id, "assistant", clarification["message"],
+                    "clarification", {"options": []}
+                )
+                yield AgentResponse(
+                    type=ResponseType.CLARIFICATION,
+                    content=clarification["message"],
+                    conversation_id=conversation_id,
+                    options=[],
+                    state=state
+                )
+                return
+
         yield AgentResponse(
             type=ResponseType.THINKING,
             content="查詢緊數據...",
@@ -525,40 +619,115 @@ class AgentService:
         return deleted_count
 
     def _get_greeting_response(self) -> str:
-        return """你好！我係 AI 分析助手 🤖
+        return get_greeting() + """
 
-我可以幫你分析 HKTVmall 嘅產品數據，例如：
-- 📊 產品價格概覽
-- 📈 價格趨勢分析
-- ⚔️ 競爭對手比較
-- 🏆 熱門產品排行
+我可以幫你：
+• 📦 查訂單、睇營收
+• 🚨 Check 警報、處理緊急事項
+• 📊 分析產品價格同趨勢
+• ⚔️ 監察競爭對手動態
+• 💡 俾你營運建議
 
-試下話俾我知你想分析啲咩？例如：
-• 「我想睇 A5 和牛同海膽嘅資料」
-• 「分析三文魚嘅價格趨勢」
-• 「同百佳比較吓日本零食」"""
-    
+直接話我知你想做咩，我即刻幫你搞掂！"""
+
     def _get_help_response(self) -> str:
-        return """## 我可以幫你做啲咩？
+        return """## Jap仔 可以幫你做啲咩？ 💪
+
+### 📦 營運查詢
+「今日有幾多單？」「本月營收點？」
+
+### 🚨 警報管理
+「有咩警報？」「邊啲要緊急處理？」
 
 ### 📊 產品分析
-- 「分析和牛嘅價格」
-- 「我想睇三文魚同海膽嘅資料」
+「和牛價格點？」「三文魚趨勢」
 
-### 📈 趨勢追蹤
-- 「過去 30 日和牛價格趨勢」
-- 「呢個月有咩產品減價？」
+### ⚔️ 競爭監測
+「百佳賣幾錢？」「同對手比較」
 
-### ⚔️ 競爭對手比較
-- 「同百佳比較日本零食價格」
-- 「邊個平台賣和牛最平？」
-
-### 🏆 熱門產品
-- 「邊款海膽最多人買？」
-- 「評分最高嘅三文魚」
-
-### 📝 生成報告
-- 「幫我出份和牛市場報告」
+### 💡 快速操作
+「加新競爭對手」「新增產品」
 
 ---
-直接打字問我就得喇！"""
+直接打字問我就得！唔使客氣 😄"""
+
+    def _format_direct_action_response(
+        self,
+        intent: IntentType,
+        data: dict,
+        errors: list
+    ) -> str:
+        """
+        格式化直接執行意圖的回覆（Jap仔 風格）
+        """
+        if errors:
+            error_msgs = [e.get("error", "未知錯誤") for e in errors]
+            return get_error() + f" 詳情：{', '.join(error_msgs)}"
+
+        # 訂單統計
+        if intent == IntentType.ORDER_STATS:
+            stats = data.get("order_stats", {})
+            if not stats:
+                return get_error() + " 暫時攞唔到訂單數據，等陣再試吓？"
+            return format_order_stats(stats)
+
+        # 財務摘要
+        if intent in [IntentType.FINANCE_SUMMARY, IntentType.FINANCE_ANALYSIS]:
+            finance = data.get("finance_summary", {})
+            if not finance:
+                return get_error() + " 暫時攞唔到財務數據，等陣再試吓？"
+            return format_finance_summary(finance)
+
+        # 警報查詢
+        if intent == IntentType.ALERT_QUERY:
+            alerts = data.get("alert_query", {})
+            if not alerts:
+                return "✅ 冇警報！一切正常，可以放心～"
+            return format_alert_summary(alerts)
+
+        # 導航引導
+        if intent == IntentType.NAVIGATE:
+            guide = data.get("navigation_guide", {})
+            msg = guide.get("message", "")
+            return f"好！{msg}" if msg else "你想去邊個頁面？話我知～"
+
+        # 新增競爭對手引導
+        if intent == IntentType.ADD_COMPETITOR:
+            guide = data.get("add_competitor_guide", {})
+            msg = guide.get("message", "")
+            return msg if msg else """想加競爭對手？Easy！
+
+1. 去「競品監測」頁面
+2. 撳右上角「新增」按鈕
+3. 填返對手資料就搞掂！
+
+[👉 直接去競品監測](/competitors)"""
+
+        # 新增產品引導
+        if intent == IntentType.ADD_PRODUCT:
+            guide = data.get("add_product_guide", {})
+            msg = guide.get("message", "")
+            return msg if msg else """想加新產品？冇問題！
+
+1. 去「商品庫」頁面
+2. 撳「新增產品」
+3. 填返產品資料就得！
+
+[👉 直接去商品庫](/products)"""
+
+        # 通知發送
+        if intent == IntentType.SEND_NOTIFICATION:
+            result = data.get("notification_send", {})
+            if result.get("success"):
+                return get_success() + " 通知已經發出去喇！📬"
+            return get_error() + " 通知發唔到，等陣再試吓？"
+
+        # 庫存查詢
+        if intent == IntentType.INVENTORY_QUERY:
+            inventory = data.get("query_top_products", {})
+            if not inventory:
+                return "暫時冇庫存數據，可能要同步吓先～"
+            return f"庫存情況：{inventory}"
+
+        # 默認回覆
+        return get_success() + f" 搞掂！仲有咩要幫手？"
