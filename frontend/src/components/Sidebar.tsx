@@ -1,5 +1,9 @@
 'use client'
 
+// =============================================
+// Sidebar - Future Tech 風格側邊欄
+// =============================================
+
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -16,11 +20,11 @@ import {
   Eye,
   Menu,
   X,
-  ChevronRight,
   Globe,
   Brain,
   MessageSquare,
   LogOut,
+  Zap,
   LucideIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -38,143 +42,188 @@ interface NavItem {
   href: string
   icon: LucideIcon
   description?: string
-  highlight?: boolean
-  // 權限控制：需要滿足的權限（任一即可）
   permissions?: string[]
-  // 角色控制：需要滿足的角色（任一即可）
   roles?: ('admin' | 'operator' | 'viewer')[]
 }
 
 interface NavGroup {
   title: string
   items: NavItem[]
-  // 整組的權限控制
+  color: {
+    gradient: string
+    border: string
+    accent: string
+    activeBg: string
+    activeBorder: string
+    activeGlow: string
+    indicator: string
+  }
   permissions?: string[]
   roles?: ('admin' | 'operator' | 'viewer')[]
 }
 
 // =============================================
-// 導航配置 - 按功能分組（含權限）
+// 分類顏色主題
+// =============================================
+
+const categoryColors = {
+  blue: {
+    gradient: 'from-blue-500/10 via-blue-400/5 to-transparent',
+    border: 'border-blue-300/30',
+    accent: 'text-blue-600',
+    activeBg: 'bg-blue-50',
+    activeBorder: 'border-blue-400/50',
+    activeGlow: 'shadow-[0_0_15px_rgba(59,130,246,0.15)]',
+    indicator: 'from-blue-500 to-cyan-500',
+  },
+  emerald: {
+    gradient: 'from-emerald-500/10 via-emerald-400/5 to-transparent',
+    border: 'border-emerald-300/30',
+    accent: 'text-emerald-600',
+    activeBg: 'bg-emerald-50',
+    activeBorder: 'border-emerald-400/50',
+    activeGlow: 'shadow-[0_0_15px_rgba(16,185,129,0.15)]',
+    indicator: 'from-emerald-500 to-teal-500',
+  },
+  purple: {
+    gradient: 'from-purple-500/10 via-purple-400/5 to-transparent',
+    border: 'border-purple-300/30',
+    accent: 'text-purple-600',
+    activeBg: 'bg-purple-50',
+    activeBorder: 'border-purple-400/50',
+    activeGlow: 'shadow-[0_0_15px_rgba(168,85,247,0.15)]',
+    indicator: 'from-purple-500 to-violet-500',
+  },
+  orange: {
+    gradient: 'from-orange-500/10 via-orange-400/5 to-transparent',
+    border: 'border-orange-300/30',
+    accent: 'text-orange-600',
+    activeBg: 'bg-orange-50',
+    activeBorder: 'border-orange-400/50',
+    activeGlow: 'shadow-[0_0_15px_rgba(249,115,22,0.15)]',
+    indicator: 'from-orange-500 to-amber-500',
+  },
+  pink: {
+    gradient: 'from-pink-500/10 via-pink-400/5 to-transparent',
+    border: 'border-pink-300/30',
+    accent: 'text-pink-600',
+    activeBg: 'bg-pink-50',
+    activeBorder: 'border-pink-400/50',
+    activeGlow: 'shadow-[0_0_15px_rgba(236,72,153,0.15)]',
+    indicator: 'from-pink-500 to-rose-500',
+  },
+}
+
+// =============================================
+// 導航配置 - 按功能分組（含權限和顏色）
 // =============================================
 
 const navigationGroups: NavGroup[] = [
   {
     title: '總覽',
+    color: categoryColors.blue,
     items: [
       { name: '儀表板', href: '/', icon: LayoutDashboard },
     ]
   },
   {
     title: '市場情報',
+    color: categoryColors.emerald,
     items: [
       {
         name: 'AI 助手',
         href: '/agent',
         icon: MessageSquare,
-        description: '對話式數據分析',
-        highlight: true,
         permissions: [PERMISSIONS.AGENT_READ]
       },
       {
         name: '市場應對中心',
         href: '/market-response',
         icon: Globe,
-        description: 'SKU 分析與競品配對',
         permissions: [PERMISSIONS.COMPETITORS_READ]
       },
       {
         name: '競品監測',
         href: '/competitors',
         icon: Eye,
-        description: '追蹤對手價格變動',
         permissions: [PERMISSIONS.COMPETITORS_READ]
       },
       {
         name: '價格趨勢',
         href: '/trends',
         icon: TrendingUp,
-        description: '歷史價格走勢圖',
         permissions: [PERMISSIONS.PRICES_READ]
       },
     ]
   },
   {
     title: '商品管理',
+    color: categoryColors.purple,
     items: [
       {
         name: '商品庫',
         href: '/products',
         icon: Package,
-        description: '管理自家商品',
         permissions: [PERMISSIONS.COMPETITORS_READ]
       },
       {
         name: '類別管理',
         href: '/categories',
         icon: FolderOpen,
-        description: 'HKTVmall 類別數據',
         permissions: [PERMISSIONS.COMPETITORS_READ]
       },
       {
         name: 'AI 文案',
         href: '/ai-content',
         icon: Sparkles,
-        description: '智能生成商品描述',
         permissions: [PERMISSIONS.AGENT_READ]
       },
       {
         name: 'AI 分析',
         href: '/ai-analysis',
         icon: Brain,
-        description: '數據摘要 + 策略',
         permissions: [PERMISSIONS.AGENT_READ]
       },
     ]
   },
   {
     title: '通知',
+    color: categoryColors.orange,
     items: [
       {
         name: '警報中心',
         href: '/alerts',
         icon: Bell,
-        highlight: true,
-        description: '價格變動提醒',
         permissions: [PERMISSIONS.NOTIFICATIONS_READ]
       },
     ]
   },
   {
     title: '系統',
-    roles: ['admin'],  // 整組只有 admin 可見
+    color: categoryColors.pink,
+    roles: ['admin'],
     items: [
       {
         name: 'AI 設定',
         href: '/ai-settings',
         icon: Brain,
-        description: 'API Key 與模型選擇',
         permissions: [PERMISSIONS.SYSTEM_SETTINGS_READ]
       },
       {
         name: '數據導出',
         href: '/export',
         icon: Download,
-        description: '匯出報表',
         permissions: [PERMISSIONS.REPORTS_EXPORT]
       },
       {
         name: '設定',
         href: '/settings',
         icon: Settings,
-        description: '系統配置',
         permissions: [PERMISSIONS.SYSTEM_SETTINGS_READ]
       },
     ]
   },
 ]
-
-// 扁平化導航（用於移動端底部導航）
-const navigation = navigationGroups.flatMap(g => g.items)
 
 // =============================================
 // 主組件
@@ -183,7 +232,6 @@ const navigation = navigationGroups.flatMap(g => g.items)
 export function Sidebar() {
   const pathname = usePathname()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
   const { user, logout } = useAuth()
   const { role, hasAnyPermission } = usePermissions()
 
@@ -199,42 +247,20 @@ export function Sidebar() {
   const filteredNavGroups = useMemo(() => {
     return navigationGroups
       .filter((group) => {
-        // 檢查整組的角色限制
-        if (group.roles && role && !group.roles.includes(role)) {
-          return false
-        }
-        // 檢查整組的權限限制
-        if (group.permissions && !hasAnyPermission(...group.permissions)) {
-          return false
-        }
+        if (group.roles && role && !group.roles.includes(role)) return false
+        if (group.permissions && !hasAnyPermission(...group.permissions)) return false
         return true
       })
       .map((group) => ({
         ...group,
         items: group.items.filter((item) => {
-          // 檢查項目的角色限制
-          if (item.roles && role && !item.roles.includes(role)) {
-            return false
-          }
-          // 檢查項目的權限限制
-          if (item.permissions && !hasAnyPermission(...item.permissions)) {
-            return false
-          }
+          if (item.roles && role && !item.roles.includes(role)) return false
+          if (item.permissions && !hasAnyPermission(...item.permissions)) return false
           return true
         }),
       }))
-      .filter((group) => group.items.length > 0) // 移除空組
+      .filter((group) => group.items.length > 0)
   }, [role, hasAnyPermission])
-
-  // 檢測屏幕尺寸
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024)
-    }
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
 
   // 路由變化時關閉移動端菜單
   useEffect(() => {
@@ -244,8 +270,9 @@ export function Sidebar() {
   // 移動端菜單按鈕
   const MobileMenuButton = () => (
     <button
+      type="button"
       onClick={() => setIsMobileOpen(!isMobileOpen)}
-      className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200"
+      className="lg:hidden fixed top-4 left-4 z-50 p-2.5 rounded-xl glass-panel hover:bg-white/90 transition-all"
     >
       {isMobileOpen ? (
         <X className="w-6 h-6 text-gray-600" />
@@ -257,92 +284,112 @@ export function Sidebar() {
 
   // 側邊欄內容
   const SidebarContent = () => (
-    <>
+    <div className="h-full rounded-2xl glass-sidebar p-6 relative overflow-hidden flex flex-col">
+      {/* 全息邊緣效果 */}
+      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-100/20 via-transparent to-purple-100/20 pointer-events-none" />
+
       {/* Logo */}
-      <div className="flex items-center h-16 px-6 border-b border-gray-200">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30">
-            <span className="text-white font-bold text-sm">AI</span>
+      <div className="mb-6 relative">
+        <div className="flex items-center gap-3">
+          <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center shadow-lg">
+            <Zap className="w-6 h-6 text-white" fill="white" />
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500 blur-md opacity-50" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-900">GoGoJap</h1>
-            <p className="text-xs text-gray-500">AI 營運系統</p>
+            <div className="text-gray-900 font-semibold text-lg">GoGoJap</div>
+            <div className="text-gray-500 text-xs flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+              AI 營運系統
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Navigation - 分組顯示 */}
-      <nav className="mt-4 px-3 flex-1 overflow-y-auto">
-        {filteredNavGroups.map((group, groupIdx) => (
-          <div key={group.title} className={cn(groupIdx > 0 && "mt-6")}>
-            {/* 分組標題 */}
-            <h3 className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              {group.title}
-            </h3>
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto scrollbar-subtle space-y-4 pr-1">
+        {filteredNavGroups.map((group) => {
+          const colors = group.color
 
-            <ul className="space-y-1">
-              {group.items.map((item) => {
-                const isActive = pathname === item.href ||
-                  (item.href !== '/' && pathname.startsWith(item.href))
-                const showBadge = item.href === '/alerts' && unreadCount > 0
+          return (
+            <div
+              key={group.title}
+              className={cn(
+                "relative p-3 rounded-xl backdrop-blur-sm",
+                `bg-gradient-to-br ${colors.gradient}`,
+                `border ${colors.border}`
+              )}
+            >
+              {/* 分類標題 */}
+              <div className={cn("text-[10px] uppercase tracking-widest mb-2.5 px-2 font-bold flex items-center gap-2", colors.accent)}>
+                <div className={cn("h-px flex-1 bg-gradient-to-r opacity-30", colors.indicator)} />
+                <span>{group.title}</span>
+                <div className={cn("h-px flex-1 bg-gradient-to-l opacity-30", colors.indicator)} />
+              </div>
 
-                return (
-                  <li key={item.name}>
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const Icon = item.icon
+                  const isActive = pathname === item.href ||
+                    (item.href !== '/' && pathname.startsWith(item.href))
+                  const showBadge = item.href === '/alerts' && unreadCount > 0
+
+                  return (
                     <Link
+                      key={item.name}
                       href={item.href}
                       className={cn(
-                        "flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium",
-                        "transition-all duration-200",
+                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative overflow-hidden",
                         isActive
-                          ? 'bg-blue-50 text-blue-700 shadow-sm'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          ? cn(colors.activeBg, "border", colors.activeBorder, colors.activeGlow)
+                          : "hover:bg-white/50 border border-transparent"
                       )}
                     >
-                      <div className="flex items-center">
-                        <item.icon className={cn(
-                          "w-5 h-5 mr-3 transition-colors",
-                          isActive ? 'text-blue-600' : 'text-gray-400'
-                        )} />
+                      <Icon className={cn(
+                        "w-4 h-4 relative z-10 transition-all duration-200 flex-shrink-0",
+                        isActive ? colors.accent : "text-gray-500 group-hover:text-gray-700"
+                      )} />
+
+                      <span className={cn(
+                        "relative z-10 transition-all duration-200 text-[13px] whitespace-nowrap flex-1",
+                        isActive ? "text-gray-900 font-bold" : "text-gray-700 font-medium group-hover:text-gray-900"
+                      )}>
                         {item.name}
-                      </div>
+                      </span>
 
                       {/* 未讀警報徽章 */}
                       {showBadge && (
-                        <motion.span
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full"
-                        >
+                        <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full animate-pulse-glow">
                           {unreadCount > 99 ? '99+' : unreadCount}
-                        </motion.span>
+                        </span>
                       )}
 
                       {/* Active 指示器 */}
                       {isActive && (
-                        <ChevronRight className="w-4 h-4 text-blue-400" />
+                        <div className={cn("absolute right-0 top-1/2 -translate-y-1/2 w-0.5 h-6 rounded-l-full bg-gradient-to-b", colors.indicator)} />
                       )}
                     </Link>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        ))}
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
       </nav>
 
       {/* User Info & Logout */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="mt-4 pt-4 border-t border-purple-200/30">
         {user && (
-          <div className="mb-3">
-            <div className="flex items-center space-x-3 p-2 rounded-lg bg-gray-50">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-purple-50 to-cyan-50 border border-purple-200/50 backdrop-blur-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-cyan-500 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-lg">
                 {user.full_name?.[0] || user.email[0].toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">
                   {user.full_name || user.email}
                 </p>
-                <p className="text-xs text-gray-500 capitalize">
+                <p className="text-xs text-gray-500 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
                   {role === 'admin' ? '管理員' : role === 'operator' ? '操作員' : '檢視者'}
                 </p>
               </div>
@@ -350,19 +397,15 @@ export function Sidebar() {
             <button
               type="button"
               onClick={logout}
-              className="mt-2 w-full flex items-center justify-center px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50/50 rounded-lg transition-all border border-transparent hover:border-red-200"
             >
-              <LogOut className="w-4 h-4 mr-2" />
+              <LogOut className="w-4 h-4" />
               登出
             </button>
           </div>
         )}
-        <div className="text-xs text-gray-500 text-center">
-          <p>GoGoJap 營運系統</p>
-          <p className="mt-1">v1.0.0</p>
-        </div>
       </div>
-    </>
+    </div>
   )
 
   return (
@@ -371,7 +414,7 @@ export function Sidebar() {
       <MobileMenuButton />
 
       {/* 桌面端側邊欄 */}
-      <div className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 bg-white shadow-lg border-r border-gray-200 z-40">
+      <div className="hidden lg:block lg:fixed lg:inset-y-0 lg:left-0 lg:w-72 lg:p-6 z-20">
         <SidebarContent />
       </div>
 
@@ -385,16 +428,16 @@ export function Sidebar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMobileOpen(false)}
-              className="lg:hidden fixed inset-0 bg-black/50 z-40"
+              className="lg:hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
             />
-            
+
             {/* 側邊欄 */}
             <motion.div
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="lg:hidden fixed inset-y-0 left-0 w-64 bg-white shadow-xl z-50 flex flex-col"
+              className="lg:hidden fixed inset-y-0 left-0 w-72 p-4 z-50"
             >
               <SidebarContent />
             </motion.div>
@@ -411,7 +454,7 @@ export function Sidebar() {
 
 export function MobileBottomNav() {
   const pathname = usePathname()
-  
+
   const quickNav = [
     { name: '首頁', href: '/', icon: LayoutDashboard },
     { name: '警報', href: '/alerts', icon: Bell },
@@ -420,22 +463,24 @@ export function MobileBottomNav() {
   ]
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 safe-area-bottom">
-      <nav className="flex items-center justify-around py-2">
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 p-3 safe-area-bottom">
+      <nav className="flex items-center justify-around py-2 px-4 rounded-2xl glass-panel">
         {quickNav.map((item) => {
           const isActive = pathname === item.href ||
             (item.href !== '/' && pathname.startsWith(item.href))
-          
+
           return (
             <Link
               key={item.name}
               href={item.href}
               className={cn(
-                "flex flex-col items-center py-1 px-3 rounded-lg transition-colors",
-                isActive ? 'text-blue-600' : 'text-gray-500'
+                "flex flex-col items-center py-2 px-4 rounded-xl transition-all",
+                isActive
+                  ? "text-purple-600 bg-purple-50"
+                  : "text-gray-500 hover:text-gray-700"
               )}
             >
-              <item.icon className="w-6 h-6" />
+              <item.icon className="w-5 h-5" />
               <span className="text-xs mt-1 font-medium">{item.name}</span>
             </Link>
           )

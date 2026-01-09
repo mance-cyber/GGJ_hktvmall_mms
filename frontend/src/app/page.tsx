@@ -97,27 +97,41 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in-up">
+    <div className="space-y-8">
       {/* ========== 頁面標題 + 今日摘要 ========== */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            歡迎回來 👋
-          </h1>
-          <p className="text-muted-foreground mt-2 text-lg">
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-4xl font-light text-gray-900 relative">
+              歡迎回來 👋
+              <div className="absolute -bottom-1 left-0 h-0.5 w-32 bg-gradient-to-r from-purple-500 via-cyan-500 to-transparent" />
+            </h1>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-100 to-cyan-100 border border-purple-300/50">
+              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+              <span className="text-xs font-medium text-gray-700">在線</span>
+            </div>
+          </div>
+          <p className="text-gray-600 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-purple-500" />
             {new Date().toLocaleDateString('zh-HK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
         <div className="flex items-center space-x-3">
-          <Button variant="outline" onClick={() => refetchAlerts()} className="glass-card">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            刷新數據
-          </Button>
+          <button
+            type="button"
+            onClick={() => refetchAlerts()}
+            title="刷新數據"
+            className="relative p-3 rounded-xl bg-white/60 border border-purple-200/50 backdrop-blur-xl hover:bg-white/80 transition-all hover:border-purple-400 hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] group"
+          >
+            <RefreshCw className="w-5 h-5 text-gray-600 group-hover:text-purple-600 transition-colors" />
+          </button>
           <Link href="/competitors">
-            <Button className="bg-primary hover:bg-primary/90 shadow-lg shadow-blue-500/20">
-              <Zap className="w-4 h-4 mr-2" />
-              開始抓取
-            </Button>
+            <button type="button" className="btn-gradient">
+              <span className="relative z-10 flex items-center">
+                <Zap className="w-4 h-4 mr-2" />
+                開始抓取
+              </span>
+            </button>
           </Link>
         </div>
       </div>
