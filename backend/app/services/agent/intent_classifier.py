@@ -185,12 +185,18 @@ class IntentClassifier:
         
         # 如果規則識別信心度不夠且有 AI 服務，使用 AI
         if use_ai and self.ai_service:
+            print(f"[IntentClassifier] 規則信心度 {rule_result.confidence} < 0.8，嘗試 AI 識別...")
             ai_result = await self._classify_by_ai(message, context)
-            
+            print(f"[IntentClassifier] AI 結果: intent={ai_result.intent.value}, confidence={ai_result.confidence}")
+
             # 選擇信心度更高的結果
             if ai_result.confidence > rule_result.confidence:
+                print(f"[IntentClassifier] 採用 AI 結果 (AI {ai_result.confidence} > Rule {rule_result.confidence})")
                 return ai_result
-        
+            else:
+                print(f"[IntentClassifier] 採用規則結果 (Rule {rule_result.confidence} >= AI {ai_result.confidence})")
+
+        print(f"[IntentClassifier] 最終結果: intent={rule_result.intent.value}, entities={rule_result.entities}")
         return rule_result
     
     def _classify_by_rules(self, message: str) -> IntentResult:
@@ -297,8 +303,19 @@ class IntentClassifier:
         )
         
         try:
+            print(f"[IntentClassifier] 調用 AI API...")
             response = await self.ai_service.call_ai(prompt)
-            
+            print(f"[IntentClassifier] AI 回應 success={response.success}, content長度={len(response.content) if response.content else 0}")
+
+            if not response.success:
+                print(f"[IntentClassifier] AI 調用失敗: {response.error}")
+                return IntentResult(
+                    intent=IntentType.UNKNOWN,
+                    entities=[],
+                    confidence=0,
+                    reasoning=f"AI 調用失敗: {response.error}"
+                )
+
             # 解析 JSON
             # 嘗試提取 JSON
             json_match = re.search(r'\{[^{}]*\}', response.content, re.DOTALL)
@@ -306,17 +323,24 @@ class IntentClassifier:
                 result = json.loads(json_match.group())
             else:
                 result = json.loads(response.content)
-            
+
+            print(f"[IntentClassifier] AI JSON 解析成功: {result}")
+
             intent_str = result.get("intent", "UNKNOWN")
             try:
                 intent = IntentType(intent_str)
             except ValueError:
-                intent = IntentType.UNKNOWN
-            
+                # 嘗試大小寫轉換
+                try:
+                    intent = IntentType(intent_str.lower())
+                except ValueError:
+                    print(f"[IntentClassifier] 無法識別意圖類型: {intent_str}")
+                    intent = IntentType.UNKNOWN
+
             entities = result.get("entities", [])
             confidence = result.get("confidence", 0.7)
             reasoning = result.get("reasoning", "")
-            
+
             return IntentResult(
                 intent=intent,
                 entities=entities,
@@ -324,6 +348,7 @@ class IntentClassifier:
                 reasoning=reasoning
             )
         except Exception as e:
+            print(f"[IntentClassifier] AI 識別異常: {type(e).__name__}: {str(e)}")
             return IntentResult(
                 intent=IntentType.UNKNOWN,
                 entities=[],
