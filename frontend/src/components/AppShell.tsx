@@ -7,6 +7,7 @@
 import { usePathname } from 'next/navigation'
 import { Sidebar, MobileBottomNav } from './Sidebar'
 import { useAuth } from './providers/auth-provider'
+import { ClickSpark } from './ui/click-spark'
 
 // 不需要顯示側邊欄的公共頁面
 const publicPaths = ['/login', '/register']
@@ -23,14 +24,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <>{children}</>
   }
 
-  // 已登入用戶顯示完整佈局
+  // 已登入用戶顯示完整佈局（帶點擊特效）
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <main className="flex-1 p-4 lg:p-6 lg:ml-64 pb-20 lg:pb-6">
-        {children}
-      </main>
-      <MobileBottomNav />
-    </div>
+    <ClickSpark
+      sparkColor="#3b82f6"
+      sparkSize={10}
+      sparkRadius={20}
+      sparkCount={8}
+      duration={400}
+    >
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <main className="flex-1 p-4 lg:p-6 lg:ml-64 pb-20 lg:pb-6">
+          {children}
+        </main>
+        <MobileBottomNav />
+      </div>
+    </ClickSpark>
   )
 }
