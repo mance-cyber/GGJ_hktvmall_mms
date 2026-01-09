@@ -454,17 +454,23 @@ export function Sidebar() {
 
 export function MobileBottomNav() {
   const pathname = usePathname()
+  const { data: alerts } = useQuery({
+    queryKey: ['alerts-count-mobile'],
+    queryFn: () => api.getAlerts(false, undefined, 1),
+    refetchInterval: 30000,
+  })
+  const unreadCount = alerts?.unread_count || 0
 
   const quickNav = [
     { name: '首頁', href: '/', icon: LayoutDashboard },
-    { name: '警報', href: '/alerts', icon: Bell },
+    { name: '警報', href: '/alerts', icon: Bell, badge: unreadCount },
+    { name: 'AI', href: '/agent', icon: MessageSquare },
     { name: '競品', href: '/competitors', icon: Eye },
-    { name: '設定', href: '/settings', icon: Settings },
   ]
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 p-3 safe-area-bottom">
-      <nav className="flex items-center justify-around py-2 px-4 rounded-2xl glass-panel">
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 px-3 pb-3 safe-area-bottom bg-gradient-to-t from-white/80 to-transparent pt-6">
+      <nav className="flex items-center justify-around py-1 px-2 rounded-2xl glass-panel border border-purple-200/30">
         {quickNav.map((item) => {
           const isActive = pathname === item.href ||
             (item.href !== '/' && pathname.startsWith(item.href))
@@ -474,14 +480,20 @@ export function MobileBottomNav() {
               key={item.name}
               href={item.href}
               className={cn(
-                "flex flex-col items-center py-2 px-4 rounded-xl transition-all",
+                "relative flex flex-col items-center py-3 px-5 rounded-xl transition-all touch-target",
                 isActive
-                  ? "text-purple-600 bg-purple-50"
-                  : "text-gray-500 hover:text-gray-700"
+                  ? "text-purple-600 bg-purple-50/80"
+                  : "text-gray-500 active:bg-gray-100"
               )}
             >
-              <item.icon className="w-5 h-5" />
-              <span className="text-xs mt-1 font-medium">{item.name}</span>
+              <item.icon className={cn("w-5 h-5", isActive && "scale-110")} />
+              <span className="text-[10px] mt-1 font-medium">{item.name}</span>
+              {/* 未讀徽章 */}
+              {item.badge && item.badge > 0 && (
+                <span className="absolute -top-0.5 right-2 min-w-[18px] h-[18px] flex items-center justify-center px-1 bg-red-500 text-white text-[10px] font-bold rounded-full">
+                  {item.badge > 99 ? '99+' : item.badge}
+                </span>
+              )}
             </Link>
           )
         })}

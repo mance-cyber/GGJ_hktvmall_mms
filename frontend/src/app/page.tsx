@@ -99,37 +99,37 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* ========== 頁面標題 + 今日摘要 ========== */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-4xl font-light text-gray-900 relative">
+          <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
+            <h1 className="text-2xl sm:text-4xl font-light text-gray-900 relative">
               歡迎回來 👋
-              <div className="absolute -bottom-1 left-0 h-0.5 w-32 bg-gradient-to-r from-purple-500 via-cyan-500 to-transparent" />
+              <div className="absolute -bottom-1 left-0 h-0.5 w-20 sm:w-32 bg-gradient-to-r from-purple-500 via-cyan-500 to-transparent" />
             </h1>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-100 to-cyan-100 border border-purple-300/50">
+            <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-gradient-to-r from-purple-100 to-cyan-100 border border-purple-300/50">
               <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-              <span className="text-xs font-medium text-gray-700">在線</span>
+              <span className="text-[10px] sm:text-xs font-medium text-gray-700">在線</span>
             </div>
           </div>
-          <p className="text-gray-600 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-purple-500" />
-            {new Date().toLocaleDateString('zh-HK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          <p className="text-sm sm:text-base text-gray-600 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-purple-500 flex-shrink-0" />
+            <span className="truncate">{new Date().toLocaleDateString('zh-HK', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
           </p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 sm:space-x-3">
           <button
             type="button"
             onClick={() => refetchAlerts()}
             title="刷新數據"
-            className="relative p-3 rounded-xl bg-white/60 border border-purple-200/50 backdrop-blur-xl hover:bg-white/80 transition-all hover:border-purple-400 hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] group"
+            className="relative p-2.5 sm:p-3 rounded-xl bg-white/60 border border-purple-200/50 backdrop-blur-xl hover:bg-white/80 transition-all hover:border-purple-400 hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] group touch-target"
           >
             <RefreshCw className="w-5 h-5 text-gray-600 group-hover:text-purple-600 transition-colors" />
           </button>
           <Link href="/competitors">
-            <button type="button" className="btn-gradient">
+            <button type="button" className="btn-gradient touch-target !px-4 sm:!px-6 !py-2.5 sm:!py-3">
               <span className="relative z-10 flex items-center">
-                <Zap className="w-4 h-4 mr-2" />
-                開始抓取
+                <Zap className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">開始抓取</span>
               </span>
             </button>
           </Link>
@@ -137,8 +137,8 @@ export default function DashboardPage() {
       </div>
 
       {/* ========== 今日摘要卡片 ========== */}
-      <div className="glass-panel rounded-2xl p-6 border border-white/40 bg-gradient-to-r from-blue-50/50 to-purple-50/50">
-        <div className="flex items-center justify-between mb-4">
+      <div className="glass-panel rounded-2xl p-4 sm:p-6 border border-white/40 bg-gradient-to-r from-blue-50/50 to-purple-50/50">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
           <h2 className="text-lg font-bold text-slate-800 flex items-center">
             <Calendar className="w-5 h-5 mr-2 text-blue-500" />
             今日摘要

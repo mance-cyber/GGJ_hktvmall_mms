@@ -8,6 +8,7 @@ import { usePathname } from 'next/navigation'
 import { Sidebar, MobileBottomNav } from './Sidebar'
 import { useAuth } from './providers/auth-provider'
 import { ClickSpark } from './ui/click-spark'
+import { GlobalChatWidget } from './GlobalChatWidget'
 
 // 不需要顯示側邊欄的公共頁面
 const publicPaths = ['/login', '/register']
@@ -83,6 +84,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </main>
           <MobileBottomNav />
         </div>
+
+        {/* 全局浮動聊天組件 */}
+        <GlobalChatWidget />
       </div>
     </ClickSpark>
   )

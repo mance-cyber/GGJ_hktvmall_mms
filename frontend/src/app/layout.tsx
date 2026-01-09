@@ -14,6 +14,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: 'cover', // 支持 iPhone 瀏海屏幕
 }
 
 export default function RootLayout({
