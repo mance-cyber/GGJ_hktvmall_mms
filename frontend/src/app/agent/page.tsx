@@ -6,6 +6,7 @@ import { api, AgentChatResponse, AgentSlotOption } from '@/lib/api'
 import { motion, AnimatePresence } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { DotLottieReact } from '@lottiefiles/dotlottie-react'
 import {
   Send,
   Bot,
@@ -590,8 +591,13 @@ export default function AgentPage() {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center px-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-4 shadow-lg">
-                <Sparkles className="w-8 h-8 text-white" />
+              <div className="w-24 h-24 mb-4">
+                <DotLottieReact
+                  src="/animations/jap.lottie"
+                  loop
+                  autoplay
+                  style={{ width: '100%', height: '100%' }}
+                />
               </div>
               <h2 className="text-xl font-semibold text-slate-700 mb-2">
                 我係你嘅 AI 助手
