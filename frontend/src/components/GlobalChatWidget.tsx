@@ -467,90 +467,100 @@ function MiniChatBox({
             </div>
           </div>
         ) : (
-          messages.map((msg) => (
-            <motion.div
-              key={msg.id}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={cn(
-                "flex gap-2",
-                msg.role === 'user' && "flex-row-reverse"
-              )}
-            >
-              <div className={cn(
-                "w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0",
-                msg.role === 'user'
-                  ? "bg-gradient-to-br from-cyan-500 to-blue-500"
-                  : "bg-gradient-to-br from-purple-500 to-pink-500"
-              )}>
-                {msg.role === 'user' ? (
-                  <User className="w-3.5 h-3.5 text-white" />
-                ) : (
-                  <span className="text-xs">🇯🇵</span>
+          messages.map((msg, index) => {
+            // 計算是否為最後一條 AI 訊息
+            const lastAssistantIndex = messages.findLastIndex(m => m.role === 'assistant')
+            const isLastAssistantMessage = index === lastAssistantIndex
+
+            return (
+              <motion.div
+                key={msg.id}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={cn(
+                  "flex gap-2",
+                  msg.role === 'user' && "flex-row-reverse"
                 )}
-              </div>
-              <div className="max-w-[80%]">
+              >
                 <div className={cn(
-                  "rounded-xl px-3 py-2 text-sm",
+                  "w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0",
                   msg.role === 'user'
-                    ? "bg-gradient-to-br from-cyan-500 to-blue-500 text-white rounded-tr-sm"
-                    : "bg-white border shadow-sm rounded-tl-sm"
+                    ? "bg-gradient-to-br from-cyan-500 to-blue-500"
+                    : "bg-gradient-to-br from-purple-500 to-pink-500"
                 )}>
-                  {/* 附件預覽 */}
-                  {msg.attachments && msg.attachments.length > 0 && (
-                    <AttachmentPreview attachments={msg.attachments} />
-                  )}
-                  {msg.role === 'assistant' ? (
-                    <div className="prose prose-sm max-w-none">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {msg.content}
-                      </ReactMarkdown>
-                    </div>
+                  {msg.role === 'user' ? (
+                    <User className="w-3.5 h-3.5 text-white" />
                   ) : (
-                    <p>{msg.content}</p>
+                    <span className="text-xs">🇯🇵</span>
                   )}
                 </div>
-                {/* 訊息反饋 - 只顯示在 AI 回覆 */}
-                {msg.role === 'assistant' && (
-                  <MessageFeedback
-                    messageId={msg.id}
-                    feedback={msg.feedback}
-                    onFeedback={onFeedback}
-                  />
-                )}
-                {/* Follow-up Suggestions */}
-                {msg.role === 'assistant' && msg.suggestions && msg.suggestions.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {msg.suggestions.map((suggestion, i) => {
-                      const isNewTopicButton = suggestion.text.includes('問其他嘢')
-                      return (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => {
-                            if (isNewTopicButton) {
-                              onNewConversation()
-                            } else {
-                              setInput(suggestion.text)
-                            }
-                          }}
-                          className={cn(
-                            "flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-colors",
-                            isNewTopicButton
-                              ? "bg-slate-100 border border-slate-300 text-slate-600 hover:bg-slate-200"
-                              : "bg-purple-50 border border-purple-200 text-purple-700 hover:bg-purple-100 hover:border-purple-300"
-                          )}
-                        >
-                          <span>{suggestion.icon}</span>
-                          <span>{suggestion.text}</span>
-                        </button>
-                      )
-                    })}
+                <div className="max-w-[80%]">
+                  <div className={cn(
+                    "rounded-xl px-3 py-2 text-sm",
+                    msg.role === 'user'
+                      ? "bg-gradient-to-br from-cyan-500 to-blue-500 text-white rounded-tr-sm"
+                      : "bg-white border shadow-sm rounded-tl-sm"
+                  )}>
+                    {/* 附件預覽 */}
+                    {msg.attachments && msg.attachments.length > 0 && (
+                      <AttachmentPreview attachments={msg.attachments} />
+                    )}
+                    {msg.role === 'assistant' ? (
+                      <div className="prose prose-sm max-w-none">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {msg.content}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p>{msg.content}</p>
+                    )}
                   </div>
-                )}
-              </div>
-            </motion.div>
-          ))
+                  {/* 訊息反饋 - 只顯示在 AI 回覆 */}
+                  {msg.role === 'assistant' && (
+                    <MessageFeedback
+                      messageId={msg.id}
+                      feedback={msg.feedback}
+                      onFeedback={onFeedback}
+                    />
+                  )}
+                  {/* Follow-up Suggestions - 只顯示在最後一條 AI 訊息 */}
+                  {isLastAssistantMessage &&
+                   msg.role === 'assistant' &&
+                   msg.suggestions &&
+                   msg.suggestions.length > 0 &&
+                   !isLoading && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {msg.suggestions.map((suggestion, i) => {
+                        const isNewTopicButton = suggestion.text.includes('問其他嘢')
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => {
+                              if (isNewTopicButton) {
+                                onNewConversation()
+                              } else {
+                                setInput(suggestion.text)
+                              }
+                            }}
+                            className={cn(
+                              "flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-colors",
+                              isNewTopicButton
+                                ? "bg-slate-100 border border-slate-300 text-slate-600 hover:bg-slate-200"
+                                : "bg-purple-50 border border-purple-200 text-purple-700 hover:bg-purple-100 hover:border-purple-300"
+                            )}
+                          >
+                            <span>{suggestion.icon}</span>
+                            <span>{suggestion.text}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )
+          })
         )}
 
         {/* Loading indicator */}
