@@ -578,13 +578,20 @@ class AgentService:
             conversation_id, "assistant", report.markdown,
             "report", {"charts": [c.__dict__ for c in report.charts]}
         )
-        
+
+        # 報告後的建議
+        clarify_suggestions = get_follow_up_suggestions(
+            state.current_intent.value if state.current_intent else "default",
+            {"products": state.slots.products}
+        )
+
         yield AgentResponse(
             type=ResponseType.REPORT,
             content=report.markdown,
             conversation_id=conversation_id,
             report=report.to_dict(),
             charts=[c.__dict__ for c in report.charts],
+            suggestions=clarify_suggestions,
             state=state
         )
 
@@ -609,13 +616,21 @@ class AgentService:
             conversation_id, "assistant", mock_report["markdown"],
             "report", {"charts": mock_report["charts"], "is_mock": True}
         )
-        
+
+        # 獲取後續建議按鈕
+        intent_type = state.current_intent.value if state.current_intent else "default"
+        mock_suggestions = get_follow_up_suggestions(
+            intent_type,
+            {"products": state.slots.products}
+        )
+
         yield AgentResponse(
             type=ResponseType.REPORT,
             content=mock_report["markdown"],
             conversation_id=conversation_id,
             report=mock_report,
             charts=mock_report["charts"],
+            suggestions=mock_suggestions,
             state=state
         )
 

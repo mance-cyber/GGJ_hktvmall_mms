@@ -46,6 +46,7 @@ class ChatResponse(BaseModel):
     options: Optional[List[Dict]] = Field(None, description="澄清選項")
     report: Optional[Dict] = Field(None, description="報告數據")
     charts: Optional[List[Dict]] = Field(None, description="圖表數據")
+    suggestions: Optional[List[Dict]] = Field(None, description="後續建議按鈕")
 
 
 class ConversationState(BaseModel):
@@ -117,7 +118,8 @@ async def chat(
         conversation_id=final_response.conversation_id,
         options=final_response.options,
         report=final_response.report,
-        charts=final_response.charts
+        charts=final_response.charts,
+        suggestions=final_response.suggestions
     )
 
 
@@ -151,7 +153,8 @@ async def clarify(
         conversation_id=final_response.conversation_id,
         options=final_response.options,
         report=final_response.report,
-        charts=final_response.charts
+        charts=final_response.charts,
+        suggestions=final_response.suggestions
     )
 
 
