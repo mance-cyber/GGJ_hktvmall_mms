@@ -1230,8 +1230,9 @@ export interface User {
   id: string
   email: string
   full_name?: string
-  role: string
+  role: 'admin' | 'operator' | 'viewer'
   is_active: boolean
+  permissions: string[]
 }
 
 export const authApi = {

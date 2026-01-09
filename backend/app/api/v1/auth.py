@@ -13,7 +13,7 @@ from app.core import security
 from app.config import settings
 from app.models.database import get_db
 from app.models.user import User, UserRole
-from app.schemas.user import Token, UserCreate, User as UserSchema, GoogleLogin
+from app.schemas.user import Token, UserCreate, User as UserSchema, GoogleLogin, UserWithPermissions
 
 router = APIRouter()
 
@@ -160,11 +160,21 @@ async def register_user(
     await db.refresh(user)
     return user
 
-@router.get("/me", response_model=UserSchema)
+@router.get("/me", response_model=UserWithPermissions)
 async def read_users_me(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
-    Get current user
+    Get current user with permissions
     """
-    return current_user
+    from app.api.deps import get_user_permissions
+
+    permissions = get_user_permissions(current_user)
+    return UserWithPermissions(
+        id=current_user.id,
+        email=current_user.email,
+        full_name=current_user.full_name,
+        role=current_user.role,
+        is_active=current_user.is_active,
+        permissions=permissions,
+    )

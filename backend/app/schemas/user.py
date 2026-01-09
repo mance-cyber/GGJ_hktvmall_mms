@@ -34,6 +34,11 @@ class UserInDBBase(UserBase):
 class User(UserInDBBase):
     pass
 
+
+# User with permissions (for /me endpoint)
+class UserWithPermissions(UserInDBBase):
+    permissions: list[str] = []
+
 # Additional properties stored in DB
 class UserInDB(UserInDBBase):
     hashed_password: str

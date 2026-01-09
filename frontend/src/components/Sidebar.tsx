@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -19,17 +19,45 @@ import {
   ChevronRight,
   Globe,
   Brain,
-  MessageSquare
+  MessageSquare,
+  LogOut,
+  LucideIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
+import { useAuth } from '@/components/providers/auth-provider'
+import { usePermissions, PERMISSIONS } from '@/hooks/usePermissions'
 
 // =============================================
-// 導航配置 - 按功能分組
+// 導航項目類型定義
 // =============================================
 
-const navigationGroups = [
+interface NavItem {
+  name: string
+  href: string
+  icon: LucideIcon
+  description?: string
+  highlight?: boolean
+  // 權限控制：需要滿足的權限（任一即可）
+  permissions?: string[]
+  // 角色控制：需要滿足的角色（任一即可）
+  roles?: ('admin' | 'operator' | 'viewer')[]
+}
+
+interface NavGroup {
+  title: string
+  items: NavItem[]
+  // 整組的權限控制
+  permissions?: string[]
+  roles?: ('admin' | 'operator' | 'viewer')[]
+}
+
+// =============================================
+// 導航配置 - 按功能分組（含權限）
+// =============================================
+
+const navigationGroups: NavGroup[] = [
   {
     title: '總覽',
     items: [
@@ -39,33 +67,108 @@ const navigationGroups = [
   {
     title: '市場情報',
     items: [
-      { name: 'AI 助手', href: '/agent', icon: MessageSquare, description: '對話式數據分析', highlight: true },
-      { name: '市場應對中心', href: '/market-response', icon: Globe, description: 'SKU 分析與競品配對' },
-      { name: '競品監測', href: '/competitors', icon: Eye, description: '追蹤對手價格變動' },
-      { name: '價格趨勢', href: '/trends', icon: TrendingUp, description: '歷史價格走勢圖' },
+      {
+        name: 'AI 助手',
+        href: '/agent',
+        icon: MessageSquare,
+        description: '對話式數據分析',
+        highlight: true,
+        permissions: [PERMISSIONS.AGENT_READ]
+      },
+      {
+        name: '市場應對中心',
+        href: '/market-response',
+        icon: Globe,
+        description: 'SKU 分析與競品配對',
+        permissions: [PERMISSIONS.COMPETITORS_READ]
+      },
+      {
+        name: '競品監測',
+        href: '/competitors',
+        icon: Eye,
+        description: '追蹤對手價格變動',
+        permissions: [PERMISSIONS.COMPETITORS_READ]
+      },
+      {
+        name: '價格趨勢',
+        href: '/trends',
+        icon: TrendingUp,
+        description: '歷史價格走勢圖',
+        permissions: [PERMISSIONS.PRICES_READ]
+      },
     ]
   },
   {
     title: '商品管理',
     items: [
-      { name: '商品庫', href: '/products', icon: Package, description: '管理自家商品' },
-      { name: '類別管理', href: '/categories', icon: FolderOpen, description: 'HKTVmall 類別數據' },
-      { name: 'AI 文案', href: '/ai-content', icon: Sparkles, description: '智能生成商品描述' },
-      { name: 'AI 分析', href: '/ai-analysis', icon: Brain, description: '數據摘要 + 策略' },
+      {
+        name: '商品庫',
+        href: '/products',
+        icon: Package,
+        description: '管理自家商品',
+        permissions: [PERMISSIONS.COMPETITORS_READ]
+      },
+      {
+        name: '類別管理',
+        href: '/categories',
+        icon: FolderOpen,
+        description: 'HKTVmall 類別數據',
+        permissions: [PERMISSIONS.COMPETITORS_READ]
+      },
+      {
+        name: 'AI 文案',
+        href: '/ai-content',
+        icon: Sparkles,
+        description: '智能生成商品描述',
+        permissions: [PERMISSIONS.AGENT_READ]
+      },
+      {
+        name: 'AI 分析',
+        href: '/ai-analysis',
+        icon: Brain,
+        description: '數據摘要 + 策略',
+        permissions: [PERMISSIONS.AGENT_READ]
+      },
     ]
   },
   {
     title: '通知',
     items: [
-      { name: '警報中心', href: '/alerts', icon: Bell, highlight: true, description: '價格變動提醒' },
+      {
+        name: '警報中心',
+        href: '/alerts',
+        icon: Bell,
+        highlight: true,
+        description: '價格變動提醒',
+        permissions: [PERMISSIONS.NOTIFICATIONS_READ]
+      },
     ]
   },
   {
     title: '系統',
+    roles: ['admin'],  // 整組只有 admin 可見
     items: [
-      { name: 'AI 設定', href: '/ai-settings', icon: Brain, description: 'API Key 與模型選擇' },
-      { name: '數據導出', href: '/export', icon: Download, description: '匯出報表' },
-      { name: '設定', href: '/settings', icon: Settings, description: '系統配置' },
+      {
+        name: 'AI 設定',
+        href: '/ai-settings',
+        icon: Brain,
+        description: 'API Key 與模型選擇',
+        permissions: [PERMISSIONS.SYSTEM_SETTINGS_READ]
+      },
+      {
+        name: '數據導出',
+        href: '/export',
+        icon: Download,
+        description: '匯出報表',
+        permissions: [PERMISSIONS.REPORTS_EXPORT]
+      },
+      {
+        name: '設定',
+        href: '/settings',
+        icon: Settings,
+        description: '系統配置',
+        permissions: [PERMISSIONS.SYSTEM_SETTINGS_READ]
+      },
     ]
   },
 ]
@@ -81,6 +184,8 @@ export function Sidebar() {
   const pathname = usePathname()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const { user, logout } = useAuth()
+  const { role, hasAnyPermission } = usePermissions()
 
   // 獲取未讀警報數
   const { data: alerts } = useQuery({
@@ -89,6 +194,37 @@ export function Sidebar() {
     refetchInterval: 30000,
   })
   const unreadCount = alerts?.unread_count || 0
+
+  // 過濾有權限的導航組和項目
+  const filteredNavGroups = useMemo(() => {
+    return navigationGroups
+      .filter((group) => {
+        // 檢查整組的角色限制
+        if (group.roles && role && !group.roles.includes(role)) {
+          return false
+        }
+        // 檢查整組的權限限制
+        if (group.permissions && !hasAnyPermission(...group.permissions)) {
+          return false
+        }
+        return true
+      })
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) => {
+          // 檢查項目的角色限制
+          if (item.roles && role && !item.roles.includes(role)) {
+            return false
+          }
+          // 檢查項目的權限限制
+          if (item.permissions && !hasAnyPermission(...item.permissions)) {
+            return false
+          }
+          return true
+        }),
+      }))
+      .filter((group) => group.items.length > 0) // 移除空組
+  }, [role, hasAnyPermission])
 
   // 檢測屏幕尺寸
   useEffect(() => {
@@ -137,13 +273,13 @@ export function Sidebar() {
 
       {/* Navigation - 分組顯示 */}
       <nav className="mt-4 px-3 flex-1 overflow-y-auto">
-        {navigationGroups.map((group, groupIdx) => (
+        {filteredNavGroups.map((group, groupIdx) => (
           <div key={group.title} className={cn(groupIdx > 0 && "mt-6")}>
             {/* 分組標題 */}
             <h3 className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
               {group.title}
             </h3>
-            
+
             <ul className="space-y-1">
               {group.items.map((item) => {
                 const isActive = pathname === item.href ||
@@ -169,7 +305,7 @@ export function Sidebar() {
                         )} />
                         {item.name}
                       </div>
-                      
+
                       {/* 未讀警報徽章 */}
                       {showBadge && (
                         <motion.span
@@ -180,7 +316,7 @@ export function Sidebar() {
                           {unreadCount > 99 ? '99+' : unreadCount}
                         </motion.span>
                       )}
-                      
+
                       {/* Active 指示器 */}
                       {isActive && (
                         <ChevronRight className="w-4 h-4 text-blue-400" />
@@ -194,8 +330,33 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* Footer */}
+      {/* User Info & Logout */}
       <div className="p-4 border-t border-gray-200">
+        {user && (
+          <div className="mb-3">
+            <div className="flex items-center space-x-3 p-2 rounded-lg bg-gray-50">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                {user.full_name?.[0] || user.email[0].toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {user.full_name || user.email}
+                </p>
+                <p className="text-xs text-gray-500 capitalize">
+                  {role === 'admin' ? '管理員' : role === 'operator' ? '操作員' : '檢視者'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={logout}
+              className="mt-2 w-full flex items-center justify-center px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              登出
+            </button>
+          </div>
+        )}
         <div className="text-xs text-gray-500 text-center">
           <p>GoGoJap 營運系統</p>
           <p className="mt-1">v1.0.0</p>
