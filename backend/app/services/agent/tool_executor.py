@@ -30,6 +30,10 @@ from .tools import (
     AlertQueryTool,
     AlertActionTool,
     NotificationSendTool,
+    # 導航工具
+    NavigationGuideTool,
+    AddCompetitorGuideTool,
+    AddProductGuideTool,
 )
 
 
@@ -76,6 +80,11 @@ class ToolExecutor:
         # 通知相關
         IntentType.SEND_NOTIFICATION: ["notification_send"],
 
+        # CRUD 操作相關 (導航引導)
+        IntentType.ADD_COMPETITOR: ["add_competitor_guide"],
+        IntentType.ADD_PRODUCT: ["add_product_guide"],
+        IntentType.NAVIGATE: ["navigation_guide"],
+
         # 舊意圖 (保留向後兼容)
         IntentType.FINANCE_ANALYSIS: ["finance_summary", "query_sales"],
         IntentType.ORDER_QUERY: ["order_stats"],
@@ -107,6 +116,10 @@ class ToolExecutor:
             "alert_action": AlertActionTool(db),
             # 通知工具 (不需要 db)
             "notification_send": NotificationSendTool(),
+            # 導航工具 (不需要 db)
+            "navigation_guide": NavigationGuideTool(),
+            "add_competitor_guide": AddCompetitorGuideTool(),
+            "add_product_guide": AddProductGuideTool(),
         }
     
     def get_execution_plan(

@@ -43,6 +43,11 @@ class IntentType(Enum):
     # 營運類 - 通知
     SEND_NOTIFICATION = "send_notification"
 
+    # CRUD 操作類
+    ADD_COMPETITOR = "add_competitor"       # 新增競爭對手
+    ADD_PRODUCT = "add_product"             # 新增產品/監控項目
+    NAVIGATE = "navigate"                   # 導航到特定功能頁面
+
     # 營運類 (舊，保留向後兼容)
     FINANCE_ANALYSIS = "finance_analysis"
     ORDER_QUERY = "order_query"
@@ -140,6 +145,28 @@ class IntentClassifier:
             "發通知", "發telegram", "send notification", "通知我",
             "提醒我", "發訊息", "send message", "telegram"
         ],
+        # CRUD 操作相關 (需要高優先級匹配)
+        IntentType.ADD_COMPETITOR: [
+            "加入競爭", "新增競爭", "加競爭對手", "add competitor",
+            "加入對手", "新增對手", "監控對手", "追蹤對手",
+            "加入一個競爭", "想加入競爭", "想新增競爭",
+            # 動作詞 + 對象組合 (增加匹配機會)
+            "想加入", "我想加", "想新增", "我想新增",
+            "幫我加", "幫我新增", "加多個", "加一個"
+        ],
+        IntentType.ADD_PRODUCT: [
+            "加入產品", "新增產品", "加產品", "add product",
+            "加入貨品", "新增貨品", "監控產品", "追蹤產品",
+            "加入商品", "新增商品", "想加入產品", "想新增產品",
+            # 動作詞組合
+            "想加入", "我想加", "想新增", "我想新增",
+            "幫我加", "幫我新增"
+        ],
+        IntentType.NAVIGATE: [
+            "點去", "去邊", "邊度可以", "喺邊度", "where is",
+            "how to", "點樣", "點開", "navigate", "go to",
+            "打開", "開啟", "進入", "跳轉"
+        ],
         # 舊意圖 (保留向後兼容)
         IntentType.FINANCE_ANALYSIS: [
             "利潤分析", "財務分析", "sales analysis"
@@ -181,6 +208,9 @@ class IntentClassifier:
 - ALERT_QUERY: 警報查詢（例：「有咩價格警報？」「有無缺貨提醒？」）
 - ALERT_ACTION: 警報操作（例：「全部標記已讀」「清除警報」）
 - SEND_NOTIFICATION: 發送通知（例：「發個 Telegram 通知」「提醒我」）
+- ADD_COMPETITOR: 新增競爭對手（例：「我想加入一個競爭對手」「幫我新增對手」「監控百佳」）
+- ADD_PRODUCT: 新增產品/監控項目（例：「加入新產品」「想監控呢個商品」「新增貨品」）
+- NAVIGATE: 導航到特定功能（例：「點去加競爭對手？」「喺邊度可以新增產品？」「how to add competitor」）
 - INVENTORY_QUERY: 庫存查詢（例：「邊啲貨就快賣曬？」）
 - CLARIFICATION: 用戶回答澄清問題（例：「全部部位」「淨係睇刺身」）
 - FOLLOWUP: 追問（例：「仲有呢？」「詳細啲？」）

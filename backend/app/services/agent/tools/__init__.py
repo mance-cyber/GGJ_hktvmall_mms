@@ -11,6 +11,11 @@ from .finance_tools import (
 from .order_tools import OrderStatsTool, OrderSearchTool
 from .alert_tools import AlertQueryTool, AlertActionTool
 from .notification_tools import NotificationSendTool
+from .navigation_tools import (
+    NavigationGuideTool,
+    AddCompetitorGuideTool,
+    AddProductGuideTool,
+)
 
 __all__ = [
     # 基類
@@ -38,4 +43,8 @@ __all__ = [
     "AlertActionTool",
     # 通知工具
     "NotificationSendTool",
+    # 導航工具
+    "NavigationGuideTool",
+    "AddCompetitorGuideTool",
+    "AddProductGuideTool",
 ]
