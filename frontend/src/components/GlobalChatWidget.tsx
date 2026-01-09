@@ -516,6 +516,22 @@ function MiniChatBox({
                     onFeedback={onFeedback}
                   />
                 )}
+                {/* Follow-up Suggestions */}
+                {msg.role === 'assistant' && msg.suggestions && msg.suggestions.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {msg.suggestions.map((suggestion, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setInput(suggestion.text)}
+                        className="flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-purple-50 border border-purple-200 text-purple-700 hover:bg-purple-100 hover:border-purple-300 transition-colors"
+                      >
+                        <span>{suggestion.icon}</span>
+                        <span>{suggestion.text}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           ))
@@ -638,7 +654,8 @@ export function GlobalChatWidget() {
         role: 'assistant',
         content: response.content,
         timestamp: new Date(),
-        feedback: null
+        feedback: null,
+        suggestions: response.suggestions
       }
 
       setMessages(prev => [...prev, assistantMessage])
