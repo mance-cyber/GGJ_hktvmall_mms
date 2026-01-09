@@ -483,6 +483,47 @@ class AgentService:
             state=state
         )
 
+    # =============================================
+    # 對話管理方法
+    # =============================================
+
+    async def delete_conversation(self, conversation_id: str) -> bool:
+        """刪除單個對話"""
+        try:
+            uuid_obj = uuid.UUID(conversation_id)
+            query = select(AgentConversation).where(AgentConversation.id == uuid_obj)
+            result = await self.db.execute(query)
+            conv = result.scalar_one_or_none()
+
+            if not conv:
+                return False
+
+            await self.db.delete(conv)
+            await self.db.commit()
+            return True
+        except (ValueError, TypeError):
+            return False
+
+    async def delete_conversations(self, conversation_ids: List[str]) -> int:
+        """批量刪除對話"""
+        deleted_count = 0
+
+        for cid in conversation_ids:
+            try:
+                uuid_obj = uuid.UUID(cid)
+                query = select(AgentConversation).where(AgentConversation.id == uuid_obj)
+                result = await self.db.execute(query)
+                conv = result.scalar_one_or_none()
+
+                if conv:
+                    await self.db.delete(conv)
+                    deleted_count += 1
+            except (ValueError, TypeError):
+                continue
+
+        await self.db.commit()
+        return deleted_count
+
     def _get_greeting_response(self) -> str:
         return """你好！我係 AI 分析助手 🤖
 

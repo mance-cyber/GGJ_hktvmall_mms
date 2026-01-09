@@ -56,6 +56,11 @@ class ConversationState(BaseModel):
     current_intent: Optional[str]
 
 
+class DeleteConversationsRequest(BaseModel):
+    """批量刪除對話請求"""
+    conversation_ids: List[str] = Field(..., description="要刪除的對話 ID 列表")
+
+
 # =============================================
 # Helper Functions
 # =============================================
@@ -169,7 +174,7 @@ async def get_conversation(
 ):
     """
     獲取對話狀態
-    
+
     返回對話的完整狀態，包括歷史訊息和槽位。
     """
     agent = await get_agent_service(db)
@@ -178,10 +183,10 @@ async def get_conversation(
         state = await agent.get_state_async(conversation_id)
     else:
         state = agent.get_state(conversation_id)
-    
+
     if not state:
         raise HTTPException(status_code=404, detail="對話不存在")
-    
+
     return ConversationState(
         conversation_id=state.conversation_id,
         messages=[
@@ -195,6 +200,45 @@ async def get_conversation(
         slots=state.slots.to_dict(),
         current_intent=state.current_intent.value if state.current_intent else None
     )
+
+
+@router.delete("/conversation/{conversation_id}")
+async def delete_conversation(
+    conversation_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    刪除單個對話
+
+    刪除指定的對話及其所有訊息。
+    """
+    agent = await get_agent_service(db)
+    success = await agent.delete_conversation(conversation_id)
+
+    if not success:
+        raise HTTPException(status_code=404, detail="對話不存在")
+
+    return {"success": True, "message": "對話已刪除"}
+
+
+@router.delete("/conversations")
+async def delete_conversations(
+    request: DeleteConversationsRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    批量刪除對話
+
+    刪除多個對話及其所有訊息。
+    """
+    agent = await get_agent_service(db)
+    deleted_count = await agent.delete_conversations(request.conversation_ids)
+
+    return {
+        "success": True,
+        "deleted_count": deleted_count,
+        "message": f"已刪除 {deleted_count} 個對話"
+    }
 
 
 # =============================================

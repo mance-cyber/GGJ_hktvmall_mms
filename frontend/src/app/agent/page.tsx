@@ -47,6 +47,8 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts'
+import { ConversationList } from '@/components/agent/ConversationList'
+import { QuickActions } from '@/components/agent/QuickActions'
 
 // =============================================
 // Types
@@ -67,67 +69,6 @@ interface Conversation {
   title: string
   created_at: string
   updated_at: string
-}
-
-// =============================================
-// Sidebar Component
-// =============================================
-
-function ConversationList({
-  conversations,
-  currentId,
-  onSelect,
-  onNew,
-  formatDate
-}: {
-  conversations: Conversation[]
-  currentId: string | null
-  onSelect: (id: string) => void
-  onNew: () => void
-  formatDate: (date: string) => string
-}) {
-  return (
-    <div className="flex flex-col h-full">
-      <div className="p-4 border-b">
-        <Button onClick={onNew} className="w-full gap-2 bg-purple-600 hover:bg-purple-700 text-white shadow-sm">
-          <Plus className="w-4 h-4" />
-          新對話
-        </Button>
-      </div>
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
-        {conversations.length === 0 ? (
-          <div className="text-center text-slate-400 py-8 text-sm">
-            暫無歷史對話
-          </div>
-        ) : (
-          conversations.map((conv) => (
-            <button
-              key={conv.id}
-              onClick={() => onSelect(conv.id)}
-              className={cn(
-                "w-full text-left px-3 py-2.5 rounded-lg transition-all text-sm",
-                "hover:bg-slate-100",
-                currentId === conv.id 
-                  ? "bg-purple-50 border border-purple-200 text-purple-700" 
-                  : "text-slate-600"
-              )}
-            >
-              <div className="flex items-start gap-2">
-                <MessageSquare className="w-4 h-4 mt-0.5 flex-shrink-0 opacity-60" />
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{conv.title || '新對話'}</div>
-                  <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
-                    <Clock className="w-3 h-3" />
-                    {formatDate(conv.created_at)}
-                  </div>
-                </div>
-              </div>
-            </button>
-          ))
-        )}
-      </div>
-    </div>
-  )
 }
 
 // =============================================
@@ -294,6 +235,21 @@ function ClarificationCard({
   )
 }
 
+// 訊息時間格式化
+function formatMessageTime(date: Date): string {
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+
+  if (diffMins < 1) return '剛剛'
+  if (diffMins < 60) return `${diffMins} 分鐘前`
+
+  return date.toLocaleTimeString('zh-HK', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 function MessageBubble({ message }: { message: Message }) {
   const [copied, setCopied] = useState(false)
 
@@ -337,15 +293,26 @@ function MessageBubble({ message }: { message: Message }) {
             {message.content}
           </ReactMarkdown>
         </div>
-        {!isUser && message.content && (
-          <button
-            onClick={handleCopy}
-            className="mt-2 text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
-          >
-            {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-            {copied ? '已複製' : '複製'}
-          </button>
-        )}
+        {/* 時間戳和操作按鈕 */}
+        <div className={cn(
+          "mt-2 flex items-center gap-3 text-xs",
+          isUser ? "text-white/70" : "text-slate-400"
+        )}>
+          <span className="flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {formatMessageTime(message.timestamp)}
+          </span>
+          {!isUser && message.content && (
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="hover:text-slate-600 flex items-center gap-1 transition-colors"
+            >
+              {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+              {copied ? '已複製' : '複製'}
+            </button>
+          )}
+        </div>
       </div>
     </motion.div>
   )
@@ -694,6 +661,37 @@ export default function AgentPage() {
           )}
           <div ref={messagesEndRef} />
         </div>
+
+        {/* Quick Actions */}
+        {messages.length > 0 && !pendingClarification && (
+          <QuickActions
+            onAction={(query) => {
+              setInput(query)
+              // 自動發送
+              setTimeout(() => {
+                const userMessage: Message = {
+                  id: Date.now().toString(),
+                  role: 'user',
+                  type: 'message',
+                  content: query,
+                  timestamp: new Date()
+                }
+                setMessages(prev => [...prev, userMessage])
+                const thinkingMessage: Message = {
+                  id: 'thinking',
+                  role: 'assistant',
+                  type: 'thinking',
+                  content: '分析緊你嘅問題...',
+                  timestamp: new Date()
+                }
+                setMessages(prev => [...prev, thinkingMessage])
+                chatMutation.mutate(query)
+                setInput('')
+              }, 100)
+            }}
+            disabled={isLoading}
+          />
+        )}
 
         {/* Input Area */}
         <div className="border-t bg-white p-4">

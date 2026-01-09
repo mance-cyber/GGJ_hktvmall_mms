@@ -1,6 +1,5 @@
 {
   "permissions": {
-    "defaultMode": "bypassPermissions",
     "allow": [
       "Bash(npx create-next-app@latest . --typescript --tailwind --app --no-src-dir --import-alias \"@/*\")",
       "Bash(npx create-next-app:*)",
@@ -122,7 +121,10 @@
       "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: 添加 jwt-decode 依賴修復前端構建錯誤\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: 新增角色映射功能，根據郵箱自動分配 admin/operator 角色\n\n- 新增 GOOGLE_ADMIN_EMAILS 環境變數\n- 新增 GOOGLE_OPERATOR_EMAILS 環境變數\n- 首次 Google 登入時根據郵箱自動分配角色\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: 實現 RBAC 權限系統\n\n- 後端新增角色權限矩陣 \\(deps.py\\)\n- 新增 require_roles、require_permissions 依賴函數\n- /me 端點返回用戶權限列表\n- 前端新增 usePermissions hook 和 PermissionGate 組件\n- Sidebar 根據用戶權限動態顯示/隱藏菜單項\n- 新增用戶信息顯示和登出按鈕\n\n權限分配:\n- Admin: 完整系統訪問權限\n- Operator: 日常操作權限，無系統設定\n- Viewer: 只讀權限\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: 添加全局點擊火花動畫效果\n\n- 新增 ClickSpark 組件，支持自定義顏色、大小、數量等參數\n- 整合到 AppShell，登入後全平台都有點擊特效\n- 提供預設主題變體 \\(Blue, Purple, Gold, Green\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
-    ]
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: 添加全局點擊火花動畫效果\n\n- 新增 ClickSpark 組件，支持自定義顏色、大小、數量等參數\n- 整合到 AppShell，登入後全平台都有點擊特效\n- 提供預設主題變體 \\(Blue, Purple, Gold, Green\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(npx tsc:*)",
+      "Bash(npx shadcn@latest add alert-dialog:*)"
+    ],
+    "defaultMode": "bypassPermissions"
   }
 }

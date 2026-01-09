@@ -195,7 +195,7 @@ export default function ProductsPage() {
                     <StatusBadge status={product.status} />
                   </td>
                   <td className="px-6 py-4 text-right font-mono font-medium text-slate-700">
-                    ${product.price?.toFixed(2) || '-'}
+                    ${product.price ? Number(product.price).toFixed(2) : '-'}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <span className={cn("font-medium", product.stock_quantity < 10 ? "text-red-500" : "text-slate-600")}>

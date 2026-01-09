@@ -592,6 +592,19 @@ export const api = {
   getAgentProductCategories: () =>
     fetchAPI<{ categories: AgentProductCategory[] }>('/agent/product-categories'),
 
+  // 刪除單個對話
+  deleteAgentConversation: (conversationId: string) =>
+    fetchAPI<{ success: boolean; message: string }>(`/agent/conversation/${conversationId}`, {
+      method: 'DELETE',
+    }),
+
+  // 批量刪除對話
+  deleteAgentConversations: (conversationIds: string[]) =>
+    fetchAPI<{ success: boolean; deleted_count: number; message: string }>('/agent/conversations', {
+      method: 'DELETE',
+      body: JSON.stringify({ conversation_ids: conversationIds }),
+    }),
+
   // =============================================
   // HKTVmall 集成 API
   // =============================================
