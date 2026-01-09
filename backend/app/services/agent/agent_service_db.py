@@ -300,18 +300,11 @@ class AgentService:
         if intent_result.intent == IntentType.GREETING:
             response_content = self._get_greeting_response()
             await self._save_message(conversation_id, "assistant", response_content, "message")
-            # 問候後的建議
-            greeting_suggestions = [
-                {"text": "今日訂單點樣？", "icon": "📦"},
-                {"text": "有咩警報？", "icon": "🔔"},
-                {"text": "本月營收幾多？", "icon": "💰"},
-                {"text": "分析和牛價格", "icon": "🥩"},
-            ]
             yield AgentResponse(
                 type=ResponseType.MESSAGE,
                 content=response_content,
                 conversation_id=conversation_id,
-                suggestions=greeting_suggestions,
+                suggestions=get_follow_up_suggestions("greeting"),
                 state=state
             )
             return
@@ -319,22 +312,15 @@ class AgentService:
         if intent_result.intent == IntentType.HELP:
             response_content = self._get_help_response()
             await self._save_message(conversation_id, "assistant", response_content, "message")
-            # 幫助後的建議
-            help_suggestions = [
-                {"text": "睇今日訂單", "icon": "📦"},
-                {"text": "查警報", "icon": "🚨"},
-                {"text": "分析價格", "icon": "📊"},
-                {"text": "比較競爭對手", "icon": "⚔️"},
-            ]
             yield AgentResponse(
                 type=ResponseType.MESSAGE,
                 content=response_content,
                 conversation_id=conversation_id,
-                suggestions=help_suggestions,
+                suggestions=get_follow_up_suggestions("help"),
                 state=state
             )
             return
-        
+
         if intent_result.intent == IntentType.UNKNOWN:
             response_content = """唔好意思，我唔係好明你嘅意思 😅
 
@@ -346,18 +332,11 @@ class AgentService:
 
 或者話我知你想做咩，我盡量幫你！"""
             await self._save_message(conversation_id, "assistant", response_content, "message")
-            # 未知意圖的建議
-            unknown_suggestions = [
-                {"text": "今日訂單點樣？", "icon": "📦"},
-                {"text": "本月賺幾多？", "icon": "💰"},
-                {"text": "有咩警報？", "icon": "🔔"},
-                {"text": "分析和牛價格", "icon": "🥩"},
-            ]
             yield AgentResponse(
                 type=ResponseType.MESSAGE,
                 content=response_content,
                 conversation_id=conversation_id,
-                suggestions=unknown_suggestions,
+                suggestions=get_follow_up_suggestions("unknown"),
                 state=state
             )
             return

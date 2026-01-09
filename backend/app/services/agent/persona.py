@@ -369,7 +369,7 @@ CONTEXTUAL_FOLLOW_UPS = {
         {"text": "仲有咩功能？", "icon": "❓"},
         {"text": "睇使用教學", "icon": "📖"},
     ],
-    # 問候/幫助 - 引導開始
+    # 問候/幫助 - 引導開始（不需要「問其他嘢」按鈕）
     "greeting": [
         {"text": "今日訂單點樣？", "icon": "📦"},
         {"text": "有咩警報？", "icon": "🔔"},
@@ -380,18 +380,27 @@ CONTEXTUAL_FOLLOW_UPS = {
         {"text": "查警報", "icon": "🚨"},
         {"text": "分析價格", "icon": "📊"},
     ],
+    # 未知意圖 - 提供常用功能引導
+    "unknown": [
+        {"text": "今日訂單點樣？", "icon": "📦"},
+        {"text": "本月賺幾多？", "icon": "💰"},
+        {"text": "有咩警報？", "icon": "🔔"},
+    ],
 }
 
 # 結束對話 / 開新話題的按鈕
 NEW_TOPIC_BUTTON = {"text": "問其他嘢 ➜", "icon": "💬"}
+
+# 不需要「問其他嘢」按鈕的意圖（對話開始階段）
+STARTER_INTENTS = {"greeting", "help", "unknown"}
 
 
 def get_follow_up_suggestions(intent_type: str, context: dict = None) -> List[dict]:
     """
     根據意圖類型和上下文獲取對話延伸建議
 
-    建議會基於當前對話內容，而非通用建議。
-    最後一個按鈕固定為「開新話題」。
+    - 對於 greeting/help/unknown：提供入門建議，不添加「問其他嘢」
+    - 對於其他意圖：提供延伸建議，最後添加「問其他嘢」
 
     Args:
         intent_type: 意圖類型字符串
@@ -419,8 +428,9 @@ def get_follow_up_suggestions(intent_type: str, context: dict = None) -> List[di
             "icon": template["icon"]
         })
 
-    # 最後加上「開新話題」按鈕
-    suggestions.append(NEW_TOPIC_BUTTON)
+    # 只有非開始階段的意圖才添加「問其他嘢」按鈕
+    if intent_key not in STARTER_INTENTS and suggestions:
+        suggestions.append(NEW_TOPIC_BUTTON)
 
     return suggestions
 

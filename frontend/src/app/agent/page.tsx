@@ -140,7 +140,24 @@ function ChartRenderer({ chart }: { chart: any }) {
 // Message Components
 // =============================================
 
+const THINKING_PHRASES = [
+  '等我睇睇...',
+  '諗緊...',
+  '分析緊...',
+  '處理緊...',
+  '查緊資料...',
+]
+
 function ThinkingMessage() {
+  const [phraseIndex, setPhraseIndex] = useState(0)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPhraseIndex(prev => (prev + 1) % THINKING_PHRASES.length)
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [])
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -148,11 +165,42 @@ function ThinkingMessage() {
       className="flex gap-3"
     >
       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
-        <span className="text-sm">🇯🇵</span>
+        <motion.span
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+          className="text-sm"
+        >
+          🇯🇵
+        </motion.span>
       </div>
-      <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm border flex items-center gap-2">
-        <Loader2 className="w-4 h-4 animate-spin text-purple-500" />
-        <span className="text-slate-500">等我睇睇...</span>
+      <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm border">
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1">
+            <motion.span
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ duration: 1, repeat: Infinity, delay: 0 }}
+              className="w-2 h-2 bg-purple-500 rounded-full"
+            />
+            <motion.span
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
+              className="w-2 h-2 bg-purple-500 rounded-full"
+            />
+            <motion.span
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
+              className="w-2 h-2 bg-purple-500 rounded-full"
+            />
+          </div>
+          <motion.span
+            key={phraseIndex}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-slate-500 text-sm"
+          >
+            {THINKING_PHRASES[phraseIndex]}
+          </motion.span>
+        </div>
       </div>
     </motion.div>
   )
@@ -636,10 +684,17 @@ export default function AgentPage() {
             </div>
           ) : (
             <AnimatePresence>
-              {messages.map((message) => (
+              {messages.map((message, index) => {
+                // 計算是否為最後一條有效的 AI 訊息（用於顯示 follow-up）
+                const lastAssistantIndex = messages.findLastIndex(
+                  m => m.role === 'assistant' && m.type !== 'thinking'
+                )
+                const isLastAssistantMessage = index === lastAssistantIndex
+
+                return (
                 <div key={message.id}>
                   <MessageBubble message={message} />
-                  
+
                   {/* Charts */}
                   {message.charts && message.charts.length > 0 && (
                     <div className="ml-11 mt-3 space-y-3">
@@ -648,7 +703,7 @@ export default function AgentPage() {
                       ))}
                     </div>
                   )}
-                  
+
                   {/* Clarification Card */}
                   {message.type === 'clarification' &&
                    message.options &&
@@ -664,66 +719,97 @@ export default function AgentPage() {
                     </div>
                   )}
 
-                  {/* Follow-up Suggestions */}
-                  {message.role === 'assistant' &&
+                  {/* Follow-up Suggestions + 重新生成 - 只顯示在最後一條 AI 訊息 */}
+                  {isLastAssistantMessage &&
+                   message.role === 'assistant' &&
                    message.type !== 'thinking' &&
-                   message.suggestions &&
-                   message.suggestions.length > 0 && (
-                    <div className="ml-11 mt-3">
-                      <div className="flex flex-wrap gap-2">
-                        {message.suggestions.map((suggestion, i) => {
-                          // 檢查是否為「開新話題」按鈕
-                          const isNewTopicButton = suggestion.text.includes('問其他嘢')
-
-                          return (
-                            <button
-                              key={i}
-                              type="button"
-                              onClick={() => {
-                                if (isNewTopicButton) {
-                                  // 開新對話
-                                  handleNewConversation()
-                                } else {
-                                  // 延伸當前對話
-                                  const userMessage: Message = {
-                                    id: Date.now().toString(),
-                                    role: 'user',
-                                    type: 'message',
-                                    content: suggestion.text,
-                                    timestamp: new Date()
-                                  }
-                                  setMessages(prev => [...prev, userMessage])
-                                  const thinkingMessage: Message = {
-                                    id: 'thinking',
-                                    role: 'assistant',
-                                    type: 'thinking',
-                                    content: '等我睇睇...',
-                                    timestamp: new Date()
-                                  }
-                                  setMessages(prev => [...prev, thinkingMessage])
-                                  chatMutation.mutate(suggestion.text)
-                                }
-                              }}
-                              disabled={isLoading}
-                              className={cn(
-                                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm",
-                                "transition-all hover:shadow-sm",
-                                "disabled:opacity-50 disabled:cursor-not-allowed",
-                                isNewTopicButton
-                                  ? "bg-slate-100 border border-slate-300 hover:border-slate-400 text-slate-600 hover:text-slate-800"
-                                  : "bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 hover:border-purple-400 text-purple-700 hover:text-purple-900"
-                              )}
-                            >
-                              <span>{suggestion.icon}</span>
-                              <span>{suggestion.text}</span>
-                            </button>
-                          )
-                        })}
+                   !isLoading && (
+                    <div className="ml-11 mt-3 space-y-2">
+                      {/* 重新生成按鈕 */}
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // 找到最後一條用戶訊息
+                            const lastUserMessage = [...messages].reverse().find(m => m.role === 'user')
+                            if (lastUserMessage) {
+                              // 移除最後一條 AI 回覆
+                              setMessages(prev => prev.filter(m => m.id !== message.id))
+                              // 添加 thinking 狀態
+                              const thinkingMessage: Message = {
+                                id: 'thinking',
+                                role: 'assistant',
+                                type: 'thinking',
+                                content: '重新生成緊...',
+                                timestamp: new Date()
+                              }
+                              setMessages(prev => [...prev, thinkingMessage])
+                              // 重新發送
+                              chatMutation.mutate(lastUserMessage.content)
+                            }
+                          }}
+                          disabled={isLoading}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          <span>重新生成</span>
+                        </button>
                       </div>
+
+                      {/* Follow-up 建議按鈕 */}
+                      {message.suggestions && message.suggestions.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {message.suggestions.map((suggestion, i) => {
+                            const isNewTopicButton = suggestion.text.includes('問其他嘢')
+
+                            return (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => {
+                                  if (isNewTopicButton) {
+                                    handleNewConversation()
+                                  } else {
+                                    const userMessage: Message = {
+                                      id: Date.now().toString(),
+                                      role: 'user',
+                                      type: 'message',
+                                      content: suggestion.text,
+                                      timestamp: new Date()
+                                    }
+                                    setMessages(prev => [...prev, userMessage])
+                                    const thinkingMessage: Message = {
+                                      id: 'thinking',
+                                      role: 'assistant',
+                                      type: 'thinking',
+                                      content: '等我睇睇...',
+                                      timestamp: new Date()
+                                    }
+                                    setMessages(prev => [...prev, thinkingMessage])
+                                    chatMutation.mutate(suggestion.text)
+                                  }
+                                }}
+                                disabled={isLoading}
+                                className={cn(
+                                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm",
+                                  "transition-all hover:shadow-sm",
+                                  "disabled:opacity-50 disabled:cursor-not-allowed",
+                                  isNewTopicButton
+                                    ? "bg-slate-100 border border-slate-300 hover:border-slate-400 text-slate-600 hover:text-slate-800"
+                                    : "bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 hover:border-purple-400 text-purple-700 hover:text-purple-900"
+                                )}
+                              >
+                                <span>{suggestion.icon}</span>
+                                <span>{suggestion.text}</span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              ))}
+              )})}
             </AnimatePresence>
           )}
           <div ref={messagesEndRef} />
