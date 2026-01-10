@@ -22,8 +22,13 @@ from app.schemas.content import (
     ContentApproveResponse,
     BatchTaskResponse,
     GeneratedContent,
+    ContentOptimizeRequest,
+    ContentOptimizeResponse,
+    QuickSuggestionsResponse,
+    QuickSuggestion,
 )
 from app.services.ai_service import get_ai_analysis_service
+from app.services.content_optimizer import ContentOptimizer, QUICK_OPTIMIZATION_SUGGESTIONS
 
 router = APIRouter()
 
@@ -253,3 +258,113 @@ async def reject_content(
     await db.flush()
 
     return {"message": "已拒絕", "reason": reason}
+
+
+# =============================================
+# 文案對話式優化 API
+# =============================================
+
+@router.post("/{content_id}/optimize", response_model=ContentOptimizeResponse)
+async def optimize_content(
+    content_id: UUID,
+    request: ContentOptimizeRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    對話式優化文案
+
+    通過用戶指令優化現有文案內容，支持多輪對話調整。
+    """
+    # 獲取現有內容
+    result = await db.execute(
+        select(AIContent).where(AIContent.id == content_id)
+    )
+    content = result.scalar_one_or_none()
+    if not content:
+        raise HTTPException(status_code=404, detail="內容不存在")
+
+    # 獲取 AI 服務和優化器
+    ai_service = await get_ai_analysis_service(db)
+    optimizer = ContentOptimizer(ai_service=ai_service)
+
+    # 準備產品資訊
+    product_info = None
+    if request.product_info:
+        product_info = request.product_info.model_dump()
+    elif content.input_data:
+        product_info = content.input_data.get("product_info")
+
+    # 執行優化
+    optimization_result = optimizer.optimize(
+        current_content=content.content_json or {"description": content.content},
+        instruction=request.instruction,
+        context=[msg.model_dump() for msg in request.context] if request.context else None,
+        target_languages=request.target_languages,
+        product_info=product_info,
+    )
+
+    if not optimization_result.success:
+        raise HTTPException(
+            status_code=503,
+            detail=f"優化失敗: {optimization_result.error}"
+        )
+
+    # 更新內容版本
+    new_version = content.version + 1
+
+    # 保存優化歷史到 generation_metadata
+    current_metadata = content.generation_metadata or {}
+    optimization_history = current_metadata.get("optimization_history", [])
+    optimization_history.append({
+        "version": new_version,
+        "instruction": request.instruction,
+        "timestamp": datetime.utcnow().isoformat(),
+    })
+
+    # 更新數據庫記錄
+    content.content_json = optimization_result.content
+    content.content = optimization_result.content.get("description", "")
+    content.version = new_version
+    content.generation_metadata = {
+        **current_metadata,
+        "optimization_history": optimization_history,
+        "last_optimized_at": datetime.utcnow().isoformat(),
+        "tokens_used": optimization_result.tokens_used,
+        "model": optimization_result.model,
+    }
+
+    await db.flush()
+    await db.refresh(content)
+
+    # 構建響應
+    generated = GeneratedContent(
+        title=optimization_result.content.get("title"),
+        selling_points=optimization_result.content.get("selling_points"),
+        description=optimization_result.content.get("description"),
+        short_description=optimization_result.content.get("short_description"),
+    )
+
+    return ContentOptimizeResponse(
+        content_id=content.id,
+        content=generated,
+        suggestions=optimization_result.suggestions,
+        version=new_version,
+        metadata={
+            "tokens_used": optimization_result.tokens_used,
+            "model": optimization_result.model,
+        },
+    )
+
+
+@router.get("/optimize/suggestions", response_model=QuickSuggestionsResponse)
+async def get_quick_suggestions():
+    """獲取快捷優化建議列表"""
+    suggestions = [
+        QuickSuggestion(
+            key=key,
+            label=value["label"],
+            instruction=value["instruction"],
+        )
+        for key, value in QUICK_OPTIMIZATION_SUGGESTIONS.items()
+    ]
+    return QuickSuggestionsResponse(suggestions=suggestions)

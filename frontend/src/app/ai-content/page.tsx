@@ -31,6 +31,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
+import { ContentOptimizeChat } from '@/components/content/ContentOptimizeChat'
 
 // 內容類型選項
 const CONTENT_TYPES = [
@@ -47,6 +48,15 @@ const STYLES = [
   { value: 'playful', label: '活潑有趣' },
   { value: 'formal', label: '正式官方' },
 ] as const
+
+// 語言選項
+const LANGUAGES = [
+  { value: 'TC', label: '繁體中文', flag: '🇭🇰' },
+  { value: 'SC', label: '簡體中文', flag: '🇨🇳' },
+  { value: 'EN', label: 'English', flag: '🇬🇧' },
+] as const
+
+type LanguageCode = 'TC' | 'SC' | 'EN'
 
 export default function AIContentPage() {
   const queryClient = useQueryClient()
@@ -68,6 +78,9 @@ export default function AIContentPage() {
   const [featuresInput, setFeaturesInput] = useState('')
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null)
   const [copiedField, setCopiedField] = useState<string | null>(null)
+  const [currentContentId, setCurrentContentId] = useState<string | null>(null)
+  const [currentVersion, setCurrentVersion] = useState<number>(1)
+  const [selectedLanguages, setSelectedLanguages] = useState<LanguageCode[]>(['TC'])
 
   // 獲取歷史記錄
   const { data: history, isLoading: historyLoading } = useQuery({
@@ -81,9 +94,18 @@ export default function AIContentPage() {
     mutationFn: (data: ContentGenerateRequest) => api.generateContent(data),
     onSuccess: (response) => {
       setGeneratedContent(response.content)
+      setCurrentContentId(response.id)
+      setCurrentVersion(1)
       queryClient.invalidateQueries({ queryKey: ['content-history'] })
     },
   })
+
+  // 處理對話優化後的內容更新
+  const handleContentUpdate = (content: GeneratedContent, version: number) => {
+    setGeneratedContent(content)
+    setCurrentVersion(version)
+    queryClient.invalidateQueries({ queryKey: ['content-history'] })
+  }
 
   // 審批內容
   const approveMutation = useMutation({
@@ -251,6 +273,40 @@ export default function AIContentPage() {
                   </Select>
                 </div>
               </div>
+
+              {/* 語言選擇 */}
+              <div className="grid gap-2">
+                <Label>輸出語言（可多選）</Label>
+                <div className="flex flex-wrap gap-2">
+                  {LANGUAGES.map((lang) => {
+                    const isSelected = selectedLanguages.includes(lang.value)
+                    return (
+                      <button
+                        key={lang.value}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected && selectedLanguages.length > 1) {
+                            setSelectedLanguages(selectedLanguages.filter(l => l !== lang.value))
+                          } else if (!isSelected) {
+                            setSelectedLanguages([...selectedLanguages, lang.value])
+                          }
+                        }}
+                        className={cn(
+                          "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                          isSelected
+                            ? "bg-purple-100 text-purple-700 border-2 border-purple-300"
+                            : "bg-white/50 text-slate-600 border border-slate-200 hover:border-purple-200 hover:bg-purple-50"
+                        )}
+                      >
+                        <span>{lang.flag}</span>
+                        <span>{lang.label}</span>
+                        {isSelected && <Check className="w-3 h-3 ml-1" />}
+                      </button>
+                    )
+                  })}
+                </div>
+                <p className="text-xs text-slate-500">至少選擇一種語言</p>
+              </div>
             </div>
 
             <Button
@@ -315,32 +371,100 @@ export default function AIContentPage() {
 
             {generatedContent && !generateMutation.isPending && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                {generatedContent.title && (
-                  <ContentBlock
-                    label="商品標題"
-                    content={generatedContent.title}
-                    onCopy={() => handleCopy(generatedContent.title!, 'title')}
-                    isCopied={copiedField === 'title'}
-                  />
+                {/* 版本指示器 */}
+                {currentVersion > 1 && (
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <Badge variant="secondary" className="text-xs">
+                      v{currentVersion}
+                    </Badge>
+                    <span>已優化 {currentVersion - 1} 次</span>
+                  </div>
                 )}
 
-                {generatedContent.selling_points && generatedContent.selling_points.length > 0 && (
-                  <ContentBlock
-                    label="賣點列表"
-                    content={generatedContent.selling_points.join('\n')}
-                    onCopy={() => handleCopy(generatedContent.selling_points!.join('\n'), 'selling_points')}
-                    isCopied={copiedField === 'selling_points'}
-                    isList
-                    listItems={generatedContent.selling_points}
-                  />
+                {/* 多語言內容顯示 */}
+                {generatedContent.multilang ? (
+                  <div className="space-y-6">
+                    {Object.entries(generatedContent.multilang).map(([langCode, langContent]) => {
+                      const langInfo = LANGUAGES.find(l => l.value === langCode)
+                      const langLabel = langInfo ? `${langInfo.flag} ${langInfo.label}` : langCode
+                      return (
+                        <div key={langCode} className="border border-slate-200 rounded-lg overflow-hidden">
+                          <div className="bg-slate-50 px-4 py-2 border-b border-slate-200">
+                            <span className="font-medium text-slate-700">{langLabel}</span>
+                          </div>
+                          <div className="p-4 space-y-4">
+                            {langContent.title && (
+                              <ContentBlock
+                                label="標題"
+                                content={langContent.title}
+                                onCopy={() => handleCopy(langContent.title!, `title-${langCode}`)}
+                                isCopied={copiedField === `title-${langCode}`}
+                              />
+                            )}
+                            {langContent.selling_points && langContent.selling_points.length > 0 && (
+                              <ContentBlock
+                                label="賣點"
+                                content={langContent.selling_points.join('\n')}
+                                onCopy={() => handleCopy(langContent.selling_points!.join('\n'), `points-${langCode}`)}
+                                isCopied={copiedField === `points-${langCode}`}
+                                isList
+                                listItems={langContent.selling_points}
+                              />
+                            )}
+                            {langContent.description && (
+                              <ContentBlock
+                                label="描述"
+                                content={langContent.description}
+                                onCopy={() => handleCopy(langContent.description!, `desc-${langCode}`)}
+                                isCopied={copiedField === `desc-${langCode}`}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <>
+                    {generatedContent.title && (
+                      <ContentBlock
+                        label="商品標題"
+                        content={generatedContent.title}
+                        onCopy={() => handleCopy(generatedContent.title!, 'title')}
+                        isCopied={copiedField === 'title'}
+                      />
+                    )}
+
+                    {generatedContent.selling_points && generatedContent.selling_points.length > 0 && (
+                      <ContentBlock
+                        label="賣點列表"
+                        content={generatedContent.selling_points.join('\n')}
+                        onCopy={() => handleCopy(generatedContent.selling_points!.join('\n'), 'selling_points')}
+                        isCopied={copiedField === 'selling_points'}
+                        isList
+                        listItems={generatedContent.selling_points}
+                      />
+                    )}
+
+                    {generatedContent.description && (
+                      <ContentBlock
+                        label="商品描述"
+                        content={generatedContent.description}
+                        onCopy={() => handleCopy(generatedContent.description!, 'description')}
+                        isCopied={copiedField === 'description'}
+                      />
+                    )}
+                  </>
                 )}
 
-                {generatedContent.description && (
-                  <ContentBlock
-                    label="商品描述"
-                    content={generatedContent.description}
-                    onCopy={() => handleCopy(generatedContent.description!, 'description')}
-                    isCopied={copiedField === 'description'}
+                {/* 對話式優化區 */}
+                {currentContentId && (
+                  <ContentOptimizeChat
+                    contentId={currentContentId}
+                    initialContent={generatedContent}
+                    onContentUpdate={handleContentUpdate}
+                    selectedLanguages={selectedLanguages}
+                    className="mt-6"
                   />
                 )}
               </div>

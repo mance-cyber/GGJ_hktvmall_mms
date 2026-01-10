@@ -96,3 +96,42 @@ class BatchTaskResponse(BaseModel):
     task_id: str
     message: str
     product_count: int
+
+
+# =============================================
+# 文案優化請求/響應
+# =============================================
+
+class ChatMessage(BaseModel):
+    """對話消息"""
+    role: str = Field(..., description="user 或 assistant")
+    content: str
+
+
+class ContentOptimizeRequest(BaseModel):
+    """文案優化請求"""
+    instruction: str = Field(..., min_length=1, description="優化指令")
+    context: List[ChatMessage] = Field(default=[], description="對話歷史")
+    target_languages: List[str] = Field(default=["TC"], description="目標語言: TC, SC, EN")
+    product_info: Optional[ProductInfo] = None
+
+
+class ContentOptimizeResponse(BaseModel):
+    """文案優化響應"""
+    content_id: UUID
+    content: GeneratedContent
+    suggestions: List[str] = Field(default=[], description="後續優化建議")
+    version: int
+    metadata: dict = Field(default={})
+
+
+class QuickSuggestion(BaseModel):
+    """快捷優化建議"""
+    key: str
+    label: str
+    instruction: str
+
+
+class QuickSuggestionsResponse(BaseModel):
+    """快捷建議列表響應"""
+    suggestions: List[QuickSuggestion]

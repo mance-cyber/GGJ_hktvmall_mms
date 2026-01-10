@@ -468,6 +468,17 @@ export const api = {
       method: 'PUT',
     }),
 
+  // 文案對話式優化
+  optimizeContent: (contentId: string, data: ContentOptimizeRequest) =>
+    fetchAPI<ContentOptimizeResponse>(`/content/${contentId}/optimize`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // 獲取快捷優化建議
+  getOptimizeSuggestions: () =>
+    fetchAPI<QuickSuggestionsResponse>('/content/optimize/suggestions'),
+
   // =============================================
   // 警報 API
   // =============================================
@@ -791,6 +802,12 @@ export interface GeneratedContent {
   title?: string
   selling_points?: string[]
   description?: string
+  short_description?: string
+  multilang?: {
+    TC?: { title?: string; selling_points?: string[]; description?: string; short_description?: string }
+    SC?: { title?: string; selling_points?: string[]; description?: string; short_description?: string }
+    EN?: { title?: string; selling_points?: string[]; description?: string; short_description?: string }
+  }
 }
 
 export interface ContentGenerateResponse {
@@ -825,6 +842,37 @@ export interface ContentItem {
 export interface ContentListResponse {
   data: ContentItem[]
   total: number
+}
+
+// 文案優化相關類型
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface ContentOptimizeRequest {
+  instruction: string
+  context?: ChatMessage[]
+  target_languages?: ('TC' | 'SC' | 'EN')[]
+  product_info?: ProductInfo
+}
+
+export interface ContentOptimizeResponse {
+  content_id: string
+  content: GeneratedContent
+  suggestions: string[]
+  version: number
+  metadata: Record<string, unknown>
+}
+
+export interface QuickSuggestion {
+  key: string
+  label: string
+  instruction: string
+}
+
+export interface QuickSuggestionsResponse {
+  suggestions: QuickSuggestion[]
 }
 
 // =============================================
