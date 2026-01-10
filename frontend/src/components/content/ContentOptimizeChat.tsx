@@ -6,22 +6,16 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import {
   Send,
   Sparkles,
   RefreshCw,
-  ChevronDown,
-  ChevronUp,
   MessageSquare,
-  Wand2,
-  Copy,
-  Check,
   AlertCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import {
   api,
@@ -111,8 +105,6 @@ export function ContentOptimizeChat({
 }: ContentOptimizeChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputValue, setInputValue] = useState('')
-  const [isExpanded, setIsExpanded] = useState(true)
-  const [copiedSuggestion, setCopiedSuggestion] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // 獲取快捷建議
@@ -180,139 +172,90 @@ export function ContentOptimizeChat({
     handleSend(suggestion.instruction)
   }
 
-  // 複製建議
-  const handleCopySuggestion = (suggestion: QuickSuggestion) => {
-    setInputValue(suggestion.instruction)
-    setCopiedSuggestion(suggestion.key)
-    setTimeout(() => setCopiedSuggestion(null), 1500)
-  }
-
   return (
-    <div className={cn('border border-slate-200 rounded-lg bg-white/50 overflow-hidden', className)}>
-      {/* 標題欄 */}
-      <div
-        className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-50 to-blue-50 border-b border-slate-100 cursor-pointer"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex items-center gap-2">
-          <Wand2 className="w-4 h-4 text-purple-500" />
-          <span className="text-sm font-medium text-slate-700">對話式優化</span>
-          {messages.length > 0 && (
-            <Badge variant="secondary" className="text-xs">
-              {messages.length} 條消息
-            </Badge>
-          )}
+    <div className={cn('space-y-4', className)}>
+      {/* 快捷建議區 */}
+      <div>
+        <p className="text-xs text-slate-500 mb-2">快捷優化：</p>
+        <div className="flex flex-wrap gap-1.5">
+          {quickSuggestions.map((suggestion) => (
+            <Button
+              key={suggestion.key}
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs bg-white hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200"
+              onClick={() => handleQuickSuggestion(suggestion)}
+              disabled={optimizeMutation.isPending}
+            >
+              {suggestion.label}
+            </Button>
+          ))}
         </div>
-        <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-          {isExpanded ? (
-            <ChevronUp className="w-4 h-4" />
-          ) : (
-            <ChevronDown className="w-4 h-4" />
-          )}
-        </Button>
       </div>
 
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+      {/* 對話歷史區 */}
+      {messages.length > 0 && (
+        <div className="border border-slate-200 rounded-lg bg-white/50">
+          <div className="max-h-[250px] overflow-y-auto p-3">
+            {messages.map((msg, index) => (
+              <ChatMessageItem key={index} message={msg} />
+            ))}
+            {optimizeMutation.isPending && (
+              <div className="flex items-center gap-2 text-sm text-slate-500">
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                AI 正在優化中...
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        </div>
+      )}
+
+      {/* 輸入區 */}
+      <div>
+        <div className="flex gap-2">
+          <Textarea
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="輸入優化指令，例如：「加強限時優惠感」「語氣更活潑」..."
+            className="min-h-[80px] resize-none bg-white text-sm"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleSend(inputValue)
+              }
+            }}
+          />
+        </div>
+        <div className="flex items-center justify-between mt-2">
+          <p className="text-xs text-slate-400">
+            Enter 發送 · Shift+Enter 換行
+          </p>
+          <Button
+            onClick={() => handleSend(inputValue)}
+            disabled={!inputValue.trim() || optimizeMutation.isPending}
+            size="sm"
+            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
           >
-            {/* 對話歷史區 */}
-            {messages.length > 0 && (
-              <div className="max-h-[200px] overflow-y-auto p-4 border-b border-slate-100">
-                {messages.map((msg, index) => (
-                  <ChatMessageItem key={index} message={msg} />
-                ))}
-                {optimizeMutation.isPending && (
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    AI 正在優化中...
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
+            {optimizeMutation.isPending ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <Send className="w-4 h-4 mr-1" />
+                發送
+              </>
             )}
+          </Button>
+        </div>
+      </div>
 
-            {/* 快捷建議區 */}
-            <div className="p-4 border-b border-slate-100">
-              <p className="text-xs text-slate-500 mb-2">快捷優化：</p>
-              <div className="flex flex-wrap gap-2">
-                {quickSuggestions.map((suggestion) => (
-                  <div key={suggestion.key} className="flex items-center">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-xs bg-white hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200"
-                      onClick={() => handleQuickSuggestion(suggestion)}
-                      disabled={optimizeMutation.isPending}
-                    >
-                      {suggestion.label}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0 ml-1"
-                      onClick={() => handleCopySuggestion(suggestion)}
-                      title="複製到輸入框"
-                    >
-                      {copiedSuggestion === suggestion.key ? (
-                        <Check className="w-3 h-3 text-green-500" />
-                      ) : (
-                        <Copy className="w-3 h-3 text-slate-400" />
-                      )}
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 輸入區 */}
-            <div className="p-4">
-              <div className="flex gap-2">
-                <Textarea
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="輸入優化指令，例如：「加強限時優惠感」「語氣更活潑」..."
-                  className="min-h-[60px] resize-none bg-white text-sm"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      handleSend(inputValue)
-                    }
-                  }}
-                />
-                <Button
-                  onClick={() => handleSend(inputValue)}
-                  disabled={!inputValue.trim() || optimizeMutation.isPending}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white self-end"
-                >
-                  {optimizeMutation.isPending ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
-              <p className="text-xs text-slate-400 mt-2">
-                按 Enter 發送，Shift + Enter 換行
-              </p>
-            </div>
-
-            {/* 錯誤提示 */}
-            {optimizeMutation.isError && (
-              <div className="px-4 pb-4">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
-                  優化失敗，請稍後再試
-                </div>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* 錯誤提示 */}
+      {optimizeMutation.isError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm flex items-center gap-2">
+          <AlertCircle className="w-4 h-4" />
+          優化失敗，請稍後再試
+        </div>
+      )}
     </div>
   )
 }

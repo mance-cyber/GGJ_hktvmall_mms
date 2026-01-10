@@ -184,9 +184,9 @@ export default function AIContentPage() {
 
       {/* 生成文案標籤內容 */}
       {activeTab === 'generate' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* 左側：輸入表單 */}
-          <div className="glass-panel p-6 rounded-xl border border-white/40 space-y-6">
+          <div className="glass-panel p-6 rounded-xl border border-white/40 space-y-6 lg:max-h-[calc(100vh-200px)] lg:overflow-y-auto">
             <div className="flex items-center gap-2 mb-2">
               <Bot className="w-5 h-5 text-purple-500" />
               <h2 className="text-lg font-semibold text-gray-900">輸入商品資訊</h2>
@@ -329,8 +329,8 @@ export default function AIContentPage() {
             </Button>
           </div>
 
-          {/* 右側：生成結果 */}
-          <div className="glass-panel p-6 rounded-xl border border-white/40 min-h-[500px]">
+          {/* 中間：生成結果 */}
+          <div className="glass-panel p-6 rounded-xl border border-white/40 lg:max-h-[calc(100vh-200px)] lg:overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">生成結果</h2>
               {generatedContent && (
@@ -348,29 +348,29 @@ export default function AIContentPage() {
             )}
 
             {!generatedContent && !generateMutation.isPending && (
-              <div className="flex flex-col items-center justify-center h-[400px] text-gray-400">
-                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                  <Sparkles className="w-10 h-10 text-slate-300" />
+              <div className="flex flex-col items-center justify-center h-[300px] text-gray-400">
+                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                  <Sparkles className="w-8 h-8 text-slate-300" />
                 </div>
-                <p>在左側填寫資訊後，AI 將為您生成文案</p>
+                <p className="text-sm text-center">在左側填寫資訊後<br />AI 將為您生成文案</p>
               </div>
             )}
 
             {generateMutation.isPending && (
-              <div className="flex flex-col items-center justify-center h-[400px]">
-                <div className="relative w-24 h-24 mb-6">
+              <div className="flex flex-col items-center justify-center h-[300px]">
+                <div className="relative w-20 h-20 mb-4">
                   <div className="absolute inset-0 bg-purple-200 rounded-full animate-ping opacity-20" />
-                  <div className="relative w-24 h-24 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center">
-                    <Sparkles className="w-12 h-12 text-purple-500 animate-pulse" />
+                  <div className="relative w-20 h-20 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center">
+                    <Sparkles className="w-10 h-10 text-purple-500 animate-pulse" />
                   </div>
                 </div>
-                <h3 className="text-lg font-medium text-gray-900">AI 正在創作中...</h3>
-                <p className="text-gray-500 mt-2">正在分析商品特點與市場趨勢</p>
+                <h3 className="text-base font-medium text-gray-900">AI 正在創作中...</h3>
+                <p className="text-gray-500 mt-1 text-sm">正在分析商品特點與市場趨勢</p>
               </div>
             )}
 
             {generatedContent && !generateMutation.isPending && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {/* 版本指示器 */}
                 {currentVersion > 1 && (
                   <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -383,16 +383,16 @@ export default function AIContentPage() {
 
                 {/* 多語言內容顯示 */}
                 {generatedContent.multilang ? (
-                  <div className="space-y-6">
+                  <div className="space-y-4">
                     {Object.entries(generatedContent.multilang).map(([langCode, langContent]) => {
                       const langInfo = LANGUAGES.find(l => l.value === langCode)
                       const langLabel = langInfo ? `${langInfo.flag} ${langInfo.label}` : langCode
                       return (
                         <div key={langCode} className="border border-slate-200 rounded-lg overflow-hidden">
-                          <div className="bg-slate-50 px-4 py-2 border-b border-slate-200">
-                            <span className="font-medium text-slate-700">{langLabel}</span>
+                          <div className="bg-slate-50 px-3 py-1.5 border-b border-slate-200">
+                            <span className="font-medium text-slate-700 text-sm">{langLabel}</span>
                           </div>
-                          <div className="p-4 space-y-4">
+                          <div className="p-3 space-y-3">
                             {langContent.title && (
                               <ContentBlock
                                 label="標題"
@@ -456,18 +456,43 @@ export default function AIContentPage() {
                     )}
                   </>
                 )}
-
-                {/* 對話式優化區 */}
-                {currentContentId && (
-                  <ContentOptimizeChat
-                    contentId={currentContentId}
-                    initialContent={generatedContent}
-                    onContentUpdate={handleContentUpdate}
-                    selectedLanguages={selectedLanguages}
-                    className="mt-6"
-                  />
-                )}
               </div>
+            )}
+          </div>
+
+          {/* 右側：對話優化區 */}
+          <div className="glass-panel p-6 rounded-xl border border-white/40 lg:max-h-[calc(100vh-200px)] lg:overflow-y-auto">
+            <div className="flex items-center gap-2 mb-4">
+              <Wand2 className="w-5 h-5 text-purple-500" />
+              <h2 className="text-lg font-semibold text-gray-900">對話優化</h2>
+            </div>
+
+            {!generatedContent && !generateMutation.isPending && (
+              <div className="flex flex-col items-center justify-center h-[300px] text-gray-400">
+                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                  <Wand2 className="w-8 h-8 text-slate-300" />
+                </div>
+                <p className="text-sm text-center">生成文案後<br />可在此進行對話優化</p>
+              </div>
+            )}
+
+            {generateMutation.isPending && (
+              <div className="flex flex-col items-center justify-center h-[300px] text-gray-400">
+                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                  <RefreshCw className="w-8 h-8 text-slate-300 animate-spin" />
+                </div>
+                <p className="text-sm text-center">等待文案生成中...</p>
+              </div>
+            )}
+
+            {generatedContent && !generateMutation.isPending && currentContentId && (
+              <ContentOptimizeChat
+                contentId={currentContentId}
+                initialContent={generatedContent}
+                onContentUpdate={handleContentUpdate}
+                selectedLanguages={selectedLanguages}
+                className=""
+              />
             )}
           </div>
         </div>
