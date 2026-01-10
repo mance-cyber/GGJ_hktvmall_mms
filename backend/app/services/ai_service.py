@@ -602,6 +602,45 @@ class AIAnalysisService:
         target_lang_str = "、".join([language_names.get(l, l) for l in target_languages])
         is_multilang = len(target_languages) > 1
 
+        # 構建輸出格式模板（避免 f-string 嵌套問題）
+        if is_multilang:
+            lang_entries = []
+            for lang in target_languages:
+                lang_name = language_names.get(lang, lang)
+                lang_entries.append(f'''"{lang}": {{
+        "title": "{lang_name}標題",
+        "selling_points": ["賣點1", "賣點2", "賣點3", "賣點4", "賣點5"],
+        "description": "{lang_name}完整描述",
+        "short_description": "{lang_name}簡短描述"
+    }}''')
+            multilang_json_example = "{\n    " + ",\n    ".join(lang_entries) + "\n}"
+            output_format = f"""**多語言格式**（必須為每種語言生成完整內容）：
+
+```json
+{multilang_json_example}
+```
+
+**重要**：
+- 每種語言都必須有完整內容，不是翻譯而是針對該語言重新創作
+- 簡體中文 (SC) 必須使用正確的簡體字
+- 英文 (EN) 要自然流暢，符合英語習慣，不是直譯
+"""
+        else:
+            output_format = """```json
+{
+    "title": "按上述策略創作的吸引人標題（20-30字）",
+    "selling_points": [
+        "賣點1（必須包含五星酒店/米芝蓮背書）",
+        "賣點2（產地/品質/規格優勢）",
+        "賣點3（鎖鮮技術/冷鏈優勢）",
+        "賣點4（便利性/快速上桌）",
+        "賣點5（性價比優勢）"
+    ],
+    "description": "完整文案（150-250字）：痛點開頭 → 背書建立信任 → 感官描寫 → 性價比收殺",
+    "short_description": "簡短描述（50字以內）：一句話抓住核心賣點"
+}
+```"""
+
         prompt = f"""你同時扮演三個專業角色來創作文案：
 
 1. **GogoJap 電商文案總監** — 撰寫讓香港人心動下單的產品描述
@@ -697,38 +736,7 @@ class AIAnalysisService:
 
 請以 JSON 格式輸出。
 
-{"如果只有一種語言：" if not is_multilang else ""}
-{'''```json
-{
-    "title": "按上述策略創作的吸引人標題（20-30字）",
-    "selling_points": [
-        "賣點1（必須包含五星酒店/米芝蓮背書）",
-        "賣點2（產地/品質/規格優勢）",
-        "賣點3（鎖鮮技術/冷鏈優勢）",
-        "賣點4（便利性/快速上桌）",
-        "賣點5（性價比優勢）"
-    ],
-    "description": "完整文案（150-250字）：痛點開頭 → 背書建立信任 → 感官描寫 → 性價比收殺",
-    "short_description": "簡短描述（50字以內）：一句話抓住核心賣點"
-}
-```''' if not is_multilang else f'''**多語言格式**（必須為每種語言生成完整內容）：
-
-```json
-{{
-    {', '.join([f'''"{lang}": {{
-        "title": "{language_names.get(lang, lang)}標題",
-        "selling_points": ["賣點1", "賣點2", "賣點3", "賣點4", "賣點5"],
-        "description": "{language_names.get(lang, lang)}完整描述",
-        "short_description": "{language_names.get(lang, lang)}簡短描述"
-    }}''' for lang in target_languages])}
-}}
-```
-
-**重要**：
-- 每種語言都必須有完整內容，不是翻譯而是針對該語言重新創作
-- 簡體中文 (SC) 必須使用正確的簡體字
-- 英文 (EN) 要自然流暢，符合英語習慣，不是直譯
-'''}
+{output_format}
 
 請直接輸出 JSON，不要加其他解釋文字。確保標題真正吸引人，而不是單純拼湊產品資訊！
 """
