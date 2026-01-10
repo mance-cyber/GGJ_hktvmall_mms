@@ -265,70 +265,73 @@ export default function CompetitorsPage() {
   return (
     <div className="space-y-6 animate-fade-in-up">
       {/* ========== 頁面標題 ========== */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
             競品監測
             <Badge variant="outline" className="text-primary border-primary/30 bg-primary/5">
               Live
             </Badge>
           </h1>
-          <p className="text-muted-foreground mt-2 text-lg">
+          <p className="text-muted-foreground mt-1 sm:mt-2 text-base sm:text-lg hidden sm:block">
             即時追蹤競爭對手動態，AI 智能分析價格趨勢
           </p>
         </div>
-        
-        <div className="flex items-center space-x-3">
+
+        <div className="flex items-center space-x-2 sm:space-x-3">
           {/* 任務隊列指示器 */}
           <AnimatePresence>
             {scrapeTasks.filter(t => t.status === 'running' || t.status === 'pending').length > 0 && (
-              <ScrapeTaskIndicator 
+              <ScrapeTaskIndicator
                 tasks={scrapeTasks}
                 onClick={() => setShowTaskQueue(!showTaskQueue)}
               />
             )}
           </AnimatePresence>
-          
+
           <Button
             variant="outline"
             onClick={handleScrapeAll}
             disabled={batchScraping}
+            size="sm"
             className={cn(
               "shadow-lg shadow-green-500/20 transition-all hover:scale-105",
-              batchScraping 
-                ? "bg-green-600 border-green-500 text-white" 
+              batchScraping
+                ? "bg-green-600 border-green-500 text-white"
                 : "bg-slate-900 hover:bg-slate-800 text-white border-slate-800"
             )}
           >
             {batchScraping ? (
-              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              <RefreshCw className="w-4 h-4 sm:mr-2 animate-spin" />
             ) : (
-              <Zap className="w-4 h-4 mr-2 text-green-400" />
+              <Zap className="w-4 h-4 sm:mr-2 text-green-400" />
             )}
-            全網抓取
+            <span className="hidden sm:inline">全網抓取</span>
           </Button>
           <Button
             variant="outline"
             onClick={() => refetch()}
+            size="sm"
             className="glass-card hover:bg-white/60"
           >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            刷新數據
+            <RefreshCw className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">刷新</span>
           </Button>
           <Button
             onClick={() => setShowAddForm(true)}
+            size="sm"
             className="bg-primary hover:bg-primary/90 shadow-lg shadow-blue-500/20 transition-all hover:scale-105"
           >
-            <Plus className="w-4 h-4 mr-2" />
-            新增競爭對手
+            <Plus className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">新增</span>
           </Button>
         </div>
       </div>
 
       {/* ========== 工具欄 ========== */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
         {/* 搜索框 */}
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1 sm:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
             type="text"
@@ -338,8 +341,8 @@ export default function CompetitorsPage() {
             className="pl-9 bg-white/50 border-slate-200"
           />
         </div>
-        
-        <div className="flex items-center space-x-2">
+
+        <div className="flex items-center justify-between sm:justify-end space-x-2">
           {/* 過濾器 */}
           <div className="flex items-center bg-slate-100 rounded-lg p-1">
             <Button
@@ -347,7 +350,7 @@ export default function CompetitorsPage() {
               size="sm"
               onClick={() => setFilterActive(undefined)}
               className={cn(
-                "h-7 px-3 text-xs",
+                "h-7 px-2 sm:px-3 text-xs",
                 filterActive === undefined && "bg-white shadow-sm"
               )}
             >
@@ -358,7 +361,7 @@ export default function CompetitorsPage() {
               size="sm"
               onClick={() => setFilterActive(true)}
               className={cn(
-                "h-7 px-3 text-xs",
+                "h-7 px-2 sm:px-3 text-xs",
                 filterActive === true && "bg-white shadow-sm"
               )}
             >
@@ -369,16 +372,16 @@ export default function CompetitorsPage() {
               size="sm"
               onClick={() => setFilterActive(false)}
               className={cn(
-                "h-7 px-3 text-xs",
+                "h-7 px-2 sm:px-3 text-xs",
                 filterActive === false && "bg-white shadow-sm"
               )}
             >
               已暫停
             </Button>
           </div>
-          
-          {/* 視圖切換 */}
-          <div className="flex items-center bg-slate-100 rounded-lg p-1">
+
+          {/* 視圖切換 - 桌面版才顯示 */}
+          <div className="hidden sm:flex items-center bg-slate-100 rounded-lg p-1">
             <Button
               variant="ghost"
               size="icon"
@@ -425,36 +428,41 @@ export default function CompetitorsPage() {
       </AnimatePresence>
 
       {/* ========== 競爭對手卡片/列表 ========== */}
-      {viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <AnimatePresence mode="popLayout">
-            {filteredCompetitors?.map((competitor, index) => (
-              <motion.div
-                key={competitor.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ delay: index * 0.05 }}
-                layout
-              >
-                <CompetitorCard
-                  competitor={competitor}
-                  onEdit={() => setEditingCompetitor(competitor)}
-                  onDelete={() => {
-                    if (confirm(`確定要刪除「${competitor.name}」？所有相關商品數據也會被刪除。`)) {
-                      deleteMutation.mutate(competitor.id)
-                    }
-                  }}
-                  onScrape={() => handleScrape(competitor.id)}
-                  isScraping={scrapingId === competitor.id || 
-                    scrapeTasks.find(t => t.id === competitor.id)?.status === 'running'}
-                />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-      ) : (
-        <div className="glass-panel rounded-xl overflow-hidden border border-slate-200/60">
+      {/* 卡片視圖 - 手機版強制顯示，桌面版根據 viewMode 決定 */}
+      <div className={cn(
+        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6",
+        viewMode === 'list' ? "sm:hidden" : ""
+      )}>
+        <AnimatePresence mode="popLayout">
+          {filteredCompetitors?.map((competitor, index) => (
+            <motion.div
+              key={competitor.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ delay: index * 0.05 }}
+              layout
+            >
+              <CompetitorCard
+                competitor={competitor}
+                onEdit={() => setEditingCompetitor(competitor)}
+                onDelete={() => {
+                  if (confirm(`確定要刪除「${competitor.name}」？所有相關商品數據也會被刪除。`)) {
+                    deleteMutation.mutate(competitor.id)
+                  }
+                }}
+                onScrape={() => handleScrape(competitor.id)}
+                isScraping={scrapingId === competitor.id ||
+                  scrapeTasks.find(t => t.id === competitor.id)?.status === 'running'}
+              />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
+      {/* 列表視圖 - 僅桌面版顯示 */}
+      {viewMode === 'list' && (
+        <div className="hidden sm:block glass-panel rounded-xl overflow-hidden border border-slate-200/60">
           <table className="w-full">
             <thead className="bg-slate-50/80">
               <tr>

@@ -58,9 +58,13 @@ const LANGUAGES = [
 
 type LanguageCode = 'TC' | 'SC' | 'EN'
 
+// 手機版子 Tab 類型
+type MobileSubTab = 'input' | 'result' | 'optimize'
+
 export default function AIContentPage() {
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<'generate' | 'history'>('generate')
+  const [mobileSubTab, setMobileSubTab] = useState<MobileSubTab>('input')
   const [formData, setFormData] = useState<{
     productInfo: ProductInfo
     contentType: ContentGenerateRequest['content_type']
@@ -96,6 +100,7 @@ export default function AIContentPage() {
       setGeneratedContent(response.content)
       setCurrentContentId(response.id)
       setCurrentVersion(1)
+      setMobileSubTab('result') // 手機版自動切換到結果 tab
       queryClient.invalidateQueries({ queryKey: ['content-history'] })
     },
   })
@@ -185,13 +190,62 @@ export default function AIContentPage() {
 
       {/* 生成文案標籤內容 */}
       {activeTab === 'generate' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* 左側：輸入表單 */}
-          <div className="glass-panel p-6 rounded-xl border border-white/40 space-y-6 lg:max-h-[calc(100vh-200px)] lg:overflow-y-auto">
-            <div className="flex items-center gap-2 mb-2">
-              <Bot className="w-5 h-5 text-purple-500" />
-              <h2 className="text-lg font-semibold text-gray-900">輸入商品資訊</h2>
-            </div>
+        <>
+          {/* 手機版子 Tab 切換 */}
+          <div className="lg:hidden flex rounded-xl bg-white/50 p-1 border border-white/40 mb-4">
+            <button
+              onClick={() => setMobileSubTab('input')}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all",
+                mobileSubTab === 'input'
+                  ? "bg-purple-600 text-white shadow-md"
+                  : "text-gray-600 hover:bg-white/50"
+              )}
+            >
+              <Bot className="w-4 h-4" />
+              輸入
+            </button>
+            <button
+              onClick={() => setMobileSubTab('result')}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all relative",
+                mobileSubTab === 'result'
+                  ? "bg-purple-600 text-white shadow-md"
+                  : "text-gray-600 hover:bg-white/50"
+              )}
+            >
+              <Sparkles className="w-4 h-4" />
+              結果
+              {generatedContent && mobileSubTab !== 'result' && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full" />
+              )}
+            </button>
+            <button
+              onClick={() => setMobileSubTab('optimize')}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all",
+                mobileSubTab === 'optimize'
+                  ? "bg-purple-600 text-white shadow-md"
+                  : "text-gray-600 hover:bg-white/50",
+                !generatedContent && "opacity-50 pointer-events-none"
+              )}
+              disabled={!generatedContent}
+            >
+              <Wand2 className="w-4 h-4" />
+              優化
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* 左側：輸入表單 - 手機版按 tab 顯示 */}
+            <div className={cn(
+              "glass-panel p-6 rounded-xl border border-white/40 space-y-6 lg:max-h-[calc(100vh-200px)] lg:overflow-y-auto",
+              mobileSubTab !== 'input' && "hidden lg:block"
+            )}>
+              <div className="flex items-center gap-2 mb-2">
+                <Bot className="w-5 h-5 text-purple-500" />
+                <h2 className="text-lg font-semibold text-gray-900">輸入商品資訊</h2>
+              </div>
 
             <div className="space-y-4">
               <div className="grid gap-2">
@@ -330,8 +384,11 @@ export default function AIContentPage() {
             </Button>
           </div>
 
-          {/* 中間：生成結果 */}
-          <div className="glass-panel p-6 rounded-xl border border-white/40 lg:max-h-[calc(100vh-200px)] lg:overflow-y-auto">
+          {/* 中間：生成結果 - 手機版按 tab 顯示 */}
+          <div className={cn(
+            "glass-panel p-6 rounded-xl border border-white/40 lg:max-h-[calc(100vh-200px)] lg:overflow-y-auto",
+            mobileSubTab !== 'result' && "hidden lg:block"
+          )}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">生成結果</h2>
               {generatedContent && (
@@ -461,8 +518,11 @@ export default function AIContentPage() {
             )}
           </div>
 
-          {/* 右側：對話優化區 */}
-          <div className="glass-panel p-6 rounded-xl border border-white/40 lg:max-h-[calc(100vh-200px)] lg:overflow-y-auto">
+          {/* 右側：對話優化區 - 手機版按 tab 顯示 */}
+          <div className={cn(
+            "glass-panel p-6 rounded-xl border border-white/40 lg:max-h-[calc(100vh-200px)] lg:overflow-y-auto",
+            mobileSubTab !== 'optimize' && "hidden lg:block"
+          )}>
             <div className="flex items-center gap-2 mb-4">
               <Wand2 className="w-5 h-5 text-purple-500" />
               <h2 className="text-lg font-semibold text-gray-900">對話優化</h2>
@@ -497,6 +557,7 @@ export default function AIContentPage() {
             )}
           </div>
         </div>
+        </>
       )}
 
       {/* 歷史記錄標籤內容 */}

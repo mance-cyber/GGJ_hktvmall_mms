@@ -454,6 +454,7 @@ export function Sidebar() {
 
 export function MobileBottomNav() {
   const pathname = usePathname()
+  const [showMore, setShowMore] = useState(false)
   const { data: alerts } = useQuery({
     queryKey: ['alerts-count-mobile'],
     queryFn: () => api.getAlerts(false, undefined, 1),
@@ -461,43 +462,120 @@ export function MobileBottomNav() {
   })
   const unreadCount = alerts?.unread_count || 0
 
+  // 主導航項目（顯示在底部欄）
   const quickNav = [
     { name: '首頁', href: '/', icon: LayoutDashboard },
     { name: '警報', href: '/alerts', icon: Bell, badge: unreadCount },
     { name: 'AI', href: '/agent', icon: MessageSquare },
-    { name: '競品', href: '/competitors', icon: Eye },
   ]
 
-  return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 px-3 pb-3 safe-area-bottom bg-gradient-to-t from-white/80 to-transparent pt-6">
-      <nav className="flex items-center justify-around py-1 px-2 rounded-2xl glass-panel border border-purple-200/30">
-        {quickNav.map((item) => {
-          const isActive = pathname === item.href ||
-            (item.href !== '/' && pathname.startsWith(item.href))
+  // 更多菜單項目
+  const moreItems = [
+    { name: '競品監測', href: '/competitors', icon: Eye },
+    { name: '商品庫', href: '/products', icon: Package },
+    { name: 'AI 文案', href: '/ai-content', icon: Sparkles },
+    { name: '價格趨勢', href: '/trends', icon: TrendingUp },
+    { name: '設定', href: '/settings', icon: Settings },
+  ]
 
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                "relative flex flex-col items-center py-3 px-5 rounded-xl transition-all touch-target",
-                isActive
-                  ? "text-purple-600 bg-purple-50/80"
-                  : "text-gray-500 active:bg-gray-100"
-              )}
+  // 檢查更多菜單中是否有當前頁面
+  const isMoreActive = moreItems.some(
+    item => pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
+  )
+
+  return (
+    <>
+      {/* 更多菜單彈出層 */}
+      <AnimatePresence>
+        {showMore && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowMore(false)}
+              className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="lg:hidden fixed bottom-20 left-3 right-3 z-50 glass-panel rounded-2xl p-3 border border-purple-200/40 shadow-xl"
             >
-              <item.icon className={cn("w-5 h-5", isActive && "scale-110")} />
-              <span className="text-[10px] mt-1 font-medium">{item.name}</span>
-              {/* 未讀徽章 */}
-              {item.badge && item.badge > 0 && (
-                <span className="absolute -top-0.5 right-2 min-w-[18px] h-[18px] flex items-center justify-center px-1 bg-red-500 text-white text-[10px] font-bold rounded-full">
-                  {item.badge > 99 ? '99+' : item.badge}
-                </span>
-              )}
-            </Link>
-          )
-        })}
-      </nav>
-    </div>
+              <div className="grid grid-cols-4 gap-2">
+                {moreItems.map((item) => {
+                  const isActive = pathname === item.href ||
+                    (item.href !== '/' && pathname.startsWith(item.href))
+
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      onClick={() => setShowMore(false)}
+                      className={cn(
+                        "flex flex-col items-center py-3 px-2 rounded-xl transition-all",
+                        isActive
+                          ? "text-purple-600 bg-purple-50/80"
+                          : "text-gray-600 active:bg-gray-100"
+                      )}
+                    >
+                      <item.icon className="w-5 h-5" />
+                      <span className="text-[10px] mt-1.5 font-medium text-center leading-tight">{item.name}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* 底部導航欄 */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 px-3 pb-3 safe-area-bottom bg-gradient-to-t from-white/80 to-transparent pt-6">
+        <nav className="flex items-center justify-around py-1 px-2 rounded-2xl glass-panel border border-purple-200/30">
+          {quickNav.map((item) => {
+            const isActive = pathname === item.href ||
+              (item.href !== '/' && pathname.startsWith(item.href))
+
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  "relative flex flex-col items-center py-3 px-5 rounded-xl transition-all touch-target",
+                  isActive
+                    ? "text-purple-600 bg-purple-50/80"
+                    : "text-gray-500 active:bg-gray-100"
+                )}
+              >
+                <item.icon className={cn("w-5 h-5", isActive && "scale-110")} />
+                <span className="text-[10px] mt-1 font-medium">{item.name}</span>
+                {/* 未讀徽章 */}
+                {item.badge && item.badge > 0 && (
+                  <span className="absolute -top-0.5 right-2 min-w-[18px] h-[18px] flex items-center justify-center px-1 bg-red-500 text-white text-[10px] font-bold rounded-full">
+                    {item.badge > 99 ? '99+' : item.badge}
+                  </span>
+                )}
+              </Link>
+            )
+          })}
+
+          {/* 更多按鈕 */}
+          <button
+            type="button"
+            onClick={() => setShowMore(!showMore)}
+            className={cn(
+              "relative flex flex-col items-center py-3 px-5 rounded-xl transition-all touch-target",
+              showMore || isMoreActive
+                ? "text-purple-600 bg-purple-50/80"
+                : "text-gray-500 active:bg-gray-100"
+            )}
+          >
+            <Menu className={cn("w-5 h-5", (showMore || isMoreActive) && "scale-110")} />
+            <span className="text-[10px] mt-1 font-medium">更多</span>
+          </button>
+        </nav>
+      </div>
+    </>
   )
 }
