@@ -111,7 +111,8 @@ class ContentOptimizer:
         # 調用 AI 服務
         response = self.ai_service._call_api(
             prompt=prompt,
-            model_key="insights_model",  # 使用 insights 模型
+            model=self.ai_service.config.insights_model,
+            max_tokens=2048,
         )
 
         if not response.success:
