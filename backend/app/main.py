@@ -36,25 +36,23 @@ def create_app() -> FastAPI:
     )
 
     # CORS 設定
-    # 注意：allow_credentials=True 時不能使用 allow_origins=["*"]
-    # 必須明確指定允許的來源
+    # 明確指定允許的來源，不使用通配符以確保 preflight 請求正確處理
     allowed_origins = [
+        # 本地開發
         "http://localhost:3000",
+        "http://127.0.0.1:3000",
         "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        # Zeabur 生產環境
         "https://ggj-front.zeabur.app",
         "https://ggj-back.zeabur.app",
     ]
-    
-    # 如果在生产环境且 DEBUG=False，添加通配符支持（临时）
-    # 生产环境强制允许所有来源以解决 preflight 问题
-    if not settings.debug:
-        allowed_origins = ["*"]
-    
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,
-        allow_credentials=False if allowed_origins == ["*"] else True,
-        allow_methods=["*"],
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
         allow_headers=["*"],
         expose_headers=["*"],
     )
