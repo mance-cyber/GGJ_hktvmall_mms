@@ -567,7 +567,7 @@ class AIAnalysisService:
         product_info: Dict[str, Any],
         content_type: str = "product_description",
         style: str = "professional",
-        language: str = "zh-HK"
+        target_languages: Optional[List[str]] = None,
     ) -> AIResponse:
         """
         生成商品文案
@@ -577,11 +577,14 @@ class AIAnalysisService:
             product_info: 商品資訊（價格、描述、特點等）
             content_type: 內容類型（product_description, social_post, ad_copy）
             style: 風格（professional, casual, luxury, playful）
-            language: 語言（zh-HK, zh-TW, zh-CN, en）
+            target_languages: 目標語言列表 ["TC", "SC", "EN"]
 
         Returns:
             AIResponse 包含生成的文案
         """
+        if target_languages is None:
+            target_languages = ["TC"]
+
         style_descriptions = {
             "professional": "專業優雅，適量加入輕口語增加親切感",
             "casual": "輕鬆親切，多用口語詞彙如「超正」「好食到喊」",
@@ -590,14 +593,14 @@ class AIAnalysisService:
         }
 
         language_names = {
-            "zh-HK": "繁體中文（香港）",
-            "zh-TW": "繁體中文（台灣）",
-            "zh-CN": "簡體中文",
-            "en": "英文",
+            "TC": "繁體中文（香港）",
+            "SC": "簡體中文",
+            "EN": "英文",
         }
 
         style_desc = style_descriptions.get(style, style_descriptions["professional"])
-        lang_name = language_names.get(language, language_names["zh-HK"])
+        target_lang_str = "、".join([language_names.get(l, l) for l in target_languages])
+        is_multilang = len(target_languages) > 1
 
         prompt = f"""你同時扮演三個專業角色來創作文案：
 
@@ -690,12 +693,13 @@ class AIAnalysisService:
 ## 輸出要求
 
 - **風格**: {style_desc}
-- **語言**: {lang_name}
+- **目標語言**: {target_lang_str}
 
-請以 JSON 格式輸出：
+請以 JSON 格式輸出。
 
-```json
-{{
+{"如果只有一種語言：" if not is_multilang else ""}
+{'''```json
+{
     "title": "按上述策略創作的吸引人標題（20-30字）",
     "selling_points": [
         "賣點1（必須包含五星酒店/米芝蓮背書）",
@@ -706,8 +710,25 @@ class AIAnalysisService:
     ],
     "description": "完整文案（150-250字）：痛點開頭 → 背書建立信任 → 感官描寫 → 性價比收殺",
     "short_description": "簡短描述（50字以內）：一句話抓住核心賣點"
+}
+```''' if not is_multilang else f'''**多語言格式**（必須為每種語言生成完整內容）：
+
+```json
+{{
+    {', '.join([f'''"{lang}": {{
+        "title": "{language_names.get(lang, lang)}標題",
+        "selling_points": ["賣點1", "賣點2", "賣點3", "賣點4", "賣點5"],
+        "description": "{language_names.get(lang, lang)}完整描述",
+        "short_description": "{language_names.get(lang, lang)}簡短描述"
+    }}''' for lang in target_languages])}
 }}
 ```
+
+**重要**：
+- 每種語言都必須有完整內容，不是翻譯而是針對該語言重新創作
+- 簡體中文 (SC) 必須使用正確的簡體字
+- 英文 (EN) 要自然流暢，符合英語習慣，不是直譯
+'''}
 
 請直接輸出 JSON，不要加其他解釋文字。確保標題真正吸引人，而不是單純拼湊產品資訊！
 """

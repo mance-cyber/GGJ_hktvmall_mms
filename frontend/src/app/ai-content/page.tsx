@@ -128,6 +128,7 @@ export default function AIContentPage() {
       },
       content_type: formData.contentType,
       style: formData.style,
+      target_languages: selectedLanguages,
     })
   }
 

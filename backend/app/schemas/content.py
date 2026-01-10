@@ -28,7 +28,8 @@ class ContentGenerateRequest(BaseModel):
     product_info: Optional[ProductInfo] = None
     content_type: str = Field(default="full_copy", description="title, description, selling_points, full_copy")
     style: str = Field(default="professional", description="formal, casual, playful, professional")
-    language: str = Field(default="zh-HK", description="zh-HK, zh-TW, en")
+    language: str = Field(default="zh-HK", description="zh-HK, zh-TW, en (deprecated, use target_languages)")
+    target_languages: List[str] = Field(default=["TC"], description="目標語言: TC, SC, EN")
 
 
 class ContentBatchGenerateRequest(BaseModel):
@@ -42,6 +43,14 @@ class ContentBatchGenerateRequest(BaseModel):
 # 內容響應
 # =============================================
 
+class LanguageContent(BaseModel):
+    """單語言內容"""
+    title: Optional[str] = None
+    selling_points: Optional[List[str]] = None
+    description: Optional[str] = None
+    short_description: Optional[str] = None
+
+
 class GeneratedContent(BaseModel):
     """生成的內容"""
     title: Optional[str] = None
@@ -49,6 +58,7 @@ class GeneratedContent(BaseModel):
     description: Optional[str] = None
     short_description: Optional[str] = None
     hashtags: Optional[List[str]] = None
+    multilang: Optional[dict] = Field(default=None, description="多語言內容 {TC: {...}, SC: {...}, EN: {...}}")
 
 
 class ContentGenerateResponse(BaseModel):

@@ -74,12 +74,16 @@ async def generate_content(
 
     # 調用 AI 服務生成內容
     ai_service = await get_ai_analysis_service(db)
+
+    # 使用 target_languages（如果提供），否則使用單一 language
+    target_languages = request.target_languages if request.target_languages else ["TC"]
+
     ai_response = ai_service.generate_product_content(
         product_name=product_name,
         product_info=product_data,
         content_type=request.content_type,
         style=request.style,
-        language=request.language,
+        target_languages=target_languages,
     )
 
     # 處理 AI 響應
@@ -93,13 +97,41 @@ async def generate_content(
     # 解析 AI 返回的 JSON
     try:
         content_json = json.loads(ai_response.content)
-        generated = GeneratedContent(
-            title=content_json.get("title", product_name),
-            selling_points=content_json.get("selling_points", []),
-            description=content_json.get("description", ""),
-            short_description=content_json.get("short_description"),
-            hashtags=content_json.get("hashtags"),
+
+        # 檢查是否為多語言格式
+        is_multilang = len(target_languages) > 1 and any(
+            key in content_json for key in ["TC", "SC", "EN", "multilang"]
         )
+
+        if is_multilang:
+            # 多語言格式：從 multilang 或頂層語言鍵獲取
+            multilang_data = content_json.get("multilang", {})
+            if not multilang_data:
+                # 嘗試從頂層獲取語言鍵
+                for lang in ["TC", "SC", "EN"]:
+                    if lang in content_json:
+                        multilang_data[lang] = content_json[lang]
+
+            # 使用第一個語言作為主要顯示
+            primary_lang = target_languages[0]
+            primary_content = multilang_data.get(primary_lang, {})
+
+            generated = GeneratedContent(
+                title=primary_content.get("title", product_name),
+                selling_points=primary_content.get("selling_points", []),
+                description=primary_content.get("description", ""),
+                short_description=primary_content.get("short_description"),
+                multilang=multilang_data,
+            )
+        else:
+            # 單語言格式
+            generated = GeneratedContent(
+                title=content_json.get("title", product_name),
+                selling_points=content_json.get("selling_points", []),
+                description=content_json.get("description", ""),
+                short_description=content_json.get("short_description"),
+                hashtags=content_json.get("hashtags"),
+            )
     except json.JSONDecodeError:
         # 如果 AI 沒有返回有效 JSON，使用原始內容
         generated = GeneratedContent(

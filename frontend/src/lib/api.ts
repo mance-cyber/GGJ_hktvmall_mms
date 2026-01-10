@@ -796,6 +796,7 @@ export interface ContentGenerateRequest {
   content_type: 'title' | 'description' | 'selling_points' | 'full_copy'
   style: 'formal' | 'casual' | 'playful' | 'professional'
   language?: string
+  target_languages?: ('TC' | 'SC' | 'EN')[]
 }
 
 export interface GeneratedContent {
