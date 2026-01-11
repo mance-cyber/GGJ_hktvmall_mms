@@ -119,9 +119,7 @@ function useNotificationSound() {
 
   useEffect(() => {
     // 創建音頻元素
-    audioRef.current = new Audio()
-    // 使用簡單的提示音（Base64 編碼的短音效）
-    audioRef.current.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleQwVhMHV1IFnGgY0teleRgIMNYPBrpFJAA88kNPaejoCC0+h4OuVWgwMTYzL1olCAAhEgtbsmUIJFDyG1vGfVQsOPX3W9KFQDBg+fdH7p1kRGT1y0gCrXRUhQW7NCrBhGSREZcwMtGQdKkNfyQ+3aCAyQ1jEE7xtJDpDT74Wv3MqRENGtxnDeTBRQz6wHMh/N1xBNKgfzYY+aD4qoSLRjEZzPCCaJtaST3o7E5Im3ZlYgTgKiSzknl6HMwKAMOugZJAu/XU17aVqmCr3Zzb1r3SjJ/NnNvq3gKkh8Gc5/8GIrxzuaD0Dyo2zGupqQg/Qk7gc8W1GFNqYwCL5cUgb35jJK/x3TiDincwu/ntRJ+mjzjMDgVQr7KjWPQmFWTDwrN5CDI9gNPu24EYTkmM9/sDiSBybZz4Bx+dMIqBrQQnK600kpm9FDtHuUCepc0wU1/FWK7B3Uh3b9Fwxt3tbI+D7YTW/f18o5wBmOMGBZDvLhmhA6DzShGlL7EDoSNmLb0vuTedO8lD0VPha/2EBaQlvEHYXfR2DJIoqkDCWNp08o0KpSK9OtVS7WsFgx2bNbNNy2XjffuWE64rxi/eRAJgGngyoEq8YtR67JMEqxy/NNdM71teleQ8VhMHV1IFnGgY0teleRgIMNYPBrpFJAA88kNPaejoCC0+h4OuVWgwMTYzL1olCAAhEgtbsmUIJFDyG1vGfVQsOPX3W9KFQDBg+fdH7p1kRGT1y0gCrXRUhQW7NCrBhGSREZcwMtGQdKkNfyQ+3aCAyQ1jEE7xtJDpDT74Wv3MqRENGtxnDeTBRQz6wHMh/N1xBNKgfzYY+aD4qoSLRjEZzPCCaJtaST3o7E5Im3ZlYgTgKiSzknl6HMwKAMOugZJAu'
+    audioRef.current = new Audio('/audio/notification.mp3')
     audioRef.current.volume = 0.5
 
     // 從 localStorage 讀取設定
