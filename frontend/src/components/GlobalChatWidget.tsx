@@ -171,6 +171,20 @@ function FloatingButton({
   onDragEnd: (info: PanInfo) => void
 }) {
   const dragControls = useDragControls()
+  const [animationKey, setAnimationKey] = useState(0)
+
+  // 動畫播放完成後停頓 3 秒再重新播放（通過重新掛載組件實現）
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dotLottieRefCallback = useCallback((dotLottie: any) => {
+    if (dotLottie) {
+      dotLottie.addEventListener('complete', () => {
+        // 停頓 3 秒後重新播放
+        setTimeout(() => {
+          setAnimationKey(prev => prev + 1)
+        }, 3000)
+      })
+    }
+  }, [])
 
   return (
     <motion.button
@@ -185,7 +199,7 @@ function FloatingButton({
         "w-14 h-14 rounded-full shadow-lg flex items-center justify-center",
         "transition-colors duration-300 hover:shadow-xl",
         "bg-gradient-to-br from-purple-600 to-pink-500",
-        "text-white relative cursor-grab active:cursor-grabbing"
+        "text-white relative cursor-grab active:cursor-grabbing overflow-hidden"
       )}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
@@ -205,12 +219,21 @@ function FloatingButton({
         ) : (
           <motion.div
             key="chat"
-            initial={{ rotate: 90, opacity: 0 }}
-            animate={{ rotate: 0, opacity: 1 }}
-            exit={{ rotate: -90, opacity: 0 }}
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
             transition={{ duration: 0.2 }}
+            className="w-full h-full flex items-center justify-center"
           >
-            <MessageCircle className="w-6 h-6" />
+            <DotLottieReact
+              key={animationKey}
+              src="/animations/live-chatbot.lottie"
+              loop={false}
+              autoplay
+              speed={0.7}
+              dotLottieRefCallback={dotLottieRefCallback}
+              style={{ width: 48, height: 48 }}
+            />
           </motion.div>
         )}
       </AnimatePresence>
