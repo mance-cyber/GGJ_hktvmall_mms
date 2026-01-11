@@ -256,7 +256,7 @@ export default function CompetitorsPage() {
   if (isLoading) {
     return (
       <PageTransition>
-        <div className="space-y-6">
+        <div className="space-y-6 max-w-7xl mx-auto">
           {/* 標題骨架 */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-2">
@@ -280,7 +280,7 @@ export default function CompetitorsPage() {
           </div>
 
           {/* 卡片骨架 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <HoloCard key={i} interactive={false} className="p-6">
                 <div className="space-y-4">
@@ -313,7 +313,7 @@ export default function CompetitorsPage() {
   if (error) {
     return (
       <PageTransition>
-        <HoloCard glowColor="purple" className="border-red-200/60 bg-red-50/50 p-6">
+        <HoloCard glowColor="purple" className="max-w-7xl mx-auto border-red-200/60 bg-red-50/50 p-6">
           <div className="flex items-center text-red-600">
             <AlertCircle className="w-5 h-5 mr-3" />
             <span className="font-medium">無法載入競爭對手列表，請稍後再試。</span>
@@ -325,7 +325,7 @@ export default function CompetitorsPage() {
 
   return (
     <PageTransition>
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-7xl mx-auto">
         {/* ========== 頁面標題 ========== */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -486,7 +486,7 @@ export default function CompetitorsPage() {
         {/* 卡片視圖 - 手機版強制顯示，桌面版根據 viewMode 決定 */}
         <StaggerContainer
           className={cn(
-            "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6",
+            "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5",
             viewMode === 'list' ? "sm:hidden" : ""
           )}
           staggerDelay={0.05}

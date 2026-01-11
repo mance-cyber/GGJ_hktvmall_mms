@@ -249,7 +249,7 @@ export default function CompetitorDetailPage() {
   if (isLoading) {
     return (
       <PageTransition>
-        <div className="space-y-6">
+        <div className="space-y-6 max-w-7xl mx-auto">
           {/* 頂部骨架 */}
           <div className="space-y-4">
             <HoloSkeleton width={120} height={20} />
@@ -285,7 +285,7 @@ export default function CompetitorDetailPage() {
   if (error) {
     return (
       <PageTransition>
-        <HoloCard glowColor="purple" className="border-red-200/50 bg-red-50/50 p-6">
+        <HoloCard glowColor="purple" className="max-w-7xl mx-auto border-red-200/50 bg-red-50/50 p-6">
           <div className="flex items-center text-red-600">
             <AlertCircle className="w-5 h-5 mr-3" />
             <span className="font-medium">無法載入商品列表，請稍後再試。</span>
@@ -296,7 +296,7 @@ export default function CompetitorDetailPage() {
   }
 
   return (
-    <PageTransition className="space-y-6">
+    <PageTransition className="space-y-6 max-w-7xl mx-auto">
       {/* ========== 頂部導航與標題 ========== */}
       <div className="space-y-4">
         <Link
