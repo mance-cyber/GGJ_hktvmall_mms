@@ -7,6 +7,9 @@ import { Toaster } from '@/components/ui/toaster'
 export const metadata: Metadata = {
   title: 'GoGoJap AI 營運系統',
   description: '競品監測與價格追踪儀表板',
+  icons: {
+    icon: '/favicon.ico',
+  },
 }
 
 export const viewport: Viewport = {
