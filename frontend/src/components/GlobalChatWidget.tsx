@@ -9,7 +9,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import { motion, AnimatePresence, useDragControls, PanInfo } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
@@ -158,17 +158,15 @@ function useNotificationSound() {
 function FloatingButton({
   isOpen,
   onClick,
-  hasUnread,
-  position,
-  onDragEnd
+  hasUnread
 }: {
   isOpen: boolean
   onClick: () => void
   hasUnread: boolean
-  position: { x: number; y: number }
-  onDragEnd: (info: PanInfo) => void
 }) {
-  const dragControls = useDragControls()
+  // 使用 useMotionValue 實現流暢拖動（避免 state 更新造成的延遲）
+  const x = useMotionValue(0)
+  const y = useMotionValue(0)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const dotLottieInstance = useRef<any>(null)
 
@@ -192,16 +190,13 @@ function FloatingButton({
   return (
     <motion.button
       drag
-      dragControls={dragControls}
-      dragMomentum={false}
-      dragElastic={0.1}
-      onDragEnd={(_, info) => onDragEnd(info)}
+      dragElastic={0.15}
+      dragTransition={{ bounceStiffness: 300, bounceDamping: 20 }}
       onClick={onClick}
-      style={{ x: position.x, y: position.y }}
+      style={{ x, y }}
       className={cn(
         "w-36 h-36 flex items-center justify-center",
-        "transition-transform duration-300",
-        "relative cursor-grab active:cursor-grabbing"
+        "relative cursor-grab active:cursor-grabbing touch-none"
       )}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
@@ -692,7 +687,6 @@ export function GlobalChatWidget() {
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [hasUnread, setHasUnread] = useState(false)
   const [attachments, setAttachments] = useState<FileAttachment[]>([])
-  const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0 })
 
   // 聲音提醒
   const { soundEnabled, toggleSound, playSound } = useNotificationSound()
@@ -812,14 +806,6 @@ export function GlobalChatWidget() {
     })
   }
 
-  // 拖曳結束處理
-  const handleDragEnd = (info: PanInfo) => {
-    setButtonPosition(prev => ({
-      x: prev.x + info.offset.x,
-      y: prev.y + info.offset.y
-    }))
-  }
-
   // 在 Agent 頁面不顯示此組件（避免重複）
   if (pathname === '/agent') {
     return null
@@ -857,8 +843,6 @@ export function GlobalChatWidget() {
         isOpen={isOpen}
         onClick={isOpen ? handleClose : handleOpen}
         hasUnread={hasUnread}
-        position={buttonPosition}
-        onDragEnd={handleDragEnd}
       />
     </div>
   )
