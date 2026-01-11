@@ -484,18 +484,20 @@ export default function CompetitorsPage() {
 
         {/* ========== 競爭對手卡片/列表 ========== */}
         {/* 卡片視圖 - 手機版強制顯示，桌面版根據 viewMode 決定 */}
-        <StaggerContainer
+        <div
           className={cn(
             "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5",
             viewMode === 'list' ? "sm:hidden" : ""
           )}
-          staggerDelay={0.05}
         >
           <AnimatePresence mode="popLayout">
-            {filteredCompetitors?.map((competitor) => (
+            {filteredCompetitors?.map((competitor, index) => (
               <motion.div
                 key={competitor.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
                 layout
               >
                 <CompetitorCard
@@ -513,7 +515,7 @@ export default function CompetitorsPage() {
               </motion.div>
             ))}
           </AnimatePresence>
-        </StaggerContainer>
+        </div>
 
         {/* 列表視圖 - 僅桌面版顯示 */}
         {viewMode === 'list' && (
