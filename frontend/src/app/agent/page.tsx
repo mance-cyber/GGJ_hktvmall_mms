@@ -167,14 +167,13 @@ function ThinkingMessage() {
       animate={{ opacity: 1, y: 0 }}
       className="flex gap-3"
     >
-      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
-        <motion.span
-          animate={{ scale: [1, 1.1, 1] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          className="text-sm"
-        >
-          🇯🇵
-        </motion.span>
+      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
+        <DotLottieReact
+          src="/animations/jap.lottie"
+          loop
+          autoplay
+          style={{ width: 28, height: 28 }}
+        />
       </div>
       <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm border">
         <div className="flex items-center gap-2">
@@ -324,12 +323,21 @@ function MessageBubble({ message }: { message: Message }) {
       className={cn("flex gap-3", isUser && "flex-row-reverse")}
     >
       <div className={cn(
-        "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
-        isUser 
-          ? "bg-gradient-to-br from-cyan-500 to-blue-500" 
+        "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden",
+        isUser
+          ? "bg-gradient-to-br from-cyan-500 to-blue-500"
           : "bg-gradient-to-br from-purple-500 to-pink-500"
       )}>
-        {isUser ? <User className="w-4 h-4 text-white" /> : <span className="text-sm">🇯🇵</span>}
+        {isUser ? (
+          <User className="w-4 h-4 text-white" />
+        ) : (
+          <DotLottieReact
+            src="/animations/jap.lottie"
+            loop
+            autoplay
+            style={{ width: 28, height: 28 }}
+          />
+        )}
       </div>
       <div className={cn(
         "max-w-[80%] rounded-2xl px-4 py-3 shadow-sm",
