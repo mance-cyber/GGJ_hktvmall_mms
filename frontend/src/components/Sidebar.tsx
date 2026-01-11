@@ -24,7 +24,6 @@ import {
   Brain,
   MessageSquare,
   LogOut,
-  Zap,
   LucideIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -291,9 +290,12 @@ export function Sidebar() {
       {/* Logo */}
       <div className="mb-6 relative">
         <div className="flex items-center gap-3">
-          <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center shadow-lg">
-            <Zap className="w-6 h-6 text-white" fill="white" />
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500 blur-md opacity-50" />
+          <div className="relative w-10 h-10 rounded-xl overflow-hidden shadow-lg">
+            <img
+              src="/images/GGJ_small_logo_001.ico"
+              alt="GoGoJap Logo"
+              className="w-full h-full object-contain"
+            />
           </div>
           <div>
             <div className="text-gray-900 font-semibold text-lg">GoGoJap</div>
