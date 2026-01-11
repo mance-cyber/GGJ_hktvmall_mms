@@ -162,10 +162,19 @@ RESPONSE_TEMPLATES = {
 
 def format_order_stats(data: dict) -> str:
     """格式化訂單統計回應"""
-    total = data.get("total_orders", 0)
-    pending = data.get("pending_orders", 0)
-    shipped = data.get("shipped_orders", 0)
-    revenue = data.get("total_revenue", 0)
+    # 處理嵌套數據結構 (從 OrderStatsTool 返回)
+    summary = data.get("summary", data)
+
+    total = summary.get("total_orders", 0)
+    pending = summary.get("pending_orders", 0)
+    shipped = summary.get("shipped_orders", 0)
+    revenue = summary.get("total_amount", summary.get("total_revenue", 0))
+
+    # 確保數值類型正確
+    total = int(total) if total else 0
+    pending = int(pending) if pending else 0
+    shipped = int(shipped) if shipped else 0
+    revenue = float(revenue) if revenue else 0
 
     # 根據數據選擇語氣
     if pending > 10:
@@ -192,10 +201,24 @@ def format_order_stats(data: dict) -> str:
 
 def format_finance_summary(data: dict) -> str:
     """格式化財務摘要回應"""
-    revenue = data.get("revenue", 0)
-    profit = data.get("profit", 0)
-    orders = data.get("orders", 0)
-    growth = data.get("growth_rate", 0)
+    # 處理嵌套數據結構 (從 FinanceSummaryTool 返回)
+    summary = data.get("summary", data)
+
+    # 提取數值 (支持嵌套和扁平兩種格式)
+    revenue_data = summary.get("revenue", {})
+    profit_data = summary.get("profit", {})
+    orders_data = summary.get("orders", {})
+
+    revenue = revenue_data.get("total", revenue_data) if isinstance(revenue_data, dict) else revenue_data
+    profit = profit_data.get("net", profit_data) if isinstance(profit_data, dict) else profit_data
+    orders = orders_data.get("count", orders_data) if isinstance(orders_data, dict) else orders_data
+    growth = summary.get("growth_rate", 0)
+
+    # 確保數值類型正確
+    revenue = float(revenue) if revenue else 0
+    profit = float(profit) if profit else 0
+    orders = int(orders) if orders else 0
+    growth = float(growth) if growth else 0
 
     # 根據增長率選擇語氣
     if growth > 10:
@@ -225,10 +248,18 @@ def format_finance_summary(data: dict) -> str:
 
 def format_alert_summary(data: dict) -> str:
     """格式化警報摘要回應"""
-    total = data.get("total", 0)
-    price_alerts = data.get("price_alerts", 0)
-    stock_alerts = data.get("stock_alerts", 0)
-    urgent = data.get("urgent", 0)
+    # 處理嵌套數據結構 (從 AlertQueryTool 返回)
+    total = data.get("count", data.get("total", 0))
+    type_counts = data.get("type_counts", {})
+    price_alerts = type_counts.get("price_change", type_counts.get("price_drop", 0)) + type_counts.get("competitor_price", 0)
+    stock_alerts = type_counts.get("stock_alert", type_counts.get("low_stock", 0))
+    urgent = data.get("unread_count", data.get("urgent", 0))
+
+    # 確保數值類型正確
+    total = int(total) if total else 0
+    price_alerts = int(price_alerts) if price_alerts else 0
+    stock_alerts = int(stock_alerts) if stock_alerts else 0
+    urgent = int(urgent) if urgent else 0
 
     if total == 0:
         return "✅ 冇警報！一切正常，可以放心～"

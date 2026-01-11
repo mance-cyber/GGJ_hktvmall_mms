@@ -290,6 +290,8 @@ class FinanceSummaryTool(BaseTool):
             )
 
         except Exception as e:
+            # 回滾失敗的事務，避免影響後續數據庫操作
+            await self.db.rollback()
             return ToolResult(
                 tool_name=self.name,
                 success=False,
@@ -416,6 +418,8 @@ class SettlementQueryTool(BaseTool):
             )
 
         except Exception as e:
+            # 回滾失敗的事務，避免影響後續數據庫操作
+            await self.db.rollback()
             return ToolResult(
                 tool_name=self.name,
                 success=False,

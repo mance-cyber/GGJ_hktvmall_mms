@@ -114,6 +114,8 @@ class ProductOverviewTool(BaseTool):
                 metadata={"query_products": products}
             )
         except Exception as e:
+            # 回滾失敗的事務，避免影響後續數據庫操作
+            await self.db.rollback()
             return ToolResult(
                 tool_name=self.name,
                 success=False,
@@ -236,6 +238,8 @@ class ProductSearchTool(BaseTool):
                 }
             )
         except Exception as e:
+            # 回滾失敗的事務，避免影響後續數據庫操作
+            await self.db.rollback()
             return ToolResult(
                 tool_name=self.name,
                 success=False,
@@ -346,6 +350,8 @@ class TopProductsTool(BaseTool):
                 }
             )
         except Exception as e:
+            # 回滾失敗的事務，避免影響後續數據庫操作
+            await self.db.rollback()
             return ToolResult(
                 tool_name=self.name,
                 success=False,

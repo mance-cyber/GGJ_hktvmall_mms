@@ -186,21 +186,25 @@ class SlotManager:
     def _extract_time_range(self, message: str) -> Optional[str]:
         """提取時間範圍"""
         message_lower = message.lower()
-        
-        # 檢查具體時間詞
+
+        # 檢查具體時間詞 (順序很重要，更具體的先匹配)
         time_patterns = {
+            "today": ["今日", "今天", "當日", "當天"],
+            "this_week": ["本週", "本周", "呢個星期", "這週", "這周"],
+            "this_month": ["本月", "呢個月", "這個月"],
+            "last_month": ["上個月", "上月"],
             "7d": ["7日", "七日", "一週", "一周", "7天", "七天"],
             "30d": ["30日", "三十日", "一個月", "30天"],
             "90d": ["90日", "三個月", "季度", "90天"],
             "1y": ["一年", "12個月", "全年"],
             "all": ["全部", "所有時間", "歷史"],
         }
-        
+
         for time_code, patterns in time_patterns.items():
             for pattern in patterns:
                 if pattern in message_lower:
                     return time_code
-        
+
         return None
     
     def _extract_product_detail(self, message: str, product: str) -> Optional[ProductDetail]:

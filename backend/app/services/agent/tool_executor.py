@@ -188,8 +188,8 @@ class ToolExecutor:
         params = {
             "products": slots.products,
         }
-        
-        # 時間範圍映射
+
+        # 時間範圍映射 (用於產品分析工具)
         time_days = {
             "7d": 7,
             "30d": 30,
@@ -198,11 +198,25 @@ class ToolExecutor:
             "all": 3650,
         }
         params["days"] = time_days.get(slots.time_range, 30)
-        
-        # Finance Tool Params
-        if intent == IntentType.FINANCE_ANALYSIS:
-            params["metric"] = "revenue" # Default
-            params["period"] = "last_30_days" # Default
+
+        # 財務工具時間範圍映射
+        finance_period_map = {
+            "today": "today",
+            "1d": "today",
+            "7d": "this_week",
+            "this_week": "this_week",
+            "30d": "this_month",
+            "this_month": "this_month",
+            "last_month": "last_month",
+            "90d": "last_30_days",
+            "1y": "this_year",
+            "all": "this_year",
+        }
+
+        # Finance Tool Params (FINANCE_SUMMARY 和 FINANCE_ANALYSIS 都需要)
+        if intent in [IntentType.FINANCE_SUMMARY, IntentType.FINANCE_ANALYSIS]:
+            params["metric"] = "revenue"
+            params["period"] = finance_period_map.get(slots.time_range, "today")  # 默認今日
             params["by"] = "revenue"
             
             # Simple heuristic for metric based on keywords in potential future slots
