@@ -196,10 +196,9 @@ function FloatingButton({
       onClick={onClick}
       style={{ x: position.x, y: position.y }}
       className={cn(
-        "w-14 h-14 rounded-full shadow-lg flex items-center justify-center",
-        "transition-colors duration-300 hover:shadow-xl",
-        "bg-gradient-to-br from-purple-600 to-pink-500",
-        "text-white relative cursor-grab active:cursor-grabbing overflow-hidden"
+        "w-36 h-36 flex items-center justify-center",
+        "transition-transform duration-300",
+        "relative cursor-grab active:cursor-grabbing"
       )}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
@@ -213,8 +212,9 @@ function FloatingButton({
             animate={{ rotate: 0, opacity: 1 }}
             exit={{ rotate: 90, opacity: 0 }}
             transition={{ duration: 0.2 }}
+            className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center shadow-lg"
           >
-            <X className="w-6 h-6" />
+            <X className="w-6 h-6 text-white" />
           </motion.div>
         ) : (
           <motion.div
@@ -232,7 +232,7 @@ function FloatingButton({
               autoplay
               speed={0.7}
               dotLottieRefCallback={dotLottieRefCallback}
-              style={{ width: 48, height: 48 }}
+              style={{ width: 144, height: 144 }}
             />
           </motion.div>
         )}
@@ -240,17 +240,7 @@ function FloatingButton({
 
       {/* 未讀指示器 */}
       {hasUnread && !isOpen && (
-        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-pulse" />
-      )}
-
-      {/* 拖曳提示 */}
-      <span className="absolute -left-1 -top-1 w-3 h-3 opacity-0 group-hover:opacity-50">
-        <GripVertical className="w-3 h-3" />
-      </span>
-
-      {/* 光環效果 */}
-      {!isOpen && (
-        <span className="absolute inset-0 rounded-full bg-purple-400 animate-ping opacity-20" />
+        <span className="absolute top-2 right-2 w-4 h-4 bg-red-500 rounded-full animate-pulse" />
       )}
     </motion.button>
   )
