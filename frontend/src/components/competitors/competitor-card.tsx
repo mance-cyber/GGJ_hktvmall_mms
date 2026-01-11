@@ -12,11 +12,15 @@ import {
   Building2,
   Activity,
   Clock,
-  Zap
+  Zap,
+  ChevronRight
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import {
+  HoloCard,
+  HoloButton,
+  HoloBadge,
+} from '@/components/ui/future-tech'
 
 // 平台選項
 const PLATFORMS = [
@@ -44,72 +48,67 @@ export function CompetitorCard({
   const platformLabel = PLATFORMS.find((p) => p.value === competitor.platform)?.label || competitor.platform
 
   return (
-    <div className={cn(
-      "glass-card rounded-xl overflow-hidden group relative border border-white/40",
-      isScraping && "ring-2 ring-blue-400/50"
-    )}>
-      {/* 掃描動畫效果 */}
-      {isScraping && (
-        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-          <div className="absolute inset-0 bg-blue-500/5" />
-          <motion.div
-            className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-blue-400 to-transparent opacity-50"
-            animate={{ top: ['0%', '100%'] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-          />
-        </div>
+    <HoloCard
+      glowColor={isScraping ? 'blue' : 'cyan'}
+      scanLine={isScraping}
+      className={cn(
+        "h-full flex flex-col overflow-hidden group",
+        isScraping && "ring-2 ring-cyan-400/50"
       )}
-
-      <div className="p-6 relative z-10">
-        {/* 頭部 */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center space-x-4">
+    >
+      <div className="p-5 flex-1 flex flex-col">
+        {/* 頭部：圖標 + 名稱 + 狀態 */}
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="flex items-center space-x-3 min-w-0 flex-1">
             <div className={cn(
-              "w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner",
-              "bg-gradient-to-br from-white to-slate-50 border border-slate-100"
+              "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
+              "bg-gradient-to-br from-cyan-50 to-blue-50 border border-cyan-100/50",
+              "shadow-lg shadow-cyan-100/30"
             )}>
-              <Building2 className="w-7 h-7 text-blue-600" />
+              <Building2 className="w-6 h-6 text-cyan-600" />
             </div>
-            <div>
-              <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-base font-bold text-slate-800 group-hover:text-cyan-600 transition-colors truncate">
                 {competitor.name}
               </h3>
-              <div className="flex items-center text-xs font-medium text-slate-500 mt-1 bg-slate-100/50 px-2 py-0.5 rounded-full w-fit">
-                <Globe className="w-3 h-3 mr-1" />
+              <div className="flex items-center text-xs font-medium text-slate-500 mt-1">
+                <Globe className="w-3 h-3 mr-1 text-cyan-500" />
                 {platformLabel}
               </div>
             </div>
           </div>
-          <Badge 
-            variant={competitor.is_active ? "default" : "secondary"}
-            className={cn(
-              competitor.is_active ? "bg-green-500/10 text-green-700 hover:bg-green-500/20" : "bg-slate-100 text-slate-500"
-            )}
+          <HoloBadge
+            variant={competitor.is_active ? 'success' : 'default'}
+            size="sm"
+            pulse={competitor.is_active}
           >
-            <div className={cn("w-1.5 h-1.5 rounded-full mr-1.5", competitor.is_active ? "bg-green-500 animate-pulse" : "bg-slate-400")} />
             {competitor.is_active ? '監測中' : '已暫停'}
-          </Badge>
+          </HoloBadge>
         </div>
 
-        {/* 描述 */}
-        {competitor.notes && (
-          <p className="text-sm text-slate-500 line-clamp-2 mb-4 h-10">
-            {competitor.notes}
-          </p>
-        )}
+        {/* 描述 - 固定高度確保卡片對齊 */}
+        <div className="h-10 mb-4">
+          {competitor.notes ? (
+            <p className="text-sm text-slate-500 line-clamp-2">
+              {competitor.notes}
+            </p>
+          ) : (
+            <p className="text-sm text-slate-400 italic">暫無備註</p>
+          )}
+        </div>
 
         {/* 數據網格 */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="bg-slate-50/50 rounded-lg p-3 border border-slate-100">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-gradient-to-br from-slate-50 to-white rounded-xl p-3 border border-slate-100/80">
             <div className="flex items-center text-xs text-slate-500 mb-1">
-              <Activity className="w-3 h-3 mr-1" />
+              <Activity className="w-3 h-3 mr-1 text-cyan-500" />
               監測商品
             </div>
             <div className="text-xl font-bold text-slate-800">{competitor.product_count}</div>
           </div>
-          <div className="bg-slate-50/50 rounded-lg p-3 border border-slate-100">
+          <div className="bg-gradient-to-br from-slate-50 to-white rounded-xl p-3 border border-slate-100/80">
             <div className="flex items-center text-xs text-slate-500 mb-1">
-              <Clock className="w-3 h-3 mr-1" />
+              <Clock className="w-3 h-3 mr-1 text-cyan-500" />
               最後更新
             </div>
             <div className="text-sm font-semibold text-slate-800 pt-1">
@@ -122,50 +121,48 @@ export function CompetitorCard({
       </div>
 
       {/* 底部操作欄 */}
-      <div className="px-6 py-4 bg-slate-50/30 border-t border-slate-100/60 backdrop-blur-sm flex items-center justify-between relative z-10">
+      <div className="px-5 py-3 bg-gradient-to-r from-slate-50/80 to-white/80 border-t border-slate-100/60 flex items-center justify-between">
         <div className="flex items-center space-x-1">
-          <Button
+          <HoloButton
             size="sm"
             variant="ghost"
             onClick={onScrape}
             disabled={isScraping}
-            className={cn(
-              "h-8 px-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50",
-              isScraping && "text-blue-600 bg-blue-50"
-            )}
-            title="立即抓取"
+            icon={isScraping ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 text-amber-500" />}
+            className={cn(isScraping && "text-cyan-600 bg-cyan-50")}
           >
-            {isScraping ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : (
-              <Zap className="w-4 h-4" />
-            )}
-          </Button>
-          <Button
+            <span className="sr-only">抓取</span>
+          </HoloButton>
+          <HoloButton
             size="sm"
             variant="ghost"
             onClick={onEdit}
-            className="h-8 px-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            icon={<Edit className="w-4 h-4" />}
           >
-            <Edit className="w-4 h-4" />
-          </Button>
-          <Button
+            <span className="sr-only">編輯</span>
+          </HoloButton>
+          <HoloButton
             size="sm"
             variant="ghost"
             onClick={onDelete}
-            className="h-8 px-2 text-slate-600 hover:text-red-600 hover:bg-red-50"
+            icon={<Trash2 className="w-4 h-4" />}
+            className="hover:text-red-600 hover:bg-red-50"
           >
-            <Trash2 className="w-4 h-4" />
-          </Button>
+            <span className="sr-only">刪除</span>
+          </HoloButton>
         </div>
-        
+
         <Link href={`/competitors/${competitor.id}`}>
-          <Button size="sm" variant="link" className="text-blue-600 hover:text-blue-700 p-0 h-auto font-medium">
-            查看詳情
-            <ExternalLink className="w-3 h-3 ml-1" />
-          </Button>
+          <HoloButton
+            size="sm"
+            variant="ghost"
+            icon={<ChevronRight className="w-4 h-4" />}
+            className="text-cyan-600 hover:text-cyan-700"
+          >
+            詳情
+          </HoloButton>
         </Link>
       </div>
-    </div>
+    </HoloCard>
   )
 }
