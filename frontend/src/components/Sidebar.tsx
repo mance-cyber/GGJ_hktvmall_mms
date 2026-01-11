@@ -290,13 +290,11 @@ export function Sidebar() {
       {/* Logo */}
       <div className="mb-6 relative">
         <div className="flex items-center gap-3">
-          <div className="relative w-10 h-10 rounded-xl overflow-hidden shadow-lg">
-            <img
-              src="/images/GGJ_small_logo_001.ico"
-              alt="GoGoJap Logo"
-              className="w-full h-full object-contain"
-            />
-          </div>
+          <img
+            src="/images/GGJ_small_logo_001.ico"
+            alt="GoGoJap Logo"
+            className="w-20 h-20 object-contain"
+          />
           <div>
             <div className="text-gray-900 font-semibold text-lg">GoGoJap</div>
             <div className="text-gray-500 text-xs flex items-center gap-1.5">
