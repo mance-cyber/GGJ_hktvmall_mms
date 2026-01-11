@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { api } from '@/lib/api'
+import { api, analyticsApi } from '@/lib/api'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Brain,
@@ -22,7 +22,8 @@ import {
   Zap,
   BarChart3,
   TrendingUp,
-  Clock
+  Clock,
+  Database
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -76,33 +77,100 @@ const renderContent = (text: string) => {
 
 export default function AIAnalysisPage() {
   // State
-  const [inputData, setInputData] = useState<string>(JSON.stringify({
-    products: [
-      { name: "北海道毛蟹", category: "鮮魚", our_price: 580, competitor_price: 620, stock: "有貨" },
-      { name: "日本和牛 A5", category: "肉類", our_price: 1280, competitor_price: 1350, stock: "有貨" },
-      { name: "秋刀魚", category: "鮮魚", our_price: 45, competitor_price: null, stock: "季節限定" },
-    ],
-    price_changes: [
-      { product: "藍鰭吞拿魚", change: "+8%", reason: "供應緊張" },
-      { product: "日本米", change: "-5%", reason: "對手促銷" },
-    ],
-    market_trends: {
-      overall: "鮮魚類價格上漲趨勢",
-      season: "冬季",
-      hot_items: ["蟹類", "和牛", "海膽"]
-    }
-  }, null, 2))
-
+  const [inputData, setInputData] = useState<string>('')
   const [insightsResult, setInsightsResult] = useState<string | null>(null)
   const [strategyResult, setStrategyResult] = useState<string | null>(null)
   const [expandedSection, setExpandedSection] = useState<'insights' | 'strategy' | 'both'>('both')
   const [totalTokens, setTotalTokens] = useState(0)
+  const [isLoadingData, setIsLoadingData] = useState(false)
+  const [dataLoaded, setDataLoaded] = useState(false)
 
   // Check AI config
   const { data: config } = useQuery({
     queryKey: ['ai-config'],
     queryFn: () => api.getAIConfig(),
   })
+
+  // 從數據庫加載數據
+  const loadDatabaseData = async () => {
+    setIsLoadingData(true)
+    try {
+      // 並行獲取多個數據源
+      const [productsRes, competitorsRes, categoriesRes, commandCenterRes] = await Promise.all([
+        api.getProducts(1, 50),
+        api.getCompetitors(),
+        api.getCategories(1, 20),
+        analyticsApi.getCommandCenter().catch(() => null)
+      ])
+
+      // 獲取競品產品（取前3個競爭對手的產品）
+      const competitorProducts: any[] = []
+      const activeCompetitors = competitorsRes.data?.slice(0, 3) || []
+      for (const competitor of activeCompetitors) {
+        try {
+          const products = await api.getCompetitorProducts(competitor.id, 1, 10)
+          competitorProducts.push({
+            competitor_name: competitor.name,
+            platform: competitor.platform,
+            products: products.data?.slice(0, 5).map((p: any) => ({
+              name: p.name,
+              price: p.price,
+              original_price: p.original_price,
+              discount_percent: p.discount_percent,
+              is_available: p.is_available
+            })) || []
+          })
+        } catch (e) {
+          // 忽略單個競爭對手的錯誤
+        }
+      }
+
+      // 組織數據結構
+      const analysisData = {
+        summary: {
+          total_products: productsRes.total || 0,
+          total_competitors: competitorsRes.data?.length || 0,
+          total_categories: categoriesRes.total || 0,
+          monthly_revenue: commandCenterRes?.stats?.monthly_revenue || 0,
+          monthly_profit: commandCenterRes?.stats?.monthly_profit || 0,
+          pending_alerts: commandCenterRes?.stats?.unread_alerts || 0
+        },
+        our_products: productsRes.data?.slice(0, 20).map((p: any) => ({
+          name: p.name,
+          sku: p.sku,
+          category: p.category,
+          price: p.price,
+          cost: p.cost,
+          stock_quantity: p.stock_quantity,
+          status: p.status,
+          profit_margin: p.price && p.cost ? ((p.price - p.cost) / p.price * 100).toFixed(1) + '%' : null
+        })) || [],
+        competitors: activeCompetitors.map((c: any) => ({
+          name: c.name,
+          platform: c.platform,
+          product_count: c.product_count,
+          is_active: c.is_active,
+          last_scraped: c.last_scraped_at
+        })),
+        competitor_products: competitorProducts,
+        categories: categoriesRes.items?.map((c: any) => ({
+          name: c.name,
+          product_count: c.product_count,
+          url: c.url
+        })) || [],
+        recent_activity: commandCenterRes?.recent_activity?.slice(0, 5) || [],
+        analysis_time: new Date().toISOString()
+      }
+
+      setInputData(JSON.stringify(analysisData, null, 2))
+      setDataLoaded(true)
+    } catch (error) {
+      console.error('Failed to load database data:', error)
+      alert('加載數據失敗，請稍後再試')
+    } finally {
+      setIsLoadingData(false)
+    }
+  }
 
   // Generate insights mutation
   const insightsMutation = useMutation({
@@ -255,23 +323,47 @@ export default function AIAnalysisPage() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-slate-800 flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-blue-500" />
-                  輸入數據
+                  分析數據
                 </h3>
-                <HoloBadge variant="info" size="sm">JSON 格式</HoloBadge>
+                <div className="flex items-center gap-2">
+                  {dataLoaded && (
+                    <HoloBadge variant="success" size="sm">
+                      <CheckCircle2 className="w-3 h-3" /> 數據已加載
+                    </HoloBadge>
+                  )}
+                  <HoloBadge variant="info" size="sm">JSON 格式</HoloBadge>
+                </div>
+              </div>
+
+              {/* 加載數據按鈕 */}
+              <div className="mb-4">
+                <HoloButton
+                  variant="secondary"
+                  onClick={loadDatabaseData}
+                  disabled={isLoadingData}
+                  loading={isLoadingData}
+                  icon={!isLoadingData ? <Database className="w-4 h-4" /> : undefined}
+                  className="w-full"
+                >
+                  {isLoadingData ? '正在加載數據庫數據...' : '從數據庫加載數據'}
+                </HoloButton>
+                <p className="text-xs text-slate-500 mt-2 text-center">
+                  自動獲取產品、競品、類別等數據進行分析
+                </p>
               </div>
 
               <Textarea
-                className="font-mono text-sm min-h-[300px]"
+                className="font-mono text-sm min-h-[250px]"
                 value={inputData}
                 onChange={(e) => setInputData(e.target.value)}
-                placeholder="輸入 JSON 格式的數據..."
+                placeholder="點擊上方按鈕加載數據，或手動輸入 JSON 格式的數據..."
               />
 
               <div className="flex gap-3 mt-4">
                 <HoloButton
                   className="flex-1"
                   onClick={handleFullAnalysis}
-                  disabled={isLoading || !config?.api_key_set}
+                  disabled={isLoading || !config?.api_key_set || !inputData}
                   loading={fullAnalysisMutation.isPending}
                   icon={!fullAnalysisMutation.isPending ? <Play className="w-4 h-4" /> : undefined}
                 >
@@ -281,7 +373,7 @@ export default function AIAnalysisPage() {
                 <HoloButton
                   variant="secondary"
                   onClick={handleGenerateInsights}
-                  disabled={isLoading || !config?.api_key_set}
+                  disabled={isLoading || !config?.api_key_set || !inputData}
                   loading={insightsMutation.isPending}
                 >
                   {insightsMutation.isPending ? '' : '僅生成摘要'}
@@ -292,6 +384,13 @@ export default function AIAnalysisPage() {
                 <p className="text-sm text-red-500 mt-3 flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" />
                   請先到 AI 設定頁面設定 API Key
+                </p>
+              )}
+
+              {!inputData && config?.api_key_set && (
+                <p className="text-sm text-amber-600 mt-3 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  請先點擊「從數據庫加載數據」按鈕
                 </p>
               )}
             </HoloCard>
