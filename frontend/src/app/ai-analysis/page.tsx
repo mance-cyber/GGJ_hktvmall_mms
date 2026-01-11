@@ -26,8 +26,6 @@ import {
   Database
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import {
   PageTransition,
@@ -75,9 +73,22 @@ const renderContent = (text: string) => {
 // Page Component
 // =============================================
 
+// 數據摘要類型
+interface DataSummary {
+  total_products: number
+  total_competitors: number
+  total_categories: number
+  monthly_revenue: number
+  monthly_profit: number
+  pending_alerts: number
+  products_sample: { name: string; price: number; category: string }[]
+  competitors_sample: { name: string; platform: string; product_count: number }[]
+}
+
 export default function AIAnalysisPage() {
   // State
   const [inputData, setInputData] = useState<string>('')
+  const [dataSummary, setDataSummary] = useState<DataSummary | null>(null)
   const [insightsResult, setInsightsResult] = useState<string | null>(null)
   const [strategyResult, setStrategyResult] = useState<string | null>(null)
   const [expandedSection, setExpandedSection] = useState<'insights' | 'strategy' | 'both'>('both')
@@ -163,6 +174,27 @@ export default function AIAnalysisPage() {
       }
 
       setInputData(JSON.stringify(analysisData, null, 2))
+
+      // 設置摘要數據供 UI 顯示
+      setDataSummary({
+        total_products: analysisData.summary.total_products,
+        total_competitors: analysisData.summary.total_competitors,
+        total_categories: analysisData.summary.total_categories,
+        monthly_revenue: analysisData.summary.monthly_revenue,
+        monthly_profit: analysisData.summary.monthly_profit,
+        pending_alerts: analysisData.summary.pending_alerts,
+        products_sample: analysisData.our_products.slice(0, 5).map((p: any) => ({
+          name: p.name,
+          price: p.price || 0,
+          category: p.category || '未分類'
+        })),
+        competitors_sample: analysisData.competitors.slice(0, 3).map((c: any) => ({
+          name: c.name,
+          platform: c.platform,
+          product_count: c.product_count || 0
+        }))
+      })
+
       setDataLoaded(true)
     } catch (error) {
       console.error('Failed to load database data:', error)
@@ -322,44 +354,113 @@ export default function AIAnalysisPage() {
             <HoloCard glowColor="blue" className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-blue-500" />
-                  分析數據
+                  <Database className="w-5 h-5 text-blue-500" />
+                  數據來源
                 </h3>
-                <div className="flex items-center gap-2">
-                  {dataLoaded && (
-                    <HoloBadge variant="success" size="sm">
-                      <CheckCircle2 className="w-3 h-3" /> 數據已加載
-                    </HoloBadge>
-                  )}
-                  <HoloBadge variant="info" size="sm">JSON 格式</HoloBadge>
+                {dataLoaded && (
+                  <HoloBadge variant="success" size="sm">
+                    <CheckCircle2 className="w-3 h-3" /> 數據已就緒
+                  </HoloBadge>
+                )}
+              </div>
+
+              {/* 未加載數據時顯示加載按鈕 */}
+              {!dataLoaded ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center">
+                    <Database className="w-8 h-8 text-blue-500" />
+                  </div>
+                  <p className="text-slate-600 mb-4">從數據庫獲取最新數據進行 AI 分析</p>
+                  <HoloButton
+                    onClick={loadDatabaseData}
+                    disabled={isLoadingData}
+                    loading={isLoadingData}
+                    icon={!isLoadingData ? <RefreshCw className="w-4 h-4" /> : undefined}
+                  >
+                    {isLoadingData ? '正在加載...' : '加載數據'}
+                  </HoloButton>
                 </div>
-              </div>
+              ) : (
+                /* 已加載數據時顯示摘要 */
+                <div className="space-y-4">
+                  {/* 統計數據網格 */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-3 border border-blue-100">
+                      <p className="text-xs text-slate-500">產品數量</p>
+                      <p className="text-xl font-bold text-blue-600">{dataSummary?.total_products || 0}</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-3 border border-purple-100">
+                      <p className="text-xs text-slate-500">競爭對手</p>
+                      <p className="text-xl font-bold text-purple-600">{dataSummary?.total_competitors || 0}</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-3 border border-green-100">
+                      <p className="text-xs text-slate-500">類別數量</p>
+                      <p className="text-xl font-bold text-green-600">{dataSummary?.total_categories || 0}</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-3 border border-amber-100">
+                      <p className="text-xs text-slate-500">月營收</p>
+                      <p className="text-xl font-bold text-amber-600">${(dataSummary?.monthly_revenue || 0).toLocaleString()}</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-3 border border-cyan-100">
+                      <p className="text-xs text-slate-500">月利潤</p>
+                      <p className="text-xl font-bold text-cyan-600">${(dataSummary?.monthly_profit || 0).toLocaleString()}</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-red-50 to-pink-50 rounded-xl p-3 border border-red-100">
+                      <p className="text-xs text-slate-500">待處理警報</p>
+                      <p className="text-xl font-bold text-red-600">{dataSummary?.pending_alerts || 0}</p>
+                    </div>
+                  </div>
 
-              {/* 加載數據按鈕 */}
-              <div className="mb-4">
-                <HoloButton
-                  variant="secondary"
-                  onClick={loadDatabaseData}
-                  disabled={isLoadingData}
-                  loading={isLoadingData}
-                  icon={!isLoadingData ? <Database className="w-4 h-4" /> : undefined}
-                  className="w-full"
-                >
-                  {isLoadingData ? '正在加載數據庫數據...' : '從數據庫加載數據'}
-                </HoloButton>
-                <p className="text-xs text-slate-500 mt-2 text-center">
-                  自動獲取產品、競品、類別等數據進行分析
-                </p>
-              </div>
+                  {/* 產品樣本 */}
+                  {dataSummary?.products_sample && dataSummary.products_sample.length > 0 && (
+                    <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                      <p className="text-xs text-slate-500 mb-2">產品樣本</p>
+                      <div className="space-y-1">
+                        {dataSummary.products_sample.map((p, i) => (
+                          <div key={i} className="flex items-center justify-between text-sm">
+                            <span className="text-slate-700 truncate flex-1">{p.name}</span>
+                            <span className="text-slate-500 ml-2">${p.price}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-              <Textarea
-                className="font-mono text-sm min-h-[250px]"
-                value={inputData}
-                onChange={(e) => setInputData(e.target.value)}
-                placeholder="點擊上方按鈕加載數據，或手動輸入 JSON 格式的數據..."
-              />
+                  {/* 競品樣本 */}
+                  {dataSummary?.competitors_sample && dataSummary.competitors_sample.length > 0 && (
+                    <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                      <p className="text-xs text-slate-500 mb-2">競爭對手</p>
+                      <div className="space-y-1">
+                        {dataSummary.competitors_sample.map((c, i) => (
+                          <div key={i} className="flex items-center justify-between text-sm">
+                            <span className="text-slate-700">{c.name}</span>
+                            <span className="text-slate-500">{c.platform} · {c.product_count} 個產品</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-              <div className="flex gap-3 mt-4">
+                  {/* 重新加載按鈕 */}
+                  <div className="flex justify-center pt-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={loadDatabaseData}
+                      disabled={isLoadingData}
+                      className="text-slate-500"
+                    >
+                      <RefreshCw className={cn("w-4 h-4 mr-1", isLoadingData && "animate-spin")} />
+                      重新加載
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </HoloCard>
+
+            {/* 分析按鈕 */}
+            <HoloCard glowColor="cyan" className="p-6">
+              <div className="flex gap-3">
                 <HoloButton
                   className="flex-1"
                   onClick={handleFullAnalysis}
@@ -367,7 +468,7 @@ export default function AIAnalysisPage() {
                   loading={fullAnalysisMutation.isPending}
                   icon={!fullAnalysisMutation.isPending ? <Play className="w-4 h-4" /> : undefined}
                 >
-                  {fullAnalysisMutation.isPending ? '分析中...' : '一鍵分析'}
+                  {fullAnalysisMutation.isPending ? '分析中...' : '一鍵 AI 分析'}
                 </HoloButton>
 
                 <HoloButton
@@ -390,7 +491,7 @@ export default function AIAnalysisPage() {
               {!inputData && config?.api_key_set && (
                 <p className="text-sm text-amber-600 mt-3 flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" />
-                  請先點擊「從數據庫加載數據」按鈕
+                  請先加載數據
                 </p>
               )}
             </HoloCard>
