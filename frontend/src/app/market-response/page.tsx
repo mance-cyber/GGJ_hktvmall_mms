@@ -127,90 +127,54 @@ export default function MarketResponsePage() {
 
   return (
     <PageTransition>
-      <div className="space-y-8 p-6">
+      <div className="space-y-4 sm:space-y-8">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Globe className="w-8 h-8 text-primary" />
-              市場應對中心
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              實時市場分析與競品應對系統
-            </p>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Globe className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            <h1 className="page-title">市場應對</h1>
           </div>
-          <div className="flex items-center gap-3">
-            <Badge variant="outline" className="px-3 py-1 bg-blue-50 text-blue-700 border-blue-200">
-              <Zap className="w-3 h-3 mr-1 fill-blue-700" /> 即時數據
+          <div className="flex items-center gap-1.5 sm:gap-3">
+            <Badge variant="outline" className="px-2 py-0.5 sm:px-3 sm:py-1 bg-blue-50 text-blue-700 border-blue-200 text-[10px] sm:text-xs">
+              <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1 fill-blue-700" /> 即時
             </Badge>
-            <HoloButton variant="secondary" icon={<Download className="w-4 h-4" />} onClick={handleExportReport}>
-              匯出報告
+            <HoloButton variant="secondary" size="sm" icon={<Download className="w-3.5 h-3.5" />} onClick={handleExportReport}>
+              <span className="hidden sm:inline">匯出</span>
             </HoloButton>
           </div>
         </div>
 
         {/* Feature Introduction Cards */}
-        <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <StaggerContainer className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
           <Link href="/competitors">
-            <FeatureCard
-              icon={Eye}
-              title="競品監測"
-              description="自動追蹤 HKTVmall 競爭對手的價格變動，當價格波動超過閾值時即時通知。"
-              color="blue"
-            />
+            <FeatureCard icon={Eye} title="競品監測" description="追蹤價格變動" color="blue" />
           </Link>
           <Link href="/products">
-            <FeatureCard
-              icon={Target}
-              title="SKU 自動配對"
-              description="AI 智能配對您的 SKU 與競品商品，自動識別相同或相似產品。"
-              color="purple"
-            />
+            <FeatureCard icon={Target} title="SKU 配對" description="AI 智能配對" color="purple" />
           </Link>
           <Link href="/ai-analysis">
-            <FeatureCard
-              icon={TrendingUp}
-              title="價格趨勢分析"
-              description="追蹤歷史價格走勢，識別最佳調價時機與市場週期規律。"
-              color="green"
-            />
+            <FeatureCard icon={TrendingUp} title="趨勢分析" description="價格走勢" color="green" />
           </Link>
           <Link href="/alerts">
-            <FeatureCard
-              icon={Bell}
-              title="智能警報"
-              description="自訂價格警報規則，競品降價、缺貨、新品上架即時推送通知。"
-              color="orange"
-            />
+            <FeatureCard icon={Bell} title="智能警報" description="即時推送" color="orange" />
           </Link>
           <Link href="/agent">
-            <FeatureCard
-              icon={Sparkles}
-              title="AI 文案生成"
-              description="根據商品特性與競品描述，AI 自動生成優化的商品標題與描述。"
-              color="pink"
-            />
+            <FeatureCard icon={Sparkles} title="AI 文案" description="自動生成" color="pink" />
           </Link>
-          <FeatureCard
-            icon={FileBarChart}
-            title="報表匯出"
-            description="一鍵匯出市場分析報告，支援 Excel、PDF 格式，方便團隊分享。"
-            color="cyan"
-            onClick={handleExportReport}
-          />
+          <FeatureCard icon={FileBarChart} title="報表匯出" description="Excel/PDF" color="cyan" onClick={handleExportReport} />
         </StaggerContainer>
 
         {/* Search Section */}
-        <HoloCard className="p-2" glowColor="blue">
+        <HoloCard className="p-1.5 sm:p-2" glowColor="blue">
           <div className="flex items-center">
-            <SearchIcon className="w-5 h-5 ml-3 text-muted-foreground" />
+            <SearchIcon className="w-4 h-4 sm:w-5 sm:h-5 ml-2 sm:ml-3 text-muted-foreground" />
             <Input
-              className="border-none shadow-none focus-visible:ring-0 bg-transparent text-lg placeholder:text-muted-foreground/50 h-12"
-              placeholder="搜尋商品 (支援 SKU、中文、日文、英文)..."
+              className="border-none shadow-none focus-visible:ring-0 bg-transparent text-sm sm:text-lg placeholder:text-muted-foreground/50 h-9 sm:h-12"
+              placeholder="搜尋商品..."
               value={searchQuery}
               onChange={handleSearch}
             />
-            {searchLoading && <Loader2 className="w-5 h-5 mr-3 animate-spin text-primary" />}
+            {searchLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin text-primary" />}
           </div>
         </HoloCard>
 
@@ -251,58 +215,62 @@ export default function MarketResponsePage() {
         )}
 
         {/* Stats Overview */}
-        <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           <Link href="/products">
             <DataMetric
-              label="SKU 總數"
+              label="SKU"
               value={stats?.total_skus || 0}
-              icon={<Package className="w-5 h-5 text-blue-600" />}
+              icon={<Package className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />}
               color="blue"
+              size="sm"
             />
           </Link>
           <Link href="/competitors">
             <DataMetric
-              label="已監測競品"
+              label="監測競品"
               value={stats?.products_with_competitors || 0}
-              icon={<Layers className="w-5 h-5 text-purple-600" />}
+              icon={<Layers className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />}
               color="purple"
+              size="sm"
             />
           </Link>
           <Link href="/products">
             <DataMetric
               label="當季商品"
               value={stats?.seasonal_products || 0}
-              icon={<ThermometerSun className="w-5 h-5 text-orange-600" />}
+              icon={<ThermometerSun className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />}
               color="orange"
+              size="sm"
             />
           </Link>
           <Link href="/alerts">
             <DataMetric
-              label="待處理警報"
+              label="待處理"
               value={stats?.unread_alerts || 0}
-              icon={<Zap className="w-5 h-5 text-cyan-600" />}
+              icon={<Zap className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-600" />}
               color="cyan"
+              size="sm"
             />
           </Link>
         </StaggerContainer>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6">
           {/* Category Breakdown */}
           <HoloCard className="lg:col-span-2" glowColor="blue">
             <HoloPanelHeader
               title="分類分佈"
-              icon={<BarChart3 className="w-5 h-5" />}
+              icon={<BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />}
               action={
                 <Link href="/categories">
-                  <HoloButton variant="ghost" size="sm">查看全部</HoloButton>
+                  <HoloButton variant="ghost" size="sm">全部</HoloButton>
                 </Link>
               }
             />
-            <div className="p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-3 sm:p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
                 {categoriesLoading ? (
-                  <div className="col-span-2 py-12 flex justify-center"><Loader2 className="animate-spin" /></div>
-                ) : categoryData.map((cat, idx) => (
+                  <div className="col-span-2 py-8 flex justify-center"><Loader2 className="animate-spin w-5 h-5" /></div>
+                ) : categoryData.slice(0, 4).map((cat, idx) => (
                   <Link key={idx} href="/categories">
                     <CategoryCard category={cat} index={idx} />
                   </Link>
@@ -315,41 +283,41 @@ export default function MarketResponsePage() {
           <HoloCard glowColor="green" className="bg-gradient-to-b from-orange-50/30 to-transparent">
             <HoloPanelHeader
               title="熱門商品"
-              icon={<ThermometerSun className="w-5 h-5 text-orange-500" />}
+              icon={<ThermometerSun className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" />}
               action={
-                <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-200 border-none">精選</Badge>
+                <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-200 border-none text-[10px] sm:text-xs">精選</Badge>
               }
             />
-            <div className="p-6">
-              <div className="space-y-4">
+            <div className="p-3 sm:p-6">
+              <div className="space-y-2 sm:space-y-4">
                 {seasonalLoading ? (
-                  <div className="py-12 flex justify-center"><Loader2 className="animate-spin" /></div>
-                ) : seasonalProducts.map((product) => (
+                  <div className="py-8 flex justify-center"><Loader2 className="animate-spin w-5 h-5" /></div>
+                ) : seasonalProducts.slice(0, 3).map((product) => (
                   <Link key={product.id} href="/products">
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-white/50 hover:bg-white/80 transition-all cursor-pointer group border border-transparent hover:border-orange-100">
-                      <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 relative">
+                    <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/50 hover:bg-white/80 transition-all cursor-pointer group border border-transparent hover:border-orange-100">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 relative">
                         <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-                          <Package className="w-6 h-6" />
+                          <Package className="w-5 h-5 sm:w-6 sm:h-6" />
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-slate-800 truncate group-hover:text-orange-600 transition-colors">
+                        <h4 className="text-sm font-medium text-slate-800 truncate group-hover:text-orange-600 transition-colors">
                           {product.name}
                         </h4>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="text-xs text-muted-foreground">{product.status === 'active' ? '有貨' : '缺貨'}</span>
-                          <span className="font-bold text-sm">${Number(product.price || 0).toFixed(0)}</span>
+                        <div className="flex items-center justify-between mt-0.5 sm:mt-1">
+                          <span className="text-[10px] sm:text-xs text-muted-foreground">{product.status === 'active' ? '有貨' : '缺貨'}</span>
+                          <span className="font-bold text-xs sm:text-sm">${Number(product.price || 0).toFixed(0)}</span>
                         </div>
                       </div>
-                      <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-orange-500 transition-colors" />
+                      <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-300 group-hover:text-orange-500 transition-colors" />
                     </div>
                   </Link>
                 ))}
               </div>
 
               <Link href="/products">
-                <HoloButton className="w-full mt-4" variant="secondary">
-                  查看所有商品
+                <HoloButton className="w-full mt-3 sm:mt-4" variant="secondary" size="sm">
+                  查看全部
                 </HoloButton>
               </Link>
             </div>
@@ -366,16 +334,16 @@ export default function MarketResponsePage() {
 
 function CategoryCard({ category, index }: { category: CategoryData, index: number }) {
   return (
-    <div className="flex items-center p-4 rounded-xl bg-slate-50/50 border border-slate-100 hover:border-blue-200 hover:bg-blue-50/50 transition-all cursor-pointer">
-      <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm text-lg font-bold text-slate-300 mr-4">
+    <div className="flex items-center p-2.5 sm:p-4 rounded-lg sm:rounded-xl bg-slate-50/50 border border-slate-100 hover:border-blue-200 hover:bg-blue-50/50 transition-all cursor-pointer">
+      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white flex items-center justify-center shadow-sm text-sm sm:text-lg font-bold text-slate-300 mr-2.5 sm:mr-4">
         {index + 1}
       </div>
-      <div className="flex-1">
-        <div className="flex justify-between mb-1">
-          <span className="font-medium text-slate-700">{category.name}</span>
-          <span className="font-bold text-slate-900">{category.count}</span>
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between mb-1 gap-2">
+          <span className="text-sm sm:text-base font-medium text-slate-700 truncate">{category.name}</span>
+          <span className="text-sm sm:text-base font-bold text-slate-900 flex-shrink-0">{category.count}</span>
         </div>
-        <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+        <div className="w-full bg-slate-200 rounded-full h-1.5 sm:h-2 overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${category.percentage}%` }}
@@ -446,18 +414,18 @@ function FeatureCard({
       transition={{ duration: 0.2 }}
       onClick={onClick}
       className={cn(
-        "p-4 rounded-xl border transition-all cursor-pointer",
+        "p-2.5 sm:p-4 rounded-lg sm:rounded-xl border transition-all cursor-pointer",
         colors.bg,
         colors.border
       )}
     >
-      <div className="flex items-start gap-3">
-        <div className={cn("p-2 rounded-lg flex-shrink-0", colors.icon)}>
-          <Icon className="w-5 h-5" />
+      <div className="flex items-start gap-2 sm:gap-3">
+        <div className={cn("p-1.5 sm:p-2 rounded-md sm:rounded-lg flex-shrink-0", colors.icon)}>
+          <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
         </div>
         <div className="min-w-0">
-          <h3 className="font-semibold text-slate-800 mb-1">{title}</h3>
-          <p className="text-sm text-slate-500 leading-relaxed">{description}</p>
+          <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-0.5 sm:mb-1">{title}</h3>
+          <p className="text-[10px] sm:text-sm text-slate-500 leading-relaxed">{description}</p>
         </div>
       </div>
     </motion.div>

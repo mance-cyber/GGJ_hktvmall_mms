@@ -102,17 +102,17 @@ export default function ProductsPage() {
   if (isLoading) {
     return (
       <PageTransition>
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-6">
           <div className="flex items-center justify-between">
-            <HoloSkeleton variant="text" width={200} height={32} />
-            <HoloSkeleton variant="rectangular" width={120} height={36} />
+            <HoloSkeleton variant="text" width={150} height={28} />
+            <HoloSkeleton variant="rectangular" width={80} height={32} />
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
             {[...Array(4)].map((_, i) => (
-              <HoloSkeleton key={i} variant="rectangular" height={100} />
+              <HoloSkeleton key={i} variant="rectangular" height={80} />
             ))}
           </div>
-          <HoloSkeleton variant="rectangular" height={400} />
+          <HoloSkeleton variant="rectangular" height={300} />
         </div>
       </PageTransition>
     )
@@ -133,103 +133,98 @@ export default function ProductsPage() {
 
   return (
     <PageTransition>
-      <div className="space-y-6">
+      <div className="space-y-3 sm:space-y-6">
         {/* ========== 頁面標題 ========== */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-800">
-              商品管理
-            </h1>
-            <p className="text-slate-500 mt-1 hidden sm:block">
-              管理您的商品庫存與價格策略
-            </p>
-          </div>
-          <div className="flex gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="page-title">商品管理</h1>
+          <div className="flex gap-1.5 sm:gap-2">
             <HoloButton
               variant="secondary"
               size="sm"
               onClick={() => syncMutation.mutate()}
               disabled={syncMutation.isPending}
               loading={syncMutation.isPending}
-              icon={<RefreshCw className={cn("w-4 h-4", syncMutation.isPending && "animate-spin")} />}
+              icon={<RefreshCw className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", syncMutation.isPending && "animate-spin")} />}
             >
-              <span className="hidden sm:inline">同步 HKTVmall</span>
-              <span className="sm:hidden">同步</span>
+              <span className="hidden sm:inline">同步</span>
             </HoloButton>
-            <HoloButton size="sm" icon={<Plus className="w-4 h-4" />}>
-              <span className="hidden sm:inline">新增商品</span>
+            <HoloButton size="sm" icon={<Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}>
+              <span className="hidden sm:inline">新增</span>
             </HoloButton>
           </div>
         </div>
 
         {/* ========== 數據指標 ========== */}
-        <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           <DataMetric
-            label="總商品數"
+            label="總商品"
             value={stats.total}
             color="blue"
-            icon={<Package className="w-5 h-5 text-blue-500" />}
+            size="sm"
+            icon={<Package className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />}
           />
           <DataMetric
             label="上架中"
             value={stats.active}
             color="green"
-            icon={<CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+            size="sm"
+            icon={<CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" />}
           />
           <DataMetric
-            label="低庫存警告"
+            label="低庫存"
             value={stats.lowStock}
             color="orange"
-            icon={<AlertCircle className="w-5 h-5 text-orange-500" />}
+            size="sm"
+            icon={<AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" />}
           />
-          <HoloCard className="p-4" glowColor="cyan">
+          <HoloCard className="p-2 sm:p-4" glowColor="cyan">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-500">同步狀態</p>
-                <p className="text-lg font-semibold text-slate-800 mt-1">
-                  {syncMutation.isPending ? '同步中...' : '已同步'}
+                <p className="text-[10px] sm:text-sm text-slate-500">同步</p>
+                <p className="text-sm sm:text-lg font-semibold text-slate-800 mt-0.5 sm:mt-1">
+                  {syncMutation.isPending ? '中...' : '完成'}
                 </p>
               </div>
-              <div className="p-3 rounded-xl bg-cyan-50">
-                <RefreshCw className={cn("w-5 h-5 text-cyan-500", syncMutation.isPending && "animate-spin")} />
+              <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-cyan-50">
+                <RefreshCw className={cn("w-4 h-4 sm:w-5 sm:h-5 text-cyan-500", syncMutation.isPending && "animate-spin")} />
               </div>
             </div>
           </HoloCard>
         </StaggerContainer>
 
         {/* ========== 搜索與過濾 ========== */}
-        <HoloCard className="p-4">
-          <div className="flex flex-col sm:flex-row gap-3">
+        <HoloCard className="p-2.5 sm:p-4">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-400" />
               <Input
-                placeholder="搜索商品名稱、SKU..."
-                className="pl-9 bg-white/50 border-slate-200"
+                placeholder="搜索商品..."
+                className="pl-8 sm:pl-9 h-9 sm:h-10 text-sm bg-white/50 border-slate-200"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-1.5 sm:gap-2">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[130px] bg-white/50 border-slate-200">
+                <SelectTrigger className="flex-1 sm:w-[110px] h-9 sm:h-10 text-xs sm:text-sm bg-white/50 border-slate-200">
                   <SelectValue placeholder="狀態" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">所有狀態</SelectItem>
-                  <SelectItem value="active">上架中</SelectItem>
+                  <SelectItem value="all">全部</SelectItem>
+                  <SelectItem value="active">上架</SelectItem>
                   <SelectItem value="draft">草稿</SelectItem>
-                  <SelectItem value="archived">已歸檔</SelectItem>
+                  <SelectItem value="archived">歸檔</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-[130px] bg-white/50 border-slate-200">
+                <SelectTrigger className="flex-1 sm:w-[110px] h-9 sm:h-10 text-xs sm:text-sm bg-white/50 border-slate-200">
                   <SelectValue placeholder="分類" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">所有分類</SelectItem>
-                  <SelectItem value="health">保健品</SelectItem>
-                  <SelectItem value="beauty">美容護膚</SelectItem>
-                  <SelectItem value="food">食品飲料</SelectItem>
+                  <SelectItem value="all">全部</SelectItem>
+                  <SelectItem value="health">保健</SelectItem>
+                  <SelectItem value="beauty">美容</SelectItem>
+                  <SelectItem value="food">食品</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -237,7 +232,7 @@ export default function ProductsPage() {
         </HoloCard>
 
         {/* ========== 手機版卡片視圖 ========== */}
-        <div className="sm:hidden space-y-3">
+        <div className="sm:hidden space-y-2">
           <AnimatePresence mode="popLayout">
             {productsData?.data.map((product, index) => (
               <motion.div
@@ -245,24 +240,24 @@ export default function ProductsPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ delay: index * 0.03 }}
+                transition={{ delay: index * 0.02 }}
               >
-                <HoloCard className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden border border-slate-200 flex-shrink-0">
+                <HoloCard className="p-2.5">
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden border border-slate-200 flex-shrink-0">
                       {product.images?.[0] ? (
                         <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
                       ) : (
-                        <Package className="w-8 h-8 text-slate-400" />
+                        <Package className="w-6 h-6 text-slate-400" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="font-medium text-slate-800 truncate">{product.name}</div>
+                      <div className="flex items-start justify-between gap-1">
+                        <div className="text-sm font-medium text-slate-800 truncate">{product.name}</div>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-7 w-7 p-0 flex-shrink-0">
-                              <MoreHorizontal className="h-4 w-4 text-slate-500" />
+                            <Button variant="ghost" className="h-6 w-6 p-0 flex-shrink-0">
+                              <MoreHorizontal className="h-3.5 w-3.5 text-slate-500" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
@@ -280,14 +275,13 @@ export default function ProductsPage() {
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
-                      <div className="text-xs text-slate-500 mt-0.5">SKU: {product.sku}</div>
-                      <div className="flex items-center gap-3 mt-2">
+                      <div className="flex items-center gap-2 mt-1">
                         <StatusBadge status={product.status} />
-                        <span className="font-mono font-medium text-slate-700">
-                          ${product.price ? Number(product.price).toFixed(2) : '-'}
+                        <span className="font-mono text-xs font-medium text-slate-700">
+                          ${product.price ? Number(product.price).toFixed(0) : '-'}
                         </span>
-                        <span className={cn("text-sm", product.stock_quantity < 10 ? "text-red-500" : "text-slate-500")}>
-                          庫存: {product.stock_quantity}
+                        <span className={cn("text-xs", product.stock_quantity < 10 ? "text-red-500" : "text-slate-500")}>
+                          存{product.stock_quantity}
                         </span>
                       </div>
                     </div>
