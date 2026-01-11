@@ -406,12 +406,16 @@ export function DataStreamBg({ className, density = 'medium', color = 'cyan' }: 
 // 帶有光效的科技感按鈕
 // =============================================
 
-interface HoloButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onDrag' | 'onDragStart' | 'onDragEnd'> {
+interface HoloButtonProps {
   children: React.ReactNode
   variant?: 'primary' | 'secondary' | 'ghost'
   size?: 'sm' | 'md' | 'lg'
   loading?: boolean
   icon?: React.ReactNode
+  className?: string
+  disabled?: boolean
+  onClick?: () => void
+  type?: 'button' | 'submit' | 'reset'
 }
 
 export function HoloButton({
@@ -422,7 +426,8 @@ export function HoloButton({
   icon,
   className,
   disabled,
-  ...props
+  onClick,
+  type = 'button',
 }: HoloButtonProps) {
   const variants = {
     primary: cn(
@@ -463,7 +468,8 @@ export function HoloButton({
         className
       )}
       disabled={disabled || loading}
-      {...props}
+      onClick={onClick}
+      type={type}
     >
       {/* 光效 */}
       {variant === 'primary' && !disabled && (
