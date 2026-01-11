@@ -20,6 +20,7 @@ from app.models.system import ScrapeLog, SystemSetting
 from app.models.competitor import Competitor, CompetitorProduct
 from app.models.scrape_config import ScrapeConfig
 from app.models.import_job import ImportJob, ImportJobItem
+from app.core.url_security import validate_url_strict, validate_urls_batch, URLSecurityError
 from app.services import (
     ScrapeExecutor,
     SmartScrapeExecutor,
@@ -588,6 +589,17 @@ async def preview_scrape(
     import time
     start_time = time.time()
 
+    # M-05: SSRF 防護 - 驗證 URL
+    try:
+        validate_url_strict(request.url)
+    except URLSecurityError as e:
+        return ScrapePreviewResponse(
+            success=False,
+            url=request.url,
+            error=f"URL 安全驗證失敗: {str(e)}",
+            duration_ms=int((time.time() - start_time) * 1000),
+        )
+
     try:
         from app.connectors.firecrawl import get_firecrawl_connector
         connector = get_firecrawl_connector()
@@ -637,6 +649,12 @@ async def discover_urls(
     - base_url: 網站根 URL
     - keywords: 過濾關鍵詞（如 ["product", "item"]）
     """
+    # M-05: SSRF 防護 - 驗證 URL
+    try:
+        validate_url_strict(request.base_url)
+    except URLSecurityError as e:
+        raise HTTPException(status_code=400, detail=f"URL 安全驗證失敗: {str(e)}")
+
     try:
         from app.connectors.firecrawl import get_firecrawl_connector
         connector = get_firecrawl_connector()
@@ -1080,6 +1098,19 @@ async def test_scrape_config(
 ):
     """測試平台爬取配置"""
     import time
+    start_time = time.time()
+
+    # M-05: SSRF 防護 - 驗證 URL
+    try:
+        validate_url_strict(request.test_url)
+    except URLSecurityError as e:
+        return ScrapeConfigTestResponse(
+            success=False,
+            platform=platform,
+            url=request.test_url,
+            duration_ms=int((time.time() - start_time) * 1000),
+            error=f"URL 安全驗證失敗: {str(e)}",
+        )
 
     # 獲取配置
     result = await db.execute(
@@ -1092,8 +1123,6 @@ async def test_scrape_config(
             status_code=404,
             detail=f"平台 '{platform}' 的配置不存在"
         )
-
-    start_time = time.time()
 
     try:
         from app.connectors.firecrawl import get_firecrawl_connector
@@ -1144,6 +1173,19 @@ async def smart_scrape(
     """
     import time
     start_time = time.time()
+
+    # M-05: SSRF 防護 - 驗證 URL
+    try:
+        validate_url_strict(request.url)
+    except URLSecurityError as e:
+        return SmartScrapeResponse(
+            success=False,
+            url=request.url,
+            strategy_used="error",
+            duration_ms=int((time.time() - start_time) * 1000),
+            retries=0,
+            error=f"URL 安全驗證失敗: {str(e)}",
+        )
 
     try:
         executor = get_smart_scrape_executor()
@@ -1199,17 +1241,39 @@ async def batch_scrape(
     import time
     start_time = time.time()
 
+    # M-05: SSRF 防護 - 批量驗證 URL
+    valid_urls, invalid_urls = validate_urls_batch(request.urls)
+
+    results: List[BatchScrapeItemResult] = []
+    successful = 0
+    failed = 0
+
+    # 先記錄無效 URL
+    for url, error in invalid_urls:
+        failed += 1
+        results.append(BatchScrapeItemResult(
+            url=url,
+            success=False,
+            error=f"URL 安全驗證失敗: {error}",
+        ))
+
+    # 只處理有效 URL
+    if not valid_urls:
+        return BatchScrapeResponse(
+            total=len(request.urls),
+            successful=successful,
+            failed=failed,
+            results=results,
+            duration_seconds=round(time.time() - start_time, 2),
+        )
+
     config = BatchConfig(
         max_concurrent=request.max_concurrent,
         domain_concurrent=request.domain_concurrent,
     )
     optimizer = BatchOptimizer(config=config)
 
-    results: List[BatchScrapeItemResult] = []
-    successful = 0
-    failed = 0
-
-    async for result in optimizer.process_batch(request.urls):
+    async for result in optimizer.process_batch(valid_urls):
         if result.success:
             successful += 1
             results.append(BatchScrapeItemResult(

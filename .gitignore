@@ -28,13 +28,29 @@ venv/
 *.swp
 *.swo
 
-# Environment (IMPORTANT: Never commit API keys!)
+# Environment (C-03: CRITICAL - Never commit API keys!)
 .env
+.env.*
 .env.local
 .env.*.local
+!.env.example
+!.env.template
 backend/.env
+backend/*.env
+frontend/.env
 frontend/.env.local
+frontend/.env.*.local
 **/venv/
+
+# Secrets
+*.pem
+*.key
+*_rsa
+*_dsa
+*_ecdsa
+*_ed25519
+credentials.json
+service-account*.json
 
 # Database
 *.db

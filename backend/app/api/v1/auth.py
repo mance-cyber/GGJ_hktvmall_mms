@@ -50,10 +50,13 @@ async def login_access_token(
 async def login_google(
     login_data: GoogleLogin,
     db: AsyncSession = Depends(get_db),
+    request: Any = None,  # Optional: for IP check
 ) -> Any:
     """
     Login with Google ID Token
     """
+    from fastapi import Request
+
     try:
         # Verify Google Token
         id_info = id_token.verify_oauth2_token(
@@ -62,10 +65,17 @@ async def login_google(
             settings.google_client_id
         )
     except ValueError as e:
-        # Development/Mock mode fallback (optional, remove in production if strict)
-        if settings.app_env == "development" and login_data.credential.startswith("mock_"):
-             # Mock logic for testing without real Google creds
-             id_info = {"email": "mock@example.com", "name": "Mock User"}
+        # H-01: Mock mode 僅限開發環境 + 本地請求
+        # 生產環境完全禁用 mock 認證
+        if (
+            settings.app_env == "development"
+            and settings.debug  # 額外檢查 debug 模式
+            and login_data.credential.startswith("mock_")
+        ):
+            # 僅允許本地測試
+            id_info = {"email": "mock@example.com", "name": "Mock User"}
+            import logging
+            logging.warning("SECURITY: Mock authentication used in development mode")
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

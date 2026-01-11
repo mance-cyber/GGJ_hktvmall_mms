@@ -4,7 +4,8 @@
 
 from functools import lru_cache
 from pydantic_settings import BaseSettings
-from pydantic import Field
+from pydantic import Field, field_validator
+import warnings
 
 
 class Settings(BaseSettings):
@@ -12,8 +13,30 @@ class Settings(BaseSettings):
 
     # 基本設定
     app_env: str = Field(default="development", alias="APP_ENV")
-    debug: bool = Field(default=True, alias="DEBUG")
-    secret_key: str = Field(default="dev-secret-key", alias="SECRET_KEY")
+    debug: bool = Field(default=False, alias="DEBUG")  # C-04: 預設關閉 DEBUG
+    secret_key: str = Field(default="dev-secret-key-CHANGE-IN-PRODUCTION", alias="SECRET_KEY")
+
+    @field_validator('secret_key')
+    @classmethod
+    def validate_secret_key(cls, v, info):
+        """C-01: 驗證 SECRET_KEY 強度"""
+        app_env = info.data.get('app_env', 'production')
+        if app_env != 'development':
+            if 'dev-secret-key' in v or len(v) < 32:
+                raise ValueError(
+                    "SECRET_KEY must be a strong random string (min 32 chars) in production. "
+                    "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(64))\""
+                )
+        return v
+
+    @field_validator('debug')
+    @classmethod
+    def validate_debug(cls, v, info):
+        """C-04: 生產環境警告 DEBUG 開啟"""
+        app_env = info.data.get('app_env', 'production')
+        if v and app_env == 'production':
+            warnings.warn("WARNING: DEBUG is enabled in production environment!", RuntimeWarning)
+        return v
 
     # 數據庫
     database_url: str = Field(alias="DATABASE_URL")
@@ -27,6 +50,18 @@ class Settings(BaseSettings):
     # Claude AI
     anthropic_api_key: str = Field(default="", alias="ANTHROPIC_API_KEY")
     ai_model: str = Field(default="claude-sonnet-4-20250514", alias="AI_MODEL")
+
+    @field_validator('anthropic_api_key')
+    @classmethod
+    def validate_anthropic_key(cls, v, info):
+        """M-08: 驗證 AI API Key"""
+        app_env = info.data.get('app_env', 'production')
+        if not v and app_env == 'production':
+            warnings.warn(
+                "ANTHROPIC_API_KEY is not set. AI features will be unavailable.",
+                RuntimeWarning
+            )
+        return v
 
     # Google Auth
     google_client_id: str = Field(default="", alias="GOOGLE_CLIENT_ID")
