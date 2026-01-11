@@ -28,7 +28,7 @@ import {
   HoloButton,
   PageTransition,
 } from '@/components/ui/future-tech'
-import { Sparkles, Lock, Mail, Zap } from 'lucide-react'
+import { Sparkles, Lock, Mail } from 'lucide-react'
 
 const formSchema = z.object({
   username: z.string().email({ message: '請輸入有效的電子郵件地址' }),
@@ -92,12 +92,16 @@ export default function LoginPage() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-                className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/30 mb-4"
+                className="inline-block mb-4"
               >
-                <Zap className="w-8 h-8 text-white" />
+                <img
+                  src="/images/GGJ_small_logo_001.ico"
+                  alt="GoGoJap Logo"
+                  className="w-20 h-20 object-contain"
+                />
               </motion.div>
               <h1 className="text-2xl font-bold text-slate-800">歡迎回來</h1>
-              <p className="text-slate-500 mt-1">登入 HKTVmall AI 營運系統</p>
+              <p className="text-slate-500 mt-1">登入 GoGoJap AI 營運系統</p>
             </div>
 
             {/* 登入表單 */}
