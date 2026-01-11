@@ -406,7 +406,7 @@ export function DataStreamBg({ className, density = 'medium', color = 'cyan' }: 
 // 帶有光效的科技感按鈕
 // =============================================
 
-interface HoloButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface HoloButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onDrag' | 'onDragStart' | 'onDragEnd'> {
   children: React.ReactNode
   variant?: 'primary' | 'secondary' | 'ghost'
   size?: 'sm' | 'md' | 'lg'
