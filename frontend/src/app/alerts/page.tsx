@@ -200,72 +200,76 @@ export default function AlertsPage() {
 
   return (
     <PageTransition>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* ========== 頁面標題 ========== */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
               警報中心
               {stats.unread > 0 && (
                 <HoloBadge variant="error" pulse>
-                  {stats.unread} 未讀
+                  {stats.unread}
                 </HoloBadge>
               )}
             </h1>
-            <p className="text-muted-foreground mt-2 text-lg">
-              即時監控市場價格波動，把握每一個競爭優勢
+            <p className="text-sm text-muted-foreground mt-1 hidden sm:block">
+              即時監控價格波動
             </p>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <HoloButton
               variant="secondary"
+              size="sm"
               onClick={() => refetch()}
-              icon={<RefreshCw className="w-4 h-4" />}
+              icon={<RefreshCw className="w-3.5 h-3.5" />}
+              className="px-2 sm:px-3"
             >
-              刷新
+              <span className="hidden sm:inline">刷新</span>
             </HoloButton>
             {stats.unread > 0 && (
               <HoloButton
                 variant="primary"
+                size="sm"
                 onClick={handleMarkAllRead}
-                icon={<CheckCheck className="w-4 h-4" />}
+                icon={<CheckCheck className="w-3.5 h-3.5" />}
               >
-                全部標為已讀
+                <span className="hidden sm:inline">全部已讀</span>
+                <span className="sm:hidden">已讀</span>
               </HoloButton>
             )}
           </div>
         </div>
 
         {/* ========== 統計卡片 ========== */}
-        <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
           <MetricCard
-            label="總警報數"
+            label="總警報"
             value={stats.total}
-            icon={<Bell className="w-5 h-5" />}
+            icon={<Bell className="w-4 h-4" />}
             color="cyan"
             active={filterType === 'all'}
             onClick={() => setFilterType('all')}
           />
           <MetricCard
-            label="未讀警報"
+            label="未讀"
             value={stats.unread}
-            icon={<Inbox className="w-5 h-5" />}
+            icon={<Inbox className="w-4 h-4" />}
             color="blue"
             active={filterType === 'unread'}
             onClick={() => setFilterType('unread')}
           />
           <MetricCard
-            label="價格下跌"
+            label="降價"
             value={stats.priceDrops}
-            icon={<TrendingDown className="w-5 h-5" />}
+            icon={<TrendingDown className="w-4 h-4" />}
             color="green"
             active={filterType === 'price_drop'}
             onClick={() => setFilterType('price_drop')}
           />
           <MetricCard
-            label="價格上漲"
+            label="漲價"
             value={stats.priceIncreases}
-            icon={<TrendingUp className="w-5 h-5" />}
+            icon={<TrendingUp className="w-4 h-4" />}
             color="orange"
             active={filterType === 'price_increase'}
             onClick={() => setFilterType('price_increase')}
@@ -273,16 +277,16 @@ export default function AlertsPage() {
         </StaggerContainer>
 
         {/* ========== 工具欄 ========== */}
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {/* 搜索框 */}
-          <div className="relative flex-1 max-w-md">
+          <div className="relative flex-1 sm:max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
               type="text"
-              placeholder="搜索商品名稱或競爭對手..."
+              placeholder="搜索..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-              className="pl-9 bg-white/50"
+              className="pl-9 bg-white/50 h-9 text-sm"
             />
             {searchQuery && (
               <button

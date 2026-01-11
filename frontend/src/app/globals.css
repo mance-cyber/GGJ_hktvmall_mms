@@ -3,6 +3,21 @@
 @tailwind utilities;
 
 @layer base {
+  /* =============================================
+     Mobile-First 基礎設定
+     ============================================= */
+  html {
+    font-size: 14px;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (min-width: 640px) {
+    html {
+      font-size: 16px;
+    }
+  }
+
   :root {
     /* Future Tech 配色方案 */
     --background: 0 0% 100%;
@@ -85,6 +100,56 @@
   /* 移動端文字大小優化（防止 iOS 縮放） */
   .text-mobile-safe {
     font-size: max(16px, 1rem);
+  }
+
+  /* 手機版頁面標題 */
+  .page-title {
+    @apply text-lg font-bold text-slate-800;
+  }
+  @media (min-width: 640px) {
+    .page-title {
+      @apply text-2xl;
+    }
+  }
+
+  /* 手機版卡片間距 */
+  .card-mobile {
+    @apply p-3;
+  }
+  @media (min-width: 640px) {
+    .card-mobile {
+      @apply p-4;
+    }
+  }
+  @media (min-width: 1024px) {
+    .card-mobile {
+      @apply p-6;
+    }
+  }
+
+  /* 手機版網格間距 */
+  .gap-mobile {
+    @apply gap-2;
+  }
+  @media (min-width: 640px) {
+    .gap-mobile {
+      @apply gap-4;
+    }
+  }
+
+  /* 手機版頁面間距 */
+  .space-mobile > * + * {
+    margin-top: 0.75rem;
+  }
+  @media (min-width: 640px) {
+    .space-mobile > * + * {
+      margin-top: 1rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .space-mobile > * + * {
+      margin-top: 1.5rem;
+    }
   }
 }
 

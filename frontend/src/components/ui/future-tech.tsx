@@ -205,9 +205,9 @@ export function DataMetric({
   }
 
   const sizes = {
-    sm: { value: 'text-2xl', label: 'text-xs', icon: 'w-8 h-8', padding: 'p-3' },
-    md: { value: 'text-3xl', label: 'text-sm', icon: 'w-10 h-10', padding: 'p-4' },
-    lg: { value: 'text-4xl', label: 'text-base', icon: 'w-12 h-12', padding: 'p-5' },
+    sm: { value: 'text-lg sm:text-xl', label: 'text-[10px] sm:text-xs', icon: 'w-6 h-6 sm:w-7 sm:h-7', padding: 'p-2 sm:p-2.5' },
+    md: { value: 'text-xl sm:text-2xl', label: 'text-[10px] sm:text-xs', icon: 'w-7 h-7 sm:w-8 sm:h-8', padding: 'p-2 sm:p-3' },
+    lg: { value: 'text-2xl sm:text-3xl', label: 'text-xs sm:text-sm', icon: 'w-8 h-8 sm:w-10 sm:h-10', padding: 'p-2.5 sm:p-4' },
   }
 
   const colorStyle = colors[color]
@@ -407,7 +407,7 @@ export function DataStreamBg({ className, density = 'medium', color = 'cyan' }: 
 // =============================================
 
 interface HoloButtonProps {
-  children: React.ReactNode
+  children?: React.ReactNode
   variant?: 'primary' | 'secondary' | 'ghost'
   size?: 'sm' | 'md' | 'lg'
   loading?: boolean
@@ -450,9 +450,9 @@ export function HoloButton({
   }
 
   const sizes = {
-    sm: 'px-3 py-1.5 text-sm rounded-lg gap-1.5',
-    md: 'px-4 py-2 text-sm rounded-xl gap-2',
-    lg: 'px-6 py-3 text-base rounded-xl gap-2.5',
+    sm: 'px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-lg gap-1',
+    md: 'px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm rounded-lg sm:rounded-xl gap-1.5',
+    lg: 'px-4 py-2 sm:px-6 sm:py-3 text-sm sm:text-base rounded-xl gap-2',
   }
 
   return (
@@ -523,6 +523,7 @@ interface HoloBadgeProps {
   variant?: 'default' | 'success' | 'warning' | 'error' | 'info'
   size?: 'sm' | 'md'
   pulse?: boolean
+  className?: string
 }
 
 export function HoloBadge({
@@ -530,6 +531,7 @@ export function HoloBadge({
   variant = 'default',
   size = 'md',
   pulse = false,
+  className,
 }: HoloBadgeProps) {
   const variants = {
     default: 'bg-slate-100 text-slate-600 border-slate-200',
@@ -550,7 +552,8 @@ export function HoloBadge({
         'inline-flex items-center gap-1.5 rounded-full font-medium border',
         variants[variant],
         sizes[size],
-        pulse && 'animate-pulse'
+        pulse && 'animate-pulse',
+        className
       )}
     >
       {children}

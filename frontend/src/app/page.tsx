@@ -124,114 +124,106 @@ export default function DashboardPage() {
   return (
     <PageTransition>
       <div className="relative min-h-screen">
-        {/* 背景數據流 */}
-        <DataStreamBg density="low" color="cyan" className="opacity-20" />
+        {/* 背景數據流 - 手機隱藏 */}
+        <DataStreamBg density="low" color="cyan" className="opacity-20 hidden sm:block" />
 
-        <div className="relative z-10 space-y-6 sm:space-y-8">
+        <div className="relative z-10 space-mobile">
           {/* ========== 頁面標題 ========== */}
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div>
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="flex items-center gap-3 mb-3"
+                className="flex items-center gap-2"
               >
-                <h1 className="text-2xl sm:text-4xl font-bold text-slate-800">
-                  控制台
-                </h1>
-                <PulseStatus status="online" size="md" />
+                <h1 className="page-title truncate">控制台</h1>
+                <PulseStatus status="online" size="sm" />
               </motion.div>
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.1 }}
-                className="text-sm sm:text-base text-slate-500 flex items-center gap-2"
+                className="text-xs text-slate-500 flex items-center gap-1 mt-0.5"
               >
-                <Calendar className="w-4 h-4 text-cyan-500" />
-                {new Date().toLocaleDateString('zh-HK', { weekday: 'long', month: 'long', day: 'numeric' })}
+                <Calendar className="w-3 h-3 text-cyan-500" />
+                {new Date().toLocaleDateString('zh-HK', { month: 'short', day: 'numeric' })}
               </motion.p>
             </div>
 
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-2 sm:gap-3"
+              className="flex items-center gap-1.5 flex-shrink-0"
             >
               <HoloButton
                 variant="secondary"
-                size="md"
+                size="sm"
                 onClick={() => refetchAlerts()}
-                icon={<RefreshCw className="w-4 h-4" />}
-              >
-                <span className="hidden sm:inline">刷新</span>
-              </HoloButton>
+                icon={<RefreshCw className="w-3.5 h-3.5" />}
+                className="px-2"
+              />
               <Link href="/competitors">
-                <HoloButton variant="primary" icon={<Zap className="w-4 h-4" />}>
-                  <span className="hidden sm:inline">開始抓取</span>
-                  <span className="sm:hidden">抓取</span>
+                <HoloButton variant="primary" size="sm" icon={<Zap className="w-3.5 h-3.5" />}>
+                  抓取
                 </HoloButton>
               </Link>
             </motion.div>
           </div>
 
-          {/* ========== 系統狀態 ========== */}
-          <HoloCard glowColor="cyan" className="p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 flex items-center justify-center">
-                  <Activity className="w-5 h-5 text-cyan-600" />
+          {/* ========== 系統狀態 - 手機簡化 ========== */}
+          <HoloCard glowColor="cyan" className="card-mobile">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-br from-cyan-50 to-blue-50 flex items-center justify-center">
+                  <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-600" />
                 </div>
-                <div>
-                  <h2 className="font-semibold text-slate-800">系統狀態</h2>
-                  <p className="text-sm text-slate-500">實時監控各服務運行狀況</p>
-                </div>
+                <h2 className="text-sm sm:text-base font-semibold text-slate-800">系統狀態</h2>
               </div>
-              <HoloBadge variant="info">
-                <RefreshCw className="w-3 h-3" />
-                實時更新
+              <HoloBadge variant="info" size="sm">
+                <span className="hidden sm:inline">實時更新</span>
+                <span className="sm:hidden">在線</span>
               </HoloBadge>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <SystemStatus icon={Wifi} label="API 服務" status="online" />
+            <div className="grid grid-cols-4 gap-1.5 sm:gap-3">
+              <SystemStatus icon={Wifi} label="API" status="online" />
               <SystemStatus icon={Database} label="數據庫" status="online" />
-              <SystemStatus icon={Cpu} label="AI 引擎" status="processing" />
-              <SystemStatus icon={Bell} label="通知服務" status="online" />
+              <SystemStatus icon={Cpu} label="AI" status="processing" />
+              <SystemStatus icon={Bell} label="通知" status="online" />
             </div>
           </HoloCard>
 
           {/* ========== 今日摘要 ========== */}
-          <HoloCard glowColor="blue" className="p-4 sm:p-6">
-            <HoloPanelHeader
-              title="今日摘要"
-              subtitle={`${new Date().toLocaleDateString('zh-HK')}`}
-              icon={<Sparkles className="w-5 h-5" />}
-            />
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+          <HoloCard glowColor="blue" className="card-mobile">
+            <div className="flex items-center gap-2 mb-2 sm:mb-3">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <h2 className="text-sm sm:text-base font-semibold text-slate-800">今日摘要</h2>
+            </div>
+            <div className="grid grid-cols-4 gap-1.5 sm:gap-3">
               <TodayStat
                 icon={Bell}
-                label="新警報"
+                label="警報"
                 value={todayAlerts.length}
                 color="cyan"
                 highlight={todayAlerts.length > 0}
               />
               <TodayStat
                 icon={TrendingDown}
-                label="價格下跌"
+                label="降價"
                 value={priceDrops}
                 color="green"
                 highlight={priceDrops > 0}
               />
               <TodayStat
                 icon={TrendingUp}
-                label="價格上漲"
+                label="漲價"
                 value={priceIncreases}
                 color="orange"
                 highlight={priceIncreases > 0}
               />
               <TodayStat
                 icon={Eye}
-                label="未讀通知"
+                label="未讀"
                 value={alerts?.unread_count || 0}
                 color="purple"
                 highlight={(alerts?.unread_count || 0) > 0}
@@ -246,21 +238,21 @@ export default function DashboardPage() {
               animate={{ opacity: 1, y: 0 }}
             >
               <HoloCard glowColor="purple" className="overflow-hidden border-amber-200/50">
-                <div className="px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-amber-500" />
-                    <h2 className="font-semibold text-slate-800">待處理事項</h2>
-                    <HoloBadge variant="warning">{alerts?.unread_count}</HoloBadge>
+                <div className="px-3 py-2 sm:px-4 sm:py-3 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4 text-amber-500" />
+                    <h2 className="text-sm font-semibold text-slate-800">待處理</h2>
+                    <HoloBadge variant="warning" size="sm">{alerts?.unread_count}</HoloBadge>
                   </div>
                   <Link href="/alerts">
-                    <HoloButton variant="ghost" size="sm">
-                      查看全部
-                      <ChevronRight className="w-4 h-4 ml-1" />
+                    <HoloButton variant="ghost" size="sm" className="text-xs px-2">
+                      全部
+                      <ChevronRight className="w-3 h-3 ml-0.5" />
                     </HoloButton>
                   </Link>
                 </div>
                 <div className="divide-y divide-slate-100">
-                  {alerts?.data.filter(a => !a.is_read).slice(0, 3).map((alert) => (
+                  {alerts?.data.filter(a => !a.is_read).slice(0, 2).map((alert) => (
                     <ActionableAlertRow
                       key={alert.id}
                       alert={alert}
@@ -272,69 +264,66 @@ export default function DashboardPage() {
             </motion.div>
           )}
 
-          <TechDivider label="核心指標" />
-
           {/* ========== 關鍵指標 ========== */}
-          <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <StaggerContainer className="grid grid-cols-4 gap-1.5 sm:gap-3">
             <DataMetric
-              label="監測類別"
+              label="類別"
               value={categories?.total || 0}
               color="cyan"
-              icon={<FolderOpen className="w-5 h-5 text-cyan-500" />}
+              icon={<FolderOpen className="w-4 h-4 text-cyan-500" />}
             />
             <DataMetric
-              label="追踪商品"
+              label="商品"
               value={totalProducts}
               color="blue"
-              icon={<Package className="w-5 h-5 text-blue-500" />}
+              icon={<Package className="w-4 h-4 text-blue-500" />}
             />
             <DataMetric
-              label="競爭對手"
+              label="競品"
               value={competitors?.total || 0}
               color="purple"
-              icon={<Building2 className="w-5 h-5 text-violet-500" />}
+              icon={<Building2 className="w-4 h-4 text-violet-500" />}
             />
             <DataMetric
-              label="自家商品"
+              label="自家"
               value={products?.total || 0}
               color="green"
-              icon={<Sparkles className="w-5 h-5 text-emerald-500" />}
+              icon={<Sparkles className="w-4 h-4 text-emerald-500" />}
             />
           </StaggerContainer>
 
           {/* ========== 主內容區域 ========== */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
             {/* 左側：快速操作 + 競爭對手 */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-3 sm:space-y-4">
               {/* 快速操作 */}
-              <HoloCard glowColor="cyan" className="p-4 sm:p-6">
-                <HoloPanelHeader
-                  title="快速操作"
-                  subtitle="常用功能入口"
-                  icon={<Zap className="w-5 h-5" />}
-                />
-                <div className="grid grid-cols-4 gap-2 sm:gap-3 mt-4">
+              <HoloCard glowColor="cyan" className="card-mobile">
+                <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                  <Zap className="w-4 h-4 text-amber-500" />
+                  <h2 className="text-sm sm:text-base font-semibold text-slate-800">快速操作</h2>
+                </div>
+                <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
                   <QuickAction
                     icon={Plus}
-                    label="新增競品"
+                    label="新增"
                     href="/competitors"
                     color="cyan"
                   />
                   <QuickAction
                     icon={Zap}
-                    label="全網抓取"
+                    label="抓取"
                     href="/competitors"
                     color="blue"
                   />
                   <QuickAction
                     icon={Sparkles}
-                    label="AI 內容"
+                    label="文案"
                     href="/ai-content"
                     color="purple"
                   />
                   <QuickAction
                     icon={BarChart3}
-                    label="數據分析"
+                    label="分析"
                     href="/ai-analysis"
                     color="green"
                   />
@@ -437,18 +426,13 @@ function SystemStatus({
   status: 'online' | 'offline' | 'warning' | 'processing'
 }) {
   return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      className="flex items-center gap-3 p-3 rounded-xl bg-white/60 border border-slate-100 hover:border-cyan-200 transition-all"
-    >
-      <div className="w-9 h-9 rounded-lg bg-slate-50 flex items-center justify-center">
-        <Icon className="w-4 h-4 text-slate-500" />
+    <div className="flex flex-col items-center p-1.5 sm:p-2 rounded-lg bg-white/60 border border-slate-100">
+      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-md bg-slate-50 flex items-center justify-center mb-1">
+        <Icon className="w-3 h-3 sm:w-4 sm:h-4 text-slate-500" />
       </div>
-      <div>
-        <p className="text-sm font-medium text-slate-700">{label}</p>
-        <PulseStatus status={status} size="sm" />
-      </div>
-    </motion.div>
+      <p className="text-[10px] sm:text-xs font-medium text-slate-600 text-center">{label}</p>
+      <PulseStatus status={status} size="sm" />
+    </div>
   )
 }
 
@@ -475,28 +459,16 @@ function TodayStat({
   const style = colors[color]
 
   return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      className={cn(
-        "flex items-center gap-3 p-3 rounded-xl transition-all border",
-        highlight ? `${style.bg} ${style.border} shadow-sm` : "bg-white/60 border-slate-100"
-      )}
-    >
-      <div className={cn("p-2 rounded-lg", style.bg)}>
-        <Icon className={cn("w-5 h-5", style.text)} />
+    <div className={cn(
+      "flex flex-col items-center p-1.5 sm:p-2 rounded-lg transition-all border",
+      highlight ? `${style.bg} ${style.border}` : "bg-white/60 border-slate-100"
+    )}>
+      <div className={cn("p-1 sm:p-1.5 rounded-md mb-0.5", style.bg)}>
+        <Icon className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", style.text)} />
       </div>
-      <div>
-        <motion.p
-          key={value}
-          initial={{ scale: 1.2, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="text-2xl font-bold text-slate-800"
-        >
-          {value}
-        </motion.p>
-        <p className="text-xs text-slate-500">{label}</p>
-      </div>
-    </motion.div>
+      <p className="text-base sm:text-xl font-bold text-slate-800">{value}</p>
+      <p className="text-[10px] sm:text-xs text-slate-500">{label}</p>
+    </div>
   )
 }
 
@@ -512,25 +484,21 @@ function QuickAction({
   color: 'cyan' | 'blue' | 'purple' | 'green'
 }) {
   const colors = {
-    cyan: 'bg-cyan-50 text-cyan-600 hover:bg-cyan-100 border-cyan-100 hover:border-cyan-200',
-    blue: 'bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-100 hover:border-blue-200',
-    purple: 'bg-violet-50 text-violet-600 hover:bg-violet-100 border-violet-100 hover:border-violet-200',
-    green: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-100 hover:border-emerald-200',
+    cyan: 'bg-cyan-50 text-cyan-600 active:bg-cyan-100 border-cyan-100',
+    blue: 'bg-blue-50 text-blue-600 active:bg-blue-100 border-blue-100',
+    purple: 'bg-violet-50 text-violet-600 active:bg-violet-100 border-violet-100',
+    green: 'bg-emerald-50 text-emerald-600 active:bg-emerald-100 border-emerald-100',
   }
 
   return (
     <Link href={href}>
-      <motion.div
-        whileHover={{ scale: 1.05, y: -2 }}
-        whileTap={{ scale: 0.95 }}
-        className={cn(
-          "flex flex-col items-center justify-center p-3 sm:p-4 rounded-xl transition-all cursor-pointer border",
-          colors[color]
-        )}
-      >
-        <Icon className="w-5 h-5 sm:w-6 sm:h-6 mb-1.5 sm:mb-2" />
-        <span className="text-[10px] sm:text-xs font-medium text-center leading-tight">{label}</span>
-      </motion.div>
+      <div className={cn(
+        "flex flex-col items-center justify-center p-2 sm:p-3 rounded-lg transition-all cursor-pointer border",
+        colors[color]
+      )}>
+        <Icon className="w-4 h-4 sm:w-5 sm:h-5 mb-1" />
+        <span className="text-[10px] sm:text-xs font-medium text-center">{label}</span>
+      </div>
     </Link>
   )
 }

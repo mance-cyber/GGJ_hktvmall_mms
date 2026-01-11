@@ -325,18 +325,18 @@ export default function CompetitorsPage() {
 
   return (
     <PageTransition>
-      <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto">
         {/* ========== 頁面標題 ========== */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
               競品監測
               <HoloBadge variant="info" pulse>
                 <PulseStatus status="online" label="Live" size="sm" />
               </HoloBadge>
             </h1>
-            <p className="text-muted-foreground mt-1 sm:mt-2 text-base sm:text-lg hidden sm:block">
-              即時追蹤競爭對手動態，AI 智能分析價格趨勢
+            <p className="text-sm text-muted-foreground mt-1 hidden sm:block">
+              即時追蹤競爭對手動態
             </p>
           </div>
 
@@ -382,8 +382,8 @@ export default function CompetitorsPage() {
         </div>
 
         {/* ========== 工具欄 ========== */}
-        <HoloCard className="p-4" glowColor="blue" interactive={false}>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+        <HoloCard className="p-3 sm:p-4" glowColor="blue" interactive={false}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
             {/* 搜索框 */}
             <div className="relative flex-1 sm:max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -486,7 +486,7 @@ export default function CompetitorsPage() {
         {/* 卡片視圖 - 手機版強制顯示，桌面版根據 viewMode 決定 */}
         <div
           className={cn(
-            "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5",
+            "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4",
             viewMode === 'list' ? "sm:hidden" : ""
           )}
         >

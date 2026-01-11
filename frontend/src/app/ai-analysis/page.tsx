@@ -298,16 +298,16 @@ export default function AIAnalysisPage() {
 
   return (
     <PageTransition>
-      <div className="space-y-8 p-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Brain className="w-8 h-8 text-primary" />
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <Brain className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
               AI 智能分析
             </h1>
-            <p className="text-muted-foreground mt-2">
-              兩個 AI 協同工作：數據摘要 + Marketing 策略
+            <p className="text-sm text-muted-foreground mt-1">
+              數據摘要 + Marketing 策略
             </p>
           </div>
 
@@ -324,13 +324,13 @@ export default function AIAnalysisPage() {
         </div>
 
         {/* Pipeline Visualization */}
-        <HoloCard glowColor="cyan" className="p-6">
-          <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <Zap className="w-5 h-5 text-amber-500" />
+        <HoloCard glowColor="cyan" className="p-3 sm:p-4">
+          <h2 className="text-sm sm:text-base font-bold text-slate-800 mb-3 flex items-center gap-2">
+            <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
             分析流程
           </h2>
 
-          <div className="flex flex-col md:flex-row items-center justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3">
             <PipelineStep
               step={1}
               icon={BarChart3}
@@ -339,23 +339,23 @@ export default function AIAnalysisPage() {
               status={inputData ? 'completed' : 'pending'}
               color="blue"
             />
-            <ArrowRight className="w-6 h-6 text-slate-300 hidden md:block" />
-            <ChevronDown className="w-6 h-6 text-slate-300 md:hidden" />
+            <ArrowRight className="w-4 h-4 text-slate-300 hidden sm:block" />
+            <ChevronDown className="w-4 h-4 text-slate-300 sm:hidden" />
             <PipelineStep
               step={2}
               icon={FileText}
-              title="AI #1: 數據摘要"
-              description="分析並生成洞察報告"
+              title="AI #1: 摘要"
+              description="生成洞察報告"
               status={insightsMutation.isPending ? 'processing' : insightsResult ? 'completed' : 'pending'}
               color="purple"
             />
-            <ArrowRight className="w-6 h-6 text-slate-300 hidden md:block" />
-            <ChevronDown className="w-6 h-6 text-slate-300 md:hidden" />
+            <ArrowRight className="w-4 h-4 text-slate-300 hidden sm:block" />
+            <ChevronDown className="w-4 h-4 text-slate-300 sm:hidden" />
             <PipelineStep
               step={3}
               icon={Target}
-              title="AI #2: 策略建議"
-              description="生成 Marketing 策略"
+              title="AI #2: 策略"
+              description="Marketing 建議"
               status={strategyMutation.isPending || fullAnalysisMutation.isPending ? 'processing' : strategyResult ? 'completed' : 'pending'}
               color="green"
             />
@@ -363,13 +363,13 @@ export default function AIAnalysisPage() {
         </HoloCard>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Input Section */}
-          <div className="space-y-4">
-            <HoloCard glowColor="blue" className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                  <Database className="w-5 h-5 text-blue-500" />
+          <div className="space-y-3 sm:space-y-4">
+            <HoloCard glowColor="blue" className="p-3 sm:p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm sm:text-base font-bold text-slate-800 flex items-center gap-2">
+                  <Database className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
                   數據來源
                 </h3>
                 {dataLoaded && (
@@ -381,11 +381,11 @@ export default function AIAnalysisPage() {
 
               {/* 未加載數據時顯示加載按鈕 */}
               {!dataLoaded ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center">
-                    <Database className="w-8 h-8 text-blue-500" />
+                <div className="text-center py-6">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center">
+                    <Database className="w-6 h-6 sm:w-7 sm:h-7 text-blue-500" />
                   </div>
-                  <p className="text-slate-600 mb-4">從數據庫獲取最新數據進行 AI 分析</p>
+                  <p className="text-sm text-slate-600 mb-3">從數據庫獲取最新數據</p>
                   <HoloButton
                     onClick={loadDatabaseData}
                     disabled={isLoadingData}
@@ -397,42 +397,42 @@ export default function AIAnalysisPage() {
                 </div>
               ) : (
                 /* 已加載數據時顯示摘要 */
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {/* 統計數據網格 */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-3 border border-blue-100">
-                      <p className="text-xs text-slate-500">產品數量</p>
-                      <p className="text-xl font-bold text-blue-600">{dataSummary?.total_products || 0}</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-2 border border-blue-100">
+                      <p className="text-[10px] text-slate-500">產品</p>
+                      <p className="text-base sm:text-lg font-bold text-blue-600">{dataSummary?.total_products || 0}</p>
                     </div>
-                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-3 border border-purple-100">
-                      <p className="text-xs text-slate-500">競爭對手</p>
-                      <p className="text-xl font-bold text-purple-600">{dataSummary?.total_competitors || 0}</p>
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-2 border border-purple-100">
+                      <p className="text-[10px] text-slate-500">競品</p>
+                      <p className="text-base sm:text-lg font-bold text-purple-600">{dataSummary?.total_competitors || 0}</p>
                     </div>
-                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-3 border border-green-100">
-                      <p className="text-xs text-slate-500">類別數量</p>
-                      <p className="text-xl font-bold text-green-600">{dataSummary?.total_categories || 0}</p>
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-2 border border-green-100">
+                      <p className="text-[10px] text-slate-500">類別</p>
+                      <p className="text-base sm:text-lg font-bold text-green-600">{dataSummary?.total_categories || 0}</p>
                     </div>
-                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-3 border border-amber-100">
-                      <p className="text-xs text-slate-500">月營收</p>
-                      <p className="text-xl font-bold text-amber-600">${(dataSummary?.monthly_revenue || 0).toLocaleString()}</p>
+                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-2 border border-amber-100">
+                      <p className="text-[10px] text-slate-500">月營收</p>
+                      <p className="text-base sm:text-lg font-bold text-amber-600">${(dataSummary?.monthly_revenue || 0).toLocaleString()}</p>
                     </div>
-                    <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-3 border border-cyan-100">
-                      <p className="text-xs text-slate-500">月利潤</p>
-                      <p className="text-xl font-bold text-cyan-600">${(dataSummary?.monthly_profit || 0).toLocaleString()}</p>
+                    <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-lg p-2 border border-cyan-100">
+                      <p className="text-[10px] text-slate-500">月利潤</p>
+                      <p className="text-base sm:text-lg font-bold text-cyan-600">${(dataSummary?.monthly_profit || 0).toLocaleString()}</p>
                     </div>
-                    <div className="bg-gradient-to-br from-red-50 to-pink-50 rounded-xl p-3 border border-red-100">
-                      <p className="text-xs text-slate-500">待處理警報</p>
-                      <p className="text-xl font-bold text-red-600">{dataSummary?.pending_alerts || 0}</p>
+                    <div className="bg-gradient-to-br from-red-50 to-pink-50 rounded-lg p-2 border border-red-100">
+                      <p className="text-[10px] text-slate-500">警報</p>
+                      <p className="text-base sm:text-lg font-bold text-red-600">{dataSummary?.pending_alerts || 0}</p>
                     </div>
                   </div>
 
-                  {/* 產品樣本 */}
+                  {/* 產品樣本 - 手機隱藏 */}
                   {dataSummary?.products_sample && dataSummary.products_sample.length > 0 && (
-                    <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                      <p className="text-xs text-slate-500 mb-2">產品樣本</p>
-                      <div className="space-y-1">
-                        {dataSummary.products_sample.map((p, i) => (
-                          <div key={i} className="flex items-center justify-between text-sm">
+                    <div className="hidden sm:block bg-slate-50 rounded-lg p-2 border border-slate-100">
+                      <p className="text-[10px] text-slate-500 mb-1">產品樣本</p>
+                      <div className="space-y-0.5">
+                        {dataSummary.products_sample.slice(0, 3).map((p, i) => (
+                          <div key={i} className="flex items-center justify-between text-xs">
                             <span className="text-slate-700 truncate flex-1">{p.name}</span>
                             <span className="text-slate-500 ml-2">${p.price}</span>
                           </div>
@@ -441,15 +441,15 @@ export default function AIAnalysisPage() {
                     </div>
                   )}
 
-                  {/* 競品樣本 */}
+                  {/* 競品樣本 - 手機隱藏 */}
                   {dataSummary?.competitors_sample && dataSummary.competitors_sample.length > 0 && (
-                    <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                      <p className="text-xs text-slate-500 mb-2">競爭對手</p>
-                      <div className="space-y-1">
+                    <div className="hidden sm:block bg-slate-50 rounded-lg p-2 border border-slate-100">
+                      <p className="text-[10px] text-slate-500 mb-1">競爭對手</p>
+                      <div className="space-y-0.5">
                         {dataSummary.competitors_sample.map((c, i) => (
-                          <div key={i} className="flex items-center justify-between text-sm">
+                          <div key={i} className="flex items-center justify-between text-xs">
                             <span className="text-slate-700">{c.name}</span>
-                            <span className="text-slate-500">{c.platform} · {c.product_count} 個產品</span>
+                            <span className="text-slate-500">{c.product_count} 個</span>
                           </div>
                         ))}
                       </div>
@@ -457,16 +457,16 @@ export default function AIAnalysisPage() {
                   )}
 
                   {/* 重新加載按鈕 */}
-                  <div className="flex justify-center pt-2">
+                  <div className="flex justify-center pt-1">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={loadDatabaseData}
                       disabled={isLoadingData}
-                      className="text-slate-500"
+                      className="text-slate-500 text-xs h-7"
                     >
-                      <RefreshCw className={cn("w-4 h-4 mr-1", isLoadingData && "animate-spin")} />
-                      重新加載
+                      <RefreshCw className={cn("w-3 h-3 mr-1", isLoadingData && "animate-spin")} />
+                      刷新
                     </Button>
                   </div>
                 </div>
@@ -474,8 +474,8 @@ export default function AIAnalysisPage() {
             </HoloCard>
 
             {/* 分析按鈕 */}
-            <HoloCard glowColor="cyan" className="p-6">
-              <div className="flex gap-3">
+            <HoloCard glowColor="cyan" className="p-3 sm:p-4">
+              <div className="flex gap-2">
                 <HoloButton
                   className="flex-1"
                   onClick={handleFullAnalysis}
@@ -483,7 +483,7 @@ export default function AIAnalysisPage() {
                   loading={fullAnalysisMutation.isPending}
                   icon={!fullAnalysisMutation.isPending ? <Play className="w-4 h-4" /> : undefined}
                 >
-                  {fullAnalysisMutation.isPending ? '分析中...' : '一鍵 AI 分析'}
+                  {fullAnalysisMutation.isPending ? '分析中...' : '一鍵分析'}
                 </HoloButton>
 
                 <HoloButton
@@ -491,21 +491,22 @@ export default function AIAnalysisPage() {
                   onClick={handleGenerateInsights}
                   disabled={isLoading || !config?.api_key_set || !inputData}
                   loading={insightsMutation.isPending}
+                  className="hidden sm:flex"
                 >
-                  {insightsMutation.isPending ? '' : '僅生成摘要'}
+                  {insightsMutation.isPending ? '' : '僅摘要'}
                 </HoloButton>
               </div>
 
               {!config?.api_key_set && (
-                <p className="text-sm text-red-500 mt-3 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
-                  請先到 AI 設定頁面設定 API Key
+                <p className="text-xs text-red-500 mt-2 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  請先設定 API Key
                 </p>
               )}
 
               {!inputData && config?.api_key_set && (
-                <p className="text-sm text-amber-600 mt-3 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
+                <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
                   請先加載數據
                 </p>
               )}
@@ -516,21 +517,21 @@ export default function AIAnalysisPage() {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-4 rounded-xl bg-slate-50 border border-slate-200"
+                className="p-2 sm:p-3 rounded-lg bg-slate-50 border border-slate-200"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600 flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    本次分析使用 Tokens
+                  <span className="text-xs text-slate-600 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Tokens
                   </span>
-                  <span className="font-bold text-slate-800">{totalTokens.toLocaleString()}</span>
+                  <span className="text-sm font-bold text-slate-800">{totalTokens.toLocaleString()}</span>
                 </div>
               </motion.div>
             )}
           </div>
 
           {/* Results Section */}
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {/* Insights Result */}
             <ResultPanel
               title="數據摘要"
@@ -628,23 +629,23 @@ function PipelineStep({
 
   return (
     <div className={cn(
-      "p-4 rounded-xl border transition-all",
+      "p-2 sm:p-3 rounded-lg border transition-all flex-1 min-w-0",
       c.bg, c.border,
       status === 'processing' && "animate-pulse"
     )}>
-      <div className="flex items-center gap-3">
-        <div className={cn("p-2 rounded-lg transition-colors", c.icon)}>
+      <div className="flex items-center gap-2">
+        <div className={cn("p-1.5 rounded-md transition-colors flex-shrink-0", c.icon)}>
           {status === 'processing' ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
           ) : status === 'completed' ? (
-            <CheckCircle2 className="w-5 h-5" />
+            <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           ) : (
-            <Icon className="w-5 h-5" />
+            <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           )}
         </div>
-        <div>
-          <p className="font-medium text-slate-800 text-sm">{title}</p>
-          <p className="text-xs text-slate-500">{description}</p>
+        <div className="min-w-0">
+          <p className="font-medium text-slate-800 text-xs sm:text-sm truncate">{title}</p>
+          <p className="text-[10px] sm:text-xs text-slate-500 truncate">{description}</p>
         </div>
       </div>
     </div>
@@ -689,24 +690,24 @@ function ResultPanel({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="glass-panel rounded-2xl border border-white/40 overflow-hidden"
+      className="glass-panel rounded-xl border border-white/40 overflow-hidden"
     >
       {/* Header */}
       <div
-        className={cn("p-4 flex items-center justify-between cursor-pointer border-b", c.header)}
+        className={cn("px-3 py-2 sm:p-3 flex items-center justify-between cursor-pointer border-b", c.header)}
         onClick={onToggle}
       >
-        <div className="flex items-center gap-2">
-          <Icon className={cn("w-5 h-5", c.icon)} />
-          <h3 className="font-bold text-slate-800">{title}</h3>
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <Icon className={cn("w-4 h-4 flex-shrink-0", c.icon)} />
+          <h3 className="text-sm font-bold text-slate-800 truncate">{title}</h3>
           {content && (
-            <HoloBadge variant="success" size="sm">
-              <CheckCircle2 className="w-3 h-3" />
+            <HoloBadge variant="success" size="sm" className="hidden sm:flex">
+              <CheckCircle2 className="w-2.5 h-2.5" />
               已生成
             </HoloBadge>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 flex-shrink-0">
           {content && (
             <Button
               variant="ghost"
@@ -715,8 +716,9 @@ function ResultPanel({
                 e.stopPropagation()
                 onCopy()
               }}
+              className="h-7 w-7 p-0"
             >
-              <Copy className="w-4 h-4" />
+              <Copy className="w-3.5 h-3.5" />
             </Button>
           )}
           {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -732,24 +734,24 @@ function ResultPanel({
             exit={{ height: 0 }}
             className="overflow-hidden"
           >
-            <div className="p-4 max-h-[400px] overflow-y-auto">
+            <div className="p-3 max-h-[300px] sm:max-h-[400px] overflow-y-auto">
               {isLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
                 </div>
               ) : error ? (
-                <div className="p-4 rounded-lg bg-red-50 text-red-700">
-                  <AlertCircle className="w-5 h-5 inline mr-2" />
+                <div className="p-2 rounded-lg bg-red-50 text-red-700 text-xs sm:text-sm">
+                  <AlertCircle className="w-4 h-4 inline mr-1" />
                   {error}
                 </div>
               ) : content ? (
-                <div className="prose prose-sm max-w-none prose-headings:text-slate-800 prose-p:text-slate-600">
+                <div className="prose prose-sm max-w-none prose-headings:text-slate-800 prose-p:text-slate-600 text-sm">
                   {renderContent(content)}
                 </div>
               ) : (
-                <div className="text-center py-12 text-slate-400">
-                  <Icon className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p>尚未生成</p>
+                <div className="text-center py-8 text-slate-400">
+                  <Icon className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  <p className="text-xs">尚未生成</p>
                 </div>
               )}
             </div>

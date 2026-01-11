@@ -79,7 +79,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* 主內容 */}
         <div className="relative z-10 flex min-h-screen">
           <Sidebar />
-          <main className="flex-1 p-4 lg:p-8 lg:ml-72 pb-20 lg:pb-8">
+          <main className="flex-1 px-2 py-3 sm:p-4 lg:p-6 lg:ml-72 pb-24 lg:pb-6">
             {children}
           </main>
           <MobileBottomNav />
