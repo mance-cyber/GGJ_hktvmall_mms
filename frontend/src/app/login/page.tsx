@@ -97,7 +97,7 @@ export default function LoginPage() {
                 <img
                   src="/images/GGJ_small_logo_001.ico"
                   alt="GoGoJap Logo"
-                  className="w-20 h-20 object-contain"
+                  className="w-[120px] h-[120px] object-contain"
                 />
               </motion.div>
               <h1 className="text-2xl font-bold text-slate-800">歡迎回來</h1>
