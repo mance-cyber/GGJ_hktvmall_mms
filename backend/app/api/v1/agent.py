@@ -90,37 +90,45 @@ async def chat(
 ):
     """
     發送聊天訊息
-    
+
     這是主要的對話接口。發送用戶訊息，獲取 AI Agent 的響應。
     響應可能是：
     - 普通訊息（message）
     - 澄清問題（clarification）- 需要用戶選擇選項
     - 分析報告（report）- 包含 Markdown 報告和圖表數據
     """
-    agent = await get_agent_service(db)
-    
-    # 收集所有響應（非串流模式）
-    final_response = None
-    async for response in agent.process_message(
-        message=message.content,
-        conversation_id=message.conversation_id
-    ):
-        # 跳過 thinking 響應
-        if response.type.value != "thinking":
-            final_response = response
-    
-    if not final_response:
-        raise HTTPException(status_code=500, detail="無法處理訊息")
-    
-    return ChatResponse(
-        type=final_response.type.value,
-        content=final_response.content,
-        conversation_id=final_response.conversation_id,
-        options=final_response.options,
-        report=final_response.report,
-        charts=final_response.charts,
-        suggestions=final_response.suggestions
-    )
+    try:
+        agent = await get_agent_service(db)
+
+        # 收集所有響應（非串流模式）
+        final_response = None
+        async for response in agent.process_message(
+            message=message.content,
+            conversation_id=message.conversation_id
+        ):
+            # 跳過 thinking 響應
+            if response.type.value != "thinking":
+                final_response = response
+
+        if not final_response:
+            raise HTTPException(status_code=500, detail="無法處理訊息")
+
+        return ChatResponse(
+            type=final_response.type.value,
+            content=final_response.content,
+            conversation_id=final_response.conversation_id,
+            options=final_response.options,
+            report=final_response.report,
+            charts=final_response.charts,
+            suggestions=final_response.suggestions
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        import logging
+        logging.error(f"Chat error: {e}")
+        raise HTTPException(status_code=500, detail=f"聊天處理錯誤: {str(e)}")
 
 
 @router.post("/clarify", response_model=ChatResponse)
