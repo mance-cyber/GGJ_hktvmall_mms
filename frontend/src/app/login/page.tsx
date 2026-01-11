@@ -28,7 +28,7 @@ import {
   HoloButton,
   PageTransition,
 } from '@/components/ui/future-tech'
-import { Sparkles, Lock, Mail } from 'lucide-react'
+import { Lock, Mail } from 'lucide-react'
 
 const formSchema = z.object({
   username: z.string().email({ message: '請輸入有效的電子郵件地址' }),
@@ -204,13 +204,6 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* 底部裝飾 */}
-            <div className="mt-8 pt-6 border-t border-slate-100 text-center">
-              <p className="text-xs text-slate-400 flex items-center justify-center gap-1">
-                <Sparkles className="w-3 h-3" />
-                由 AI 驅動的智能營運平台
-              </p>
-            </div>
           </HoloCard>
         </motion.div>
       </div>
