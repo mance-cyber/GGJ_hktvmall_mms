@@ -102,29 +102,29 @@ async def login_google(
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
 
+    # 根據郵箱分配角色
+    email_lower = email.lower()
+    admin_emails = [e.strip().lower() for e in settings.google_admin_emails.split(",") if e.strip()]
+    operator_emails = [e.strip().lower() for e in settings.google_operator_emails.split(",") if e.strip()]
+
+    if email_lower in admin_emails:
+        expected_role = UserRole.ADMIN
+    elif email_lower in operator_emails:
+        expected_role = UserRole.OPERATOR
+    else:
+        expected_role = UserRole.VIEWER
+
     if not user:
         # Create new user
         # Generate a random password since they use Google
         random_password = secrets.token_urlsafe(32)
         hashed_password = security.get_password_hash(random_password)
 
-        # 根據郵箱分配角色
-        email_lower = email.lower()
-        admin_emails = [e.strip().lower() for e in settings.google_admin_emails.split(",") if e.strip()]
-        operator_emails = [e.strip().lower() for e in settings.google_operator_emails.split(",") if e.strip()]
-
-        if email_lower in admin_emails:
-            role = UserRole.ADMIN
-        elif email_lower in operator_emails:
-            role = UserRole.OPERATOR
-        else:
-            role = UserRole.VIEWER
-
         user = User(
             email=email,
             hashed_password=hashed_password,
             full_name=id_info.get("name"),
-            role=role,
+            role=expected_role,
             is_active=True,
         )
         db.add(user)
@@ -132,6 +132,12 @@ async def login_google(
         await db.refresh(user)
     elif not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
+    else:
+        # 同步角色設定（如果環境變數有更新）
+        if user.role != expected_role:
+            user.role = expected_role
+            await db.commit()
+            await db.refresh(user)
         
     # Create token
     access_token_expires = timedelta(minutes=security.ACCESS_TOKEN_EXPIRE_MINUTES)
