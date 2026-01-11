@@ -114,30 +114,41 @@ async def login_google(
     else:
         expected_role = UserRole.VIEWER
 
-    if not user:
-        # Create new user
-        # Generate a random password since they use Google
-        random_password = secrets.token_urlsafe(32)
-        hashed_password = security.get_password_hash(random_password)
+    try:
+        if not user:
+            # Create new user
+            # Generate a random password since they use Google
+            random_password = secrets.token_urlsafe(32)
+            hashed_password = security.get_password_hash(random_password)
 
-        user = User(
-            email=email,
-            hashed_password=hashed_password,
-            full_name=id_info.get("name"),
-            role=expected_role,
-            is_active=True,
-        )
-        db.add(user)
-        await db.commit()
-        await db.refresh(user)
-    elif not user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
-    else:
-        # 同步角色設定（如果環境變數有更新）
-        if user.role != expected_role:
-            user.role = expected_role
+            user = User(
+                email=email,
+                hashed_password=hashed_password,
+                full_name=id_info.get("name"),
+                role=expected_role,
+                is_active=True,
+            )
+            db.add(user)
             await db.commit()
             await db.refresh(user)
+        elif not user.is_active:
+            raise HTTPException(status_code=400, detail="Inactive user")
+        else:
+            # 同步角色設定（如果環境變數有更新）
+            if user.role != expected_role:
+                user.role = expected_role
+                await db.commit()
+                await db.refresh(user)
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        import logging
+        logging.error(f"Error during Google login: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="登入過程發生錯誤，請稍後再試"
+        )
         
     # Create token
     access_token_expires = timedelta(minutes=security.ACCESS_TOKEN_EXPIRE_MINUTES)
