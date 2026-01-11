@@ -32,6 +32,14 @@ import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { ContentOptimizeChat } from '@/components/content/ContentOptimizeChat'
+import {
+  PageTransition,
+  HoloCard,
+  HoloPanelHeader,
+  HoloButton,
+  HoloBadge,
+  HoloSkeleton,
+} from '@/components/ui/future-tech'
 
 // 內容類型選項
 const CONTENT_TYPES = [
@@ -144,15 +152,15 @@ export default function AIContentPage() {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in-up">
+    <PageTransition className="space-y-8">
       {/* 頁面標題 */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
             AI 內容生成
-            <Badge variant="outline" className="text-purple-500 border-purple-500/30 bg-purple-500/10">
+            <HoloBadge variant="info" size="sm">
               Beta
-            </Badge>
+            </HoloBadge>
           </h1>
           <p className="text-muted-foreground mt-2 text-lg">
             利用 Claude AI 的強大能力，一鍵生成高品質商品文案
@@ -167,7 +175,7 @@ export default function AIContentPage() {
           className={cn(
             "flex items-center px-4 py-2 text-sm font-medium transition-colors rounded-t-lg",
             activeTab === 'generate'
-              ? "text-purple-600 bg-white/50 border-b-2 border-purple-600"
+              ? "text-cyan-600 bg-white/50 border-b-2 border-cyan-600"
               : "text-muted-foreground hover:text-foreground hover:bg-white/30"
           )}
         >
@@ -179,7 +187,7 @@ export default function AIContentPage() {
           className={cn(
             "flex items-center px-4 py-2 text-sm font-medium transition-colors rounded-t-lg",
             activeTab === 'history'
-              ? "text-purple-600 bg-white/50 border-b-2 border-purple-600"
+              ? "text-cyan-600 bg-white/50 border-b-2 border-cyan-600"
               : "text-muted-foreground hover:text-foreground hover:bg-white/30"
           )}
         >
@@ -198,7 +206,7 @@ export default function AIContentPage() {
               className={cn(
                 "flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all",
                 mobileSubTab === 'input'
-                  ? "bg-purple-600 text-white shadow-md"
+                  ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-md"
                   : "text-gray-600 hover:bg-white/50"
               )}
             >
@@ -210,14 +218,14 @@ export default function AIContentPage() {
               className={cn(
                 "flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all relative",
                 mobileSubTab === 'result'
-                  ? "bg-purple-600 text-white shadow-md"
+                  ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-md"
                   : "text-gray-600 hover:bg-white/50"
               )}
             >
               <Sparkles className="w-4 h-4" />
               結果
               {generatedContent && mobileSubTab !== 'result' && (
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full" />
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full" />
               )}
             </button>
             <button
@@ -225,7 +233,7 @@ export default function AIContentPage() {
               className={cn(
                 "flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all",
                 mobileSubTab === 'optimize'
-                  ? "bg-purple-600 text-white shadow-md"
+                  ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-md"
                   : "text-gray-600 hover:bg-white/50",
                 !generatedContent && "opacity-50 pointer-events-none"
               )}
@@ -238,334 +246,350 @@ export default function AIContentPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* 左側：輸入表單 - 手機版按 tab 顯示 */}
-            <div className={cn(
-              "glass-panel p-6 rounded-xl border border-white/40 space-y-6 lg:max-h-[calc(100vh-200px)] lg:overflow-y-auto",
-              mobileSubTab !== 'input' && "hidden lg:block"
-            )}>
-              <div className="flex items-center gap-2 mb-2">
-                <Bot className="w-5 h-5 text-purple-500" />
-                <h2 className="text-lg font-semibold text-gray-900">輸入商品資訊</h2>
-              </div>
-
-            <div className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">商品名稱 <span className="text-red-500">*</span></Label>
-                <Input
-                  id="name"
-                  value={formData.productInfo.name}
-                  onChange={(e) => setFormData({ ...formData, productInfo: { ...formData.productInfo, name: e.target.value } })}
-                  placeholder="例如：天然維他命C 1000mg"
-                  className="bg-white/50"
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="brand">品牌</Label>
-                <Input
-                  id="brand"
-                  value={formData.productInfo.brand}
-                  onChange={(e) => setFormData({ ...formData, productInfo: { ...formData.productInfo, brand: e.target.value } })}
-                  placeholder="例如：YourBrand"
-                  className="bg-white/50"
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="features">商品特點（每行一個）</Label>
-                <Textarea
-                  id="features"
-                  value={featuresInput}
-                  onChange={(e) => setFeaturesInput(e.target.value)}
-                  rows={4}
-                  placeholder="1000mg 高劑量&#10;美國進口&#10;60粒裝"
-                  className="bg-white/50 min-h-[100px]"
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="audience">目標受眾</Label>
-                <Input
-                  id="audience"
-                  value={formData.productInfo.target_audience}
-                  onChange={(e) => setFormData({ ...formData, productInfo: { ...formData.productInfo, target_audience: e.target.value } })}
-                  placeholder="例如：注重健康的成年人"
-                  className="bg-white/50"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label>內容類型</Label>
-                  <Select
-                    value={formData.contentType}
-                    onValueChange={(val) => setFormData({ ...formData, contentType: val as ContentGenerateRequest['content_type'] })}
-                  >
-                    <SelectTrigger className="bg-white/50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CONTENT_TYPES.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid gap-2">
-                  <Label>文案風格</Label>
-                  <Select
-                    value={formData.style}
-                    onValueChange={(val) => setFormData({ ...formData, style: val as ContentGenerateRequest['style'] })}
-                  >
-                    <SelectTrigger className="bg-white/50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STYLES.map((style) => (
-                        <SelectItem key={style.value} value={style.value}>{style.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* 語言選擇 */}
-              <div className="grid gap-2">
-                <Label>輸出語言（可多選）</Label>
-                <div className="flex flex-wrap gap-2">
-                  {LANGUAGES.map((lang) => {
-                    const isSelected = selectedLanguages.includes(lang.value)
-                    return (
-                      <button
-                        key={lang.value}
-                        type="button"
-                        onClick={() => {
-                          if (isSelected && selectedLanguages.length > 1) {
-                            setSelectedLanguages(selectedLanguages.filter(l => l !== lang.value))
-                          } else if (!isSelected) {
-                            setSelectedLanguages([...selectedLanguages, lang.value])
-                          }
-                        }}
-                        className={cn(
-                          "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
-                          isSelected
-                            ? "bg-purple-100 text-purple-700 border-2 border-purple-300"
-                            : "bg-white/50 text-slate-600 border border-slate-200 hover:border-purple-200 hover:bg-purple-50"
-                        )}
-                      >
-                        <span>{lang.flag}</span>
-                        <span>{lang.label}</span>
-                        {isSelected && <Check className="w-3 h-3 ml-1" />}
-                      </button>
-                    )
-                  })}
-                </div>
-                <p className="text-xs text-slate-500">至少選擇一種語言</p>
-              </div>
-            </div>
-
-            <Button
-              onClick={handleGenerate}
-              disabled={!formData.productInfo.name || generateMutation.isPending}
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg shadow-purple-500/20"
-              size="lg"
+            <HoloCard
+              glowColor="cyan"
+              className={cn(
+                "lg:max-h-[calc(100vh-200px)] lg:overflow-y-auto",
+                mobileSubTab !== 'input' && "hidden lg:block"
+              )}
             >
-              {generateMutation.isPending ? (
-                <>
-                  <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
-                  AI 思考中...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-5 h-5 mr-2" />
-                  立即生成
-                </>
-              )}
-            </Button>
-          </div>
+              <div className="p-6 space-y-6">
+                <HoloPanelHeader
+                  title="輸入商品資訊"
+                  icon={<Bot className="w-5 h-5" />}
+                />
 
-          {/* 中間：生成結果 - 手機版按 tab 顯示 */}
-          <div className={cn(
-            "glass-panel p-6 rounded-xl border border-white/40 lg:max-h-[calc(100vh-200px)] lg:overflow-y-auto",
-            mobileSubTab !== 'result' && "hidden lg:block"
-          )}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">生成結果</h2>
-              {generatedContent && (
-                <Badge variant="outline" className="text-green-600 bg-green-50 border-green-200">
-                  <Check className="w-3 h-3 mr-1" /> 生成成功
-                </Badge>
-              )}
-            </div>
+                <div className="space-y-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="name">商品名稱 <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="name"
+                      value={formData.productInfo.name}
+                      onChange={(e) => setFormData({ ...formData, productInfo: { ...formData.productInfo, name: e.target.value } })}
+                      placeholder="例如：天然維他命C 1000mg"
+                      className="bg-white/50"
+                    />
+                  </div>
 
-            {generateMutation.isError && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 text-red-700 flex items-center">
-                <AlertCircle className="w-5 h-5 mr-2" />
-                生成失敗，請稍後再試
-              </div>
-            )}
+                  <div className="grid gap-2">
+                    <Label htmlFor="brand">品牌</Label>
+                    <Input
+                      id="brand"
+                      value={formData.productInfo.brand}
+                      onChange={(e) => setFormData({ ...formData, productInfo: { ...formData.productInfo, brand: e.target.value } })}
+                      placeholder="例如：YourBrand"
+                      className="bg-white/50"
+                    />
+                  </div>
 
-            {!generatedContent && !generateMutation.isPending && (
-              <div className="flex flex-col items-center justify-center h-[300px] text-gray-400">
-                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                  <Sparkles className="w-8 h-8 text-slate-300" />
-                </div>
-                <p className="text-sm text-center">在左側填寫資訊後<br />AI 將為您生成文案</p>
-              </div>
-            )}
+                  <div className="grid gap-2">
+                    <Label htmlFor="features">商品特點（每行一個）</Label>
+                    <Textarea
+                      id="features"
+                      value={featuresInput}
+                      onChange={(e) => setFeaturesInput(e.target.value)}
+                      rows={4}
+                      placeholder="1000mg 高劑量&#10;美國進口&#10;60粒裝"
+                      className="bg-white/50 min-h-[100px]"
+                    />
+                  </div>
 
-            {generateMutation.isPending && (
-              <div className="flex flex-col items-center justify-center h-[300px]">
-                <div className="relative w-20 h-20 mb-4">
-                  <div className="absolute inset-0 bg-purple-200 rounded-full animate-ping opacity-20" />
-                  <div className="relative w-20 h-20 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center">
-                    <Sparkles className="w-10 h-10 text-purple-500 animate-pulse" />
+                  <div className="grid gap-2">
+                    <Label htmlFor="audience">目標受眾</Label>
+                    <Input
+                      id="audience"
+                      value={formData.productInfo.target_audience}
+                      onChange={(e) => setFormData({ ...formData, productInfo: { ...formData.productInfo, target_audience: e.target.value } })}
+                      placeholder="例如：注重健康的成年人"
+                      className="bg-white/50"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label>內容類型</Label>
+                      <Select
+                        value={formData.contentType}
+                        onValueChange={(val) => setFormData({ ...formData, contentType: val as ContentGenerateRequest['content_type'] })}
+                      >
+                        <SelectTrigger className="bg-white/50">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CONTENT_TYPES.map((type) => (
+                            <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label>文案風格</Label>
+                      <Select
+                        value={formData.style}
+                        onValueChange={(val) => setFormData({ ...formData, style: val as ContentGenerateRequest['style'] })}
+                      >
+                        <SelectTrigger className="bg-white/50">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {STYLES.map((style) => (
+                            <SelectItem key={style.value} value={style.value}>{style.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* 語言選擇 */}
+                  <div className="grid gap-2">
+                    <Label>輸出語言（可多選）</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {LANGUAGES.map((lang) => {
+                        const isSelected = selectedLanguages.includes(lang.value)
+                        return (
+                          <button
+                            key={lang.value}
+                            type="button"
+                            onClick={() => {
+                              if (isSelected && selectedLanguages.length > 1) {
+                                setSelectedLanguages(selectedLanguages.filter(l => l !== lang.value))
+                              } else if (!isSelected) {
+                                setSelectedLanguages([...selectedLanguages, lang.value])
+                              }
+                            }}
+                            className={cn(
+                              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                              isSelected
+                                ? "bg-cyan-100 text-cyan-700 border-2 border-cyan-300"
+                                : "bg-white/50 text-slate-600 border border-slate-200 hover:border-cyan-200 hover:bg-cyan-50"
+                            )}
+                          >
+                            <span>{lang.flag}</span>
+                            <span>{lang.label}</span>
+                            {isSelected && <Check className="w-3 h-3 ml-1" />}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <p className="text-xs text-slate-500">至少選擇一種語言</p>
                   </div>
                 </div>
-                <h3 className="text-base font-medium text-gray-900">AI 正在創作中...</h3>
-                <p className="text-gray-500 mt-1 text-sm">正在分析商品特點與市場趨勢</p>
-              </div>
-            )}
 
-            {generatedContent && !generateMutation.isPending && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                {/* 版本指示器 */}
-                {currentVersion > 1 && (
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <Badge variant="secondary" className="text-xs">
-                      v{currentVersion}
-                    </Badge>
-                    <span>已優化 {currentVersion - 1} 次</span>
+                <HoloButton
+                  onClick={handleGenerate}
+                  disabled={!formData.productInfo.name}
+                  loading={generateMutation.isPending}
+                  icon={generateMutation.isPending ? undefined : <Sparkles className="w-5 h-5" />}
+                  size="lg"
+                  className="w-full"
+                >
+                  {generateMutation.isPending ? 'AI 思考中...' : '立即生成'}
+                </HoloButton>
+              </div>
+            </HoloCard>
+
+            {/* 中間：生成結果 - 手機版按 tab 顯示 */}
+            <HoloCard
+              glowColor="purple"
+              className={cn(
+                "lg:max-h-[calc(100vh-200px)] lg:overflow-y-auto",
+                mobileSubTab !== 'result' && "hidden lg:block"
+              )}
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">生成結果</h2>
+                  {generatedContent && (
+                    <HoloBadge variant="success">
+                      <Check className="w-3 h-3 mr-1" /> 生成成功
+                    </HoloBadge>
+                  )}
+                </div>
+
+                {generateMutation.isError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 text-red-700 flex items-center">
+                    <AlertCircle className="w-5 h-5 mr-2" />
+                    生成失敗，請稍後再試
                   </div>
                 )}
 
-                {/* 多語言內容顯示 */}
-                {generatedContent.multilang ? (
-                  <div className="space-y-4">
-                    {Object.entries(generatedContent.multilang).map(([langCode, langContent]) => {
-                      const langInfo = LANGUAGES.find(l => l.value === langCode)
-                      const langLabel = langInfo ? `${langInfo.flag} ${langInfo.label}` : langCode
-                      return (
-                        <div key={langCode} className="border border-slate-200 rounded-lg overflow-hidden">
-                          <div className="bg-slate-50 px-3 py-1.5 border-b border-slate-200">
-                            <span className="font-medium text-slate-700 text-sm">{langLabel}</span>
-                          </div>
-                          <div className="p-3 space-y-3">
-                            {langContent.title && (
-                              <ContentBlock
-                                label="標題"
-                                content={langContent.title}
-                                onCopy={() => handleCopy(langContent.title!, `title-${langCode}`)}
-                                isCopied={copiedField === `title-${langCode}`}
-                              />
-                            )}
-                            {langContent.selling_points && langContent.selling_points.length > 0 && (
-                              <ContentBlock
-                                label="賣點"
-                                content={langContent.selling_points.join('\n')}
-                                onCopy={() => handleCopy(langContent.selling_points!.join('\n'), `points-${langCode}`)}
-                                isCopied={copiedField === `points-${langCode}`}
-                                isList
-                                listItems={langContent.selling_points}
-                              />
-                            )}
-                            {langContent.description && (
-                              <ContentBlock
-                                label="描述"
-                                content={langContent.description}
-                                onCopy={() => handleCopy(langContent.description!, `desc-${langCode}`)}
-                                isCopied={copiedField === `desc-${langCode}`}
-                              />
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
+                {!generatedContent && !generateMutation.isPending && (
+                  <div className="flex flex-col items-center justify-center h-[300px] text-gray-400">
+                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                      <Sparkles className="w-8 h-8 text-slate-300" />
+                    </div>
+                    <p className="text-sm text-center">在左側填寫資訊後<br />AI 將為您生成文案</p>
                   </div>
-                ) : (
-                  <>
-                    {generatedContent.title && (
-                      <ContentBlock
-                        label="商品標題"
-                        content={generatedContent.title}
-                        onCopy={() => handleCopy(generatedContent.title!, 'title')}
-                        isCopied={copiedField === 'title'}
-                      />
+                )}
+
+                {generateMutation.isPending && (
+                  <div className="flex flex-col items-center justify-center h-[300px]">
+                    <div className="relative w-20 h-20 mb-4">
+                      <div className="absolute inset-0 bg-cyan-200 rounded-full animate-ping opacity-20" />
+                      <div className="relative w-20 h-20 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-full flex items-center justify-center">
+                        <Sparkles className="w-10 h-10 text-cyan-500 animate-pulse" />
+                      </div>
+                    </div>
+                    <h3 className="text-base font-medium text-gray-900">AI 正在創作中...</h3>
+                    <p className="text-gray-500 mt-1 text-sm">正在分析商品特點與市場趨勢</p>
+                  </div>
+                )}
+
+                {generatedContent && !generateMutation.isPending && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {/* 版本指示器 */}
+                    {currentVersion > 1 && (
+                      <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <HoloBadge variant="default" size="sm">
+                          v{currentVersion}
+                        </HoloBadge>
+                        <span>已優化 {currentVersion - 1} 次</span>
+                      </div>
                     )}
 
-                    {generatedContent.selling_points && generatedContent.selling_points.length > 0 && (
-                      <ContentBlock
-                        label="賣點列表"
-                        content={generatedContent.selling_points.join('\n')}
-                        onCopy={() => handleCopy(generatedContent.selling_points!.join('\n'), 'selling_points')}
-                        isCopied={copiedField === 'selling_points'}
-                        isList
-                        listItems={generatedContent.selling_points}
-                      />
-                    )}
+                    {/* 多語言內容顯示 */}
+                    {generatedContent.multilang ? (
+                      <div className="space-y-4">
+                        {Object.entries(generatedContent.multilang).map(([langCode, langContent]) => {
+                          const langInfo = LANGUAGES.find(l => l.value === langCode)
+                          const langLabel = langInfo ? `${langInfo.flag} ${langInfo.label}` : langCode
+                          return (
+                            <div key={langCode} className="border border-slate-200 rounded-lg overflow-hidden">
+                              <div className="bg-slate-50 px-3 py-1.5 border-b border-slate-200">
+                                <span className="font-medium text-slate-700 text-sm">{langLabel}</span>
+                              </div>
+                              <div className="p-3 space-y-3">
+                                {langContent.title && (
+                                  <ContentBlock
+                                    label="標題"
+                                    content={langContent.title}
+                                    onCopy={() => handleCopy(langContent.title!, `title-${langCode}`)}
+                                    isCopied={copiedField === `title-${langCode}`}
+                                  />
+                                )}
+                                {langContent.selling_points && langContent.selling_points.length > 0 && (
+                                  <ContentBlock
+                                    label="賣點"
+                                    content={langContent.selling_points.join('\n')}
+                                    onCopy={() => handleCopy(langContent.selling_points!.join('\n'), `points-${langCode}`)}
+                                    isCopied={copiedField === `points-${langCode}`}
+                                    isList
+                                    listItems={langContent.selling_points}
+                                  />
+                                )}
+                                {langContent.description && (
+                                  <ContentBlock
+                                    label="描述"
+                                    content={langContent.description}
+                                    onCopy={() => handleCopy(langContent.description!, `desc-${langCode}`)}
+                                    isCopied={copiedField === `desc-${langCode}`}
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <>
+                        {generatedContent.title && (
+                          <ContentBlock
+                            label="商品標題"
+                            content={generatedContent.title}
+                            onCopy={() => handleCopy(generatedContent.title!, 'title')}
+                            isCopied={copiedField === 'title'}
+                          />
+                        )}
 
-                    {generatedContent.description && (
-                      <ContentBlock
-                        label="商品描述"
-                        content={generatedContent.description}
-                        onCopy={() => handleCopy(generatedContent.description!, 'description')}
-                        isCopied={copiedField === 'description'}
-                      />
+                        {generatedContent.selling_points && generatedContent.selling_points.length > 0 && (
+                          <ContentBlock
+                            label="賣點列表"
+                            content={generatedContent.selling_points.join('\n')}
+                            onCopy={() => handleCopy(generatedContent.selling_points!.join('\n'), 'selling_points')}
+                            isCopied={copiedField === 'selling_points'}
+                            isList
+                            listItems={generatedContent.selling_points}
+                          />
+                        )}
+
+                        {generatedContent.description && (
+                          <ContentBlock
+                            label="商品描述"
+                            content={generatedContent.description}
+                            onCopy={() => handleCopy(generatedContent.description!, 'description')}
+                            isCopied={copiedField === 'description'}
+                          />
+                        )}
+                      </>
                     )}
-                  </>
+                  </div>
                 )}
               </div>
-            )}
-          </div>
+            </HoloCard>
 
-          {/* 右側：對話優化區 - 手機版按 tab 顯示 */}
-          <div className={cn(
-            "glass-panel p-6 rounded-xl border border-white/40 lg:max-h-[calc(100vh-200px)] lg:overflow-y-auto",
-            mobileSubTab !== 'optimize' && "hidden lg:block"
-          )}>
-            <div className="flex items-center gap-2 mb-4">
-              <Wand2 className="w-5 h-5 text-purple-500" />
-              <h2 className="text-lg font-semibold text-gray-900">對話優化</h2>
-            </div>
+            {/* 右側：對話優化區 - 手機版按 tab 顯示 */}
+            <HoloCard
+              glowColor="blue"
+              className={cn(
+                "lg:max-h-[calc(100vh-200px)] lg:overflow-y-auto",
+                mobileSubTab !== 'optimize' && "hidden lg:block"
+              )}
+            >
+              <div className="p-6">
+                <HoloPanelHeader
+                  title="對話優化"
+                  icon={<Wand2 className="w-5 h-5" />}
+                />
 
-            {!generatedContent && !generateMutation.isPending && (
-              <div className="flex flex-col items-center justify-center h-[300px] text-gray-400">
-                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                  <Wand2 className="w-8 h-8 text-slate-300" />
-                </div>
-                <p className="text-sm text-center">生成文案後<br />可在此進行對話優化</p>
+                {!generatedContent && !generateMutation.isPending && (
+                  <div className="flex flex-col items-center justify-center h-[300px] text-gray-400">
+                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                      <Wand2 className="w-8 h-8 text-slate-300" />
+                    </div>
+                    <p className="text-sm text-center">生成文案後<br />可在此進行對話優化</p>
+                  </div>
+                )}
+
+                {generateMutation.isPending && (
+                  <div className="flex flex-col items-center justify-center h-[300px] text-gray-400">
+                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                      <RefreshCw className="w-8 h-8 text-slate-300 animate-spin" />
+                    </div>
+                    <p className="text-sm text-center">等待文案生成中...</p>
+                  </div>
+                )}
+
+                {generatedContent && !generateMutation.isPending && currentContentId && (
+                  <ContentOptimizeChat
+                    contentId={currentContentId}
+                    initialContent={generatedContent}
+                    onContentUpdate={handleContentUpdate}
+                    selectedLanguages={selectedLanguages}
+                    className=""
+                  />
+                )}
               </div>
-            )}
-
-            {generateMutation.isPending && (
-              <div className="flex flex-col items-center justify-center h-[300px] text-gray-400">
-                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                  <RefreshCw className="w-8 h-8 text-slate-300 animate-spin" />
-                </div>
-                <p className="text-sm text-center">等待文案生成中...</p>
-              </div>
-            )}
-
-            {generatedContent && !generateMutation.isPending && currentContentId && (
-              <ContentOptimizeChat
-                contentId={currentContentId}
-                initialContent={generatedContent}
-                onContentUpdate={handleContentUpdate}
-                selectedLanguages={selectedLanguages}
-                className=""
-              />
-            )}
+            </HoloCard>
           </div>
-        </div>
         </>
       )}
 
       {/* 歷史記錄標籤內容 */}
       {activeTab === 'history' && (
-        <div className="glass-panel rounded-xl border border-white/40 overflow-hidden">
+        <HoloCard glowColor="cyan" className="overflow-hidden">
           {historyLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <RefreshCw className="w-8 h-8 animate-spin text-purple-500" />
+            <div className="p-6 space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex items-start gap-4">
+                  <HoloSkeleton variant="rectangular" width={40} height={40} className="rounded-lg" />
+                  <div className="flex-1 space-y-2">
+                    <HoloSkeleton variant="text" width="60%" />
+                    <HoloSkeleton variant="text" width="40%" />
+                    <HoloSkeleton variant="rectangular" height={60} />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="divide-y divide-slate-100">
@@ -587,9 +611,9 @@ export default function AIContentPage() {
               )}
             </div>
           )}
-        </div>
+        </HoloCard>
       )}
-    </div>
+    </PageTransition>
   )
 }
 
@@ -617,7 +641,7 @@ function ContentBlock({
           variant="ghost"
           size="sm"
           onClick={onCopy}
-          className="h-6 px-2 text-slate-400 hover:text-purple-600"
+          className="h-6 px-2 text-slate-400 hover:text-cyan-600"
         >
           {isCopied ? (
             <>
@@ -637,7 +661,7 @@ function ContentBlock({
           <ul className="space-y-2">
             {listItems.map((item, index) => (
               <li key={index} className="flex items-start">
-                <ChevronRight className="w-4 h-4 mr-2 mt-0.5 text-purple-400 flex-shrink-0" />
+                <ChevronRight className="w-4 h-4 mr-2 mt-0.5 text-cyan-400 flex-shrink-0" />
                 <span>{item}</span>
               </li>
             ))}
@@ -664,20 +688,20 @@ function HistoryItem({
   const Icon = contentType?.icon || FileText
 
   return (
-    <div className="px-6 py-4 hover:bg-purple-50/30 transition-colors group">
+    <div className="px-6 py-4 hover:bg-cyan-50/30 transition-colors group">
       <div className="flex items-start justify-between">
         <div className="flex items-start space-x-4">
-          <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-purple-200 transition-colors">
-            <Icon className="w-5 h-5 text-purple-600" />
+          <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-cyan-200 transition-colors">
+            <Icon className="w-5 h-5 text-cyan-600" />
           </div>
           <div>
             <h3 className="text-sm font-bold text-gray-900">
               {item.product_name || '未關聯商品'}
             </h3>
             <div className="flex items-center gap-2 mt-1">
-              <Badge variant="secondary" className="text-xs font-normal">
+              <HoloBadge variant="default" size="sm">
                 {contentType?.label || item.content_type}
-              </Badge>
+              </HoloBadge>
               <span className="text-xs text-slate-400">
                 {new Date(item.generated_at).toLocaleString('zh-HK')}
               </span>
@@ -692,28 +716,24 @@ function HistoryItem({
 
         <div className="flex items-center space-x-2">
           {item.status === 'approved' ? (
-            <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200">
+            <HoloBadge variant="success">
               已審批
-            </Badge>
+            </HoloBadge>
           ) : item.status === 'rejected' ? (
-            <Badge variant="destructive" className="bg-red-100 text-red-700 hover:bg-red-100 border-red-200">
+            <HoloBadge variant="error">
               已拒絕
-            </Badge>
+            </HoloBadge>
           ) : (
-            <Button
+            <HoloButton
               size="sm"
+              variant="secondary"
               onClick={onApprove}
               disabled={isApproving}
-              className="bg-white border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800 hover:border-green-300"
-              variant="outline"
+              loading={isApproving}
+              icon={!isApproving ? <Check className="w-3 h-3" /> : undefined}
             >
-              {isApproving ? (
-                <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
-              ) : (
-                <Check className="w-3 h-3 mr-1" />
-              )}
               批准
-            </Button>
+            </HoloButton>
           )}
         </div>
       </div>

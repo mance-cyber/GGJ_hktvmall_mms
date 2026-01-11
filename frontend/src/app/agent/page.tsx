@@ -36,6 +36,7 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import { PageTransition } from '@/components/ui/future-tech'
 import {
   LineChart,
   Line,
@@ -664,7 +665,7 @@ export default function AgentPage() {
   const conversations: Conversation[] = historyData?.conversations || []
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] bg-slate-50 overflow-hidden">
+    <PageTransition className="flex h-[calc(100vh-4rem)] bg-slate-50 overflow-hidden">
       {/* Desktop Sidebar */}
       <div className="hidden md:flex w-72 flex-col border-r bg-white shadow-sm z-10">
         <ConversationList
@@ -986,6 +987,6 @@ export default function AgentPage() {
           </div>
         </div>
       </div>
-    </div>
+    </PageTransition>
   )
 }

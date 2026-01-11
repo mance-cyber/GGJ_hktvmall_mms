@@ -36,9 +36,7 @@ import {
   Upload,
   FileSpreadsheet
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
   DialogContent,
@@ -58,6 +56,21 @@ import { cn } from '@/lib/utils'
 import { BulkImportDialog, ImportRow } from '@/components/bulk-import-dialog'
 
 // =============================================
+// Future Tech 設計系統組件導入
+// =============================================
+import {
+  PageTransition,
+  HoloCard,
+  HoloPanelHeader,
+  HoloButton,
+  HoloBadge,
+  DataMetric,
+  PulseStatus,
+  HoloSkeleton,
+  StaggerContainer,
+} from '@/components/ui/future-tech'
+
+// =============================================
 // 類型定義
 // =============================================
 
@@ -72,13 +85,13 @@ export default function CompetitorDetailPage() {
   const params = useParams()
   const competitorId = params.id as string
   const queryClient = useQueryClient()
-  
+
   // 分頁和搜索
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const pageSize = 20
-  
+
   // UI 狀態
   const [showAddForm, setShowAddForm] = useState(false)
   const [showBulkImport, setShowBulkImport] = useState(false)
@@ -90,7 +103,7 @@ export default function CompetitorDetailPage() {
   const [stockFilter, setStockFilter] = useState<string | undefined>(undefined)
 
   // ========== 數據查詢 ==========
-  
+
   const { data: competitor, isLoading: competitorLoading } = useQuery({
     queryKey: ['competitor', competitorId],
     queryFn: () => api.getCompetitor(competitorId),
@@ -108,17 +121,17 @@ export default function CompetitorDetailPage() {
   })
 
   // ========== 排序和過濾 ==========
-  
+
   const sortedProducts = useMemo(() => {
     if (!products?.data) return []
-    
+
     let filtered = [...products.data]
-    
+
     // 庫存過濾
     if (stockFilter) {
       filtered = filtered.filter(p => p.stock_status === stockFilter)
     }
-    
+
     // 排序
     filtered.sort((a, b) => {
       let comparison = 0
@@ -138,12 +151,12 @@ export default function CompetitorDetailPage() {
       }
       return sortOrder === 'asc' ? comparison : -comparison
     })
-    
+
     return filtered
   }, [products?.data, sortField, sortOrder, stockFilter])
 
   // ========== Mutations ==========
-  
+
   const addProductMutation = useMutation({
     mutationFn: (data: CompetitorProductCreate) => api.addCompetitorProduct(competitorId, data),
     onSuccess: () => {
@@ -181,7 +194,7 @@ export default function CompetitorDetailPage() {
       setIsImporting(false)
     }
   }
-  
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     setSearch(searchInput)
@@ -216,7 +229,7 @@ export default function CompetitorDetailPage() {
   }
 
   // ========== 計算 ==========
-  
+
   const totalPages = products ? Math.ceil(products.total / pageSize) : 0
   const isLoading = competitorLoading || productsLoading
 
@@ -231,139 +244,160 @@ export default function CompetitorDetailPage() {
   }, [products?.data])
 
   // ========== 渲染 ==========
-  
+
+  // Loading 狀態 - 使用 HoloSkeleton
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="relative">
-          <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full animate-pulse" />
-          <RefreshCw className="relative w-12 h-12 animate-spin text-primary" />
+      <PageTransition>
+        <div className="space-y-6">
+          {/* 頂部骨架 */}
+          <div className="space-y-4">
+            <HoloSkeleton width={120} height={20} />
+            <HoloSkeleton width="60%" height={36} />
+            <div className="flex gap-2">
+              <HoloSkeleton width={80} height={24} />
+              <HoloSkeleton width={120} height={24} />
+            </div>
+          </div>
+
+          {/* 統計卡片骨架 */}
+          <div className="grid grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <HoloSkeleton key={i} height={100} className="rounded-xl" />
+            ))}
+          </div>
+
+          {/* 主內容骨架 */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+              <HoloSkeleton height={44} className="rounded-xl" />
+              <HoloSkeleton height={400} className="rounded-xl" />
+            </div>
+            <div className="lg:col-span-1">
+              <HoloSkeleton height={500} className="rounded-xl" />
+            </div>
+          </div>
         </div>
-      </div>
+      </PageTransition>
     )
   }
 
   if (error) {
     return (
-      <div className="glass-panel border-destructive/20 bg-destructive/5 p-6 rounded-xl flex items-center text-destructive">
-        <AlertCircle className="w-5 h-5 mr-3" />
-        <span className="font-medium">無法載入商品列表，請稍後再試。</span>
-      </div>
+      <PageTransition>
+        <HoloCard glowColor="purple" className="border-red-200/50 bg-red-50/50 p-6">
+          <div className="flex items-center text-red-600">
+            <AlertCircle className="w-5 h-5 mr-3" />
+            <span className="font-medium">無法載入商品列表，請稍後再試。</span>
+          </div>
+        </HoloCard>
+      </PageTransition>
     )
   }
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <PageTransition className="space-y-6">
       {/* ========== 頂部導航與標題 ========== */}
       <div className="space-y-4">
         <Link
           href="/competitors"
-          className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors group"
+          className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-cyan-600 transition-colors group"
         >
-          <div className="p-1 rounded-full bg-slate-100 group-hover:bg-blue-50 mr-2 transition-colors">
-            <ArrowLeft className="w-4 h-4" />
+          <div className="p-1.5 rounded-lg bg-slate-100 group-hover:bg-cyan-50 mr-2 transition-all group-hover:shadow-md group-hover:shadow-cyan-200/50">
+            <ArrowLeft className="w-4 h-4 group-hover:text-cyan-600 transition-colors" />
           </div>
           返回競品列表
         </Link>
-        
+
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
               {competitor?.name}
             </h1>
             <div className="flex items-center space-x-3 mt-2">
-              <Badge variant="secondary" className="font-normal text-slate-600">
+              <HoloBadge variant="info">
                 {competitor?.platform}
-              </Badge>
+              </HoloBadge>
               <span className="text-slate-300">|</span>
               <span className="text-muted-foreground flex items-center">
-                <Package className="w-4 h-4 mr-1" />
+                <Package className="w-4 h-4 mr-1 text-cyan-500" />
                 {products?.total || 0} 個監測商品
               </span>
               {competitor?.last_scraped_at && (
                 <>
                   <span className="text-slate-300">|</span>
                   <span className="text-muted-foreground flex items-center text-sm">
-                    <Clock className="w-3.5 h-3.5 mr-1" />
+                    <Clock className="w-3.5 h-3.5 mr-1 text-cyan-500" />
                     最後更新: {new Date(competitor.last_scraped_at).toLocaleString('zh-HK')}
                   </span>
                 </>
               )}
             </div>
           </div>
-          
+
           <div className="flex space-x-3">
-            <Button
-              variant="outline"
+            <HoloButton
+              variant="secondary"
               onClick={() => scrapeMutation.mutate()}
-              disabled={scrapeMutation.isPending}
-              className={cn(
-                "transition-all",
-                scrapeMutation.isPending && "bg-blue-50"
-              )}
+              loading={scrapeMutation.isPending}
+              icon={scrapeMutation.isPending ? undefined : <Zap className="w-4 h-4 text-amber-500" />}
             >
-              {scrapeMutation.isPending ? (
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Zap className="w-4 h-4 mr-2 text-yellow-500" />
-              )}
               立即抓取
-            </Button>
-            <Button
-              variant="outline"
+            </HoloButton>
+            <HoloButton
+              variant="ghost"
               onClick={() => refetch()}
-              className="glass-card hover:bg-white/60"
+              icon={<RefreshCw className="w-4 h-4" />}
             >
-              <RefreshCw className="w-4 h-4 mr-2" />
               刷新
-            </Button>
-            <Button
-              variant="outline"
+            </HoloButton>
+            <HoloButton
+              variant="secondary"
               onClick={() => setShowBulkImport(true)}
-              className="border-green-200 text-green-700 hover:bg-green-50"
+              icon={<FileSpreadsheet className="w-4 h-4 text-emerald-500" />}
+              className="border-emerald-200 hover:border-emerald-300"
             >
-              <FileSpreadsheet className="w-4 h-4 mr-2" />
               批量導入
-            </Button>
-            <Button
+            </HoloButton>
+            <HoloButton
+              variant="primary"
               onClick={() => setShowAddForm(true)}
-              className="bg-primary hover:bg-primary/90 shadow-lg shadow-blue-500/20"
+              icon={<Plus className="w-4 h-4" />}
             >
-              <Plus className="w-4 h-4 mr-2" />
               新增商品
-            </Button>
+            </HoloButton>
           </div>
         </div>
       </div>
 
-      {/* ========== 統計卡片 ========== */}
+      {/* ========== 統計卡片 - 使用 DataMetric ========== */}
       {stats && (
-        <div className="grid grid-cols-4 gap-4">
-          <StatCard 
-            label="有貨商品" 
-            value={stats.inStock} 
-            icon={Package}
+        <StaggerContainer className="grid grid-cols-4 gap-4" staggerDelay={0.08}>
+          <DataMetric
+            label="有貨商品"
+            value={stats.inStock}
+            icon={<Package className="w-5 h-5 text-emerald-500" />}
             color="green"
           />
-          <StatCard 
-            label="缺貨商品" 
-            value={stats.outOfStock} 
-            icon={Package}
-            color="red"
+          <DataMetric
+            label="缺貨商品"
+            value={stats.outOfStock}
+            icon={<Package className="w-5 h-5 text-amber-500" />}
+            color="orange"
           />
-          <StatCard 
-            label="價格上漲" 
-            value={stats.priceUp} 
-            icon={TrendingUp}
-            color="red"
+          <DataMetric
+            label="價格上漲"
+            value={stats.priceUp}
+            icon={<TrendingUp className="w-5 h-5 text-red-500" />}
+            color="purple"
           />
-          <StatCard 
-            label="價格下跌" 
-            value={stats.priceDown} 
-            icon={TrendingDown}
-            color="green"
+          <DataMetric
+            label="價格下跌"
+            value={stats.priceDown}
+            icon={<TrendingDown className="w-5 h-5 text-emerald-500" />}
+            color="cyan"
           />
-        </div>
+        </StaggerContainer>
       )}
 
       {/* ========== 主要內容區域 ========== */}
@@ -379,20 +413,21 @@ export default function CompetitorDetailPage() {
                 placeholder="搜索商品名稱、分類..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="pl-10 bg-white/50 border-white/40"
+                className="pl-10 bg-white/70 backdrop-blur-sm border-slate-200/80 focus:border-cyan-300 focus:ring-cyan-200/50 transition-all"
               />
             </form>
-            
+
             {/* 庫存過濾 */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-10">
-                  <Filter className="w-4 h-4 mr-2" />
-                  {stockFilter === 'in_stock' ? '有貨' : 
-                   stockFilter === 'out_of_stock' ? '缺貨' : '全部'}
-                </Button>
+                <div>
+                  <HoloButton variant="secondary" size="sm" icon={<Filter className="w-4 h-4" />}>
+                    {stockFilter === 'in_stock' ? '有貨' :
+                     stockFilter === 'out_of_stock' ? '缺貨' : '全部'}
+                  </HoloButton>
+                </div>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="bg-white/95 backdrop-blur-xl border-slate-200/80">
                 <DropdownMenuItem onClick={() => setStockFilter(undefined)}>
                   全部
                 </DropdownMenuItem>
@@ -408,12 +443,17 @@ export default function CompetitorDetailPage() {
             {/* 排序 */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-10">
-                  {sortOrder === 'asc' ? <SortAsc className="w-4 h-4 mr-2" /> : <SortDesc className="w-4 h-4 mr-2" />}
-                  排序
-                </Button>
+                <div>
+                  <HoloButton
+                    variant="secondary"
+                    size="sm"
+                    icon={sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                  >
+                    排序
+                  </HoloButton>
+                </div>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="bg-white/95 backdrop-blur-xl border-slate-200/80">
                 <DropdownMenuItem onClick={() => handleSort('name')}>
                   名稱 {sortField === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
                 </DropdownMenuItem>
@@ -437,34 +477,38 @@ export default function CompetitorDetailPage() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="flex items-center justify-between bg-blue-50 rounded-lg px-4 py-2 border border-blue-200"
+                className="flex items-center justify-between bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl px-4 py-3 border border-cyan-200/60 shadow-sm"
               >
-                <span className="text-sm text-blue-700">
+                <span className="text-sm font-medium text-cyan-700">
                   已選擇 {selectedProducts.size} 個商品
                 </span>
                 <div className="flex items-center space-x-2">
-                  <Button size="sm" variant="ghost" onClick={() => setSelectedProducts(new Set())}>
+                  <HoloButton size="sm" variant="ghost" onClick={() => setSelectedProducts(new Set())}>
                     取消選擇
-                  </Button>
-                  <Button size="sm" variant="destructive" className="h-8">
-                    <Trash2 className="w-3.5 h-3.5 mr-1" />
+                  </HoloButton>
+                  <HoloButton
+                    size="sm"
+                    variant="secondary"
+                    className="border-red-200 text-red-600 hover:bg-red-50"
+                    icon={<Trash2 className="w-3.5 h-3.5" />}
+                  >
                     刪除
-                  </Button>
+                  </HoloButton>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* 商品列表 */}
-          <div className="glass-panel rounded-xl overflow-hidden border border-white/40">
+          {/* 商品列表 - 使用 HoloCard */}
+          <HoloCard glowColor="cyan" className="overflow-hidden">
             {/* 列表頭部 */}
-            <div className="px-4 py-2 bg-slate-50/80 border-b border-slate-100 flex items-center">
-              <button 
+            <div className="px-4 py-3 bg-gradient-to-r from-slate-50/80 to-white/80 border-b border-slate-100/80 flex items-center">
+              <button
                 onClick={toggleSelectAll}
-                className="p-1 hover:bg-slate-200 rounded mr-3"
+                className="p-1.5 hover:bg-cyan-100 rounded-lg mr-3 transition-colors"
               >
                 {selectedProducts.size === sortedProducts.length && sortedProducts.length > 0 ? (
-                  <CheckSquare className="w-4 h-4 text-blue-600" />
+                  <CheckSquare className="w-4 h-4 text-cyan-600" />
                 ) : (
                   <Square className="w-4 h-4 text-slate-400" />
                 )}
@@ -473,7 +517,7 @@ export default function CompetitorDetailPage() {
                 {sortedProducts.length} 個商品
               </span>
             </div>
-            
+
             <div className="divide-y divide-slate-100/80 max-h-[600px] overflow-y-auto">
               <AnimatePresence>
                 {sortedProducts.map((product, index) => (
@@ -481,7 +525,7 @@ export default function CompetitorDetailPage() {
                     key={product.id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.03 }}
+                    transition={{ delay: index * 0.03, duration: 0.3 }}
                   >
                     <ProductRow
                       product={product}
@@ -498,14 +542,14 @@ export default function CompetitorDetailPage() {
             {/* 空狀態 */}
             {sortedProducts.length === 0 && (
               <div className="px-6 py-16 text-center">
-                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Package className="w-8 h-8 text-slate-300" />
+                <div className="w-16 h-16 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-cyan-100/50">
+                  <Package className="w-8 h-8 text-cyan-400" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900">尚無監測商品</h3>
                 <p className="text-muted-foreground mt-1">點擊右上角「新增商品」開始監測</p>
               </div>
             )}
-          </div>
+          </HoloCard>
 
           {/* 分頁 */}
           {totalPages > 1 && (
@@ -514,44 +558,42 @@ export default function CompetitorDetailPage() {
                 第 {page} / {totalPages} 頁
               </div>
               <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="icon"
+                <HoloButton
+                  variant="secondary"
+                  size="sm"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1}
-                  className="bg-white/50"
+                  icon={<ChevronLeft className="w-4 h-4" />}
                 >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
+                  上一頁
+                </HoloButton>
+                <HoloButton
+                  variant="secondary"
+                  size="sm"
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
-                  className="bg-white/50"
+                  icon={<ChevronRight className="w-4 h-4" />}
                 >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
+                  下一頁
+                </HoloButton>
               </div>
             </div>
           )}
         </div>
 
-        {/* ========== 右側：價格歷史側邊欄 ========== */}
+        {/* ========== 右側：價格歷史側邊欄 - 使用 HoloCard ========== */}
         <div className="lg:col-span-1">
-          <div className="glass-panel rounded-xl sticky top-6 overflow-hidden border border-white/40 shadow-xl shadow-blue-500/5">
-            <div className="p-4 bg-gradient-to-r from-slate-50 to-white border-b border-slate-100">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                <LineChart className="w-5 h-5 mr-2 text-primary" />
-                價格走勢分析
-              </h2>
-            </div>
+          <HoloCard glowColor="blue" className="sticky top-6 overflow-hidden">
+            <HoloPanelHeader
+              title="價格走勢分析"
+              icon={<LineChart className="w-5 h-5" />}
+            />
 
             <div className="p-6">
               {!selectedProductId ? (
                 <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                    <LineChart className="w-8 h-8 text-blue-300" />
+                  <div className="w-16 h-16 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-cyan-100/50 animate-pulse">
+                    <LineChart className="w-8 h-8 text-cyan-400" />
                   </div>
                   <h3 className="text-base font-medium text-gray-900">尚未選擇商品</h3>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -559,12 +601,20 @@ export default function CompetitorDetailPage() {
                   </p>
                 </div>
               ) : historyLoading ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <RefreshCw className="w-8 h-8 animate-spin text-primary mb-3" />
+                <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-cyan-500/20 blur-xl rounded-full animate-pulse" />
+                    <RefreshCw className="relative w-8 h-8 animate-spin text-cyan-500" />
+                  </div>
                   <span className="text-sm text-muted-foreground">正在分析數據...</span>
                 </div>
               ) : priceHistory ? (
-                <div className="space-y-6 animate-fade-in-up">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="space-y-6"
+                >
                   {/* 商品信息 */}
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900 leading-relaxed mb-2">
@@ -576,40 +626,35 @@ export default function CompetitorDetailPage() {
                           href={priceHistory.product.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center text-xs text-blue-600 hover:text-blue-700 bg-blue-50 px-2 py-1 rounded-md transition-colors"
+                          className="inline-flex items-center text-xs text-cyan-600 hover:text-cyan-700 bg-cyan-50 px-2.5 py-1 rounded-lg transition-colors hover:bg-cyan-100"
                         >
                           <ExternalLink className="w-3 h-3 mr-1" />
                           訪問商品頁面
                         </a>
                       )}
-                      <Badge 
-                        variant="secondary"
-                        className={cn(
-                          "text-xs",
-                          priceHistory.product.stock_status === 'in_stock' 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-red-100 text-red-700'
-                        )}
+                      <HoloBadge
+                        variant={priceHistory.product.stock_status === 'in_stock' ? 'success' : 'error'}
+                        size="sm"
                       >
                         {priceHistory.product.stock_status === 'in_stock' ? '有貨' : '缺貨'}
-                      </Badge>
+                      </HoloBadge>
                     </div>
                   </div>
 
                   {/* 價格卡片 */}
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <div className="bg-gradient-to-br from-slate-50 to-white p-3 rounded-xl border border-slate-100 shadow-sm">
                       <div className="text-xs text-muted-foreground mb-1">當前價格</div>
                       <div className="text-xl font-bold text-gray-900">
                         ${priceHistory.product.current_price?.toFixed(2) || '-'}
                       </div>
                     </div>
-                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <div className="bg-gradient-to-br from-slate-50 to-white p-3 rounded-xl border border-slate-100 shadow-sm">
                       <div className="text-xs text-muted-foreground mb-1">價格變動</div>
                       <div className={cn(
                         "text-xl font-bold flex items-center",
-                        (priceHistory.product.price_change || 0) > 0 ? "text-red-500" : 
-                        (priceHistory.product.price_change || 0) < 0 ? "text-green-500" : "text-gray-500"
+                        (priceHistory.product.price_change || 0) > 0 ? "text-red-500" :
+                        (priceHistory.product.price_change || 0) < 0 ? "text-emerald-500" : "text-gray-500"
                       )}>
                         {priceHistory.product.price_change ? (
                            priceHistory.product.price_change > 0 ? '+' : ''
@@ -623,8 +668,8 @@ export default function CompetitorDetailPage() {
 
                   {/* 最後抓取時間 */}
                   {priceHistory.product.last_scraped_at && (
-                    <div className="flex items-center text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2">
-                      <Clock className="w-3.5 h-3.5 mr-2" />
+                    <div className="flex items-center text-xs text-slate-500 bg-gradient-to-r from-slate-50 to-white rounded-xl px-3 py-2 border border-slate-100">
+                      <Clock className="w-3.5 h-3.5 mr-2 text-cyan-500" />
                       最後更新: {new Date(priceHistory.product.last_scraped_at).toLocaleString('zh-HK')}
                     </div>
                   )}
@@ -632,18 +677,24 @@ export default function CompetitorDetailPage() {
                   {/* 價格時間軸 */}
                   <div>
                     <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center">
-                      <History className="w-3 h-3 mr-1" />
+                      <History className="w-3 h-3 mr-1 text-cyan-500" />
                       歷史記錄 (30天)
                     </h4>
-                    <div className="relative border-l-2 border-slate-200 ml-2 space-y-4 pb-2 max-h-[300px] overflow-y-auto">
+                    <div className="relative border-l-2 border-cyan-200 ml-2 space-y-4 pb-2 max-h-[300px] overflow-y-auto">
                       {priceHistory.history.length === 0 ? (
                         <p className="text-sm text-muted-foreground pl-4 py-2">暫無價格記錄</p>
                       ) : (
                         priceHistory.history.map((snapshot, idx) => (
-                          <div key={snapshot.id} className="relative pl-4">
+                          <motion.div
+                            key={snapshot.id}
+                            className="relative pl-4"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: idx * 0.05 }}
+                          >
                             <div className={cn(
-                              "absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white",
-                              idx === 0 ? "bg-blue-500 ring-2 ring-blue-100" : "bg-slate-300"
+                              "absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm",
+                              idx === 0 ? "bg-cyan-500 ring-2 ring-cyan-100" : "bg-slate-300"
                             )} />
                             <div className="flex justify-between items-start">
                               <div>
@@ -655,20 +706,20 @@ export default function CompetitorDetailPage() {
                                 </span>
                               </div>
                               {snapshot.discount_percent && snapshot.discount_percent > 0 && (
-                                <Badge variant="secondary" className="text-xs bg-red-50 text-red-600 border-red-100">
+                                <HoloBadge variant="error" size="sm">
                                   -{snapshot.discount_percent}% Off
-                                </Badge>
+                                </HoloBadge>
                               )}
                             </div>
-                          </div>
+                          </motion.div>
                         ))
                       )}
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ) : null}
             </div>
-          </div>
+          </HoloCard>
         </div>
       </div>
 
@@ -687,47 +738,13 @@ export default function CompetitorDetailPage() {
         onImport={handleBulkImport}
         isLoading={isImporting}
       />
-    </div>
+    </PageTransition>
   )
 }
 
 // =============================================
 // 子組件
 // =============================================
-
-function StatCard({ 
-  label, 
-  value, 
-  icon: Icon, 
-  color 
-}: { 
-  label: string
-  value: number
-  icon: React.ElementType
-  color: 'green' | 'red' | 'blue' | 'yellow'
-}) {
-  const colorClasses = {
-    green: 'bg-green-50 text-green-600 border-green-100',
-    red: 'bg-red-50 text-red-600 border-red-100',
-    blue: 'bg-blue-50 text-blue-600 border-blue-100',
-    yellow: 'bg-yellow-50 text-yellow-600 border-yellow-100'
-  }
-  
-  return (
-    <div className={cn(
-      "rounded-xl p-4 border transition-all hover:shadow-md",
-      colorClasses[color]
-    )}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-medium opacity-80">{label}</p>
-          <p className="text-2xl font-bold mt-1">{value}</p>
-        </div>
-        <Icon className="w-8 h-8 opacity-50" />
-      </div>
-    </div>
-  )
-}
 
 function ProductRow({
   product,
@@ -746,39 +763,40 @@ function ProductRow({
     ? product.price_change > 0
       ? <TrendingUp className="w-4 h-4 text-red-500" />
       : product.price_change < 0
-      ? <TrendingDown className="w-4 h-4 text-green-500" />
+      ? <TrendingDown className="w-4 h-4 text-emerald-500" />
       : <Minus className="w-4 h-4 text-gray-400" />
     : null
 
   return (
     <div
       className={cn(
-        "group flex items-center p-4 cursor-pointer transition-all duration-200 border-l-4",
-        isSelected 
-          ? "bg-blue-50/60 border-l-blue-500" 
-          : "hover:bg-slate-50/50 border-l-transparent hover:border-l-slate-300"
+        "group flex items-center p-4 cursor-pointer transition-all duration-300 border-l-4",
+        isSelected
+          ? "bg-gradient-to-r from-cyan-50/60 to-blue-50/30 border-l-cyan-500"
+          : "hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-white border-l-transparent hover:border-l-cyan-300"
       )}
     >
       {/* 複選框 */}
-      <button 
+      <button
         onClick={(e) => { e.stopPropagation(); onToggleCheck(); }}
-        className="p-1 hover:bg-slate-200 rounded mr-3"
+        className="p-1.5 hover:bg-cyan-100 rounded-lg mr-3 transition-colors"
       >
         {isChecked ? (
-          <CheckSquare className="w-4 h-4 text-blue-600" />
+          <CheckSquare className="w-4 h-4 text-cyan-600" />
         ) : (
           <Square className="w-4 h-4 text-slate-400" />
         )}
       </button>
 
       {/* 商品信息 */}
-      <div 
+      <div
         className="flex items-center space-x-4 flex-1 min-w-0"
         onClick={onSelect}
       >
         <div className={cn(
-          "w-12 h-12 rounded-lg flex items-center justify-center shrink-0 overflow-hidden border border-slate-100",
-          product.image_url ? "bg-white" : "bg-slate-50"
+          "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border transition-all",
+          product.image_url ? "bg-white border-slate-100" : "bg-gradient-to-br from-slate-50 to-white border-slate-100",
+          isSelected && "ring-2 ring-cyan-200 ring-offset-1"
         )}>
           {product.image_url ? (
             <img
@@ -793,7 +811,7 @@ function ProductRow({
         <div className="flex-1 min-w-0">
           <h3 className={cn(
             "text-sm font-medium truncate transition-colors",
-            isSelected ? "text-blue-700" : "text-gray-900"
+            isSelected ? "text-cyan-700" : "text-gray-900"
           )}>
             {product.name}
           </h3>
@@ -822,8 +840,8 @@ function ProductRow({
               {priceChangeIcon}
               <span
                 className={cn("ml-1 font-medium",
-                  product.price_change > 0 ? 'text-red-600' : 
-                  product.price_change < 0 ? 'text-green-600' : 'text-gray-500'
+                  product.price_change > 0 ? 'text-red-600' :
+                  product.price_change < 0 ? 'text-emerald-600' : 'text-gray-500'
                 )}
               >
                 {product.price_change > 0 ? '+' : ''}
@@ -833,35 +851,32 @@ function ProductRow({
           )}
         </div>
 
-        <Badge 
-          variant="secondary"
-          className={cn(
-            "min-w-[60px] justify-center",
-            product.stock_status === 'in_stock' ? 'bg-green-100 text-green-700' : 
-            product.stock_status === 'out_of_stock' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'
-          )}
+        <HoloBadge
+          variant={product.stock_status === 'in_stock' ? 'success' :
+                   product.stock_status === 'out_of_stock' ? 'error' : 'default'}
+          size="sm"
         >
           {product.stock_status === 'in_stock' ? '有貨' : product.stock_status === 'out_of_stock' ? '缺貨' : '未知'}
-        </Badge>
+        </HoloBadge>
 
         {/* 更多操作 */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100">
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
+            <button className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-slate-100 transition-all">
+              <MoreHorizontal className="w-4 h-4 text-slate-500" />
+            </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>
-              <Zap className="w-4 h-4 mr-2" />
+          <DropdownMenuContent align="end" className="bg-white/95 backdrop-blur-xl border-slate-200/80">
+            <DropdownMenuItem className="flex items-center">
+              <Zap className="w-4 h-4 mr-2 text-amber-500" />
               重新抓取
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <ExternalLink className="w-4 h-4 mr-2" />
+            <DropdownMenuItem className="flex items-center">
+              <ExternalLink className="w-4 h-4 mr-2 text-cyan-500" />
               訪問頁面
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600">
+            <DropdownMenuItem className="text-red-600 flex items-center">
               <Trash2 className="w-4 h-4 mr-2" />
               刪除
             </DropdownMenuItem>
@@ -896,9 +911,11 @@ function AddProductDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] glass-panel border-white/40">
+      <DialogContent className="sm:max-w-[500px] bg-white/95 backdrop-blur-xl border-slate-200/80 shadow-2xl">
         <DialogHeader>
-          <DialogTitle>新增監測商品</DialogTitle>
+          <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+            新增監測商品
+          </DialogTitle>
           <DialogDescription>
             輸入商品鏈接，系統將自動抓取價格和庫存信息。
           </DialogDescription>
@@ -907,64 +924,62 @@ function AddProductDialog({
         <form onSubmit={handleSubmit} className="space-y-6 mt-4">
           <div className="space-y-4">
             <div className="grid gap-2">
-              <Label htmlFor="product-url">商品 URL <span className="text-destructive">*</span></Label>
+              <Label htmlFor="product-url" className="text-slate-700">
+                商品 URL <span className="text-red-500">*</span>
+              </Label>
               <div className="relative">
-                <ShoppingCart className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <ShoppingCart className="absolute left-3 top-3 h-4 w-4 text-cyan-500" />
                 <Input
                   id="product-url"
                   type="url"
                   required
                   value={formData.url}
                   onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                  className="pl-9 bg-white/50"
+                  className="pl-9 bg-white/70 backdrop-blur-sm border-slate-200/80 focus:border-cyan-300 focus:ring-cyan-200/50"
                   placeholder="https://..."
                 />
               </div>
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="product-name">自定義名稱（可選）</Label>
+              <Label htmlFor="product-name" className="text-slate-700">自定義名稱（可選）</Label>
               <Input
                 id="product-name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="留空則使用自動抓取的名稱"
-                className="bg-white/50"
+                className="bg-white/70 backdrop-blur-sm border-slate-200/80 focus:border-cyan-300 focus:ring-cyan-200/50"
               />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="product-category">分類標籤（可選）</Label>
+              <Label htmlFor="product-category" className="text-slate-700">分類標籤（可選）</Label>
               <Input
                 id="product-category"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 placeholder="例如：飲品 / 保健品"
-                className="bg-white/50"
+                className="bg-white/70 backdrop-blur-sm border-slate-200/80 focus:border-cyan-300 focus:ring-cyan-200/50"
               />
             </div>
           </div>
 
           <div className="flex justify-end space-x-3">
-            <Button
+            <HoloButton
               type="button"
-              variant="outline"
+              variant="ghost"
               onClick={() => onOpenChange(false)}
             >
               取消
-            </Button>
-            <Button
+            </HoloButton>
+            <HoloButton
               type="submit"
-              disabled={isLoading}
-              className="bg-primary hover:bg-primary/90"
+              variant="primary"
+              loading={isLoading}
+              icon={!isLoading ? <Check className="w-4 h-4" /> : undefined}
             >
-              {isLoading ? (
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Check className="w-4 h-4 mr-2" />
-              )}
               開始監測
-            </Button>
+            </HoloButton>
           </div>
         </form>
       </DialogContent>
