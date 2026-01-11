@@ -1,6 +1,5 @@
 {
   "permissions": {
-    "defaultMode": "bypassPermissions",
     "allow": [
       "Read(**)",
       "Write(**)",
@@ -33,11 +32,14 @@
       "Bash(alembic:*)",
       "Bash(uvicorn:*)",
       "Bash(psql:*)",
-      "Bash(bun:*)"
+      "Bash(bun:*)",
+      "Skill(superpowers:systematic-debugging)",
+      "Skill(superpowers:systematic-debugging:*)"
     ],
     "deny": [
       "Read(.env)",
       "Read(.env.*)"
-    ]
+    ],
+    "defaultMode": "bypassPermissions"
   }
 }

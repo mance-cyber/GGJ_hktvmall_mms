@@ -206,30 +206,45 @@ export default function AIAnalysisPage() {
 
   // Generate insights mutation
   const insightsMutation = useMutation({
-    mutationFn: (data: Record<string, any>) => api.generateDataInsights(data),
-    onSuccess: (result) => {
-      if (result.success) {
-        setInsightsResult(result.content)
-        setTotalTokens(prev => prev + result.tokens_used)
+    mutationFn: async (data: Record<string, any>) => {
+      const result = await api.generateDataInsights(data)
+      if (!result.success) {
+        throw new Error(result.error || '生成摘要失敗')
       }
+      return result
+    },
+    onSuccess: (result) => {
+      setInsightsResult(result.content)
+      setTotalTokens(prev => prev + result.tokens_used)
     },
   })
 
   // Generate strategy mutation
   const strategyMutation = useMutation({
-    mutationFn: ({ insights, context }: { insights: string; context: Record<string, any> }) =>
-      api.generateMarketingStrategy(insights, context),
-    onSuccess: (result) => {
-      if (result.success) {
-        setStrategyResult(result.content)
-        setTotalTokens(prev => prev + result.tokens_used)
+    mutationFn: async ({ insights, context }: { insights: string; context: Record<string, any> }) => {
+      const result = await api.generateMarketingStrategy(insights, context)
+      if (!result.success) {
+        throw new Error(result.error || '生成策略失敗')
       }
+      return result
+    },
+    onSuccess: (result) => {
+      setStrategyResult(result.content)
+      setTotalTokens(prev => prev + result.tokens_used)
     },
   })
 
   // Full analysis mutation
   const fullAnalysisMutation = useMutation({
-    mutationFn: (data: Record<string, any>) => api.runFullAnalysis(data, {}),
+    mutationFn: async (data: Record<string, any>) => {
+      const result = await api.runFullAnalysis(data, {})
+      // 後端可能返回 200 但 success: false，需要手動處理
+      if (!result.success) {
+        const errorMsg = result.error || result.strategy?.error || '分析失敗，請稍後再試'
+        throw new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg))
+      }
+      return result
+    },
     onSuccess: (result) => {
       if (result.insights) {
         setInsightsResult(result.insights.content)
@@ -237,7 +252,7 @@ export default function AIAnalysisPage() {
       if (result.strategy?.content) {
         setStrategyResult(result.strategy.content)
       }
-      setTotalTokens(result.total_tokens)
+      setTotalTokens(result.total_tokens || 0)
     },
   })
 

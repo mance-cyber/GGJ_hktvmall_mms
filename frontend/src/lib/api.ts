@@ -565,7 +565,7 @@ export const api = {
   runFullAnalysis: (data: Record<string, any>, context: Record<string, any> = {}) =>
     fetchAPI<AIFullAnalysisResponse>('/ai/analyze-full', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ data, context }),
     }),
 
   // =============================================
@@ -952,6 +952,8 @@ export interface AIAnalysisResponse {
 
 export interface AIFullAnalysisResponse {
   success: boolean
+  stage?: string
+  error?: string
   insights: {
     content: string
     model: string
@@ -1282,7 +1284,7 @@ export interface CommandCenterResponse {
 
 export const analyticsApi = {
   getCommandCenter: () =>
-    fetchAPI<CommandCenterResponse>('/analytics/command-center')
+    fetchAPI<CommandCenterResponse>('/command-center')
 }
 
 // =============================================
