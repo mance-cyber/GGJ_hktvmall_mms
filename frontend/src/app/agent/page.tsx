@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { api, AgentChatResponse, AgentSlotOption, AgentFollowUpSuggestion } from '@/lib/api'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -52,6 +52,46 @@ import {
 import { ConversationList } from '@/components/agent/ConversationList'
 import { QuickActions } from '@/components/agent/QuickActions'
 import { toast } from '@/components/ui/use-toast'
+
+// =============================================
+// 聲音提醒 Hook
+// =============================================
+
+function useNotificationSound() {
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [soundEnabled, setSoundEnabled] = useState(true)
+
+  useEffect(() => {
+    // 創建音頻元素
+    audioRef.current = new Audio('/audio/notification.mp3')
+    audioRef.current.volume = 0.5
+
+    // 從 localStorage 讀取設定
+    const saved = localStorage.getItem('agent-sound-enabled')
+    if (saved !== null) {
+      setSoundEnabled(saved === 'true')
+    }
+  }, [])
+
+  const playSound = useCallback(() => {
+    if (soundEnabled && audioRef.current) {
+      audioRef.current.currentTime = 0
+      audioRef.current.play().catch(() => {
+        // 忽略自動播放限制錯誤
+      })
+    }
+  }, [soundEnabled])
+
+  const toggleSound = useCallback(() => {
+    setSoundEnabled(prev => {
+      const newValue = !prev
+      localStorage.setItem('agent-sound-enabled', String(newValue))
+      return newValue
+    })
+  }, [])
+
+  return { soundEnabled, toggleSound, playSound }
+}
 
 // =============================================
 // Types
@@ -394,6 +434,9 @@ export default function AgentPage() {
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // 聲音提醒
+  const { playSound } = useNotificationSound()
+
   // 獲取建議
   const { data: suggestionsData } = useQuery({
     queryKey: ['agent-suggestions'],
@@ -465,6 +508,9 @@ export default function AgentPage() {
 
       setMessages(prev => [...prev, newMessage])
 
+      // 播放音效
+      playSound()
+
       if (response.type === 'clarification') {
         setPendingClarification(newMessage)
         setSelections({})
@@ -503,6 +549,9 @@ export default function AgentPage() {
       }
 
       setMessages(prev => [...prev, newMessage])
+
+      // 播放音效
+      playSound()
 
       if (response.type === 'clarification') {
         setPendingClarification(newMessage)
