@@ -12,6 +12,7 @@ import { api } from '@/lib/api'
 import { motion, AnimatePresence, useDragControls, PanInfo } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { DotLottieReact } from '@lottiefiles/dotlottie-react'
 import { usePathname } from 'next/navigation'
 import {
   MessageCircle,
@@ -386,8 +387,13 @@ function MiniChatBox({
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-pink-500 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-lg">
-            🇯🇵
+          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
+            <DotLottieReact
+              src="/animations/jap.lottie"
+              loop
+              autoplay
+              style={{ width: 28, height: 28 }}
+            />
           </div>
           <div>
             <h3 className="text-white font-medium text-sm">Jap仔</h3>
@@ -446,8 +452,13 @@ function MiniChatBox({
       <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-50">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center mb-3 text-3xl">
-              🇯🇵
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center mb-3 overflow-hidden">
+              <DotLottieReact
+                src="/animations/jap.lottie"
+                loop
+                autoplay
+                style={{ width: 56, height: 56 }}
+              />
             </div>
             <h4 className="font-medium text-slate-700 mb-1">Hey！我係 Jap仔 🙋‍♂️</h4>
             <p className="text-sm text-slate-500">
@@ -483,7 +494,7 @@ function MiniChatBox({
                 )}
               >
                 <div className={cn(
-                  "w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0",
+                  "w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden",
                   msg.role === 'user'
                     ? "bg-gradient-to-br from-cyan-500 to-blue-500"
                     : "bg-gradient-to-br from-purple-500 to-pink-500"
@@ -491,7 +502,12 @@ function MiniChatBox({
                   {msg.role === 'user' ? (
                     <User className="w-3.5 h-3.5 text-white" />
                   ) : (
-                    <span className="text-xs">🇯🇵</span>
+                    <DotLottieReact
+                      src="/animations/jap.lottie"
+                      loop
+                      autoplay
+                      style={{ width: 22, height: 22 }}
+                    />
                   )}
                 </div>
                 <div className="max-w-[80%]">
@@ -570,8 +586,13 @@ function MiniChatBox({
             animate={{ opacity: 1 }}
             className="flex gap-2"
           >
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-              <span className="text-xs">🇯🇵</span>
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center overflow-hidden">
+              <DotLottieReact
+                src="/animations/jap.lottie"
+                loop
+                autoplay
+                style={{ width: 22, height: 22 }}
+              />
             </div>
             <div className="bg-white border shadow-sm rounded-xl rounded-tl-sm px-3 py-2">
               <div className="flex items-center gap-1">
