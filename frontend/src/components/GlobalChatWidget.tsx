@@ -15,7 +15,6 @@ import remarkGfm from 'remark-gfm'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
 import { usePathname } from 'next/navigation'
 import {
-  MessageCircle,
   X,
   Send,
   User,
@@ -28,8 +27,7 @@ import {
   ThumbsUp,
   ThumbsDown,
   Volume2,
-  VolumeX,
-  GripVertical
+  VolumeX
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -171,16 +169,21 @@ function FloatingButton({
   onDragEnd: (info: PanInfo) => void
 }) {
   const dragControls = useDragControls()
-  const [animationKey, setAnimationKey] = useState(0)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dotLottieInstance = useRef<any>(null)
 
-  // 動畫播放完成後停頓 3 秒再重新播放（通過重新掛載組件實現）
+  // 動畫播放完成後停頓 3 秒再重新播放（使用 play API 避免閃爍）
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const dotLottieRefCallback = useCallback((dotLottie: any) => {
     if (dotLottie) {
+      dotLottieInstance.current = dotLottie
       dotLottie.addEventListener('complete', () => {
         // 停頓 3 秒後重新播放
         setTimeout(() => {
-          setAnimationKey(prev => prev + 1)
+          if (dotLottieInstance.current) {
+            dotLottieInstance.current.setFrame(0)
+            dotLottieInstance.current.play()
+          }
         }, 3000)
       })
     }
@@ -226,7 +229,6 @@ function FloatingButton({
             className="w-full h-full flex items-center justify-center"
           >
             <DotLottieReact
-              key={animationKey}
               src="/animations/live-chatbot.lottie"
               loop={false}
               autoplay
