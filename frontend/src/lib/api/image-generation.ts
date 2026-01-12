@@ -56,7 +56,7 @@ export interface TaskListResponse {
  */
 export async function createTask(data: CreateTaskRequest): Promise<ImageGenerationTask> {
   const response = await apiClient.post('/image-generation/tasks', data)
-  return response.data
+  return response  // 響應攔截器已經返回 data，不需要再取 .data
 }
 
 /**
@@ -74,7 +74,7 @@ export async function uploadImages(taskId: string, files: File[]): Promise<Input
     },
   })
 
-  return response.data
+  return response  // 響應攔截器已經返回 data，不需要再取 .data
 }
 
 /**
@@ -82,7 +82,7 @@ export async function uploadImages(taskId: string, files: File[]): Promise<Input
  */
 export async function startGeneration(taskId: string): Promise<ImageGenerationTask> {
   const response = await apiClient.post(`/image-generation/tasks/${taskId}/start`)
-  return response.data
+  return response  // 響應攔截器已經返回 data，不需要再取 .data
 }
 
 /**
@@ -90,7 +90,7 @@ export async function startGeneration(taskId: string): Promise<ImageGenerationTa
  */
 export async function getTaskStatus(taskId: string): Promise<ImageGenerationTask> {
   const response = await apiClient.get(`/image-generation/tasks/${taskId}`)
-  return response.data
+  return response  // 響應攔截器已經返回 data，不需要再取 .data
 }
 
 /**
@@ -100,5 +100,5 @@ export async function listTasks(page = 1, pageSize = 20): Promise<TaskListRespon
   const response = await apiClient.get('/image-generation/tasks', {
     params: { page, page_size: pageSize },
   })
-  return response.data
+  return response  // 響應攔截器已經返回 data，不需要再取 .data
 }
