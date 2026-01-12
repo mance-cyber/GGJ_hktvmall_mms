@@ -28,6 +28,7 @@ from app.models.user import User
 from app.api.deps import get_current_user
 from app.config import get_settings
 from app.tasks.image_generation_tasks import process_image_generation
+from app.services.storage_service import get_storage
 from sqlalchemy import select, func
 
 logger = logging.getLogger(__name__)
@@ -130,20 +131,15 @@ async def upload_input_images(
         file_ext = Path(file.filename).suffix
         safe_filename = f"{uuid.uuid4()}{file_ext}"
 
-        # 創建上傳目錄
-        upload_dir = Path(settings.upload_dir) / "input" / str(task_id)
-        upload_dir.mkdir(parents=True, exist_ok=True)
-
-        # 保存文件
-        file_path = upload_dir / safe_filename
-
-        with open(file_path, "wb") as f:
-            f.write(content)
+        # 使用 StorageService 保存文件
+        storage = get_storage()
+        relative_path = f"input/{str(task_id)}/{safe_filename}"
+        file_url = storage.save_file(file_data=content, file_path=relative_path)
 
         # 創建數據庫記錄
         input_image = InputImage(
             task_id=task_id,
-            file_path=str(file_path),
+            file_path=file_url,  # 使用 StorageService 返回的 URL/路徑
             file_name=safe_filename,
             file_size=len(content),
             mime_type=file.content_type,

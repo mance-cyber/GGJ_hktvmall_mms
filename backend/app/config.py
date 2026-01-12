@@ -111,6 +111,9 @@ class Settings(BaseSettings):
     nano_banana_model: str = Field(default="nano-banana", alias="NANO_BANANA_MODEL")
     upload_dir: str = Field(default="./uploads", alias="UPLOAD_DIR")
 
+    # 存儲配置
+    use_r2_storage: bool = Field(default=False, alias="USE_R2_STORAGE")
+
     @field_validator('nano_banana_api_key')
     @classmethod
     def validate_nano_banana_key(cls, v, info):

@@ -137,11 +137,11 @@ def process_image_generation(self, task_id: str) -> Dict[str, Any]:
         task.progress = 60
         db.commit()
 
-        # 保存生成的圖片
-        output_dir = Path(settings.upload_dir) / "generated" / str(task_id)
+        # 保存生成的圖片（使用相對路徑）
+        output_dir = f"generated/{str(task_id)}"
         output_paths = client.save_generated_images(
             api_response=api_response,
-            output_dir=str(output_dir)
+            output_dir=output_dir
         )
 
         # 更新進度：保存圖片完成
@@ -150,11 +150,19 @@ def process_image_generation(self, task_id: str) -> Dict[str, Any]:
 
         # 創建 OutputImage 記錄
         for idx, output_path in enumerate(output_paths):
+            # 提取檔名（支持 URL 和本地路徑）
+            if output_path.startswith('http'):
+                # R2 URL 格式：https://domain.com/generated/task-id/generated_1.png
+                file_name = output_path.split('/')[-1]
+            else:
+                # 本地路徑
+                file_name = Path(output_path).name
+
             output_image = OutputImage(
                 task_id=task_id,
                 file_path=output_path,
-                file_name=Path(output_path).name,
-                file_size=Path(output_path).stat().st_size if Path(output_path).exists() else None,
+                file_name=file_name,
+                file_size=None,  # 文件大小可選（R2 模式下無法直接獲取）
                 prompt_used=client._build_white_bg_prompt(None) if task.mode == GenerationMode.WHITE_BG_TOPVIEW else client._build_professional_photo_prompt(task.style_description, None),
                 generation_params={
                     "mode": task.mode.value,

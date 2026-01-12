@@ -8,6 +8,7 @@ from typing import List, Dict, Any, Optional
 from pathlib import Path
 import logging
 from app.config import get_settings
+from app.services.storage_service import get_storage
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -231,21 +232,19 @@ OUTPUT:
         output_dir: str
     ) -> List[str]:
         """
-        保存生成的圖片
+        保存生成的圖片（使用 StorageService）
 
         Args:
             api_response: API 響應
-            output_dir: 輸出目錄
+            output_dir: 輸出目錄相對路徑（例如：generated/task-123）
 
         Returns:
-            保存的圖片路徑列表
+            保存的圖片 URL/路徑列表
         """
         output_paths = []
+        storage = get_storage()
 
         try:
-            # 確保輸出目錄存在
-            Path(output_dir).mkdir(parents=True, exist_ok=True)
-
             # 提取並保存圖片
             # 注意：響應格式可能需要根據實際 API 調整
             if "data" in api_response:
@@ -254,15 +253,17 @@ OUTPUT:
                         # 解碼 base64 圖片
                         image_data = base64.b64decode(item["b64_json"])
 
-                        # 生成檔名
-                        output_path = Path(output_dir) / f"generated_{idx + 1}.png"
+                        # 生成相對路徑
+                        relative_path = f"{output_dir}/generated_{idx + 1}.png"
 
-                        # 保存圖片
-                        with open(output_path, "wb") as f:
-                            f.write(image_data)
+                        # 使用 StorageService 保存
+                        file_url = storage.save_file(
+                            file_data=image_data,
+                            file_path=relative_path
+                        )
 
-                        output_paths.append(str(output_path))
-                        logger.info(f"Saved generated image to {output_path}")
+                        output_paths.append(file_url)
+                        logger.info(f"Saved generated image: {relative_path}")
 
             return output_paths
 

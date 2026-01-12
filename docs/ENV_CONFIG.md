@@ -70,7 +70,10 @@ NANO_BANANA_MODEL=nano-banana
 # =============================================
 UPLOAD_DIR=./uploads
 
-# Cloudflare R2（可選）
+# 存儲模式切換
+USE_R2_STORAGE=false  # 設為 true 啟用 Cloudflare R2，false 使用本地存儲
+
+# Cloudflare R2（當 USE_R2_STORAGE=true 時必需）
 R2_ACCESS_KEY=your-r2-access-key
 R2_SECRET_KEY=your-r2-secret-key
 R2_BUCKET=hktv-ops-storage
@@ -125,7 +128,11 @@ AGENT_MOCK_MODE=false
 
 ### 可選配置
 
-- [ ] `R2_ACCESS_KEY` - Cloudflare R2 存儲（生產環境推薦）
+- [ ] `USE_R2_STORAGE` - 啟用 R2 存儲（生產環境推薦）
+- [ ] `R2_ACCESS_KEY` - Cloudflare R2 Access Key（當 USE_R2_STORAGE=true 時必需）
+- [ ] `R2_SECRET_KEY` - Cloudflare R2 Secret Key（當 USE_R2_STORAGE=true 時必需）
+- [ ] `R2_ENDPOINT` - Cloudflare R2 端點 URL（當 USE_R2_STORAGE=true 時必需）
+- [ ] `R2_PUBLIC_URL` - R2 公開訪問 URL（當 USE_R2_STORAGE=true 時必需）
 - [ ] `ANTHROPIC_API_KEY` - Claude AI（其他 AI 功能需要）
 - [ ] `GOOGLE_CLIENT_ID` - Google OAuth 登入
 - [ ] `TELEGRAM_BOT_TOKEN` - Telegram 通知

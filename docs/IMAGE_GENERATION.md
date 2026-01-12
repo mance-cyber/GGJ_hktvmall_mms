@@ -298,13 +298,28 @@ NANO_BANANA_API_BASE=https://ai.t8star.cn/v1
 NANO_BANANA_API_KEY=your-api-key-here
 NANO_BANANA_MODEL=nano-banana
 
-# 文件上傳目錄
+# 文件存儲
 UPLOAD_DIR=./uploads
+USE_R2_STORAGE=false  # 開發環境使用本地存儲
+
+# Cloudflare R2（生產環境推薦，設 USE_R2_STORAGE=true）
+# R2_ACCESS_KEY=your-r2-access-key
+# R2_SECRET_KEY=your-r2-secret-key
+# R2_BUCKET=gogojap-images
+# R2_ENDPOINT=https://your-account-id.r2.cloudflarestorage.com
+# R2_PUBLIC_URL=https://images.gogojap.com
 
 # Celery（使用 Redis）
 CELERY_BROKER_URL=redis://localhost:6379/0
 CELERY_RESULT_BACKEND=redis://localhost:6379/0
 ```
+
+**存儲模式說明：**
+
+| 模式 | 環境 | 配置 | 優勢 |
+|------|------|------|------|
+| **本地存儲** | 開發/測試 | `USE_R2_STORAGE=false` | 簡單、免費、快速 |
+| **R2 存儲** | 生產環境 | `USE_R2_STORAGE=true` | CDN 加速、免費出站流量、無限擴展 |
 
 ### 啟動服務
 
@@ -423,9 +438,47 @@ export NANO_BANANA_API_KEY=your-api-key
 **原因**：文件路徑配置錯誤
 
 **解決方案**：
+
+**本地存儲模式：**
 - 檢查 `UPLOAD_DIR` 是否正確
-- 確保前端可以訪問圖片路徑
-- 考慮使用 Cloudflare R2 存儲
+- 確保前端可以訪問圖片路徑（配置靜態文件路由）
+
+**R2 存儲模式（生產環境推薦）：**
+
+1. **創建 Cloudflare R2 Bucket**
+   ```bash
+   # 登入 Cloudflare Dashboard
+   # 選擇 R2 Object Storage → Create Bucket
+   # Bucket 名稱：gogojap-images
+   ```
+
+2. **獲取 API 憑證**
+   ```bash
+   # R2 → Manage R2 API Tokens → Create API Token
+   # 權限：Object Read & Write
+   # 保存 Access Key 和 Secret Key
+   ```
+
+3. **配置 .env**
+   ```bash
+   USE_R2_STORAGE=true
+   R2_ACCESS_KEY=your-access-key
+   R2_SECRET_KEY=your-secret-key
+   R2_BUCKET=gogojap-images
+   R2_ENDPOINT=https://your-account-id.r2.cloudflarestorage.com
+   R2_PUBLIC_URL=https://images.gogojap.com  # 或使用 R2 自定義域名
+   ```
+
+4. **重啟服務**
+   ```bash
+   # 重啟後端和 Celery Worker
+   # 圖片將自動上傳到 R2
+   ```
+
+**R2 優勢：**
+- ✅ 10GB 免費存儲 + 無限出站流量
+- ✅ CDN 加速（全球訪問快速）
+- ✅ 自動備份和容災
 
 ---
 
