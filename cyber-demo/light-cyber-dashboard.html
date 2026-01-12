@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Dashboard - Light Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Sans:wght@300;400;500;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* =============================================
+           色彩系統與變數
+           ============================================= */
+        :root {
+            /* 主色調 - 極淺灰藍 */
+            --bg-primary: #fafbfd;
+            --bg-secondary: #f5f7fa;
+            --bg-card: #ffffff;
+
+            /* 輝光色 - 淡藍淡紫 */
+            --glow-blue: #bae6fd;
+            --glow-blue-soft: #e0f2fe;
+            --glow-purple: #ddd6fe;
+            --glow-purple-soft: #ede9fe;
+
+            /* 強調色 */
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-cyan: #06b6d4;
+            --accent-pink: #ec4899;
+
+            /* 文字色 */
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+
+            /* 邊框 */
+            --border-color: #e2e8f0;
+            --border-glow: rgba(59, 130, 246, 0.15);
+
+            /* 字體 */
+            --font-display: 'Syne', sans-serif;
+            --font-body: 'DM Sans', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        /* =============================================
+           基礎重置與全局樣式
+           ============================================= */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* 背景網格效果 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(var(--border-color) 0.5px, transparent 0.5px),
+                linear-gradient(90deg, var(--border-color) 0.5px, transparent 0.5px);
+            background-size: 40px 40px;
+            opacity: 0.3;
+            z-index: -1;
+            animation: gridPulse 20s ease-in-out infinite;
+        }
+
+        @keyframes gridPulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.15; }
+        }
+
+        /* 動態背景光暈 */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -50%;
+            right: -20%;
+            width: 80%;
+            height: 150%;
+            background: radial-gradient(
+                ellipse at center,
+                var(--glow-blue-soft) 0%,
+                var(--glow-purple-soft) 40%,
+                transparent 70%
+            );
+            opacity: 0.4;
+            z-index: -1;
+            animation: floatGlow 30s ease-in-out infinite;
+            filter: blur(80px);
+        }
+
+        @keyframes floatGlow {
+            0%, 100% {
+                transform: translate(0, 0) scale(1);
+                opacity: 0.4;
+            }
+            33% {
+                transform: translate(-10%, 10%) scale(1.1);
+                opacity: 0.3;
+            }
+            66% {
+                transform: translate(5%, -5%) scale(0.9);
+                opacity: 0.5;
+            }
+        }
+
+        /* =============================================
+           容器與佈局
+           ============================================= */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 40px 60px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* =============================================
+           頂部標題區域
+           ============================================= */
+        .header {
+            margin-bottom: 60px;
+            animation: slideDown 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header-title {
+            font-family: var(--font-display);
+            font-size: 48px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .header-title::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+            opacity: 0.3;
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 0.3; transform: scaleX(1); }
+            50% { opacity: 0.6; transform: scaleX(0.95); }
+        }
+
+        .header-subtitle {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 400;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+            padding: 8px 16px;
+            background: var(--bg-card);
+            border: 0.5px solid var(--border-color);
+            border-radius: 100px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-secondary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+            box-shadow: 0 0 8px var(--accent-cyan);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.9); }
+        }
+
+        /* =============================================
+           統計卡片區域
+           ============================================= */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 0.5px solid var(--border-color);
+            border-radius: 16px;
+            padding: 28px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+        }
+
+        .stat-card:nth-child(1) { animation-delay: 0.1s; }
+        .stat-card:nth-child(2) { animation-delay: 0.2s; }
+        .stat-card:nth-child(3) { animation-delay: 0.3s; }
+        .stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                var(--glow-blue) 50%,
+                transparent 100%
+            );
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--border-glow);
+            box-shadow:
+                0 8px 24px rgba(59, 130, 246, 0.08),
+                0 0 0 0.5px var(--border-glow);
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            top: 0;
+            background: radial-gradient(
+                circle at 50% 120%,
+                var(--glow-blue-soft) 0%,
+                transparent 60%
+            );
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+        }
+
+        .stat-card:hover::after {
+            opacity: 0.5;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-family: var(--font-mono);
+            font-size: 36px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            line-height: 1;
+        }
+
+        .stat-change {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-change.positive::before {
+            content: '↗';
+            font-size: 14px;
+        }
+
+        .stat-change.negative {
+            color: var(--accent-pink);
+        }
+
+        .stat-change.negative::before {
+            content: '↘';
+            font-size: 14px;
+        }
+
+        /* =============================================
+           主要內容網格
+           ============================================= */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        /* =============================================
+           圖表卡片
+           ============================================= */
+        .chart-card {
+            background: var(--bg-card);
+            border: 0.5px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.5s backwards;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+        }
+
+        .card-title {
+            font-family: var(--font-display);
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .card-period {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 6px 12px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+        }
+
+        /* 簡化的折線圖 */
+        .chart-container {
+            height: 240px;
+            position: relative;
+        }
+
+        .chart-line {
+            width: 100%;
+            height: 100%;
+        }
+
+        .chart-line path {
+            fill: none;
+            stroke: url(#gradient1);
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            filter: drop-shadow(0 2px 8px rgba(59, 130, 246, 0.3));
+            animation: drawLine 2s ease-out forwards;
+        }
+
+        @keyframes drawLine {
+            from {
+                stroke-dasharray: 1000;
+                stroke-dashoffset: 1000;
+            }
+            to {
+                stroke-dasharray: 1000;
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .chart-line .area {
+            fill: url(#gradient2);
+            opacity: 0.2;
+        }
+
+        .chart-grid line {
+            stroke: var(--border-color);
+            stroke-width: 0.5;
+            opacity: 0.5;
+        }
+
+        .chart-labels text {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            fill: var(--text-muted);
+        }
+
+        /* =============================================
+           活動列表
+           ============================================= */
+        .activity-card {
+            background: var(--bg-card);
+            border: 0.5px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px;
+            animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.6s backwards;
+        }
+
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .activity-item {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            padding-bottom: 20px;
+            border-bottom: 0.5px solid var(--border-color);
+            position: relative;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .activity-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .activity-icon.blue {
+            background: var(--glow-blue-soft);
+            color: var(--accent-blue);
+        }
+
+        .activity-icon.purple {
+            background: var(--glow-purple-soft);
+            color: var(--accent-purple);
+        }
+
+        .activity-icon.cyan {
+            background: rgba(6, 182, 212, 0.1);
+            color: var(--accent-cyan);
+        }
+
+        .activity-icon::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 8px;
+            border: 1px solid currentColor;
+            opacity: 0.2;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-title {
+            font-size: 13px;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .activity-time {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* =============================================
+           底部網格
+           ============================================= */
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .metric-card {
+            background: var(--bg-card);
+            border: 0.5px solid var(--border-color);
+            border-radius: 16px;
+            padding: 28px;
+            animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+        }
+
+        .metric-card:nth-child(1) { animation-delay: 0.7s; }
+        .metric-card:nth-child(2) { animation-delay: 0.8s; }
+        .metric-card:nth-child(3) { animation-delay: 0.9s; }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .metric-title {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .metric-badge {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: var(--bg-secondary);
+            color: var(--text-muted);
+        }
+
+        /* 進度環 */
+        .progress-ring {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+        }
+
+        .progress-ring svg {
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring circle {
+            fill: none;
+            stroke-width: 4;
+        }
+
+        .progress-ring .bg {
+            stroke: var(--bg-secondary);
+        }
+
+        .progress-ring .progress {
+            stroke: url(#ringGradient);
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1);
+            filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.4));
+        }
+
+        .progress-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: var(--font-mono);
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .metric-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+
+        .metric-label {
+            color: var(--text-muted);
+        }
+
+        .metric-number {
+            font-family: var(--font-mono);
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* =============================================
+           響應式設計
+           ============================================= */
+        @media (max-width: 1400px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 24px;
+            }
+
+            .header-title {
+                font-size: 32px;
+            }
+
+            .stats-grid,
+            .bottom-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* =============================================
+           掃描線效果（微妙）
+           ============================================= */
+        .scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                var(--glow-blue) 50%,
+                transparent 100%
+            );
+            opacity: 0.15;
+            animation: scan 8s linear infinite;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        @keyframes scan {
+            from { transform: translateY(0); }
+            to { transform: translateY(100vh); }
+        }
+    </style>
+</head>
+<body>
+    <!-- 掃描線效果 -->
+    <div class="scanline"></div>
+
+    <div class="container">
+        <!-- 標題區域 -->
+        <header class="header">
+            <h1 class="header-title">System Overview</h1>
+            <p class="header-subtitle">Real-time Analytics Dashboard</p>
+            <div class="status-indicator">
+                <span class="status-dot"></span>
+                <span>All Systems Operational</span>
+            </div>
+        </header>
+
+        <!-- 統計卡片 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Users</div>
+                <div class="stat-value" data-target="24847">0</div>
+                <div class="stat-change positive">+12.5% from last month</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">Active Sessions</div>
+                <div class="stat-value" data-target="8924">0</div>
+                <div class="stat-change positive">+8.2% from last month</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">Revenue</div>
+                <div class="stat-value" data-target="142890">$0</div>
+                <div class="stat-change positive">+23.1% from last month</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">Server Load</div>
+                <div class="stat-value" data-target="67">0%</div>
+                <div class="stat-change negative">+4.3% from last hour</div>
+            </div>
+        </div>
+
+        <!-- 主要內容區 -->
+        <div class="main-grid">
+            <!-- 圖表卡片 -->
+            <div class="chart-card">
+                <div class="card-header">
+                    <h2 class="card-title">Performance Metrics</h2>
+                    <span class="card-period">Last 7 Days</span>
+                </div>
+                <div class="chart-container">
+                    <svg class="chart-line" viewBox="0 0 600 240" preserveAspectRatio="none">
+                        <defs>
+                            <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+                                <stop offset="50%" style="stop-color:#8b5cf6;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="gradient2" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.3" />
+                                <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:0" />
+                            </linearGradient>
+                        </defs>
+
+                        <!-- 網格線 -->
+                        <g class="chart-grid">
+                            <line x1="0" y1="60" x2="600" y2="60" />
+                            <line x1="0" y1="120" x2="600" y2="120" />
+                            <line x1="0" y1="180" x2="600" y2="180" />
+                        </g>
+
+                        <!-- 數據區域 -->
+                        <path class="area" d="M0,180 L100,150 L200,120 L300,100 L400,80 L500,60 L600,40 L600,240 L0,240 Z" />
+
+                        <!-- 數據線 -->
+                        <path d="M0,180 L100,150 L200,120 L300,100 L400,80 L500,60 L600,40" />
+
+                        <!-- 標籤 -->
+                        <g class="chart-labels">
+                            <text x="0" y="230">Mon</text>
+                            <text x="100" y="230">Tue</text>
+                            <text x="200" y="230">Wed</text>
+                            <text x="300" y="230">Thu</text>
+                            <text x="400" y="230">Fri</text>
+                            <text x="500" y="230">Sat</text>
+                            <text x="590" y="230" text-anchor="end">Sun</text>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- 活動卡片 -->
+            <div class="activity-card">
+                <div class="card-header">
+                    <h2 class="card-title">Recent Activity</h2>
+                </div>
+                <div class="activity-list">
+                    <div class="activity-item">
+                        <div class="activity-icon blue">⚡</div>
+                        <div class="activity-content">
+                            <div class="activity-title">System updated successfully</div>
+                            <div class="activity-time">2 minutes ago</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon purple">👤</div>
+                        <div class="activity-content">
+                            <div class="activity-title">New user registered</div>
+                            <div class="activity-time">15 minutes ago</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon cyan">📊</div>
+                        <div class="activity-content">
+                            <div class="activity-title">Report generated</div>
+                            <div class="activity-time">1 hour ago</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon blue">🔒</div>
+                        <div class="activity-content">
+                            <div class="activity-title">Security scan completed</div>
+                            <div class="activity-time">3 hours ago</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部指標網格 -->
+        <div class="bottom-grid">
+            <!-- CPU 使用率 -->
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="metric-title">CPU Usage</span>
+                    <span class="metric-badge">Live</span>
+                </div>
+                <div class="progress-ring">
+                    <svg width="120" height="120">
+                        <defs>
+                            <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#3b82f6" />
+                                <stop offset="100%" style="stop-color:#8b5cf6" />
+                            </linearGradient>
+                        </defs>
+                        <circle class="bg" cx="60" cy="60" r="54" />
+                        <circle class="progress" cx="60" cy="60" r="54"
+                                stroke-dasharray="339.292"
+                                stroke-dashoffset="101.788"
+                                data-percent="70" />
+                    </svg>
+                    <div class="progress-value">70%</div>
+                </div>
+                <div class="metric-details">
+                    <span class="metric-label">Cores</span>
+                    <span class="metric-number">8/8 Active</span>
+                </div>
+            </div>
+
+            <!-- 記憶體使用 -->
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="metric-title">Memory</span>
+                    <span class="metric-badge">Live</span>
+                </div>
+                <div class="progress-ring">
+                    <svg width="120" height="120">
+                        <circle class="bg" cx="60" cy="60" r="54" />
+                        <circle class="progress" cx="60" cy="60" r="54"
+                                stroke-dasharray="339.292"
+                                stroke-dashoffset="135.717"
+                                data-percent="60" />
+                    </svg>
+                    <div class="progress-value">60%</div>
+                </div>
+                <div class="metric-details">
+                    <span class="metric-label">Used</span>
+                    <span class="metric-number">9.6GB / 16GB</span>
+                </div>
+            </div>
+
+            <!-- 網路流量 -->
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="metric-title">Network</span>
+                    <span class="metric-badge">Live</span>
+                </div>
+                <div class="progress-ring">
+                    <svg width="120" height="120">
+                        <circle class="bg" cx="60" cy="60" r="54" />
+                        <circle class="progress" cx="60" cy="60" r="54"
+                                stroke-dasharray="339.292"
+                                stroke-dashoffset="254.469"
+                                data-percent="25" />
+                    </svg>
+                    <div class="progress-value">25%</div>
+                </div>
+                <div class="metric-details">
+                    <span class="metric-label">Bandwidth</span>
+                    <span class="metric-number">2.5GB / 10GB</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =============================================
+        // 數字計數動畫
+        // =============================================
+        function animateValue(element, start, end, duration, prefix = '', suffix = '') {
+            const range = end - start;
+            const startTime = performance.now();
+
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                // 使用 easeOutCubic 緩動函數
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                const current = Math.floor(start + (range * easeProgress));
+
+                element.textContent = prefix + current.toLocaleString() + suffix;
+
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        // 啟動所有數字動畫
+        document.addEventListener('DOMContentLoaded', () => {
+            const statValues = document.querySelectorAll('.stat-value');
+
+            statValues.forEach((element, index) => {
+                const target = parseInt(element.dataset.target);
+                const prefix = element.textContent.includes('$') ? '$' : '';
+                const suffix = element.textContent.includes('%') ? '%' : '';
+
+                setTimeout(() => {
+                    animateValue(element, 0, target, 2000, prefix, suffix);
+                }, index * 100);
+            });
+
+            // 進度環動畫
+            const progressCircles = document.querySelectorAll('.progress-ring .progress');
+            progressCircles.forEach((circle, index) => {
+                setTimeout(() => {
+                    const percent = parseInt(circle.dataset.percent);
+                    const circumference = 339.292;
+                    const offset = circumference - (percent / 100) * circumference;
+                    circle.style.strokeDashoffset = offset;
+                }, 1000 + (index * 200));
+            });
+        });
+
+        // =============================================
+        // 即時數據更新模擬
+        // =============================================
+        setInterval(() => {
+            const statusDot = document.querySelector('.status-dot');
+            statusDot.style.animation = 'none';
+            setTimeout(() => {
+                statusDot.style.animation = '';
+            }, 10);
+        }, 3000);
+    </script>
+</body>
+</html>

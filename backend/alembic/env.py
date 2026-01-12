@@ -19,6 +19,8 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 from app.models.database import Base
+# 導入所有 models 以確保 Alembic 能檢測到所有表
+import app.models  # noqa: F401
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,

@@ -1,0 +1,234 @@
+/* =============================================
+   全息賽博朋克導航欄樣式
+   Holographic Cyberpunk Navbar Styles
+   ============================================= */
+
+/* 導入未來科技字體 */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+
+/* 字體應用 */
+.font-orbitron {
+  font-family: 'Orbitron', sans-serif;
+}
+
+.font-rajdhani {
+  font-family: 'Rajdhani', sans-serif;
+}
+
+/* 霓虹文字效果 */
+.neon-text {
+  background: linear-gradient(
+    90deg,
+    #00f0ff 0%,
+    #b537ff 50%,
+    #00f0ff 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: neon-glow 3s linear infinite;
+  text-shadow:
+    0 0 10px rgba(0, 240, 255, 0.5),
+    0 0 20px rgba(0, 240, 255, 0.3),
+    0 0 30px rgba(0, 240, 255, 0.2);
+}
+
+@keyframes neon-glow {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* 賽博網格背景 */
+.cyber-grid {
+  background-image:
+    linear-gradient(rgba(0, 240, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+  position: relative;
+}
+
+.cyber-grid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 0%,
+    rgba(0, 240, 255, 0.1) 0%,
+    transparent 50%
+  );
+}
+
+/* 全息掃描線效果 */
+@keyframes scan-line {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(200%);
+  }
+}
+
+.scan-line {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(0, 240, 255, 0.1) 50%,
+    transparent 100%
+  );
+  animation: scan-line 3s linear infinite;
+  pointer-events: none;
+}
+
+/* 光暈按鈕效果 */
+.glow-button {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.glow-button:hover {
+  box-shadow:
+    0 0 20px rgba(0, 240, 255, 0.4),
+    0 0 40px rgba(0, 240, 255, 0.2),
+    inset 0 0 10px rgba(0, 240, 255, 0.1);
+}
+
+.glow-button::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(
+    45deg,
+    #00f0ff,
+    #b537ff,
+    #00f0ff,
+    #b537ff
+  );
+  background-size: 400% 400%;
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  animation: gradient-shift 4s ease infinite;
+}
+
+.glow-button:hover::before {
+  opacity: 1;
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* 數據流動畫 */
+@keyframes data-flow {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(200%);
+    opacity: 0;
+  }
+}
+
+.data-line {
+  position: absolute;
+  width: 1px;
+  height: 80px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(0, 240, 255, 0.5) 50%,
+    transparent 100%
+  );
+  animation: data-flow 2s linear infinite;
+}
+
+/* 全息邊框效果 */
+.holographic-border {
+  position: relative;
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(12px);
+}
+
+.holographic-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(0, 240, 255, 0.2) 50%,
+    transparent 70%
+  );
+  background-size: 200% 200%;
+  border-radius: inherit;
+  animation: border-flow 3s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes border-flow {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 200% 200%;
+  }
+}
+
+/* 響應式調整 */
+@media (max-width: 768px) {
+  .neon-text {
+    font-size: 1rem;
+  }
+
+  .cyber-grid {
+    background-size: 30px 30px;
+  }
+}
+
+/* 性能優化 - 減少動畫的視覺用戶 */
+@media (prefers-reduced-motion: reduce) {
+  .neon-text,
+  .scan-line,
+  .data-line,
+  .holographic-border::before {
+    animation: none;
+  }
+
+  .glow-button::before {
+    animation: none;
+  }
+}
+
+/* 高對比度模式支持 */
+@media (prefers-contrast: high) {
+  .cyber-grid {
+    background-image:
+      linear-gradient(rgba(0, 240, 255, 0.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 240, 255, 0.3) 1px, transparent 1px);
+  }
+
+  .holographic-border {
+    border-color: rgba(0, 240, 255, 0.6);
+  }
+}

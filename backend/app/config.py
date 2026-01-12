@@ -105,6 +105,23 @@ class Settings(BaseSettings):
     celery_broker_url: str = Field(default="redis://localhost:6379/0", alias="CELERY_BROKER_URL")
     celery_result_backend: str = Field(default="redis://localhost:6379/0", alias="CELERY_RESULT_BACKEND")
 
+    # Nano-Banana 圖片生成 API
+    nano_banana_api_base: str = Field(default="https://ai.t8star.cn/v1", alias="NANO_BANANA_API_BASE")
+    nano_banana_api_key: str = Field(default="", alias="NANO_BANANA_API_KEY")
+    nano_banana_model: str = Field(default="nano-banana", alias="NANO_BANANA_MODEL")
+
+    @field_validator('nano_banana_api_key')
+    @classmethod
+    def validate_nano_banana_key(cls, v, info):
+        """驗證 Nano-Banana API Key"""
+        app_env = info.data.get('app_env', 'production')
+        if not v and app_env == 'production':
+            warnings.warn(
+                "NANO_BANANA_API_KEY is not set. Image generation features will be unavailable.",
+                RuntimeWarning
+            )
+        return v
+
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",

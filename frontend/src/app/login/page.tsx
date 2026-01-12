@@ -28,17 +28,31 @@ import {
   HoloButton,
   PageTransition,
 } from '@/components/ui/future-tech'
-import { Lock, Mail } from 'lucide-react'
+import { Lock, Mail, Zap } from 'lucide-react'
 
 const formSchema = z.object({
   username: z.string().email({ message: '請輸入有效的電子郵件地址' }),
   password: z.string().min(1, { message: '請輸入密碼' }),
 })
 
+// 開發模式測試帳號
+const DEV_ACCOUNTS = [
+  { email: 'admin@dev.local', password: 'admin123', role: '管理員', color: 'from-red-500 to-orange-500' },
+  { email: 'operator@dev.local', password: 'operator123', role: '操作員', color: 'from-blue-500 to-cyan-500' },
+  { email: 'viewer@dev.local', password: 'viewer123', role: '檢視者', color: 'from-green-500 to-emerald-500' },
+]
+
 export default function LoginPage() {
   const { login, loginGoogle } = useAuth()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
+
+  // 檢測是否為開發環境
+  const isDevelopment = typeof window !== 'undefined' && (
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname.includes('192.168')
+  )
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -61,6 +75,26 @@ export default function LoginPage() {
         variant: 'destructive',
         title: '登入失敗',
         description: error.message || '無效的電子郵件或密碼',
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // 開發模式快速登入
+  async function quickLogin(email: string, password: string, role: string) {
+    setIsLoading(true)
+    try {
+      await login({ username: email, password })
+      toast({
+        title: '🚀 開發模式登入成功',
+        description: `已使用 ${role} 帳號登入`,
+      })
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: '快速登入失敗',
+        description: error.message || '請確認後端已配置開發帳號',
       })
     } finally {
       setIsLoading(false)
@@ -203,6 +237,49 @@ export default function LoginPage() {
                 width="350"
               />
             </div>
+
+            {/* 開發模式快速登入 */}
+            {isDevelopment && (
+              <>
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-amber-200" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-amber-50 backdrop-blur-sm px-3 text-amber-600 font-medium flex items-center gap-1">
+                      <Zap className="w-3 h-3" />
+                      開發模式快速登入
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {DEV_ACCOUNTS.map((account) => (
+                    <motion.button
+                      key={account.email}
+                      type="button"
+                      onClick={() => quickLogin(account.email, account.password, account.role)}
+                      disabled={isLoading}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`w-full px-4 py-3 rounded-lg bg-gradient-to-r ${account.color} text-white font-medium text-sm
+                                 shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
+                                 flex items-center justify-between`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Zap className="w-4 h-4" />
+                        {account.role}
+                      </span>
+                      <span className="text-xs opacity-75">{account.email}</span>
+                    </motion.button>
+                  ))}
+                  <p className="text-xs text-amber-600 text-center mt-3 flex items-center justify-center gap-1">
+                    <span>⚠️</span>
+                    <span>此功能僅在 localhost 環境顯示</span>
+                  </p>
+                </div>
+              </>
+            )}
 
           </HoloCard>
         </motion.div>

@@ -12,6 +12,14 @@ from app.models.import_job import ImportJob, ImportJobItem
 from app.models.analytics import PriceAnalytics, MarketReport
 from app.models.notification import Notification, Webhook
 from app.models.user import User
+from app.models.pricing import PriceProposal
+from app.models.image_generation import (
+    ImageGenerationTask,
+    InputImage,
+    OutputImage,
+    GenerationMode,
+    TaskStatus
+)
 
 __all__ = [
     # 數據庫
@@ -45,4 +53,12 @@ __all__ = [
     # 通知
     "Notification",
     "Webhook",
+    # 智能定價
+    "PriceProposal",
+    # 圖片生成
+    "ImageGenerationTask",
+    "InputImage",
+    "OutputImage",
+    "GenerationMode",
+    "TaskStatus",
 ]

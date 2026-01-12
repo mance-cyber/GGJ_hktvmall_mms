@@ -17,6 +17,7 @@ celery_app = Celery(
     include=[
         "app.tasks.scrape_tasks",
         "app.tasks.content_tasks",
+        "app.tasks.image_generation_tasks",
     ]
 )
 

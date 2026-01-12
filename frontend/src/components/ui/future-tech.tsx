@@ -360,6 +360,9 @@ interface DataStreamBgProps {
 }
 
 export function DataStreamBg({ className, density = 'medium', color = 'cyan' }: DataStreamBgProps) {
+  const [isMounted, setIsMounted] = useState(false)
+  const [streams, setStreams] = useState<Array<{ height: number; duration: number; delay: number }>>([])
+
   const densityConfig = {
     low: 8,
     medium: 15,
@@ -374,15 +377,32 @@ export function DataStreamBg({ className, density = 'medium', color = 'cyan' }: 
 
   const streamCount = densityConfig[density]
 
+  // 只在客戶端掛載後生成隨機值
+  useEffect(() => {
+    setIsMounted(true)
+    setStreams(
+      Array.from({ length: streamCount }, () => ({
+        height: Math.random() * 30 + 20,
+        duration: Math.random() * 3 + 2,
+        delay: Math.random() * 5,
+      }))
+    )
+  }, [streamCount])
+
+  // 服務器端渲染時不顯示動畫，避免 hydration 錯誤
+  if (!isMounted) {
+    return <div className={cn('absolute inset-0 overflow-hidden pointer-events-none', className)} />
+  }
+
   return (
     <div className={cn('absolute inset-0 overflow-hidden pointer-events-none', className)}>
-      {Array.from({ length: streamCount }).map((_, i) => (
+      {streams.map((stream, i) => (
         <motion.div
           key={i}
           className={cn('absolute w-px bg-gradient-to-b', colorConfig[color])}
           style={{
             left: `${(i / streamCount) * 100}%`,
-            height: `${Math.random() * 30 + 20}%`,
+            height: `${stream.height}%`,
           }}
           initial={{ y: '-100%', opacity: 0 }}
           animate={{
@@ -390,9 +410,9 @@ export function DataStreamBg({ className, density = 'medium', color = 'cyan' }: 
             opacity: [0, 1, 1, 0],
           }}
           transition={{
-            duration: Math.random() * 3 + 2,
+            duration: stream.duration,
             repeat: Infinity,
-            delay: Math.random() * 5,
+            delay: stream.delay,
             ease: 'linear',
           }}
         />
