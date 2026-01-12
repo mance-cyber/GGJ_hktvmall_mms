@@ -37,7 +37,7 @@ function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;
 
   try {
-    return localStorage.getItem("auth_token");
+    return localStorage.getItem("token");
   } catch {
     return null;
   }
@@ -50,7 +50,7 @@ export function setAuthToken(token: string): void {
   if (typeof window === "undefined") return;
 
   try {
-    localStorage.setItem("auth_token", token);
+    localStorage.setItem("token", token);
   } catch (error) {
     console.error("Failed to save auth token:", error);
   }
@@ -63,7 +63,7 @@ export function clearAuthToken(): void {
   if (typeof window === "undefined") return;
 
   try {
-    localStorage.removeItem("auth_token");
+    localStorage.removeItem("token");
   } catch (error) {
     console.error("Failed to clear auth token:", error);
   }
