@@ -195,18 +195,19 @@ def create_app() -> FastAPI:
     )
 
     # C-02: CORS 設定 - 明確指定允許的來源和標頭
+    # 始終包含生產環境域名，開發環境額外添加 localhost
+    allowed_origins = [
+        "https://ggj-front.zeabur.app",
+        "https://ggj-back.zeabur.app",
+    ]
+
     if settings.debug:
-        allowed_origins = [
+        allowed_origins.extend([
             "http://localhost:3000",
             "http://127.0.0.1:3000",
             "http://localhost:8000",
             "http://127.0.0.1:8000",
-        ]
-    else:
-        allowed_origins = [
-            "https://ggj-front.zeabur.app",
-            "https://ggj-back.zeabur.app",
-        ]
+        ])
 
     app.add_middleware(
         CORSMiddleware,
@@ -215,6 +216,7 @@ def create_app() -> FastAPI:
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
         allow_headers=["Authorization", "Content-Type", "X-Requested-With", "Accept"],
         expose_headers=["Content-Type", "X-Total-Count"],
+        max_age=3600,  # 預檢請求緩存 1 小時
     )
 
     # 註冊 API 路由
