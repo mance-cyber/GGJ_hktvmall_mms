@@ -128,43 +128,88 @@ OUTPUT:
         style_description: Optional[str],
         product_analysis: Optional[Dict[str, Any]] = None
     ) -> str:
-        """構建專業攝影圖 prompt"""
-        base_prompt = """Create 3 professional food/product photography images with these specifications:
+        """構建專業攝影圖 prompt（針對日本食品、香港市場優化）"""
+        base_prompt = """Create 3 premium Japanese food photography images optimized for Hong Kong market with these exact specifications:
+
+VISUAL STYLE - JAPANESE CULINARY ARTISTRY:
+- Emphasize "Shokunin" (職人) craftsmanship and attention to detail
+- Capture the essence of Japanese aesthetics: simplicity, elegance, and precision
+- Showcase ingredients' natural colors and textures authentically
+- Color palette: Vibrant yet natural (avoid over-saturation)
+- Temperature: Warm (2800K-3200K) for inviting, appetizing mood
 
 COMPOSITION VARIETY:
-Image 1: Close-up hero shot with selective focus
-Image 2: Styled scene with complementary props and context
-Image 3: Artistic angle with dramatic lighting
+Image 1 - HERO CLOSE-UP (主打特寫):
+- Extreme close-up (macro lens effect) with selective focus
+- Highlight textures: rice grains, fish marbling, noodle strands
+- Shallow depth of field (f/1.8-2.8 bokeh effect)
+- Focus on the most appetizing element
+- Show steam, moisture, or freshness indicators
 
-LIGHTING:
-- Natural or studio lighting
-- Soft shadows for depth
-- Highlight textures and details
+Image 2 - STYLED SCENE (情境美食):
+- 45-degree angle overhead shot (Hong Kong Instagram style)
+- Include complementary Japanese elements: chopsticks, ceramic plates, bamboo mat
+- Clean, minimal background with subtle wood or stone textures
+- Negative space for text overlay capability
+- Props: authentic Japanese tableware, natural materials
 
-STYLING:
-- Professional food/product styling
-- Complementary props and background
-- Magazine-quality aesthetics
+Image 3 - EDITORIAL DRAMA (雜誌級構圖):
+- Artistic angle with dramatic but natural lighting
+- Side lighting with soft shadows (3/4 lighting setup)
+- Show the full dish in context with atmospheric background
+- Add depth with layered composition
+- Professional food magazine quality
 
-MOOD:
-- Premium and appetizing
-- Inviting and luxurious
-- Instagram-worthy presentation
+LIGHTING SPECIFICATIONS:
+- Soft directional light (mimics natural window light)
+- Key light at 45° angle from above
+- Gentle fill light to preserve shadow details
+- No harsh reflections or blown highlights
+- Preserve color accuracy of ingredients
 
-OUTPUT:
-- 3 distinct compositions
-- High resolution
-- Professional photography quality"""
+AUTHENTICITY & DETAILS:
+- Photo-realistic textures (no AI-looking smoothness)
+- Visible imperfections for authenticity (slight irregularities)
+- Natural condensation, gloss, or sheen on appropriate surfaces
+- Proper food physics (gravity, stacking, sauce flow)
+- Micro-details visible in close-ups
+
+HONG KONG MARKET OPTIMIZATION:
+- Appeal to Hong Kong's sophisticated food culture
+- Clean, modern aesthetic (avoid overly traditional or rustic)
+- Instagram-ready composition (suitable for Stories and Feed)
+- Premium positioning (高級感) without being unapproachable
+- Color grading: Rich, appetizing, but true-to-life
+
+BRAND CONSISTENCY:
+- Maintain consistent color temperature across all 3 images
+- Unified mood and atmosphere
+- Same quality level for each composition
+- Cohesive visual language suitable for brand campaigns
+
+TECHNICAL REQUIREMENTS:
+- High resolution (suitable for print and digital)
+- Sharp focus on key elements
+- Proper exposure with retained highlight and shadow details
+- Professional retouching level (natural, not over-processed)
+- Ready for immediate commercial use
+
+OUTPUT STANDARDS:
+- 3 distinct but complementary images
+- Each image tells a different story but shares the same premium quality
+- Suitable for: e-commerce, social media, advertising campaigns
+- Industry standard: Michelin Guide / VOGUE / Kinfolk photography level"""
 
         # 添加用戶風格描述
         if style_description:
-            base_prompt += f"\n\nUSER STYLE PREFERENCE: {style_description}"
+            base_prompt += f"\n\nCUSTOM STYLE DIRECTION: {style_description}"
 
         # 添加產品分析
         if product_analysis and "labels" in product_analysis:
             labels = product_analysis["labels"][:5]
             product_desc = ", ".join(labels)
-            base_prompt += f"\n\nPRODUCT TYPE: {product_desc}"
+            base_prompt += f"\n\nSPECIFIC PRODUCT: {product_desc}"
+            base_prompt += "\nEnsure all visual elements align with this product category's characteristics."
 
         return base_prompt
 
