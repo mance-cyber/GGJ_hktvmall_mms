@@ -175,8 +175,8 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title="HKTVmall AI 營運系統",
-        description="競品監測、AI 文案生成、HKTVmall 數據同步",
-        version="1.0.0",
+        description="競品監測、AI 文案生成、HKTVmall 數據同步、AI 圖片生成",
+        version="1.0.1",
         docs_url="/docs" if settings.debug else None,
         redoc_url="/redoc" if settings.debug else None,
         lifespan=lifespan,
