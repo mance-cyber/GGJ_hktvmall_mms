@@ -112,6 +112,15 @@ const categoryColors = {
     activeGlow: 'shadow-[0_0_15px_rgba(236,72,153,0.15)]',
     indicator: 'from-pink-500 to-rose-500',
   },
+  cyan: {
+    gradient: 'from-cyan-500/10 via-cyan-400/5 to-transparent',
+    border: 'border-cyan-300/30',
+    accent: 'text-cyan-600',
+    activeBg: 'bg-cyan-50',
+    activeBorder: 'border-cyan-400/50',
+    activeGlow: 'shadow-[0_0_15px_rgba(6,182,212,0.15)]',
+    indicator: 'from-cyan-500 to-blue-500',
+  },
 }
 
 // =============================================
@@ -124,6 +133,18 @@ const navigationGroups: NavGroup[] = [
     color: categoryColors.blue,
     items: [
       { name: '儀表板', href: '/', icon: LayoutDashboard },
+    ]
+  },
+  {
+    title: 'AI 圖片生成',
+    color: categoryColors.cyan,
+    items: [
+      {
+        name: '圖片生成',
+        href: '/image-generation/upload',
+        icon: Image,
+        permissions: [PERMISSIONS.AGENT_READ]
+      },
     ]
   },
   {
@@ -171,12 +192,6 @@ const navigationGroups: NavGroup[] = [
         href: '/categories',
         icon: FolderOpen,
         permissions: [PERMISSIONS.COMPETITORS_READ]
-      },
-      {
-        name: 'AI 圖片生成',
-        href: '/image-generation/upload',
-        icon: Image,
-        permissions: [PERMISSIONS.AGENT_READ]
       },
       {
         name: 'AI 文案',
