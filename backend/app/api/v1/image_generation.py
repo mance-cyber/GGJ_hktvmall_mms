@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import List
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.database import get_db
 from app.models.image_generation import (
@@ -61,6 +62,17 @@ async def create_image_generation_task(
     db.add(task)
     await db.commit()
     await db.refresh(task)
+
+    # 重新查詢並預加載關係（避免 MissingGreenlet 錯誤）
+    result = await db.execute(
+        select(ImageGenerationTask)
+        .options(
+            selectinload(ImageGenerationTask.input_images),
+            selectinload(ImageGenerationTask.output_images)
+        )
+        .where(ImageGenerationTask.id == task.id)
+    )
+    task = result.scalar_one()
 
     logger.info(f"Created image generation task {task.id} for user {current_user.id}")
 
@@ -212,7 +224,17 @@ async def start_image_generation(
     task.celery_task_id = celery_task.id
     task.status = TaskStatus.PROCESSING
     await db.commit()
-    await db.refresh(task)
+
+    # 重新查詢並預加載關係（避免 MissingGreenlet 錯誤）
+    result = await db.execute(
+        select(ImageGenerationTask)
+        .options(
+            selectinload(ImageGenerationTask.input_images),
+            selectinload(ImageGenerationTask.output_images)
+        )
+        .where(ImageGenerationTask.id == task_id)
+    )
+    task = result.scalar_one()
 
     logger.info(f"Started image generation for task {task_id}, Celery task {celery_task.id}")
 
@@ -229,7 +251,12 @@ async def get_task_status(
     獲取任務狀態（包含輸入/輸出圖片）
     """
     result = await db.execute(
-        select(ImageGenerationTask).where(
+        select(ImageGenerationTask)
+        .options(
+            selectinload(ImageGenerationTask.input_images),
+            selectinload(ImageGenerationTask.output_images)
+        )
+        .where(
             ImageGenerationTask.id == task_id,
             ImageGenerationTask.user_id == current_user.id
         )
@@ -268,6 +295,10 @@ async def list_tasks(
 
     result = await db.execute(
         select(ImageGenerationTask)
+        .options(
+            selectinload(ImageGenerationTask.input_images),
+            selectinload(ImageGenerationTask.output_images)
+        )
         .where(ImageGenerationTask.user_id == current_user.id)
         .order_by(ImageGenerationTask.created_at.desc())
         .offset(offset)
