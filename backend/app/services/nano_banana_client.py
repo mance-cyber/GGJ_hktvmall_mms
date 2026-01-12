@@ -398,10 +398,20 @@ OUTPUT STANDARDS:
                         # 去除空白字符
                         b64_string = b64_string.strip()
 
+                        # 檢測並移除 Data URL 前綴（如果存在）
+                        # 格式：data:image/png;base64,<actual_base64>
+                        if b64_string.startswith('data:'):
+                            # 查找 base64 數據開始位置（逗號後面）
+                            comma_index = b64_string.find(',')
+                            if comma_index != -1:
+                                b64_string = b64_string[comma_index + 1:]
+                                logger.info(f"Removed Data URL prefix, new length: {len(b64_string)}")
+
                         # 修復 padding（base64 需要是 4 的倍數）
                         missing_padding = len(b64_string) % 4
                         if missing_padding:
                             b64_string += '=' * (4 - missing_padding)
+                            logger.info(f"Added {4 - missing_padding} padding characters")
 
                         try:
                             image_data = base64.b64decode(b64_string)
@@ -409,7 +419,7 @@ OUTPUT STANDARDS:
                             # 打印詳細錯誤信息用於調試
                             logger.error(f"Base64 decode failed for image {idx + 1}")
                             logger.error(f"Original length: {len(item['b64_json'])}")
-                            logger.error(f"After strip length: {len(b64_string)}")
+                            logger.error(f"After processing length: {len(b64_string)}")
                             logger.error(f"First 100 chars: {b64_string[:100]}")
                             logger.error(f"Last 100 chars: {b64_string[-100:]}")
                             raise decode_error
