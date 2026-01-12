@@ -87,39 +87,89 @@ class NanoBananaClient:
         )
 
     def _build_white_bg_prompt(self, product_analysis: Optional[Dict[str, Any]] = None) -> str:
-        """構建白底圖 prompt"""
-        base_prompt = """Create a professional product photograph with these exact specifications:
+        """構建白底圖 prompt（針對 HKTVmall 電商、日本食品優化）"""
+        base_prompt = """Create a professional e-commerce product photograph optimized for Hong Kong online marketplace (HKTVmall standard) with these exact specifications:
 
-BACKGROUND:
-- Pure white background (RGB 255,255,255)
-- No shadows, gradients, or textures
-- Perfectly clean and uniform
+BACKGROUND REQUIREMENTS - STRICT:
+- Pure white background (RGB 255, 255, 255) - absolutely no variations
+- Zero shadows, gradients, textures, or any background elements
+- Perfectly clean and uniform across entire frame
+- No floor or surface visible - product appears to float
+- Clinical white studio environment
 
-PRODUCT POSITIONING:
-- Top-view perspective (bird's eye view)
-- Product centered in the frame
-- Maintain product's natural shape and proportions
+PRODUCT POSITIONING - TOP VIEW STANDARD:
+- Strict 90-degree bird's eye view (directly overhead)
+- Product perfectly centered in frame with equal margins
+- Maintain product's authentic shape, proportions, and dimensions
+- Natural arrangement (not artificially styled)
+- If multiple pieces: organized neatly but authentically
 
-LIGHTING:
-- Soft, even lighting
-- No harsh shadows
-- Highlight product details clearly
+LIGHTING SETUP - FOOD OPTIMIZED:
+- Soft, diffused overhead lighting (mimics professional lightbox)
+- Even illumination with no harsh shadows or hotspots
+- Gentle directional light from 12 o'clock position
+- Preserve natural colors accurately (no color cast)
+- Highlight surface textures and details clearly
+- Slight specular highlights on glossy surfaces (soy sauce, oil, packaging)
 
-STYLE:
-- E-commerce product photography standard
-- High resolution and sharp details
-- Professional studio quality
+FOOD TEXTURE & DETAIL EMPHASIS - CRITICAL:
+For Japanese food products, capture these micro-details:
+- Rice grains: Individual grain definition, natural sheen, slight moisture
+- Fish/Seafood: Marbling texture, natural color variation, fresh appearance
+- Noodles: Individual strand separation, texture patterns, natural curves
+- Sauces: Glossy sheen, viscosity indicators, natural pooling
+- Packaging: Label clarity, material texture (plastic sheen, paper matte)
+- Freshness indicators: Natural condensation, slight imperfections, organic irregularities
 
-OUTPUT:
-- Single product image
-- White background only
-- Top-down view"""
+AUTHENTICITY & REALISM - ANTI-AI:
+- Photo-realistic textures (avoid AI-smooth, over-perfect look)
+- Preserve natural imperfections: slight asymmetry, minor irregularities
+- Realistic product physics: natural stacking, authentic arrangement
+- True-to-life colors (avoid oversaturation or artificial enhancement)
+- Visible micro-details that prove authenticity
+- Natural material properties: matte vs glossy surfaces accurately rendered
 
-        # 如果有產品分析，添加產品特徵描述
+HONG KONG E-COMMERCE OPTIMIZATION:
+- Meet HKTVmall product image standards
+- Clean, professional presentation appealing to HK consumers
+- Show product clearly for online purchase decision
+- Accurate color representation for customer expectations
+- Suitable for mobile device viewing (clear even when scaled down)
+
+CONSISTENCY CONTROL - BRAND STANDARDS:
+- Maintain identical lighting setup (color temperature: 5500K daylight neutral)
+- Consistent perspective angle (90° top-down, no variation)
+- Uniform background white level (RGB 255,255,255 exact)
+- Same product-to-frame ratio across generations
+- Predictable and repeatable style for product catalog uniformity
+
+TECHNICAL SPECIFICATIONS:
+- High resolution suitable for zoom functionality
+- Sharp focus across entire product (infinite depth of field)
+- No motion blur or softness
+- Proper exposure: no clipped highlights or blocked shadows
+- Professional product photography quality ready for commercial use
+
+OUTPUT REQUIREMENTS:
+- Single product image only
+- Pure white background with no exceptions
+- Top-down perspective maintained
+- Clean, professional, catalog-ready
+- Optimized for e-commerce platform display
+
+REFERENCE STANDARD:
+- HKTVmall professional product photography
+- Wellcome, ParknShop online grocery photography
+- Don Don Donki product catalog style
+- Meets Hong Kong consumer expectations for online food shopping"""
+
+        # 如果有產品分析，添加產品特徵描述和針對性指引
         if product_analysis and "labels" in product_analysis:
             labels = product_analysis["labels"][:5]  # 取前 5 個標籤
             product_desc = ", ".join(labels)
-            base_prompt += f"\n\nPRODUCT TYPE: {product_desc}"
+            base_prompt += f"\n\nSPECIFIC PRODUCT CATEGORY: {product_desc}"
+            base_prompt += "\nApply appropriate texture rendering and detail emphasis based on this product type."
+            base_prompt += "\nEnsure all visual characteristics match authentic product photography for this category."
 
         return base_prompt
 
