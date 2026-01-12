@@ -165,11 +165,9 @@ function FloatingButton({
   // 使用 useMotionValue 實現流暢拖動（避免 state 更新造成的延遲）
   const x = useMotionValue(0)
   const y = useMotionValue(0)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const dotLottieInstance = useRef<any>(null)
 
   // 動畫播放完成後停頓 3 秒再重新播放（使用 play API 避免閃爍）
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const dotLottieRefCallback = useCallback((dotLottie: any) => {
     if (dotLottie) {
       dotLottieInstance.current = dotLottie
