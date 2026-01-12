@@ -28,11 +28,16 @@ RUN useradd -m -u 1000 appuser && \
 # 複製代碼
 COPY --chown=appuser:appuser . .
 
+# 複製啟動腳本並設置權限
+COPY --chown=appuser:appuser start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
 # 切換到非 root 用戶
 USER appuser
 
 # 暴露端口（Zeabur 會自動注入 PORT 環境變量）
 EXPOSE 8000
 
-# 啟動命令 - 使用 exec 形式以支持信號處理
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2"]
+# 啟動命令 - 通過 start.sh 支持多種模式
+# 默認啟動 API，可通過 SERVICE_TYPE 環境變量切換
+CMD ["/app/start.sh"]
