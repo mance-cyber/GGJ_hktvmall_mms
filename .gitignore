@@ -89,6 +89,12 @@ Thumbs.db
 tmp/
 temp/
 
+# Uploads (image generation system)
+backend/uploads/*
+!backend/uploads/.gitkeep
+!backend/uploads/input/.gitkeep
+!backend/uploads/generated/.gitkeep
+
 # Windows reserved names
 nul
 backend/nul
