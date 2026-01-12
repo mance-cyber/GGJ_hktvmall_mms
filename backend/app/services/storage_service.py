@@ -61,9 +61,17 @@ class StorageService:
             self.bucket = settings.r2_bucket
             self.public_url_base = settings.r2_public_url.rstrip('/')
 
-            # 測試連接
-            self.s3_client.head_bucket(Bucket=self.bucket)
-            logger.info(f"Successfully connected to R2 bucket: {self.bucket}")
+            # 測試連接（使用 list_objects_v2 代替 head_bucket，更可靠）
+            try:
+                self.s3_client.list_objects_v2(Bucket=self.bucket, MaxKeys=1)
+                logger.info(f"Successfully connected to R2 bucket: {self.bucket}")
+            except ClientError as test_error:
+                # 如果是 NoSuchBucket 錯誤，抛出異常
+                if test_error.response.get('Error', {}).get('Code') == 'NoSuchBucket':
+                    raise Exception(f"Bucket '{self.bucket}' does not exist")
+                # 其他錯誤（如 AccessDenied）記錄警告但繼續
+                logger.warning(f"Could not verify bucket access: {test_error}")
+                logger.info(f"R2 client initialized for bucket: {self.bucket}")
 
         except ClientError as e:
             logger.error(f"Failed to initialize R2 client: {e}")
