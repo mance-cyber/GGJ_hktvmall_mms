@@ -34,7 +34,7 @@ from sqlalchemy import select, func
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
-router = APIRouter(prefix="/image-generation", tags=["image-generation"])
+router = APIRouter(tags=["image-generation"])
 
 
 @router.post("/tasks", response_model=ImageGenerationTaskResponse)
