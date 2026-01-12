@@ -24,6 +24,7 @@ import {
   Brain,
   MessageSquare,
   LogOut,
+  Image,
   LucideIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -170,6 +171,12 @@ const navigationGroups: NavGroup[] = [
         href: '/categories',
         icon: FolderOpen,
         permissions: [PERMISSIONS.COMPETITORS_READ]
+      },
+      {
+        name: 'AI 圖片生成',
+        href: '/image-generation/upload',
+        icon: Image,
+        permissions: [PERMISSIONS.AGENT_READ]
       },
       {
         name: 'AI 文案',
