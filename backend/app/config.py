@@ -109,6 +109,7 @@ class Settings(BaseSettings):
     nano_banana_api_base: str = Field(default="https://ai.t8star.cn/v1", alias="NANO_BANANA_API_BASE")
     nano_banana_api_key: str = Field(default="", alias="NANO_BANANA_API_KEY")
     nano_banana_model: str = Field(default="nano-banana", alias="NANO_BANANA_MODEL")
+    upload_dir: str = Field(default="./uploads", alias="UPLOAD_DIR")
 
     @field_validator('nano_banana_api_key')
     @classmethod

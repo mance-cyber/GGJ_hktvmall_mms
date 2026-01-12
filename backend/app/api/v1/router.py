@@ -5,9 +5,9 @@
 from fastapi import APIRouter
 
 from app.api.v1 import (
-    competitors, products, content, analytics, scrape, categories, 
-    telegram, market_response, ai_settings, agent, hktvmall, 
-    pricing, orders, inbox, finance, promotions, auth
+    competitors, products, content, analytics, scrape, categories,
+    telegram, market_response, ai_settings, agent, hktvmall,
+    pricing, orders, inbox, finance, promotions, auth, image_generation
 )
 
 api_router = APIRouter()
@@ -135,4 +135,11 @@ api_router.include_router(
     promotions.router,
     prefix="/promotions",
     tags=["智能推廣"]
+)
+
+# 圖片生成
+api_router.include_router(
+    image_generation.router,
+    prefix="/image-generation",
+    tags=["圖片生成"]
 )
