@@ -26,10 +26,48 @@ class NanoBananaClient:
             logger.warning("NANO_BANANA_API_KEY not set. Image generation will fail.")
 
     def _encode_image_to_base64(self, image_path: str) -> str:
-        """將圖片編碼為 base64"""
+        """
+        將圖片編碼為 base64
+
+        支持：
+        - 本地文件路徑
+        - HTTP/HTTPS URL（從 R2 使用 boto3 SDK 下載）
+        """
         try:
-            with open(image_path, "rb") as image_file:
-                return base64.b64encode(image_file.read()).decode('utf-8')
+            # 檢測是否為 URL
+            if image_path.startswith(('http://', 'https://')):
+                # 從 R2 下載圖片（使用 StorageService）
+                logger.info(f"Downloading image from R2: {image_path}")
+
+                # 從完整 URL 提取 R2 Key
+                # URL 格式：https://.../bucket-name/path/to/file.jpg
+                # 需要提取 path/to/file.jpg
+                storage = get_storage()
+                if settings.use_r2_storage and settings.r2_public_url in image_path:
+                    # 提取相對路徑（移除 public_url_base）
+                    r2_key = image_path.replace(f"{settings.r2_public_url}/", "")
+                    logger.info(f"Extracted R2 key: {r2_key}")
+
+                    # 使用 boto3 從 R2 下載
+                    response = storage.s3_client.get_object(
+                        Bucket=storage.bucket,
+                        Key=r2_key
+                    )
+                    image_data = response['Body'].read()
+                    logger.info(f"Downloaded {len(image_data)} bytes from R2")
+                else:
+                    # 其他 URL（非 R2），使用 HTTP 下載
+                    logger.info(f"Downloading from external URL: {image_path}")
+                    response = httpx.get(image_path, timeout=30.0)
+                    response.raise_for_status()
+                    image_data = response.content
+            else:
+                # 本地文件路徑
+                logger.info(f"Reading local image: {image_path}")
+                with open(image_path, "rb") as image_file:
+                    image_data = image_file.read()
+
+            return base64.b64encode(image_data).decode('utf-8')
         except Exception as e:
             logger.error(f"Failed to encode image {image_path}: {e}")
             raise
