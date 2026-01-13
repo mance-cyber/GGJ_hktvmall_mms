@@ -21,6 +21,7 @@ class NanoBananaClient:
         self.api_base = settings.nano_banana_api_base
         self.api_key = settings.nano_banana_api_key
         self.model = settings.nano_banana_model
+        self.thinking_model = settings.gemini_thinking_model
 
         if not self.api_key:
             logger.warning("NANO_BANANA_API_KEY not set. Image generation will fail.")
@@ -71,6 +72,294 @@ class NanoBananaClient:
         except Exception as e:
             logger.error(f"Failed to encode image {image_path}: {e}")
             raise
+
+    # ==================== 第一階段：AI 圖片分析 ====================
+
+    def analyze_image_for_generation(
+        self,
+        image_path: str,
+        mode: str,
+        style_description: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        使用 Gemini Thinking 模型分析圖片並生成定制化 prompt
+
+        Args:
+            image_path: 輸入圖片路徑（本地或 R2 URL）
+            mode: 生成模式 (white_bg_topview / professional_photo)
+            style_description: 用戶提供的風格描述（可選）
+
+        Returns:
+            {
+                "visual_description": "圖片的視覺描述",
+                "generated_prompt": "生成的定制化 prompt",
+                "product_type": "檢測到的產品類型"
+            }
+        """
+        try:
+            # 編碼圖片為 base64
+            encoded_image = self._encode_image_to_base64(image_path)
+            logger.info(f"Analyzing image: {image_path}, mode: {mode}")
+
+            # 構建分析 prompt
+            analysis_prompt = self._build_analysis_prompt(mode, style_description)
+
+            # 調用 Gemini Thinking API
+            response = self._call_thinking_api(encoded_image, analysis_prompt)
+
+            # 解析響應
+            result = self._parse_analysis_response(response, mode, style_description)
+
+            logger.info(f"Image analysis completed. Product type: {result.get('product_type', 'unknown')}")
+            return result
+
+        except Exception as e:
+            logger.error(f"Failed to analyze image {image_path}: {e}", exc_info=True)
+            # 分析失敗時返回默認結果，使用原有的硬編碼 prompt
+            return self._get_fallback_analysis(mode, style_description)
+
+    def _build_analysis_prompt(self, mode: str, style_description: Optional[str] = None) -> str:
+        """構建圖片分析 prompt - 日本高級食材電商海報風格"""
+
+        # 用戶自定義風格（如有）
+        style_info = f"\n\nUSER STYLE REQUEST: {style_description}" if style_description else ""
+
+        return f"""You are an elite E-Commerce Art Director specializing in premium Japanese gourmet (日本高級食材) product key visuals, inspired by top-tier Japanese department store food halls (デパ地下), kaiseki photography, and refined washoku aesthetics.
+
+GOAL:
+Analyze the input image and output ONE final generation prompt (English description) that keeps the product faithful and upgrades it into a luxury Japanese gourmet e-commerce poster with elegant graphic typography.
+
+CRITICAL RULES (must follow):
+1) Product fidelity: do NOT redesign product/label/colors/shape/branding; preserve visible Japanese text, materials, textures, and proportions exactly.
+2) Mandatory packaging: if any packaging appears in the input, include it clearly in the final shot together with the product contents (full set).
+3) Floating graphic overlay (must be 2D on-top overlay): add a floating marketing graphic banner/badge/label that sits ABOVE the photo (not printed on packaging, not a physical prop).
+4) Overlay text content must be Traditional Chinese only (繁體中文). No English words in overlay.
+5) Place "logo.png" at the bottom-right corner with safe margin; flat vector graphics style, high opacity, undeformed, do not recolor, visually distinct from packaging. You may add a very subtle neutral shadow behind it ONLY to separate from background (no glow, no outline).
+6) Output ONLY the final prompt string, end with: --ar 1:1
+
+JAPANESE FOOD CATEGORY PRESENTATION (choose based on product type):
+
+【鮮魚・海鮮 Sashimi/Seafood】
+- Whole fish: show on cedar/hinoki board with one sashimi-cut portion arranged beside it; add bamboo leaves (笹の葉) as accent.
+- Sashimi blocks (柵): display block with 3-5 slices cut and fanned elegantly; include daikon tsuma garnish and wasabi accent.
+- Shellfish/Uni/Ikura: show in original container plus a portion presented in a small ceramic dish or wooden masu box.
+- Dried seafood (干物/珍味): keep original packaging upright; arrange loose pieces on washi paper or small ceramic plate.
+
+【肉類 Premium Meat】
+- Wagyu/beef block: show whole piece with one thick slice cut revealing marbling (霜降り); add premium steak knife.
+- Shabu-shabu/sukiyaki slices: fan out slices elegantly on black or earth-tone ceramic plate; show original tray packaging behind.
+- Specialty cuts (タン/ホルモン/レバー): display on traditional cast-iron plate or wooden board with rock salt accent.
+
+【加工食品 Processed/Preserved】
+- Dried goods (昆布/鰹節/乾物): keep original packaging; scatter loose product artfully on natural wood surface.
+- Pickles (漬物): show jar/package with portion served in small ceramic dish (豆皿).
+- Mentaiko/Tarako: display in original wooden box with one piece lifted to show texture.
+
+【調味料 Seasonings/Condiments】
+- Soy sauce/Miso/Dashi: show original bottle/container prominently; add small ceramic dish with product poured/scooped.
+- Specialty oils/vinegars: elegant pour shot or bottle with condensation; add droplet on spoon.
+
+【和菓子・甘味 Japanese Sweets】
+- Wagashi: keep original box; arrange 2-3 pieces on black lacquer tray or ceramic plate.
+- Packaged snacks: original packaging upright; pile contents generously in foreground.
+
+【酒類 Japanese Beverages】
+- Sake/Shochu: original bottle with traditional ceramic cup (お猪口/ぐい呑み) filled; add water droplets on bottle.
+- Japanese whisky: bottle with crystal glass; one large ice sphere.
+
+JAPANESE AESTHETIC DIRECTION (enforce consistently):
+
+Lighting:
+- Soft, warm key light (3200K-4000K) suggesting high-end izakaya or kaiseki atmosphere
+- Gentle diffused shadows; avoid harsh contrast
+- Subtle rim light to separate product from background
+
+Background/Surface:
+- Primary: aged hinoki wood, dark walnut, or charcoal slate
+- Secondary: natural linen cloth (麻布), washi paper texture, or muted ceramic tile
+- Accent props (minimal): seasonal leaf (maple/bamboo/shiso), small ceramic dish, chopstick rest
+- Keep backgrounds uncluttered; product is the hero
+
+Color Palette:
+- Dominant: warm wood tones, charcoal, deep indigo, moss green
+- Accent: subtle gold foil, vermillion red (朱色) used sparingly
+- Avoid: bright primary colors, neon, pure white backgrounds
+
+TYPOGRAPHY & OVERLAY DESIGN (Japanese luxury aesthetic):
+
+Font Selection (AI chooses based on product mood):
+- Headline: Refined Mincho-style serif (明朝体) — elegant, editorial, never heavy
+- Supporting: Clean Gothic sans (ゴシック体) — light weight, generous tracking
+- Badge/Seal: May use tasteful calligraphy ONLY if extremely refined (no brush-stroke mess)
+- Forbidden: cheap brush fonts, rounded fonts, bubble text, heavy outlines, plastic bevel, WordArt effects
+
+Overlay Material Aesthetic:
+- Washi paper texture with subtle fiber visibility
+- Gold foil stamping (箔押し) — thin lines only, never heavy fills
+- Letterpress emboss effect — extremely subtle
+- Delicate drop shadow — soft, short distance
+
+Layout Archetype (choose ONE that fits negative space):
+A) 「掛軸風」Hanging scroll header — horizontal banner at top, centered or left-aligned
+B) 「短冊風」Vertical tag — slim vertical label on left or right edge
+C) 「題字＋落款」Headline + seal badge — main text top area, small round seal (落款風) at upper corner
+
+Layout Rules:
+- Total overlay area: 10%-18% of frame
+- Never cover the product; use negative space only
+- Reserve bottom-right strictly for logo.png
+- Maintain generous safe margins (minimum 5% from edges)
+
+TRADITIONAL CHINESE COPY GUIDELINES (AI generates):
+
+Main Headline (4-10 characters):
+- Premium, refined tone; evoke quality/craftsmanship/seasonality
+- Good examples: 「匠心嚴選」「旬之美味」「料亭風味」「職人手作」「鮮度直送」
+- Avoid: slang, emojis, exaggerated claims
+
+Supporting Line (8-18 characters):
+- Safe, truthful benefit statement about taste/texture/quality/gift-worthiness
+- Good examples: 「細緻油花 入口即化」「傳承百年 醇厚回甘」「嚴選素材 品質保證」
+- Forbidden: medical/health claims, superlatives (最/第一/100%), unverified origin claims
+
+Optional Badge (2-4 characters, only if appropriate):
+- 「嚴選」「限定」「人氣」「推薦」「熱賣」「珍味」
+- Use maximum ONE badge; place as small seal element
+
+ANTI-FAILSAFE CHECKLIST:
+✗ No extra brands/logos besides original packaging and bottom-right logo.png
+✗ No warping or recoloring of original Japanese packaging text
+✗ Overlay must NOT appear printed on packaging — clearly separate 2D layer
+✗ No watermarks, QR codes, English words in overlay, random decorative patterns
+✗ No cheap/tacky visual effects (glow, heavy outline, gradient fills, plastic texture)
+✗ No overcrowded composition — maintain breathing room (余白の美){style_info}
+
+FINAL OUTPUT FORMAT:
+Return your analysis as valid JSON:
+```json
+{{
+    "visual_description": "對圖片的詳細中文描述（50-100字）",
+    "product_type": "產品類型（如：和牛、海鮮、調味料、和菓子等）",
+    "detected_category": "Category from above list (e.g., Premium Meat, Sashimi/Seafood, etc.)",
+    "key_features": ["特徵1", "特徵2", "特徵3"],
+    "suggested_headline": "建議的繁體中文標題（4-10字）",
+    "suggested_subline": "建議的繁體中文副標題（8-18字）",
+    "generated_prompt": "The final English prompt describing: [faithful product + packaging] + [category-specific presentation with props] + [Japanese aesthetic lighting & surface] + [elegant thin border or washi frame] + [overlay archetype + Traditional Chinese text content] + [bottom-right logo.png requirement]. End with: --ar 1:1"
+}}
+```"""
+
+    def _call_thinking_api(self, encoded_image: str, prompt: str) -> Dict[str, Any]:
+        """調用 Gemini Thinking API 進行圖片分析"""
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+
+        # 構建 Chat Completions 請求（帶圖片）
+        payload = {
+            "model": self.thinking_model,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{encoded_image}"
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": prompt
+                        }
+                    ]
+                }
+            ],
+            "max_tokens": 2000,
+            "temperature": 0.7
+        }
+
+        logger.info(f"Calling Gemini Thinking API with model: {self.thinking_model}")
+
+        with httpx.Client(timeout=120.0) as client:
+            response = client.post(
+                f"{self.api_base}/chat/completions",
+                json=payload,
+                headers=headers
+            )
+            response.raise_for_status()
+            return response.json()
+
+    def _parse_analysis_response(
+        self,
+        response: Dict[str, Any],
+        mode: str,
+        style_description: Optional[str]
+    ) -> Dict[str, Any]:
+        """解析 AI 分析響應"""
+        import json
+        import re
+
+        try:
+            # 提取 AI 回覆內容
+            content = response.get("choices", [{}])[0].get("message", {}).get("content", "")
+
+            if not content:
+                logger.warning("Empty response from Thinking API")
+                return self._get_fallback_analysis(mode, style_description)
+
+            # 嘗試從回覆中提取 JSON
+            # 支持 ```json ... ``` 格式和純 JSON
+            json_match = re.search(r'```json\s*([\s\S]*?)\s*```', content)
+            if json_match:
+                json_str = json_match.group(1)
+            else:
+                # 嘗試直接解析整個內容
+                json_str = content
+
+            # 解析 JSON
+            result = json.loads(json_str)
+
+            # 驗證必要欄位
+            if "generated_prompt" not in result:
+                logger.warning("Missing generated_prompt in response")
+                return self._get_fallback_analysis(mode, style_description)
+
+            return {
+                "visual_description": result.get("visual_description", ""),
+                "product_type": result.get("product_type", "unknown"),
+                "detected_category": result.get("detected_category", ""),
+                "key_features": result.get("key_features", []),
+                "suggested_headline": result.get("suggested_headline", ""),
+                "suggested_subline": result.get("suggested_subline", ""),
+                "generated_prompt": result["generated_prompt"],
+                "raw_response": content  # 保留原始響應用於調試
+            }
+
+        except json.JSONDecodeError as e:
+            logger.warning(f"Failed to parse JSON from response: {e}")
+            logger.debug(f"Raw content: {content[:500]}")
+            return self._get_fallback_analysis(mode, style_description)
+
+    def _get_fallback_analysis(self, mode: str, style_description: Optional[str]) -> Dict[str, Any]:
+        """分析失敗時的降級方案，使用原有的硬編碼 prompt"""
+        logger.info("Using fallback analysis with default prompt")
+
+        if mode == "white_bg_topview":
+            prompt = self._build_white_bg_prompt(None)
+        else:
+            prompt = self._build_professional_photo_prompt(style_description, None)
+
+        return {
+            "visual_description": "AI 分析未能完成，使用默認設置",
+            "product_type": "unknown",
+            "key_features": [],
+            "generated_prompt": prompt,
+            "fallback": True
+        }
+
+    # ==================== 第二階段：圖片生成 ====================
 
     def generate_white_bg_topview(
         self,

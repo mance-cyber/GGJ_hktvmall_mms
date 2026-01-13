@@ -20,7 +20,8 @@ class GenerationMode(str, Enum):
 class TaskStatus(str, Enum):
     """任務狀態"""
     PENDING = "pending"  # 等待處理
-    PROCESSING = "processing"  # 處理中
+    ANALYZING = "analyzing"  # AI 分析圖片中（第一階段）
+    PROCESSING = "processing"  # 生成圖片中（第二階段）
     COMPLETED = "completed"  # 已完成
     FAILED = "failed"  # 失敗
 

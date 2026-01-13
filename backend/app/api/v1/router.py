@@ -7,7 +7,8 @@ from fastapi import APIRouter
 from app.api.v1 import (
     competitors, products, content, analytics, scrape, categories,
     telegram, market_response, ai_settings, agent, hktvmall,
-    pricing, orders, inbox, finance, promotions, auth, image_generation
+    pricing, orders, inbox, finance, promotions, auth, image_generation,
+    price_trends
 )
 
 api_router = APIRouter()
@@ -142,4 +143,11 @@ api_router.include_router(
     image_generation.router,
     prefix="/image-generation",
     tags=["圖片生成"]
+)
+
+# 價格趨勢
+api_router.include_router(
+    price_trends.router,
+    prefix="/price-trends",
+    tags=["價格趨勢"]
 )

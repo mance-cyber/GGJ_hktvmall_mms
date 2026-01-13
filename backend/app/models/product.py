@@ -64,6 +64,7 @@ class Product(Base):
     competitor_mappings: Mapped[List["ProductCompetitorMapping"]] = relationship(back_populates="product", cascade="all, delete-orphan")
     ai_contents: Mapped[List["AIContent"]] = relationship(back_populates="product")
     price_proposals: Mapped[List["PriceProposal"]] = relationship(back_populates="product")
+    price_snapshots: Mapped[List["OwnPriceSnapshot"]] = relationship(back_populates="product", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("idx_products_sku", "sku"),
@@ -109,6 +110,33 @@ class ProductCompetitorMapping(Base):
 
     __table_args__ = (
         UniqueConstraint("product_id", "competitor_product_id", name="uq_product_competitor"),
+    )
+
+
+class OwnPriceSnapshot(Base):
+    """
+    自家產品價格歷史快照
+
+    用於追蹤自家產品的價格變化趨勢，與 PriceSnapshot（競品）對應。
+    Mock 數據使用 MOCK- 前綴的 product_id 關聯，可通過 cleanup 腳本清除。
+    """
+    __tablename__ = "own_price_snapshots"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    product_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"))
+    price: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2))
+    original_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), comment="原價（劃線價）")
+    discount_percent: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2))
+    stock_status: Mapped[Optional[str]] = mapped_column(String(50), comment="in_stock, out_of_stock, low_stock")
+    promotion_text: Mapped[Optional[str]] = mapped_column(Text)
+    recorded_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+    # 關聯
+    product: Mapped["Product"] = relationship(back_populates="price_snapshots")
+
+    __table_args__ = (
+        Index("idx_own_price_snapshots_product_id", "product_id"),
+        Index("idx_own_price_snapshots_recorded_at", "recorded_at"),
     )
 
 

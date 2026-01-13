@@ -108,8 +108,11 @@ class Settings(BaseSettings):
     # Nano-Banana 圖片生成 API
     nano_banana_api_base: str = Field(default="https://ai.t8star.cn/v1", alias="NANO_BANANA_API_BASE")
     nano_banana_api_key: str = Field(default="", alias="NANO_BANANA_API_KEY")
-    nano_banana_model: str = Field(default="nano-banana", alias="NANO_BANANA_MODEL")
+    nano_banana_model: str = Field(default="nano-banana-2-4k", alias="NANO_BANANA_MODEL")
     upload_dir: str = Field(default="./uploads", alias="UPLOAD_DIR")
+
+    # Gemini Thinking 模型（用於圖片分析，第一階段）
+    gemini_thinking_model: str = Field(default="gemini-3-pro-preview-thinking-0325", alias="GEMINI_THINKING_MODEL")
 
     # 存儲配置
     use_r2_storage: bool = Field(default=False, alias="USE_R2_STORAGE")

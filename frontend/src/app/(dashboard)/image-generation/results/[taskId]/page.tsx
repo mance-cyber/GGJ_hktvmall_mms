@@ -15,6 +15,10 @@ import {
   XCircle,
   ArrowLeft,
   Image as ImageIcon,
+  ChevronDown,
+  ChevronUp,
+  Brain,
+  Sparkles,
 } from 'lucide-react'
 
 export default function ImageGenerationResultPage({
@@ -27,6 +31,7 @@ export default function ImageGenerationResultPage({
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [inputImageUrls, setInputImageUrls] = useState<Record<string, string>>({})
+  const [showAnalysis, setShowAnalysis] = useState<Record<string, boolean>>({})
 
   // 獲取輸入圖片的預簽名 URL
   const fetchInputImageUrls = useCallback(async (images: InputImage[]) => {
@@ -55,7 +60,7 @@ export default function ImageGenerationResultPage({
       setError(null)
 
       // 如果任務還在處理中，繼續輪詢
-      if (data.status === 'processing' || data.status === 'pending') {
+      if (data.status === 'processing' || data.status === 'pending' || data.status === 'analyzing') {
         setTimeout(fetchTaskStatus, 2000) // 每 2 秒輪詢一次
       }
     } catch (err: any) {
@@ -95,6 +100,9 @@ export default function ImageGenerationResultPage({
     } else if (status === 'pending') {
       statusColor = 'bg-gray-400'
       statusText = '等待中'
+    } else if (status === 'analyzing') {
+      statusColor = 'bg-purple-500'
+      statusText = 'AI 分析中'
     }
 
     return (
@@ -117,9 +125,15 @@ export default function ImageGenerationResultPage({
         <div className="flex justify-between items-center mt-2">
           <p className="text-sm text-gray-600">{progress}%</p>
 
+          {status === 'analyzing' && (
+            <div className="flex items-center gap-2 text-sm text-purple-600">
+              <Brain className="w-4 h-4 animate-pulse" />
+              AI 正在分析圖片...
+            </div>
+          )}
           {status === 'processing' && (
             <div className="flex items-center gap-2 text-sm text-blue-600">
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Sparkles className="w-4 h-4 animate-spin" />
               正在生成圖片...
             </div>
           )}
@@ -218,33 +232,105 @@ export default function ImageGenerationResultPage({
       {/* 狀態指示器 */}
       {renderStatusIndicator()}
 
-      {/* 輸入圖片 */}
+      {/* 輸入圖片和 AI 分析結果 */}
       {task.input_images.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             輸入圖片 ({task.input_images.length})
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="space-y-6">
             {task.input_images.map((image) => (
-              <div
-                key={image.id}
-                className="relative aspect-square rounded-lg overflow-hidden bg-gray-100"
-              >
-                {inputImageUrls[image.id] ? (
-                  <Image
-                    src={inputImageUrls[image.id]}
-                    alt={image.file_name}
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+              <div key={image.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="flex flex-col md:flex-row">
+                  {/* 圖片預覽 */}
+                  <div className="relative w-full md:w-48 h-48 flex-shrink-0 bg-gray-100">
+                    {inputImageUrls[image.id] ? (
+                      <Image
+                        src={inputImageUrls[image.id]}
+                        alt={image.file_name}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                      </div>
+                    )}
                   </div>
-                )}
-                <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 text-xs">
-                  <p className="truncate">{image.file_name}</p>
+
+                  {/* 圖片信息和分析結果 */}
+                  <div className="flex-1 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium text-gray-900 truncate">{image.file_name}</h3>
+                      {image.analysis_result && (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                          <Brain className="w-3 h-3" />
+                          AI 已分析
+                        </span>
+                      )}
+                    </div>
+
+                    {/* AI 分析結果摘要 */}
+                    {image.analysis_result && (
+                      <div className="mt-3">
+                        {/* 產品類型 */}
+                        {image.analysis_result.product_type && (
+                          <p className="text-sm text-gray-600 mb-2">
+                            <span className="font-medium">產品類型：</span>
+                            {image.analysis_result.product_type}
+                          </p>
+                        )}
+
+                        {/* 視覺描述 */}
+                        {image.analysis_result.visual_description && (
+                          <p className="text-sm text-gray-600 mb-2">
+                            <span className="font-medium">AI 描述：</span>
+                            {image.analysis_result.visual_description}
+                          </p>
+                        )}
+
+                        {/* 展開/收起 Prompt */}
+                        {image.analysis_result.generated_prompt && (
+                          <div className="mt-3">
+                            <button
+                              onClick={() => setShowAnalysis(prev => ({
+                                ...prev,
+                                [image.id]: !prev[image.id]
+                              }))}
+                              className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-800"
+                            >
+                              {showAnalysis[image.id] ? (
+                                <>
+                                  <ChevronUp className="w-4 h-4" />
+                                  隱藏生成 Prompt
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown className="w-4 h-4" />
+                                  查看生成 Prompt
+                                </>
+                              )}
+                            </button>
+
+                            {showAnalysis[image.id] && (
+                              <div className="mt-2 p-3 bg-gray-50 rounded-lg text-xs text-gray-700 font-mono overflow-auto max-h-40">
+                                {image.analysis_result.generated_prompt}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* 分析中狀態 */}
+                    {task.status === 'analyzing' && !image.analysis_result && (
+                      <div className="mt-3 flex items-center gap-2 text-sm text-purple-600">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        AI 正在分析這張圖片...
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -263,10 +349,17 @@ export default function ImageGenerationResultPage({
       )}
 
       {/* 處理中提示 */}
+      {task.status === 'analyzing' && (
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 text-center">
+          <Brain className="w-12 h-12 text-purple-600 mx-auto mb-3 animate-pulse" />
+          <p className="text-purple-800 font-medium">AI 正在分析您的圖片...</p>
+          <p className="text-purple-600 text-sm mt-1">AI 會根據圖片內容生成最佳的生成策略</p>
+        </div>
+      )}
       {(task.status === 'processing' || task.status === 'pending') && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-          <Loader2 className="w-12 h-12 text-blue-600 mx-auto mb-3 animate-spin" />
-          <p className="text-blue-800 font-medium">AI 正在努力生成圖片...</p>
+          <Sparkles className="w-12 h-12 text-blue-600 mx-auto mb-3 animate-spin" />
+          <p className="text-blue-800 font-medium">AI 正在根據分析結果生成圖片...</p>
           <p className="text-blue-600 text-sm mt-1">請稍候，頁面將自動更新</p>
         </div>
       )}

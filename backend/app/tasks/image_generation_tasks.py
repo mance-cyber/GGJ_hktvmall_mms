@@ -63,7 +63,16 @@ class ImageGenTaskBase(Task):
 @celery_app.task(base=ImageGenTaskBase, bind=True, name="process_image_generation")
 def process_image_generation(self, task_id: str) -> Dict[str, Any]:
     """
-    處理圖片生成任務
+    處理圖片生成任務（兩階段連續執行）
+
+    階段 1：AI 分析圖片
+      - 使用 Gemini Thinking 模型分析每張輸入圖片
+      - 生成針對性的 prompt
+      - 保存分析結果到 InputImage.analysis_result
+
+    階段 2：圖片生成
+      - 使用分析生成的 prompt 調用 Nano-Banana API
+      - 保存生成的圖片
 
     Args:
         task_id: ImageGenerationTask ID
@@ -82,9 +91,14 @@ def process_image_generation(self, task_id: str) -> Dict[str, Any]:
         if not task:
             raise ValueError(f"Task {task_id} not found")
 
-        # 更新狀態為處理中
-        task.status = TaskStatus.PROCESSING
-        task.progress = 10
+        # 初始化 Nano-Banana 客戶端
+        client = NanoBananaClient()
+
+        # ==================== 階段 1：AI 分析圖片 ====================
+        logger.info(f"[Task {task_id}] Starting Stage 1: AI Image Analysis")
+
+        task.status = TaskStatus.ANALYZING
+        task.progress = 5
         task.celery_task_id = self.request.id
         db.commit()
 
@@ -96,86 +110,136 @@ def process_image_generation(self, task_id: str) -> Dict[str, Any]:
         if not input_images:
             raise ValueError("No input images found")
 
-        input_image_paths = [img.file_path for img in input_images]
+        # 分析每張輸入圖片
+        total_images = len(input_images)
+        analysis_results = []
 
-        # 更新進度：準備 API 調用
-        task.progress = 20
-        db.commit()
+        for idx, input_img in enumerate(input_images):
+            logger.info(f"[Task {task_id}] Analyzing image {idx + 1}/{total_images}: {input_img.file_name}")
 
-        # 初始化 Nano-Banana 客戶端
-        client = NanoBananaClient()
+            # 調用 AI 分析
+            analysis = client.analyze_image_for_generation(
+                image_path=input_img.file_path,
+                mode=task.mode.value,
+                style_description=task.style_description
+            )
 
-        # 根據模式調用不同的生成方法
-        task.progress = 30
+            # 保存分析結果到 InputImage
+            input_img.analysis_result = analysis
+            analysis_results.append(analysis)
+
+            # 更新進度（階段 1 佔 5% - 30%）
+            stage1_progress = 5 + int((idx + 1) / total_images * 25)
+            task.progress = stage1_progress
+            db.commit()
+
+            logger.info(f"[Task {task_id}] Image {idx + 1} analysis complete. "
+                       f"Product type: {analysis.get('product_type', 'unknown')}")
+
+        logger.info(f"[Task {task_id}] Stage 1 complete. All {total_images} images analyzed.")
+
+        # ==================== 階段 2：圖片生成 ====================
+        logger.info(f"[Task {task_id}] Starting Stage 2: Image Generation")
+
+        task.status = TaskStatus.PROCESSING
+        task.progress = 35
         db.commit()
 
         # 獲取輸出數量配置
         outputs_per_image = task.outputs_per_image or 1
-        logger.info(f"Configured to generate {outputs_per_image} image(s) per input")
+        logger.info(f"[Task {task_id}] Generating {outputs_per_image} output(s) per input image")
 
-        if task.mode == GenerationMode.WHITE_BG_TOPVIEW:
-            # 生成白底圖
-            logger.info(f"Generating white background top-view for task {task_id}")
+        # 收集所有生成的圖片
+        all_output_data = []  # [(output_path, prompt_used, input_image_id), ...]
 
-            # 獲取產品分析結果（如果有）
-            product_analysis = input_images[0].analysis_result if input_images else None
+        for idx, input_img in enumerate(input_images):
+            # 從分析結果中獲取定制化 prompt
+            analysis = input_img.analysis_result or {}
+            generated_prompt = analysis.get("generated_prompt")
 
-            api_response = client.generate_white_bg_topview(
-                input_images=input_image_paths,
-                product_analysis=product_analysis,
-                num_outputs=outputs_per_image
-            )
+            # 如果分析失敗，使用默認 prompt
+            if not generated_prompt:
+                logger.warning(f"[Task {task_id}] No generated prompt for image {idx + 1}, using fallback")
+                if task.mode == GenerationMode.WHITE_BG_TOPVIEW:
+                    generated_prompt = client._build_white_bg_prompt(None)
+                else:
+                    generated_prompt = client._build_professional_photo_prompt(task.style_description, None)
 
-        elif task.mode == GenerationMode.PROFESSIONAL_PHOTO:
-            # 生成專業攝影圖
-            logger.info(f"Generating professional photos for task {task_id}")
+            logger.info(f"[Task {task_id}] Generating for image {idx + 1}/{total_images} with AI-generated prompt")
 
-            product_analysis = input_images[0].analysis_result if input_images else None
+            # 對每張輸入圖片生成指定數量的輸出
+            for output_idx in range(outputs_per_image):
+                logger.info(f"[Task {task_id}] Generating output {output_idx + 1}/{outputs_per_image} for input {idx + 1}")
 
-            api_response = client.generate_professional_photos(
-                input_images=input_image_paths,
-                style_description=task.style_description,
-                product_analysis=product_analysis,
-                num_outputs=outputs_per_image
-            )
-        else:
-            raise ValueError(f"Unknown generation mode: {task.mode}")
+                # 調用 API 生成單張圖片
+                api_response = client._call_api_single(
+                    input_images=[input_img.file_path],
+                    prompt=generated_prompt,
+                    aspect_ratio="1:1"
+                )
 
-        # 更新進度：API 調用完成
-        task.progress = 60
+                # 保存生成的圖片
+                output_dir = f"generated/{str(task_id)}"
+                output_filename = f"generated_{idx + 1}_{output_idx + 1}.png"
+                output_relative_path = f"{output_dir}/{output_filename}"
+
+                if "data" in api_response and api_response["data"]:
+                    item = api_response["data"][0]
+                    if "b64_json" in item:
+                        import base64
+                        b64_string = item["b64_json"].strip()
+
+                        # 去除 Data URL 前綴
+                        if b64_string.startswith('data:'):
+                            comma_index = b64_string.find(',')
+                            if comma_index != -1:
+                                b64_string = b64_string[comma_index + 1:]
+
+                        # 修復 padding
+                        missing_padding = len(b64_string) % 4
+                        if missing_padding:
+                            b64_string += '=' * (4 - missing_padding)
+
+                        image_data = base64.b64decode(b64_string)
+
+                        # 使用 StorageService 保存
+                        storage = get_storage()
+                        file_url = storage.save_file(
+                            file_data=image_data,
+                            file_path=output_relative_path
+                        )
+
+                        all_output_data.append((file_url, generated_prompt, str(input_img.id)))
+                        logger.info(f"[Task {task_id}] Saved output: {output_relative_path}")
+
+            # 更新進度（階段 2 佔 35% - 90%）
+            stage2_progress = 35 + int((idx + 1) / total_images * 55)
+            task.progress = stage2_progress
+            db.commit()
+
+        logger.info(f"[Task {task_id}] Stage 2 complete. Generated {len(all_output_data)} images.")
+
+        # ==================== 保存輸出記錄 ====================
+        task.progress = 95
         db.commit()
 
-        # 保存生成的圖片（使用相對路徑）
-        output_dir = f"generated/{str(task_id)}"
-        output_paths = client.save_generated_images(
-            api_response=api_response,
-            output_dir=output_dir
-        )
-
-        # 更新進度：保存圖片完成
-        task.progress = 80
-        db.commit()
-
-        # 創建 OutputImage 記錄
-        for idx, output_path in enumerate(output_paths):
-            # 提取檔名（支持 URL 和本地路徑）
+        for output_path, prompt_used, input_image_id in all_output_data:
+            # 提取檔名
             if output_path.startswith('http'):
-                # R2 URL 格式：https://domain.com/generated/task-id/generated_1.png
                 file_name = output_path.split('/')[-1]
             else:
-                # 本地路徑
                 file_name = Path(output_path).name
 
             output_image = OutputImage(
                 task_id=task_id,
                 file_path=output_path,
                 file_name=file_name,
-                file_size=None,  # 文件大小可選（R2 模式下無法直接獲取）
-                prompt_used=client._build_white_bg_prompt(None) if task.mode == GenerationMode.WHITE_BG_TOPVIEW else client._build_professional_photo_prompt(task.style_description, None),
+                file_size=None,
+                prompt_used=prompt_used,
                 generation_params={
                     "mode": task.mode.value,
-                    "num_outputs": len(output_paths),
-                    "index": idx + 1
+                    "input_image_id": input_image_id,
+                    "two_stage_generation": True
                 }
             )
             db.add(output_image)
@@ -183,19 +247,22 @@ def process_image_generation(self, task_id: str) -> Dict[str, Any]:
         # 更新任務狀態為完成
         task.status = TaskStatus.COMPLETED
         task.progress = 100
+        task.completed_at = datetime.utcnow()
         db.commit()
 
-        logger.info(f"Task {task_id} completed successfully. Generated {len(output_paths)} images.")
+        logger.info(f"[Task {task_id}] Task completed successfully. "
+                   f"Generated {len(all_output_data)} images from {total_images} inputs.")
 
         return {
             "task_id": str(task_id),
             "status": "completed",
-            "output_count": len(output_paths),
-            "output_paths": output_paths
+            "output_count": len(all_output_data),
+            "input_count": total_images,
+            "two_stage_generation": True
         }
 
     except Exception as e:
-        logger.error(f"Error processing task {task_id}: {e}", exc_info=True)
+        logger.error(f"[Task {task_id}] Error: {e}", exc_info=True)
 
         # 更新任務狀態為失敗
         try:

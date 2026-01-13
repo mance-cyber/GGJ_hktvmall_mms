@@ -5,7 +5,7 @@
 import { apiClient } from './client'
 
 export type GenerationMode = 'white_bg_topview' | 'professional_photo'
-export type TaskStatus = 'pending' | 'processing' | 'completed' | 'failed'
+export type TaskStatus = 'pending' | 'analyzing' | 'processing' | 'completed' | 'failed'
 
 export interface ImageGenerationTask {
   id: string

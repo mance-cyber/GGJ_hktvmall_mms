@@ -35,10 +35,15 @@ function StatusBadge({ status }: { status: string }) {
       icon: <Clock className="w-3 h-3" />,
       text: '等待中'
     },
+    analyzing: {
+      color: 'bg-purple-100 text-purple-700',
+      icon: <Loader2 className="w-3 h-3 animate-spin" />,
+      text: 'AI 分析中'
+    },
     processing: {
       color: 'bg-blue-100 text-blue-700',
       icon: <Loader2 className="w-3 h-3 animate-spin" />,
-      text: '處理中'
+      text: '生成中'
     },
     completed: {
       color: 'bg-green-100 text-green-700',
