@@ -646,7 +646,7 @@ export default function CompetitorDetailPage() {
                     <div className="bg-gradient-to-br from-slate-50 to-white p-3 rounded-xl border border-slate-100 shadow-sm">
                       <div className="text-xs text-muted-foreground mb-1">當前價格</div>
                       <div className="text-xl font-bold text-gray-900">
-                        ${priceHistory.product.current_price?.toFixed(2) || '-'}
+                        ${priceHistory.product.current_price ? Number(priceHistory.product.current_price).toFixed(2) : '-'}
                       </div>
                     </div>
                     <div className="bg-gradient-to-br from-slate-50 to-white p-3 rounded-xl border border-slate-100 shadow-sm">
@@ -659,7 +659,7 @@ export default function CompetitorDetailPage() {
                         {priceHistory.product.price_change ? (
                            priceHistory.product.price_change > 0 ? '+' : ''
                         ) : ''}
-                        {priceHistory.product.price_change?.toFixed(1) || '0'}%
+                        {priceHistory.product.price_change ? Number(priceHistory.product.price_change).toFixed(1) : '0'}%
                         {(priceHistory.product.price_change || 0) > 0 && <TrendingUp className="w-4 h-4 ml-1" />}
                         {(priceHistory.product.price_change || 0) < 0 && <TrendingDown className="w-4 h-4 ml-1" />}
                       </div>
@@ -699,7 +699,7 @@ export default function CompetitorDetailPage() {
                             <div className="flex justify-between items-start">
                               <div>
                                 <span className="text-sm font-bold text-gray-900 block">
-                                  ${snapshot.price?.toFixed(2) || '-'}
+                                  ${snapshot.price ? Number(snapshot.price).toFixed(2) : '-'}
                                 </span>
                                 <span className="text-xs text-muted-foreground">
                                   {new Date(snapshot.scraped_at).toLocaleDateString('zh-HK')}
@@ -833,7 +833,7 @@ function ProductRow({
       <div className="flex items-center space-x-4">
         <div className="text-right min-w-[80px]">
           <p className="text-sm font-bold text-gray-900 font-mono">
-            ${product.current_price?.toFixed(2) || '-'}
+            ${product.current_price ? Number(product.current_price).toFixed(2) : '-'}
           </p>
           {product.price_change !== null && (
             <div className="flex items-center justify-end text-xs mt-0.5">
@@ -845,7 +845,7 @@ function ProductRow({
                 )}
               >
                 {product.price_change > 0 ? '+' : ''}
-                {product.price_change?.toFixed(1)}%
+                {product.price_change ? Number(product.price_change).toFixed(1) : '0'}%
               </span>
             </div>
           )}
