@@ -147,7 +147,7 @@ export default function TrendsPage() {
         </div>
 
         {/* ========== 篩選控制 ========== */}
-        <div className="flex flex-col sm:flex-row gap-4 p-4 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.08)]">
+        <div className="flex flex-col sm:flex-row gap-4 p-4 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] overflow-visible">
           <div className="flex-1 relative z-50">
             <ProductSelector
               products={productsData.products}
