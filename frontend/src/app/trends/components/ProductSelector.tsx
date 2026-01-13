@@ -86,12 +86,12 @@ export function ProductSelector({
         <>
           {/* 背景遮罩 */}
           <div
-            className="fixed inset-0 z-[100]"
+            className="fixed inset-0 z-[9998]"
             onClick={() => setIsOpen(false)}
           />
 
           {/* 選單內容 */}
-          <div className="absolute z-[110] w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+          <div className="absolute z-[9999] w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
             {/* 搜尋框 */}
             <div className="p-3 border-b border-gray-100">
               <div className="relative">
