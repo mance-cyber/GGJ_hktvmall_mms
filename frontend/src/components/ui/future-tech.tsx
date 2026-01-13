@@ -100,12 +100,6 @@ export function HoloCard({
         </div>
       )}
 
-      {/* 角落裝飾 */}
-      <div className="absolute top-0 left-0 w-6 h-6 border-l-2 border-t-2 border-cyan-400/30 rounded-tl-xl" />
-      <div className="absolute top-0 right-0 w-6 h-6 border-r-2 border-t-2 border-cyan-400/30 rounded-tr-xl" />
-      <div className="absolute bottom-0 left-0 w-6 h-6 border-l-2 border-b-2 border-cyan-400/30 rounded-bl-xl" />
-      <div className="absolute bottom-0 right-0 w-6 h-6 border-r-2 border-b-2 border-cyan-400/30 rounded-br-xl" />
-
       {/* 內容 */}
       <div className="relative z-10">{children}</div>
     </motion.div>
