@@ -301,38 +301,39 @@ OUTPUT STANDARDS:
 
         return base_prompt
 
-    def _call_api(
+    def _call_api_single(
         self,
         input_images: List[str],
         prompt: str,
-        num_outputs: int = 1
+        aspect_ratio: str = "1:1"
     ) -> Dict[str, Any]:
         """
-        調用 Nano-Banana API
+        調用 Nano-Banana API（單次調用，生成 1 張圖片）
 
         Args:
-            input_images: 輸入圖片路徑列表
+            input_images: 輸入圖片路徑列表（參考圖）
             prompt: 生成 prompt
-            num_outputs: 輸出圖片數量
+            aspect_ratio: 圖片比例（1:1, 4:3, 3:4, 16:9, 9:16 等）
 
         Returns:
-            API 響應
+            API 響應（包含 1 張圖片）
         """
         try:
-            # 編碼圖片
+            # 編碼圖片為 base64
             encoded_images = [
                 self._encode_image_to_base64(img_path)
                 for img_path in input_images
             ]
 
-            # 構建請求 payload
-            # 注意：這裡的格式可能需要根據實際 API 文檔調整
+            # 構建請求 payload（根據 API 文檔）
+            # 關鍵修正：
+            # 1. 參數名是 "image"（單數），不是 "images"
+            # 2. API 不支持 "n" 參數，每次只生成 1 張
             payload = {
                 "model": self.model,
                 "prompt": prompt,
-                "images": encoded_images,
-                "n": num_outputs,
-                "size": "1024x1024",  # 可調整
+                "image": encoded_images,  # ✅ 正確：使用 "image" 而不是 "images"
+                "aspect_ratio": aspect_ratio,
                 "response_format": "b64_json"
             }
 
@@ -341,10 +342,13 @@ OUTPUT STANDARDS:
                 "Content-Type": "application/json"
             }
 
+            logger.info(f"Calling Nano-Banana API with {len(encoded_images)} reference images")
+            logger.info(f"Prompt length: {len(prompt)} chars")
+
             # 發送請求
-            with httpx.Client(timeout=120.0) as client:
+            with httpx.Client(timeout=180.0) as client:  # 增加超時時間
                 response = client.post(
-                    f"{self.api_base}/images/generations",  # 端點可能需要調整
+                    f"{self.api_base}/images/generations",
                     json=payload,
                     headers=headers
                 )
@@ -352,7 +356,7 @@ OUTPUT STANDARDS:
                 response.raise_for_status()
                 response_data = response.json()
 
-                # 調試日志：打印響應結構
+                # 調試日志
                 logger.info(f"API response keys: {list(response_data.keys())}")
                 if "data" in response_data:
                     logger.info(f"Number of images in response: {len(response_data['data'])}")
@@ -367,6 +371,57 @@ OUTPUT STANDARDS:
         except Exception as e:
             logger.error(f"Nano-Banana API error: {str(e)}")
             raise Exception(f"Image generation failed: {str(e)}")
+
+    def _call_api(
+        self,
+        input_images: List[str],
+        prompt: str,
+        num_outputs: int = 1
+    ) -> Dict[str, Any]:
+        """
+        調用 Nano-Banana API（多次調用以生成多張圖片）
+
+        由於 API 不支持 n 參數，需要多次調用來生成多張圖片。
+        每張輸入圖片會生成 num_outputs 張輸出圖片。
+
+        Args:
+            input_images: 輸入圖片路徑列表
+            prompt: 生成 prompt
+            num_outputs: 每張輸入圖片要生成的輸出數量
+
+        Returns:
+            合併的 API 響應（包含所有生成的圖片）
+        """
+        all_data = []
+
+        # 對每張輸入圖片，生成 num_outputs 張圖片
+        for img_idx, input_image in enumerate(input_images):
+            logger.info(f"Processing input image {img_idx + 1}/{len(input_images)}: {input_image}")
+
+            for output_idx in range(num_outputs):
+                logger.info(f"  Generating output {output_idx + 1}/{num_outputs} for input image {img_idx + 1}")
+
+                # 調用 API（使用單張輸入圖片）
+                response = self._call_api_single(
+                    input_images=[input_image],  # 單張輸入圖片
+                    prompt=prompt,
+                    aspect_ratio="1:1"
+                )
+
+                # 收集生成的圖片
+                if "data" in response:
+                    for item in response["data"]:
+                        all_data.append(item)
+                        logger.info(f"    Generated image {len(all_data)}")
+
+        logger.info(f"Total generated images: {len(all_data)}")
+
+        # 返回合併的響應
+        return {
+            "data": all_data,
+            "model": self.model,
+            "created": int(__import__('time').time())
+        }
 
     def save_generated_images(
         self,
