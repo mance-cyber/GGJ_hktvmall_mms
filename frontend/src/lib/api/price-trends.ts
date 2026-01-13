@@ -84,7 +84,7 @@ export async function getProductsWithTrends(
   search?: string
 ): Promise<ProductListResponse> {
   const params = search ? { search } : {}
-  const response = await apiClient.get('/api/v1/price-trends/products', { params })
+  const response = await apiClient.get('/price-trends/products', { params })
   return response as unknown as ProductListResponse
 }
 
@@ -95,7 +95,7 @@ export async function getProductPriceTrend(
   productId: string,
   query?: PriceTrendQuery
 ): Promise<PriceTrendResponse> {
-  const response = await apiClient.get(`/api/v1/price-trends/product/${productId}`, {
+  const response = await apiClient.get(`/price-trends/product/${productId}`, {
     params: query
   })
   return response as unknown as PriceTrendResponse
