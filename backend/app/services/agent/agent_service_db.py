@@ -17,6 +17,7 @@ from .slot_manager import SlotManager, AnalysisSlots, SlotStatus, SlotCompletene
 from .tool_executor import ToolExecutor
 from .report_generator import ReportGenerator, Report
 from .mock_data import is_mock_mode_enabled, MockResponseGenerator
+from .quick_cache import QuickCacheService
 from .persona import (
     RESPONSE_TEMPLATES,
     format_order_stats,
@@ -153,6 +154,8 @@ class AgentService:
         self.report_generator = ReportGenerator(ai_service)
         self.mock_mode = is_mock_mode_enabled()
         self.mock_generator = MockResponseGenerator() if self.mock_mode else None
+        # 快取服務
+        self.quick_cache = QuickCacheService(db)
 
     async def get_conversations(self, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         """獲取對話列表"""
@@ -340,6 +343,39 @@ class AgentService:
                 state=state
             )
             return
+
+        # =============================================
+        # 快取快速回覆（秒回）
+        # =============================================
+        if intent_result.intent in DIRECT_ACTION_INTENTS:
+            # 嘗試使用快取
+            try:
+                quick_response = await self.quick_cache.get_quick_response(
+                    intent_result.intent.value
+                )
+                if quick_response:
+                    print(f"[AgentService] 使用快取回覆: intent={intent_result.intent.value}")
+                    await self._update_conversation_state(conversation_id, state.slots, state.current_intent)
+                    await self._save_message(conversation_id, "assistant", quick_response.message, "message")
+
+                    # 轉換建議格式
+                    suggestions = None
+                    if quick_response.suggestions:
+                        suggestions = [
+                            {"text": s.get("text", ""), "icon": s.get("icon", "")}
+                            for s in quick_response.suggestions
+                        ]
+
+                    yield AgentResponse(
+                        type=ResponseType.MESSAGE,
+                        content=quick_response.message,
+                        conversation_id=conversation_id,
+                        suggestions=suggestions or get_follow_up_suggestions(intent_result.intent.value),
+                        state=state
+                    )
+                    return
+            except Exception as e:
+                print(f"[AgentService] 快取回覆失敗，回退到正常流程: {e}")
 
         # =============================================
         # 直接執行的意圖（不需要產品槽位）
