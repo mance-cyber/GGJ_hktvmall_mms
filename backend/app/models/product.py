@@ -107,6 +107,7 @@ class ProductCompetitorMapping(Base):
 
     # 關聯
     product: Mapped["Product"] = relationship(back_populates="competitor_mappings")
+    competitor_product: Mapped["CompetitorProduct"] = relationship()
 
     __table_args__ = (
         UniqueConstraint("product_id", "competitor_product_id", name="uq_product_competitor"),
