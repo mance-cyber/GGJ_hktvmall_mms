@@ -4,9 +4,10 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { getTaskStatus, type ImageGenerationTask } from '@/lib/api/image-generation'
+import Image from 'next/image'
+import { getTaskStatus, getPresignedUrl, type ImageGenerationTask, type InputImage } from '@/lib/api/image-generation'
 import { ResultGallery } from '@/components/image-generation/ResultGallery'
 import {
   Loader2,
@@ -25,6 +26,26 @@ export default function ImageGenerationResultPage({
   const [task, setTask] = useState<ImageGenerationTask | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [inputImageUrls, setInputImageUrls] = useState<Record<string, string>>({})
+
+  // 獲取輸入圖片的預簽名 URL
+  const fetchInputImageUrls = useCallback(async (images: InputImage[]) => {
+    const urls: Record<string, string> = {}
+    for (const image of images) {
+      if (!inputImageUrls[image.id] && image.file_path) {
+        try {
+          const response = await getPresignedUrl(image.file_path)
+          urls[image.id] = response.presigned_url
+        } catch (err) {
+          console.error('Failed to get presigned URL for input image:', err)
+          urls[image.id] = image.file_path
+        }
+      }
+    }
+    if (Object.keys(urls).length > 0) {
+      setInputImageUrls(prev => ({ ...prev, ...urls }))
+    }
+  }, [inputImageUrls])
 
   // 獲取任務狀態
   const fetchTaskStatus = async () => {
@@ -48,6 +69,13 @@ export default function ImageGenerationResultPage({
   useEffect(() => {
     fetchTaskStatus()
   }, [params.taskId])
+
+  // 當任務數據加載後，獲取輸入圖片的預簽名 URL
+  useEffect(() => {
+    if (task?.input_images && task.input_images.length > 0) {
+      fetchInputImageUrls(task.input_images)
+    }
+  }, [task?.input_images, fetchInputImageUrls])
 
   // 渲染進度條
   const renderProgressBar = () => {
@@ -202,7 +230,19 @@ export default function ImageGenerationResultPage({
                 key={image.id}
                 className="relative aspect-square rounded-lg overflow-hidden bg-gray-100"
               >
-                <ImageIcon className="absolute inset-0 m-auto w-8 h-8 text-gray-400" />
+                {inputImageUrls[image.id] ? (
+                  <Image
+                    src={inputImageUrls[image.id]}
+                    alt={image.file_name}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                  </div>
+                )}
                 <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 text-xs">
                   <p className="truncate">{image.file_name}</p>
                 </div>

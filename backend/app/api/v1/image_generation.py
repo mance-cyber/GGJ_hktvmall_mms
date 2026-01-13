@@ -312,3 +312,34 @@ async def list_tasks(
         page=page,
         page_size=page_size
     )
+
+
+@router.get("/presigned-url")
+async def get_presigned_url(
+    file_url: str,
+    expires_in: int = 3600,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    獲取 R2 文件的預簽名 URL
+
+    預簽名 URL 可以繞過 CORS 限制，直接在瀏覽器中訪問。
+
+    Args:
+        file_url: R2 文件的公開 URL 或相對路徑
+        expires_in: URL 過期時間（秒），默認 1 小時，最大 24 小時
+
+    Returns:
+        預簽名 URL
+    """
+    # 限制過期時間最大為 24 小時
+    expires_in = min(expires_in, 86400)
+
+    storage = get_storage()
+    presigned_url = storage.get_presigned_url(file_url, expires_in)
+
+    return {
+        "presigned_url": presigned_url,
+        "expires_in": expires_in,
+        "original_url": file_url
+    }

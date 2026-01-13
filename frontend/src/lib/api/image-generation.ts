@@ -24,6 +24,7 @@ export interface ImageGenerationTask {
 export interface InputImage {
   id: string
   file_name: string
+  file_path: string
   file_size: number
   upload_order: number
   analysis_result?: any
@@ -101,4 +102,20 @@ export async function listTasks(page = 1, pageSize = 20): Promise<TaskListRespon
     params: { page, page_size: pageSize },
   })
   return response as unknown as TaskListResponse  // 響應攔截器已返回 data
+}
+
+/**
+ * 獲取預簽名 URL（繞過 CORS 限制）
+ */
+export interface PresignedUrlResponse {
+  presigned_url: string
+  expires_in: number
+  original_url: string
+}
+
+export async function getPresignedUrl(fileUrl: string, expiresIn = 3600): Promise<PresignedUrlResponse> {
+  const response = await apiClient.get('/image-generation/presigned-url', {
+    params: { file_url: fileUrl, expires_in: expiresIn },
+  })
+  return response as unknown as PresignedUrlResponse
 }

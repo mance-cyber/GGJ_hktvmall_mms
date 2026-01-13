@@ -225,6 +225,62 @@ class StorageService:
         }
         return content_types.get(ext, 'application/octet-stream')
 
+    def get_presigned_url(self, file_path: str, expires_in: int = 3600) -> str:
+        """
+        獲取 R2 文件的預簽名 URL（臨時訪問 URL）
+
+        預簽名 URL 不需要 CORS 配置和公開訪問，
+        可以直接在瀏覽器中訪問和下載。
+
+        Args:
+            file_path: R2 中的文件路徑，或完整的 R2 URL
+            expires_in: URL 過期時間（秒），默認 1 小時
+
+        Returns:
+            預簽名 URL（可直接在瀏覽器中訪問）
+        """
+        if not self.use_r2:
+            # 本地模式直接返回原路徑
+            return self.get_public_url(file_path)
+
+        try:
+            # 如果是完整 URL，提取 R2 Key
+            r2_key = file_path
+            if file_path.startswith('http'):
+                # 從 URL 提取相對路徑
+                if self.public_url_base in file_path:
+                    r2_key = file_path.replace(f"{self.public_url_base}/", "")
+                else:
+                    # 嘗試從 URL 路徑提取
+                    from urllib.parse import urlparse
+                    parsed = urlparse(file_path)
+                    # 移除開頭的斜線和 bucket 名稱
+                    path = parsed.path.lstrip('/')
+                    if path.startswith(self.bucket + '/'):
+                        r2_key = path[len(self.bucket) + 1:]
+                    else:
+                        r2_key = path
+
+            logger.info(f"Generating presigned URL for: {r2_key}")
+
+            # 生成預簽名 URL
+            presigned_url = self.s3_client.generate_presigned_url(
+                'get_object',
+                Params={
+                    'Bucket': self.bucket,
+                    'Key': r2_key
+                },
+                ExpiresIn=expires_in
+            )
+
+            logger.info(f"Generated presigned URL (expires in {expires_in}s)")
+            return presigned_url
+
+        except ClientError as e:
+            logger.error(f"Failed to generate presigned URL: {e}")
+            # 降級到公開 URL
+            return self.get_public_url(file_path)
+
 
 # =============================================
 # 全局單例實例
