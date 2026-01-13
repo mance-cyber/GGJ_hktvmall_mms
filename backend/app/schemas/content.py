@@ -32,11 +32,18 @@ class ContentGenerateRequest(BaseModel):
     target_languages: List[str] = Field(default=["TC"], description="目標語言: TC, SC, EN")
 
 
+class BatchGenerateItem(BaseModel):
+    """批量生成單項"""
+    product_id: Optional[UUID] = Field(default=None, description="從商品庫選擇時使用")
+    product_info: Optional[ProductInfo] = Field(default=None, description="手動輸入/CSV導入時使用")
+
+
 class ContentBatchGenerateRequest(BaseModel):
-    """批量生成文案請求"""
-    product_ids: List[UUID]
-    content_type: str = Field(default="full_copy")
-    style: str = Field(default="professional")
+    """批量生成文案請求（新版）"""
+    items: List[BatchGenerateItem] = Field(..., min_length=1, max_length=100, description="批量生成項目列表")
+    content_type: str = Field(default="full_copy", description="title, description, selling_points, full_copy")
+    style: str = Field(default="professional", description="formal, casual, playful, professional")
+    target_languages: List[str] = Field(default=["TC"], description="目標語言: TC, SC, EN")
 
 
 # =============================================
@@ -102,10 +109,62 @@ class ContentApproveResponse(BaseModel):
 
 
 class BatchTaskResponse(BaseModel):
-    """批量任務響應"""
+    """批量任務響應（舊版，保留兼容）"""
     task_id: str
     message: str
     product_count: int
+
+
+# =============================================
+# 批量生成響應（新版）
+# =============================================
+
+class BatchResultItem(BaseModel):
+    """批量生成單項結果"""
+    index: int = Field(..., description="在請求列表中的索引")
+    success: bool
+    content_id: Optional[UUID] = Field(default=None, description="生成成功時的內容ID")
+    product_name: str
+    content: Optional[GeneratedContent] = Field(default=None, description="生成成功時的內容")
+    error: Optional[str] = Field(default=None, description="生成失敗時的錯誤信息")
+
+
+class BatchSummary(BaseModel):
+    """批量生成摘要"""
+    total: int
+    success: int
+    failed: int
+
+
+class BatchGenerateSyncResponse(BaseModel):
+    """批量生成同步響應（≤10個）"""
+    mode: str = Field(default="sync", description="處理模式: sync")
+    results: List[BatchResultItem]
+    summary: BatchSummary
+
+
+class BatchGenerateAsyncResponse(BaseModel):
+    """批量生成異步響應（>10個）"""
+    mode: str = Field(default="async", description="處理模式: async")
+    task_id: str
+    total: int
+    message: str = Field(default="批量任務已提交，請通過任務ID查詢進度")
+
+
+class BatchProgress(BaseModel):
+    """批量任務進度"""
+    total: int
+    completed: int
+    failed: int
+    percent: int
+
+
+class BatchTaskStatusResponse(BaseModel):
+    """批量任務狀態響應"""
+    task_id: str
+    status: str = Field(..., description="pending / processing / completed / failed")
+    progress: BatchProgress
+    results: List[BatchResultItem] = Field(default=[], description="已完成的結果")
 
 
 # =============================================

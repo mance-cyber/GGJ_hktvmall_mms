@@ -445,10 +445,25 @@ export const api = {
     }),
 
   batchGenerateContent: (data: ContentBatchGenerateRequest) =>
-    fetchAPI<{ task_id: string; message: string; product_count: number }>('/content/batch-generate', {
+    fetchAPI<BatchGenerateResponse>('/content/batch-generate', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+
+  // 查詢批量任務狀態
+  getBatchTaskStatus: (taskId: string) =>
+    fetchAPI<BatchTaskStatusResponse>(`/content/batch-generate/${taskId}/status`),
+
+  // 導出內容為 CSV
+  exportContentCsv: (contentIds: string[]) => {
+    const params = new URLSearchParams({ content_ids: contentIds.join(',') })
+    // 返回下載 URL，前端需要使用 window.open 或 <a> 標籤觸發下載
+    return `${process.env.NEXT_PUBLIC_API_URL || '/api/v1'}/content/export?${params}`
+  },
+
+  // 下載批量導入模板
+  getImportTemplateUrl: () =>
+    `${process.env.NEXT_PUBLIC_API_URL || '/api/v1'}/content/template/download`,
 
   getContentHistory: (productId?: string, status?: string, contentType?: string, limit = 50) => {
     const params = new URLSearchParams({ limit: String(limit) })
@@ -818,10 +833,68 @@ export interface ContentGenerateResponse {
   metadata: Record<string, unknown>
 }
 
-export interface ContentBatchGenerateRequest {
+// 舊版批量請求（已廢棄）
+export interface ContentBatchGenerateRequestLegacy {
   product_ids: string[]
   content_type: 'title' | 'description' | 'selling_points' | 'full_copy'
   style: 'formal' | 'casual' | 'playful' | 'professional'
+}
+
+// 新版批量生成
+export interface BatchGenerateItem {
+  product_id?: string
+  product_info?: ProductInfo
+}
+
+export interface ContentBatchGenerateRequest {
+  items: BatchGenerateItem[]
+  content_type: 'title' | 'description' | 'selling_points' | 'full_copy'
+  style: 'formal' | 'casual' | 'playful' | 'professional'
+  target_languages?: ('TC' | 'SC' | 'EN')[]
+}
+
+export interface BatchResultItem {
+  index: number
+  success: boolean
+  content_id?: string
+  product_name: string
+  content?: GeneratedContent
+  error?: string
+}
+
+export interface BatchSummary {
+  total: number
+  success: number
+  failed: number
+}
+
+export interface BatchGenerateSyncResponse {
+  mode: 'sync'
+  results: BatchResultItem[]
+  summary: BatchSummary
+}
+
+export interface BatchGenerateAsyncResponse {
+  mode: 'async'
+  task_id: string
+  total: number
+  message: string
+}
+
+export type BatchGenerateResponse = BatchGenerateSyncResponse | BatchGenerateAsyncResponse
+
+export interface BatchProgress {
+  total: number
+  completed: number
+  failed: number
+  percent: number
+}
+
+export interface BatchTaskStatusResponse {
+  task_id: string
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  progress: BatchProgress
+  results: BatchResultItem[]
 }
 
 export interface ContentItem {

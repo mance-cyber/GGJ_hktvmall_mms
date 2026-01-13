@@ -16,7 +16,8 @@ import {
   List,
   BookOpen,
   ChevronRight,
-  Bot
+  Bot,
+  Layers,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,6 +33,7 @@ import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { ContentOptimizeChat } from '@/components/content/ContentOptimizeChat'
+import { BatchContentGenerator } from '@/components/content/BatchContentGenerator'
 import {
   PageTransition,
   HoloCard,
@@ -71,7 +73,7 @@ type MobileSubTab = 'input' | 'result' | 'optimize'
 
 export default function AIContentPage() {
   const queryClient = useQueryClient()
-  const [activeTab, setActiveTab] = useState<'generate' | 'history'>('generate')
+  const [activeTab, setActiveTab] = useState<'generate' | 'batch' | 'history'>('generate')
   const [mobileSubTab, setMobileSubTab] = useState<MobileSubTab>('input')
   const [formData, setFormData] = useState<{
     productInfo: ProductInfo
@@ -181,6 +183,18 @@ export default function AIContentPage() {
         >
           <Wand2 className="w-4 h-4 mr-2" />
           生成文案
+        </button>
+        <button
+          onClick={() => setActiveTab('batch')}
+          className={cn(
+            "flex items-center px-4 py-2 text-sm font-medium transition-colors rounded-t-lg",
+            activeTab === 'batch'
+              ? "text-cyan-600 bg-white/50 border-b-2 border-cyan-600"
+              : "text-muted-foreground hover:text-foreground hover:bg-white/30"
+          )}
+        >
+          <Layers className="w-4 h-4 mr-2" />
+          批量生成
         </button>
         <button
           onClick={() => setActiveTab('history')}
@@ -573,6 +587,17 @@ export default function AIContentPage() {
             </HoloCard>
           </div>
         </>
+      )}
+
+      {/* 批量生成標籤內容 */}
+      {activeTab === 'batch' && (
+        <BatchContentGenerator
+          onNavigateToEdit={(contentId) => {
+            // 跳轉到歷史記錄查看詳情
+            setActiveTab('history')
+            queryClient.invalidateQueries({ queryKey: ['content-history'] })
+          }}
+        />
       )}
 
       {/* 歷史記錄標籤內容 */}

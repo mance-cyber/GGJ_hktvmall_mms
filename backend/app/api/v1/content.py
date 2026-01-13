@@ -2,11 +2,14 @@
 # AI 內容生成 API
 # =============================================
 
+import csv
+import io
 import json
-from typing import Optional
+from typing import Optional, List, Union
 from uuid import UUID
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,9 +29,14 @@ from app.schemas.content import (
     ContentOptimizeResponse,
     QuickSuggestionsResponse,
     QuickSuggestion,
+    BatchGenerateSyncResponse,
+    BatchGenerateAsyncResponse,
+    BatchTaskStatusResponse,
+    BatchProgress,
 )
 from app.services.ai_service import get_ai_analysis_service
 from app.services.content_optimizer import ContentOptimizer, QUICK_OPTIMIZATION_SUGGESTIONS
+from app.services.batch_content_service import get_batch_content_service, BatchContentService
 
 router = APIRouter()
 
@@ -168,27 +176,69 @@ async def generate_content(
     )
 
 
-@router.post("/batch-generate", response_model=BatchTaskResponse, status_code=202)
+@router.post("/batch-generate", response_model=Union[BatchGenerateSyncResponse, BatchGenerateAsyncResponse])
 async def batch_generate_content(
     request: ContentBatchGenerateRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """批量生成 AI 文案"""
-    # 驗證所有商品存在
-    for product_id in request.product_ids:
-        result = await db.execute(
-            select(Product).where(Product.id == product_id)
-        )
-        if not result.scalar_one_or_none():
-            raise HTTPException(status_code=404, detail=f"商品 {product_id} 不存在")
+    """
+    批量生成 AI 文案
 
-    # TODO: 觸發 Celery 批量生成任務
-    # task = batch_generate_content.delay(...)
+    智能判斷處理模式：
+    - ≤10 個商品：同步處理，直接返回結果
+    - >10 個商品：異步處理，返回任務ID供查詢進度
+    """
+    # 驗證請求
+    if not request.items:
+        raise HTTPException(status_code=400, detail="請提供至少一個商品")
 
-    return BatchTaskResponse(
-        task_id="pending",
-        message="批量生成任務已啟動",
-        product_count=len(request.product_ids),
+    if len(request.items) > 100:
+        raise HTTPException(status_code=400, detail="單次最多支持 100 個商品")
+
+    # 驗證 product_id 存在性
+    for i, item in enumerate(request.items):
+        if item.product_id:
+            result = await db.execute(
+                select(Product).where(Product.id == item.product_id)
+            )
+            if not result.scalar_one_or_none():
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"第 {i+1} 項的商品 {item.product_id} 不存在"
+                )
+        elif not item.product_info:
+            raise HTTPException(
+                status_code=400,
+                detail=f"第 {i+1} 項必須提供 product_id 或 product_info"
+            )
+
+    # 調用批量生成服務
+    batch_service = await get_batch_content_service(db)
+    result = await batch_service.generate_batch(request)
+
+    # 根據模式返回不同響應
+    if result["mode"] == "sync":
+        return BatchGenerateSyncResponse(**result)
+    else:
+        return BatchGenerateAsyncResponse(**result)
+
+
+@router.get("/batch-generate/{task_id}/status", response_model=BatchTaskStatusResponse)
+async def get_batch_task_status(task_id: str):
+    """
+    查詢批量生成任務狀態
+
+    用於異步模式下查詢任務進度和結果
+    """
+    status = BatchContentService.get_task_status(task_id)
+    if not status:
+        raise HTTPException(status_code=404, detail="任務不存在或已過期")
+
+    return BatchTaskStatusResponse(
+        task_id=status["task_id"],
+        status=status["status"],
+        progress=BatchProgress(**status["progress"]),
+        results=status["results"],
     )
 
 
@@ -400,3 +450,181 @@ async def get_quick_suggestions():
         for key, value in QUICK_OPTIMIZATION_SUGGESTIONS.items()
     ]
     return QuickSuggestionsResponse(suggestions=suggestions)
+
+
+# =============================================
+# 批量導出與模板 API
+# =============================================
+
+@router.get("/export")
+async def export_content_csv(
+    content_ids: str = Query(..., description="內容ID列表，逗號分隔"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    導出生成內容為 CSV 文件
+
+    Args:
+        content_ids: 逗號分隔的內容ID列表
+    """
+    # 解析 content_ids
+    try:
+        id_list = [UUID(id.strip()) for id in content_ids.split(",") if id.strip()]
+    except ValueError:
+        raise HTTPException(status_code=400, detail="無效的內容ID格式")
+
+    if not id_list:
+        raise HTTPException(status_code=400, detail="請提供至少一個內容ID")
+
+    if len(id_list) > 500:
+        raise HTTPException(status_code=400, detail="單次最多導出 500 條記錄")
+
+    # 查詢內容
+    result = await db.execute(
+        select(AIContent).where(AIContent.id.in_(id_list))
+    )
+    contents = result.scalars().all()
+
+    if not contents:
+        raise HTTPException(status_code=404, detail="未找到任何內容")
+
+    # 獲取關聯的商品名稱
+    content_map = {}
+    for content in contents:
+        product_name = ""
+        if content.product_id:
+            product_result = await db.execute(
+                select(Product.name).where(Product.id == content.product_id)
+            )
+            product_name = product_result.scalar() or ""
+
+        # 從 content_json 或 input_data 獲取商品名稱
+        if not product_name:
+            if content.content_json and content.content_json.get("title"):
+                product_name = content.content_json.get("title", "")
+            elif content.input_data and content.input_data.get("product_info"):
+                product_name = content.input_data["product_info"].get("name", "")
+
+        content_map[content.id] = {
+            "content": content,
+            "product_name": product_name,
+        }
+
+    # 生成 CSV
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # 寫入表頭
+    writer.writerow([
+        "商品名稱",
+        "標題",
+        "賣點",
+        "描述",
+        "內容類型",
+        "風格",
+        "狀態",
+        "生成時間",
+    ])
+
+    # 寫入數據
+    for content_id in id_list:
+        if content_id not in content_map:
+            continue
+
+        item = content_map[content_id]
+        content = item["content"]
+        product_name = item["product_name"]
+
+        # 從 content_json 解析
+        content_json = content.content_json or {}
+        title = content_json.get("title", "")
+        selling_points = content_json.get("selling_points", [])
+        description = content_json.get("description", content.content or "")
+
+        # 賣點轉為換行分隔的字符串
+        selling_points_str = "\n".join(selling_points) if isinstance(selling_points, list) else ""
+
+        writer.writerow([
+            product_name,
+            title,
+            selling_points_str,
+            description,
+            content.content_type,
+            content.style or "",
+            content.status,
+            content.generated_at.strftime("%Y-%m-%d %H:%M:%S") if content.generated_at else "",
+        ])
+
+    # 返回 CSV 文件
+    output.seek(0)
+
+    # 添加 BOM 以支持 Excel 正確識別 UTF-8
+    bom = '\ufeff'
+    csv_content = bom + output.getvalue()
+
+    return StreamingResponse(
+        iter([csv_content]),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f"attachment; filename=content_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        },
+    )
+
+
+@router.get("/template/download")
+async def download_template():
+    """
+    下載批量導入 CSV 模板
+
+    模板包含以下字段：
+    - name: 商品名稱（必填）
+    - brand: 品牌
+    - features: 特點（逗號分隔多個）
+    - target_audience: 目標受眾
+    - price: 價格
+    - category: 分類
+    """
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # 寫入表頭
+    writer.writerow([
+        "name",
+        "brand",
+        "features",
+        "target_audience",
+        "price",
+        "category",
+    ])
+
+    # 寫入示例數據
+    writer.writerow([
+        "日本A5和牛西冷 200g",
+        "GogoJap",
+        "日本鹿兒島產,A5等級,油花均勻,入口即化",
+        "注重品質的美食愛好者",
+        "388",
+        "和牛",
+    ])
+    writer.writerow([
+        "北海道帶子刺身 500g",
+        "GogoJap",
+        "北海道產,刺身級,鮮甜爽口",
+        "海鮮愛好者",
+        "268",
+        "海鮮",
+    ])
+
+    output.seek(0)
+
+    # 添加 BOM
+    bom = '\ufeff'
+    csv_content = bom + output.getvalue()
+
+    return StreamingResponse(
+        iter([csv_content]),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": "attachment; filename=batch_import_template.csv"
+        },
+    )
