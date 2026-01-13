@@ -119,3 +119,12 @@ export async function getPresignedUrl(fileUrl: string, expiresIn = 3600): Promis
   })
   return response as unknown as PresignedUrlResponse
 }
+
+/**
+ * 通過後端代理下載圖片（繞過 CORS）
+ */
+export async function downloadImage(fileUrl: string, fileName: string): Promise<void> {
+  const { downloadFile } = await import('./client')
+  const encodedUrl = encodeURIComponent(fileUrl)
+  await downloadFile(`/image-generation/download?file_url=${encodedUrl}`, fileName)
+}

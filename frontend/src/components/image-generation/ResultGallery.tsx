@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { Download, ZoomIn, Loader2 } from 'lucide-react'
 import type { OutputImage } from '@/lib/api/image-generation'
-import { getPresignedUrl } from '@/lib/api/image-generation'
+import { getPresignedUrl, downloadImage } from '@/lib/api/image-generation'
 
 interface ResultGalleryProps {
   images: OutputImage[]
@@ -60,18 +60,8 @@ export function ResultGallery({ images }: ResultGalleryProps) {
 
   const handleDownload = async (image: OutputImage) => {
     try {
-      // 使用預簽名 URL 下載
-      const url = presignedUrls[image.id] || image.file_path
-      const response = await fetch(url)
-      const blob = await response.blob()
-      const blobUrl = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = blobUrl
-      a.download = image.file_name
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(blobUrl)
+      // 使用後端代理下載（繞過 CORS）
+      await downloadImage(image.file_path, image.file_name)
     } catch (error) {
       console.error('Download failed:', error)
     }

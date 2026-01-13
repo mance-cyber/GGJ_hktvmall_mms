@@ -343,3 +343,65 @@ async def get_presigned_url(
         "expires_in": expires_in,
         "original_url": file_url
     }
+
+
+@router.get("/download")
+async def download_file(
+    file_url: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    通過後端代理下載 R2 文件（繞過 CORS）
+
+    Args:
+        file_url: R2 文件的公開 URL 或相對路徑
+
+    Returns:
+        文件流響應
+    """
+    from fastapi.responses import StreamingResponse
+    import io
+
+    storage = get_storage()
+
+    try:
+        # 從 URL 提取 R2 Key
+        r2_key = file_url
+        if file_url.startswith('http'):
+            if storage.public_url_base in file_url:
+                r2_key = file_url.replace(f"{storage.public_url_base}/", "")
+            else:
+                from urllib.parse import urlparse
+                parsed = urlparse(file_url)
+                r2_key = parsed.path.lstrip('/')
+
+        logger.info(f"Downloading file from R2: {r2_key}")
+
+        # 從 R2 獲取文件
+        response = storage.s3_client.get_object(
+            Bucket=storage.bucket,
+            Key=r2_key
+        )
+
+        # 獲取文件名
+        file_name = r2_key.split('/')[-1]
+
+        # 獲取 Content-Type
+        content_type = response.get('ContentType', 'application/octet-stream')
+
+        # 返回流式響應
+        return StreamingResponse(
+            io.BytesIO(response['Body'].read()),
+            media_type=content_type,
+            headers={
+                "Content-Disposition": f'attachment; filename="{file_name}"',
+                "Access-Control-Expose-Headers": "Content-Disposition"
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to download file: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"下載失敗: {str(e)}"
+        )
