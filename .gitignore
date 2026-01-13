@@ -98,3 +98,4 @@ backend/uploads/*
 # Windows reserved names
 nul
 backend/nul
+tmpclaude-*
