@@ -107,8 +107,12 @@ def process_image_generation(self, task_id: str) -> Dict[str, Any]:
         task.progress = 30
         db.commit()
 
+        # 獲取輸出數量配置
+        outputs_per_image = task.outputs_per_image or 1
+        logger.info(f"Configured to generate {outputs_per_image} image(s) per input")
+
         if task.mode == GenerationMode.WHITE_BG_TOPVIEW:
-            # 生成白底圖（1 張）
+            # 生成白底圖
             logger.info(f"Generating white background top-view for task {task_id}")
 
             # 獲取產品分析結果（如果有）
@@ -116,11 +120,12 @@ def process_image_generation(self, task_id: str) -> Dict[str, Any]:
 
             api_response = client.generate_white_bg_topview(
                 input_images=input_image_paths,
-                product_analysis=product_analysis
+                product_analysis=product_analysis,
+                num_outputs=outputs_per_image
             )
 
         elif task.mode == GenerationMode.PROFESSIONAL_PHOTO:
-            # 生成專業攝影圖（2-3 張）
+            # 生成專業攝影圖
             logger.info(f"Generating professional photos for task {task_id}")
 
             product_analysis = input_images[0].analysis_result if input_images else None
@@ -128,7 +133,8 @@ def process_image_generation(self, task_id: str) -> Dict[str, Any]:
             api_response = client.generate_professional_photos(
                 input_images=input_image_paths,
                 style_description=task.style_description,
-                product_analysis=product_analysis
+                product_analysis=product_analysis,
+                num_outputs=outputs_per_image
             )
         else:
             raise ValueError(f"Unknown generation mode: {task.mode}")

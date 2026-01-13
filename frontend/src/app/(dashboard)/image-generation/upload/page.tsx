@@ -15,6 +15,7 @@ export default function ImageGenerationUploadPage() {
   const [files, setFiles] = useState<File[]>([])
   const [mode, setMode] = useState<GenerationMode>('white_bg_topview')
   const [styleDescription, setStyleDescription] = useState('')
+  const [outputsPerImage, setOutputsPerImage] = useState(1)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -32,6 +33,7 @@ export default function ImageGenerationUploadPage() {
       const task = await createTask({
         mode,
         style_description: styleDescription || undefined,
+        outputs_per_image: outputsPerImage,
       })
 
       // 2. 上傳圖片
@@ -91,7 +93,7 @@ export default function ImageGenerationUploadPage() {
                 <span className="font-medium text-gray-900">白底 TopView 正面圖</span>
               </div>
               <p className="text-sm text-gray-600 mt-1">
-                生成純白背景、俯視角度的專業產品圖（1 張）
+                生成純白背景、俯視角度的專業產品圖
               </p>
               <p className="text-xs text-gray-500 mt-1">適合電商平台展示</p>
             </div>
@@ -123,7 +125,7 @@ export default function ImageGenerationUploadPage() {
                 <span className="font-medium text-gray-900">專業美食攝影圖</span>
               </div>
               <p className="text-sm text-gray-600 mt-1">
-                生成多角度、專業打光的高質感產品圖（3 張）
+                生成多角度、專業打光的高質感產品圖
               </p>
               <p className="text-xs text-gray-500 mt-1">適合社交媒體、廣告宣傳</p>
             </div>
@@ -152,6 +154,41 @@ export default function ImageGenerationUploadPage() {
             </p>
           </div>
         )}
+
+        {/* 每張圖片輸出數量 */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            每張圖片生成數量
+          </label>
+          <div className="flex items-center gap-4">
+            <select
+              value={outputsPerImage}
+              onChange={(e) => setOutputsPerImage(Number(e.target.value))}
+              className="
+                px-4 py-2 border border-gray-300 rounded-lg
+                focus:outline-none focus:ring-2 focus:ring-blue-500
+                text-sm bg-white
+              "
+            >
+              <option value={1}>1 張</option>
+              <option value={2}>2 張</option>
+              <option value={3}>3 張</option>
+              <option value={4}>4 張</option>
+              <option value={5}>5 張</option>
+            </select>
+            <span className="text-sm text-gray-600">
+              預計生成 <span className="font-semibold text-blue-600">{files.length * outputsPerImage}</span> 張圖片
+              {files.length > 0 && (
+                <span className="text-gray-500">
+                  （{files.length} 張輸入 × {outputsPerImage} 張輸出）
+                </span>
+              )}
+            </span>
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            每張上傳的產品圖片都會生成指定數量的結果圖片
+          </p>
+        </div>
       </div>
 
       {/* 圖片上傳區域 */}

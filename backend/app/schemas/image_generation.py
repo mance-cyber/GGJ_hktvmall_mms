@@ -15,6 +15,7 @@ class ImageGenerationCreate(BaseModel):
     """創建圖片生成任務"""
     mode: GenerationMode = Field(..., description="生成模式：white_bg_topview 或 professional_photo")
     style_description: Optional[str] = Field(None, description="風格描述（可選）")
+    outputs_per_image: int = Field(default=1, ge=1, le=5, description="每張輸入圖片生成的輸出數量（1-5）")
 
 
 class ImageUploadResponse(BaseModel):
@@ -58,6 +59,7 @@ class ImageGenerationTaskResponse(BaseModel):
     id: UUID
     mode: GenerationMode
     style_description: Optional[str] = None
+    outputs_per_image: int = 1
     status: TaskStatus
     progress: int = 0
     error_message: Optional[str] = None

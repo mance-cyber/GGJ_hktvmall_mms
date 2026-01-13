@@ -55,6 +55,7 @@ async def create_image_generation_task(
         user_id=current_user.id,
         mode=task_data.mode,
         style_description=task_data.style_description,
+        outputs_per_image=task_data.outputs_per_image,
         status=TaskStatus.PENDING,
         progress=0
     )

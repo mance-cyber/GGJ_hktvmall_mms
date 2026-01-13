@@ -11,6 +11,7 @@ export interface ImageGenerationTask {
   id: string
   mode: GenerationMode
   style_description?: string
+  outputs_per_image: number
   status: TaskStatus
   progress: number
   error_message?: string
@@ -43,6 +44,7 @@ export interface OutputImage {
 export interface CreateTaskRequest {
   mode: GenerationMode
   style_description?: string
+  outputs_per_image?: number
 }
 
 export interface TaskListResponse {

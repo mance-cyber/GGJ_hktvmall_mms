@@ -75,7 +75,8 @@ class NanoBananaClient:
     def generate_white_bg_topview(
         self,
         input_images: List[str],
-        product_analysis: Optional[Dict[str, Any]] = None
+        product_analysis: Optional[Dict[str, Any]] = None,
+        num_outputs: int = 1
     ) -> Dict[str, Any]:
         """
         生成白底 TopView 正面圖
@@ -83,6 +84,7 @@ class NanoBananaClient:
         Args:
             input_images: 輸入圖片路徑列表（最多 5 張）
             product_analysis: Google Vision AI 分析結果（可選）
+            num_outputs: 每張輸入圖片生成的輸出數量
 
         Returns:
             API 響應字典
@@ -94,22 +96,24 @@ class NanoBananaClient:
         return self._call_api(
             input_images=input_images,
             prompt=prompt,
-            num_outputs=1
+            num_outputs=num_outputs
         )
 
     def generate_professional_photos(
         self,
         input_images: List[str],
         style_description: Optional[str] = None,
-        product_analysis: Optional[Dict[str, Any]] = None
+        product_analysis: Optional[Dict[str, Any]] = None,
+        num_outputs: int = 3
     ) -> Dict[str, Any]:
         """
-        生成專業美食攝影圖（2-3 張）
+        生成專業美食攝影圖
 
         Args:
             input_images: 輸入圖片路徑列表（最多 5 張）
             style_description: 用戶提供的風格描述
             product_analysis: Google Vision AI 分析結果（可選）
+            num_outputs: 每張輸入圖片生成的輸出數量
 
         Returns:
             API 響應字典
@@ -117,11 +121,11 @@ class NanoBananaClient:
         # 構建 prompt
         prompt = self._build_professional_photo_prompt(style_description, product_analysis)
 
-        # 調用 API（生成 2-3 張）
+        # 調用 API
         return self._call_api(
             input_images=input_images,
             prompt=prompt,
-            num_outputs=3
+            num_outputs=num_outputs
         )
 
     def _build_white_bg_prompt(self, product_analysis: Optional[Dict[str, Any]] = None) -> str:

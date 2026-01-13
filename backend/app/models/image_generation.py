@@ -37,6 +37,7 @@ class ImageGenerationTask(Base):
     # 任務配置
     mode = Column(SQLEnum(GenerationMode), nullable=False)
     style_description = Column(Text, nullable=True)  # 用戶輸入的風格描述
+    outputs_per_image = Column(Integer, default=1)  # 每張輸入圖片生成的輸出數量（1-5）
 
     # 任務狀態
     status = Column(SQLEnum(TaskStatus), default=TaskStatus.PENDING)
