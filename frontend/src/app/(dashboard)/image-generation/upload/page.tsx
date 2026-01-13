@@ -8,7 +8,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ImageUploadZone } from '@/components/image-generation/ImageUploadZone'
 import { createTask, uploadImages, startGeneration, type GenerationMode } from '@/lib/api/image-generation'
-import { Loader2, Sparkles, Image as ImageIcon } from 'lucide-react'
+import { Loader2, Sparkles, Image as ImageIcon, History } from 'lucide-react'
 
 export default function ImageGenerationUploadPage() {
   const router = useRouter()
@@ -55,11 +55,25 @@ export default function ImageGenerationUploadPage() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
       {/* 標題 */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">AI 圖片生成</h1>
-        <p className="text-gray-600">
-          上傳產品圖片，AI 將自動生成專業的電商圖片或白底圖
-        </p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">AI 圖片生成</h1>
+          <p className="text-gray-600">
+            上傳產品圖片，AI 將自動生成專業的電商圖片或白底圖
+          </p>
+        </div>
+        <button
+          onClick={() => router.push('/image-generation/history')}
+          className="
+            px-4 py-2 border border-gray-300 rounded-lg
+            text-gray-700 font-medium text-sm
+            hover:bg-gray-50
+            flex items-center gap-2
+          "
+        >
+          <History className="w-4 h-4" />
+          查看歷史
+        </button>
       </div>
 
       {/* 生成模式選擇 */}

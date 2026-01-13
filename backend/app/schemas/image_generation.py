@@ -32,6 +32,7 @@ class InputImageResponse(BaseModel):
     """輸入圖片響應"""
     id: UUID
     file_name: str
+    file_path: str
     file_size: int
     upload_order: int
     analysis_result: Optional[dict] = None

@@ -52,4 +52,9 @@ celery_app.conf.beat_schedule = {
         "task": "app.tasks.scrape_tasks.scrape_all_competitors",
         "schedule": crontab(hour=9, minute=0),  # 每天 09:00
     },
+    # 每日清理過期的圖片生成任務（7 天前）
+    "cleanup-old-image-tasks-daily": {
+        "task": "cleanup_old_image_tasks",
+        "schedule": crontab(hour=3, minute=0),  # 每天凌晨 03:00
+    },
 }

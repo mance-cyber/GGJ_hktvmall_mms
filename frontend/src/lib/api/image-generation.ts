@@ -130,3 +130,29 @@ export async function downloadImage(fileUrl: string, fileName: string): Promise<
   const encodedUrl = encodeURIComponent(fileUrl)
   await downloadFile(`/image-generation/download?file_url=${encodedUrl}`, fileName)
 }
+
+/**
+ * 刪除單個任務
+ */
+export async function deleteTask(taskId: string): Promise<{ message: string; task_id: string }> {
+  const response = await apiClient.delete(`/image-generation/tasks/${taskId}`)
+  return response as unknown as { message: string; task_id: string }
+}
+
+/**
+ * 批量刪除任務
+ */
+export async function deleteTasksBatch(taskIds: string[]): Promise<{
+  message: string
+  deleted_count: number
+  requested_count: number
+}> {
+  const response = await apiClient.delete('/image-generation/tasks/batch', {
+    data: taskIds
+  })
+  return response as unknown as {
+    message: string
+    deleted_count: number
+    requested_count: number
+  }
+}

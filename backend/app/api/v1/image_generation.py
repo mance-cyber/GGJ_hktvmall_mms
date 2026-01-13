@@ -315,6 +315,154 @@ async def list_tasks(
     )
 
 
+@router.delete("/tasks/{task_id}")
+async def delete_task(
+    task_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    刪除單個圖片生成任務（包括關聯的圖片文件）
+    """
+    # 驗證任務存在且屬於當前用戶
+    result = await db.execute(
+        select(ImageGenerationTask)
+        .options(
+            selectinload(ImageGenerationTask.input_images),
+            selectinload(ImageGenerationTask.output_images)
+        )
+        .where(
+            ImageGenerationTask.id == task_id,
+            ImageGenerationTask.user_id == current_user.id
+        )
+    )
+    task = result.scalar_one_or_none()
+
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found"
+        )
+
+    # 刪除關聯的存儲文件
+    storage = get_storage()
+
+    # 刪除輸入圖片
+    for img in task.input_images:
+        try:
+            if img.file_path:
+                _delete_storage_file(storage, img.file_path)
+        except Exception as e:
+            logger.warning(f"Failed to delete input image {img.file_path}: {e}")
+
+    # 刪除輸出圖片
+    for img in task.output_images:
+        try:
+            if img.file_path:
+                _delete_storage_file(storage, img.file_path)
+        except Exception as e:
+            logger.warning(f"Failed to delete output image {img.file_path}: {e}")
+
+    # 刪除數據庫記錄（級聯刪除會處理關聯的圖片記錄）
+    await db.delete(task)
+    await db.commit()
+
+    logger.info(f"Deleted task {task_id} for user {current_user.id}")
+
+    return {"message": "Task deleted successfully", "task_id": str(task_id)}
+
+
+@router.delete("/tasks/batch")
+async def delete_tasks_batch(
+    task_ids: List[uuid.UUID],
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    批量刪除圖片生成任務
+
+    Args:
+        task_ids: 要刪除的任務 ID 列表
+    """
+    if not task_ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No task IDs provided"
+        )
+
+    if len(task_ids) > 50:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Maximum 50 tasks can be deleted at once"
+        )
+
+    # 獲取所有要刪除的任務
+    result = await db.execute(
+        select(ImageGenerationTask)
+        .options(
+            selectinload(ImageGenerationTask.input_images),
+            selectinload(ImageGenerationTask.output_images)
+        )
+        .where(
+            ImageGenerationTask.id.in_(task_ids),
+            ImageGenerationTask.user_id == current_user.id
+        )
+    )
+    tasks = result.scalars().all()
+
+    if not tasks:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No tasks found"
+        )
+
+    storage = get_storage()
+    deleted_count = 0
+
+    for task in tasks:
+        # 刪除關聯的存儲文件
+        for img in task.input_images:
+            try:
+                if img.file_path:
+                    _delete_storage_file(storage, img.file_path)
+            except Exception as e:
+                logger.warning(f"Failed to delete input image {img.file_path}: {e}")
+
+        for img in task.output_images:
+            try:
+                if img.file_path:
+                    _delete_storage_file(storage, img.file_path)
+            except Exception as e:
+                logger.warning(f"Failed to delete output image {img.file_path}: {e}")
+
+        await db.delete(task)
+        deleted_count += 1
+
+    await db.commit()
+
+    logger.info(f"Batch deleted {deleted_count} tasks for user {current_user.id}")
+
+    return {
+        "message": f"Successfully deleted {deleted_count} tasks",
+        "deleted_count": deleted_count,
+        "requested_count": len(task_ids)
+    }
+
+
+def _delete_storage_file(storage, file_path: str):
+    """
+    刪除存儲文件的輔助函數
+    """
+    if file_path.startswith('http'):
+        # R2 URL，提取相對路徑
+        if storage.public_url_base and storage.public_url_base in file_path:
+            relative_path = file_path.replace(f"{storage.public_url_base}/", "")
+            storage.delete_file(relative_path)
+    else:
+        # 本地路徑
+        storage.delete_file(file_path)
+
+
 @router.get("/presigned-url")
 async def get_presigned_url(
     file_url: str,

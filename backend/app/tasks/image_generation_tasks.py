@@ -3,8 +3,9 @@
 # =============================================
 
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, List
 from pathlib import Path
+from datetime import datetime, timedelta
 from celery import Task
 from sqlalchemy.orm import Session
 
@@ -18,6 +19,7 @@ from app.models.image_generation import (
     GenerationMode
 )
 from app.services.nano_banana_client import NanoBananaClient
+from app.services.storage_service import get_storage
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.config import get_settings
@@ -208,3 +210,123 @@ def process_image_generation(self, task_id: str) -> Dict[str, Any]:
 
     finally:
         db.close()
+
+
+# =============================================
+# 定時清理任務
+# =============================================
+
+@celery_app.task(name="cleanup_old_image_tasks")
+def cleanup_old_image_tasks(days: int = 7) -> Dict[str, Any]:
+    """
+    清理過期的圖片生成任務（默認 7 天前）
+
+    Args:
+        days: 保留天數，超過此天數的任務將被刪除
+
+    Returns:
+        清理結果統計
+    """
+    db = SessionLocal()
+    storage = get_storage()
+
+    try:
+        # 計算過期時間
+        cutoff_date = datetime.utcnow() - timedelta(days=days)
+
+        logger.info(f"Starting cleanup of image tasks older than {cutoff_date}")
+
+        # 查詢過期任務
+        expired_tasks = db.query(ImageGenTaskModel).filter(
+            ImageGenTaskModel.created_at < cutoff_date
+        ).all()
+
+        if not expired_tasks:
+            logger.info("No expired tasks found")
+            return {
+                "status": "completed",
+                "deleted_count": 0,
+                "message": "No expired tasks found"
+            }
+
+        deleted_count = 0
+        deleted_input_files = 0
+        deleted_output_files = 0
+
+        for task in expired_tasks:
+            try:
+                # 獲取關聯圖片
+                input_images = db.query(InputImage).filter(
+                    InputImage.task_id == task.id
+                ).all()
+
+                output_images = db.query(OutputImage).filter(
+                    OutputImage.task_id == task.id
+                ).all()
+
+                # 刪除輸入圖片文件
+                for img in input_images:
+                    try:
+                        if img.file_path:
+                            _delete_storage_file(storage, img.file_path)
+                            deleted_input_files += 1
+                    except Exception as e:
+                        logger.warning(f"Failed to delete input file {img.file_path}: {e}")
+
+                # 刪除輸出圖片文件
+                for img in output_images:
+                    try:
+                        if img.file_path:
+                            _delete_storage_file(storage, img.file_path)
+                            deleted_output_files += 1
+                    except Exception as e:
+                        logger.warning(f"Failed to delete output file {img.file_path}: {e}")
+
+                # 刪除數據庫記錄
+                db.delete(task)
+                deleted_count += 1
+
+            except Exception as e:
+                logger.error(f"Failed to delete task {task.id}: {e}")
+                continue
+
+        db.commit()
+
+        logger.info(
+            f"Cleanup completed: {deleted_count} tasks, "
+            f"{deleted_input_files} input files, "
+            f"{deleted_output_files} output files deleted"
+        )
+
+        return {
+            "status": "completed",
+            "deleted_count": deleted_count,
+            "deleted_input_files": deleted_input_files,
+            "deleted_output_files": deleted_output_files,
+            "cutoff_date": cutoff_date.isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Cleanup task failed: {e}", exc_info=True)
+        db.rollback()
+        raise
+
+    finally:
+        db.close()
+
+
+def _delete_storage_file(storage, file_path: str):
+    """
+    刪除存儲文件的輔助函數
+    """
+    try:
+        if file_path.startswith('http'):
+            # R2 URL，提取相對路徑
+            if hasattr(storage, 'public_url_base') and storage.public_url_base and storage.public_url_base in file_path:
+                relative_path = file_path.replace(f"{storage.public_url_base}/", "")
+                storage.delete_file(relative_path)
+        else:
+            # 本地路徑
+            storage.delete_file(file_path)
+    except Exception as e:
+        logger.warning(f"Failed to delete file {file_path}: {e}")
