@@ -42,7 +42,7 @@ export function ProductSelector({
     queryFn: () => api.getCategories(),
   })
 
-  const products = productsData?.items || []
+  const products = productsData?.data || []
   const categories = categoriesData?.items || []
 
   // 過濾商品
