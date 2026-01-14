@@ -33,7 +33,7 @@ export function ProductSelector({
   // 獲取商品列表
   const { data: productsData, isLoading: productsLoading } = useQuery({
     queryKey: ['own-products', 1, 200],
-    queryFn: () => api.getOwnProducts(1, 200),
+    queryFn: () => api.getProducts(1, 200),
   })
 
   // 獲取分類列表
