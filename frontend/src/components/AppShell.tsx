@@ -58,9 +58,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // 公共頁面不顯示側邊欄
   const isPublicPage = publicPaths.some(path => pathname.startsWith(path))
 
-  // 如果是公共頁面或未登入，只渲染 children
-  if (isPublicPage || (!loading && !user)) {
+  // 如果是公共頁面，直接渲染 children
+  if (isPublicPage) {
     return <>{children}</>
+  }
+
+  // 非公共頁面：等待認證檢查完成
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin w-8 h-8 border-3 border-cyan-500 border-t-transparent rounded-full" />
+          <p className="text-sm text-slate-400">載入中...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // 未登入，返回空（auth-provider 會處理跳轉到 login）
+  if (!user) {
+    return null
   }
 
   // 已登入用戶顯示完整佈局（Future Tech 風格）
