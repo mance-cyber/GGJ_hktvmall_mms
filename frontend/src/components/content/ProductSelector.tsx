@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { api, Product } from '@/lib/api'
+import { api, OwnProduct } from '@/lib/api'
 import { Search, X, Check, Package, ChevronDown } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -15,8 +15,8 @@ import {
 } from '@/components/ui/future-tech'
 
 interface ProductSelectorProps {
-  selectedProducts: Product[]
-  onSelectionChange: (products: Product[]) => void
+  selectedProducts: OwnProduct[]
+  onSelectionChange: (products: OwnProduct[]) => void
   maxSelection?: number
   className?: string
 }
@@ -62,7 +62,7 @@ export function ProductSelector({
 
     // 按分類過濾
     if (selectedCategory) {
-      filtered = filtered.filter((p) => p.category_id === selectedCategory)
+      filtered = filtered.filter((p) => p.category === selectedCategory)
     }
 
     return filtered
@@ -73,7 +73,7 @@ export function ProductSelector({
     selectedProducts.some((p) => p.id === productId)
 
   // 切換選中狀態
-  const toggleSelection = (product: Product) => {
+  const toggleSelection = (product: OwnProduct) => {
     if (isSelected(product.id)) {
       onSelectionChange(selectedProducts.filter((p) => p.id !== product.id))
     } else if (selectedProducts.length < maxSelection) {
@@ -213,9 +213,9 @@ export function ProductSelector({
                   </div>
 
                   {/* 商品圖片 */}
-                  {product.image_url ? (
+                  {product.images?.[0] ? (
                     <img
-                      src={product.image_url}
+                      src={product.images[0]}
                       alt={product.name}
                       className="w-10 h-10 rounded object-cover"
                     />
