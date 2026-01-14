@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import {
   api,
-  Product,
+  OwnProduct,
   ProductInfo,
   ContentBatchGenerateRequest,
   BatchResultItem,
@@ -75,7 +75,7 @@ export function BatchContentGenerator({
   const [inputMode, setInputMode] = useState<InputMode>('products')
 
   // 選中的商品（商品選擇模式）
-  const [selectedProducts, setSelectedProducts] = useState<Product[]>([])
+  const [selectedProducts, setSelectedProducts] = useState<OwnProduct[]>([])
 
   // 導入的商品資訊（文件導入模式）
   const [importedProducts, setImportedProducts] = useState<ProductInfo[]>([])
