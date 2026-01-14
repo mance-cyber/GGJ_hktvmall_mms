@@ -803,6 +803,8 @@ export interface ProductInfo {
   brand?: string
   features?: string[]
   target_audience?: string
+  price?: string
+  category?: string
 }
 
 export interface ContentGenerateRequest {
