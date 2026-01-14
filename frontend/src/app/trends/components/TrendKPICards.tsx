@@ -118,44 +118,44 @@ export function TrendKPICards({ summary }: TrendKPICardsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
       {kpis.map((kpi) => {
         const colors = colorConfig[kpi.color]
         const Icon = kpi.icon
 
         return (
-          <HoloCard key={kpi.title} className="p-4">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="text-sm text-gray-500 mb-1">{kpi.title}</div>
-                <div className={`text-2xl font-bold ${colors.text}`}>
+          <HoloCard key={kpi.title} className="p-2.5 sm:p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="text-xs sm:text-sm text-gray-500 mb-0.5 sm:mb-1 truncate">{kpi.title}</div>
+                <div className={`text-lg sm:text-2xl font-bold ${colors.text}`}>
                   {kpi.value}
                 </div>
-                <div className="text-xs text-gray-400 mt-1">
+                <div className="text-[10px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1 line-clamp-2">
                   {kpi.description}
                 </div>
               </div>
-              <div className={`p-2 rounded-lg ${colors.bg}`}>
-                <Icon className={`w-5 h-5 ${colors.icon}`} />
+              <div className={`p-1.5 sm:p-2 rounded-lg shrink-0 ${colors.bg}`}>
+                <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${colors.icon}`} />
               </div>
             </div>
 
             {/* 趨勢指示器 */}
             {kpi.trend !== null && (
-              <div className="mt-3 pt-3 border-t border-gray-100">
-                <div className="flex items-center gap-1 text-sm">
+              <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-100">
+                <div className="flex items-center gap-1 text-xs sm:text-sm">
                   {kpi.trend > 0 ? (
                     <>
-                      <TrendingUp className="w-4 h-4 text-red-500" />
-                      <span className="text-red-600">高於競爭對手</span>
+                      <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-red-500" />
+                      <span className="text-red-600 truncate">高於競爭對手</span>
                     </>
                   ) : kpi.trend < 0 ? (
                     <>
-                      <TrendingDown className="w-4 h-4 text-green-500" />
-                      <span className="text-green-600">低於競爭對手</span>
+                      <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
+                      <span className="text-green-600 truncate">低於競爭對手</span>
                     </>
                   ) : (
-                    <span className="text-gray-500">與競爭對手持平</span>
+                    <span className="text-gray-500 truncate">與競爭對手持平</span>
                   )}
                 </div>
               </div>

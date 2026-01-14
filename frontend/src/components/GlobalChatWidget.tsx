@@ -383,8 +383,10 @@ function MiniChatBox({
       transition={{ duration: 0.2 }}
       className={cn(
         "bg-white shadow-2xl border overflow-hidden flex flex-col",
-        "fixed inset-4 bottom-20 rounded-2xl",
-        "sm:relative sm:inset-auto sm:bottom-auto",
+        // 手機版：全屏顯示，留出安全邊距
+        "fixed inset-x-2 top-16 bottom-24 rounded-xl",
+        // 桌面版：浮動框
+        "sm:relative sm:inset-auto sm:top-auto sm:bottom-auto",
         isExpanded
           ? "sm:w-[400px] sm:h-[600px] sm:rounded-2xl"
           : "sm:w-[350px] sm:h-[450px] sm:rounded-2xl"

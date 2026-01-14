@@ -56,22 +56,22 @@ export function CompetitorCard({
         isScraping && "ring-2 ring-cyan-400/50"
       )}
     >
-      <div className="p-5 flex-1 flex flex-col">
+      <div className="p-3 sm:p-5 flex-1 flex flex-col">
         {/* 頭部：圖標 + 名稱 + 狀態 */}
-        <div className="flex items-start justify-between gap-3 mb-4">
-          <div className="flex items-center space-x-3 min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2 sm:gap-3 mb-3 sm:mb-4">
+          <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
             <div className={cn(
-              "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
+              "w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0",
               "bg-gradient-to-br from-cyan-50 to-blue-50 border border-cyan-100/50",
               "shadow-lg shadow-cyan-100/30"
             )}>
-              <Building2 className="w-6 h-6 text-cyan-600" />
+              <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-600" />
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="text-base font-bold text-slate-800 group-hover:text-cyan-600 transition-colors truncate">
+              <h3 className="text-sm sm:text-base font-bold text-slate-800 group-hover:text-cyan-600 transition-colors truncate">
                 {competitor.name}
               </h3>
-              <div className="flex items-center text-xs font-medium text-slate-500 mt-1">
+              <div className="flex items-center text-xs font-medium text-slate-500 mt-0.5 sm:mt-1">
                 <Globe className="w-3 h-3 mr-1 text-cyan-500" />
                 {platformLabel}
               </div>
@@ -82,36 +82,37 @@ export function CompetitorCard({
             size="sm"
             pulse={competitor.is_active}
           >
-            {competitor.is_active ? '監測中' : '已暫停'}
+            <span className="hidden sm:inline">{competitor.is_active ? '監測中' : '已暫停'}</span>
+            <span className="sm:hidden">{competitor.is_active ? '監測' : '暫停'}</span>
           </HoloBadge>
         </div>
 
-        {/* 描述 - 固定高度確保卡片對齊 */}
-        <div className="h-10 mb-4">
+        {/* 描述 - 使用 min-h 而非固定 h，避免手機版內容壓縮 */}
+        <div className="min-h-[2rem] sm:min-h-[2.5rem] mb-3 sm:mb-4">
           {competitor.notes ? (
-            <p className="text-sm text-slate-500 line-clamp-2">
+            <p className="text-xs sm:text-sm text-slate-500 line-clamp-2">
               {competitor.notes}
             </p>
           ) : (
-            <p className="text-sm text-slate-400 italic">暫無備註</p>
+            <p className="text-xs sm:text-sm text-slate-400 italic">暫無備註</p>
           )}
         </div>
 
         {/* 數據網格 */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-gradient-to-br from-slate-50 to-white rounded-xl p-3 border border-slate-100/80">
-            <div className="flex items-center text-xs text-slate-500 mb-1">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <div className="bg-gradient-to-br from-slate-50 to-white rounded-lg sm:rounded-xl p-2 sm:p-3 border border-slate-100/80">
+            <div className="flex items-center text-[10px] sm:text-xs text-slate-500 mb-0.5 sm:mb-1">
               <Activity className="w-3 h-3 mr-1 text-cyan-500" />
               監測商品
             </div>
-            <div className="text-xl font-bold text-slate-800">{competitor.product_count}</div>
+            <div className="text-lg sm:text-xl font-bold text-slate-800">{competitor.product_count}</div>
           </div>
-          <div className="bg-gradient-to-br from-slate-50 to-white rounded-xl p-3 border border-slate-100/80">
-            <div className="flex items-center text-xs text-slate-500 mb-1">
+          <div className="bg-gradient-to-br from-slate-50 to-white rounded-lg sm:rounded-xl p-2 sm:p-3 border border-slate-100/80">
+            <div className="flex items-center text-[10px] sm:text-xs text-slate-500 mb-0.5 sm:mb-1">
               <Clock className="w-3 h-3 mr-1 text-cyan-500" />
               最後更新
             </div>
-            <div className="text-sm font-semibold text-slate-800 pt-1">
+            <div className="text-xs sm:text-sm font-semibold text-slate-800 pt-0.5 sm:pt-1">
               {competitor.last_scraped_at
                 ? new Date(competitor.last_scraped_at).toLocaleDateString('zh-HK')
                 : '尚未抓取'}
@@ -121,7 +122,7 @@ export function CompetitorCard({
       </div>
 
       {/* 底部操作欄 */}
-      <div className="px-5 py-3 bg-gradient-to-r from-slate-50/80 to-white/80 border-t border-slate-100/60 flex items-center justify-between">
+      <div className="px-3 sm:px-5 py-2 sm:py-3 bg-gradient-to-r from-slate-50/80 to-white/80 border-t border-slate-100/60 flex items-center justify-between">
         <div className="flex items-center space-x-1">
           <HoloButton
             size="sm"

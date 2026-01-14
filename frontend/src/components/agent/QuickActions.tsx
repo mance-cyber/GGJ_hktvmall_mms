@@ -113,7 +113,7 @@ export function QuickActions({ onAction, disabled }: QuickActionsProps) {
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-3 flex gap-2 overflow-x-auto scrollbar-hide sm:flex-wrap">
+            <div className="px-3 sm:px-4 pb-3 flex flex-wrap gap-1.5 sm:gap-2">
               {QUICK_ACTIONS.map((action) => (
                 <motion.button
                   key={action.id}
@@ -122,15 +122,15 @@ export function QuickActions({ onAction, disabled }: QuickActionsProps) {
                   onClick={() => onAction(action.query)}
                   disabled={disabled}
                   className={cn(
-                    "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium",
-                    "text-white shadow-sm transition-all whitespace-nowrap flex-shrink-0",
+                    "inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full",
+                    "text-xs sm:text-sm font-medium text-white shadow-sm transition-all",
                     "disabled:opacity-50 disabled:cursor-not-allowed",
                     `bg-gradient-to-r ${action.color}`,
                     "hover:shadow-md"
                   )}
                 >
                   {action.icon}
-                  {action.label}
+                  <span className="truncate max-w-[4.5rem] sm:max-w-none">{action.label}</span>
                 </motion.button>
               ))}
             </div>
