@@ -360,7 +360,7 @@ class HKTVScraper:
             all_urls.update(page_urls)
 
         except Exception as e:
-            print(f"[HKTVScraper] 抓取商店頁面失敗: {e}")
+            logger.error(f"抓取商店頁面失敗: {e}", exc_info=True)
 
         # 第二步：嘗試分頁
         if len(all_urls) < max_products:
@@ -386,7 +386,7 @@ class HKTVScraper:
                     all_urls.update(page_urls)
 
                 except Exception as e:
-                    print(f"[HKTVScraper] 抓取分頁 {page} 失敗: {e}")
+                    logger.warning(f"抓取分頁 {page} 失敗: {e}")
                     break
 
         # 驗證並返回
@@ -750,7 +750,7 @@ class HKTVScraper:
 
                 except Exception as e:
                     failed_urls.append(url)
-                    print(f"[HKTVScraper] 抓取商品失敗 {url}: {e}")
+                    logger.warning(f"抓取商品失敗 {url}: {e}")
 
                 # 防止過快請求
                 await asyncio.sleep(0.5)

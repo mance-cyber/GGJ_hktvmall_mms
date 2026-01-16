@@ -2,12 +2,31 @@
 # 數據庫連接設定
 # =============================================
 
+import logging
+from datetime import datetime, timezone
 from typing import AsyncGenerator
+
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import text
 
 from app.config import get_settings
+
+logger = logging.getLogger(__name__)
+
+
+# =============================================
+# UTC 時間工具函數
+# =============================================
+
+def utcnow() -> datetime:
+    """
+    獲取 UTC 時間（使用 timezone-aware datetime）
+
+    取代已棄用的 datetime.utcnow()
+    Python 3.12+ 建議使用 datetime.now(timezone.utc)
+    """
+    return datetime.now(timezone.utc)
 
 
 class Base(DeclarativeBase):
@@ -54,10 +73,10 @@ async def run_migrations(conn):
             try:
                 await conn.execute(text(stmt))
             except Exception as e:
-                print(f"Migration warning: {e}")
+                logger.warning(f"Migration warning: {e}")
                 
     except Exception as e:
-        print(f"Migration failed: {e}")
+        logger.error(f"Migration failed: {e}", exc_info=True)
 
 
 async def init_db():
@@ -86,7 +105,7 @@ async def init_db():
             await run_migrations(conn)
             
     except Exception as e:
-        print(f"Database initialization error (ignored): {e}")
+        logger.warning(f"Database initialization error (ignored): {e}")
         pass
 
 

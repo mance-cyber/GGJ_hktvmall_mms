@@ -2,11 +2,14 @@
 # AI Agent 主服務 (數據庫持久化版)
 # =============================================
 
-from typing import Any, Dict, List, Optional, AsyncGenerator
-from dataclasses import dataclass, field
-from enum import Enum
+import logging
 import uuid
+from dataclasses import dataclass, field
 from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional, AsyncGenerator
+
+logger = logging.getLogger(__name__)
 
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -354,7 +357,7 @@ class AgentService:
                     intent_result.intent.value
                 )
                 if quick_response:
-                    print(f"[AgentService] 使用快取回覆: intent={intent_result.intent.value}")
+                    logger.debug(f"使用快取回覆: intent={intent_result.intent.value}")
                     await self._update_conversation_state(conversation_id, state.slots, state.current_intent)
                     await self._save_message(conversation_id, "assistant", quick_response.message, "message")
 
@@ -375,7 +378,7 @@ class AgentService:
                     )
                     return
             except Exception as e:
-                print(f"[AgentService] 快取回覆失敗，回退到正常流程: {e}")
+                logger.warning(f"快取回覆失敗，回退到正常流程: {e}")
 
         # =============================================
         # 直接執行的意圖（不需要產品槽位）

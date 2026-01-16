@@ -1,13 +1,17 @@
+import logging
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from pydantic import BaseModel
 
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.config import settings
 from app.models.database import get_db
 from app.models.product import Product as OwnProduct
 from app.services.hktvmall import HKTVMallClient, HKTVMallMockClient
-from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -162,10 +166,10 @@ async def run_sync_task(skus: List[str], client, db: AsyncSession):
             # TODO: 解析真實 response 並更新 DB
             # 這裡需要一個獨立的 DB Session 管理邏輯，暫時略過寫入
             # 僅打印日誌
-            print(f"Synced chunk {i}: {response}")
+            logger.info(f"Synced chunk {i}: {response}")
             
         except Exception as e:
             errors.append(f"Chunk {i} failed: {str(e)}")
             
-    print(f"Sync completed. Updated: {updated_count}. Errors: {len(errors)}")
+    logger.info(f"Sync completed. Updated: {updated_count}. Errors: {len(errors)}")
 

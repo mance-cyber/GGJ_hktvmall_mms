@@ -139,6 +139,9 @@ class BatchTaskStore:
             cls._tasks.pop(task_id, None)
             cls._task_expiry.pop(task_id, None)
 
+        if expired:
+            logger.debug(f"清理了 {len(expired)} 個過期的批量任務")
+
 
 # =============================================
 # 批量生成服務

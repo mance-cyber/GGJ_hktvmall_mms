@@ -2,13 +2,16 @@
 # 意圖識別器
 # =============================================
 
-from typing import Any, Dict, List, Optional
+import json
+import logging
+import re
 from dataclasses import dataclass
 from enum import Enum
-import json
-import re
+from typing import Any, Dict, List, Optional
 
 from .taxonomy import get_all_product_names, normalize_product_name
+
+logger = logging.getLogger(__name__)
 
 
 class IntentType(Enum):
@@ -267,18 +270,18 @@ class IntentClassifier:
         
         # 如果規則識別信心度不夠且有 AI 服務，使用 AI
         if use_ai and self.ai_service:
-            print(f"[IntentClassifier] 規則信心度 {rule_result.confidence} < 0.8，嘗試 AI 識別...")
+            logger.debug(f"規則信心度 {rule_result.confidence} < 0.8，嘗試 AI 識別...")
             ai_result = await self._classify_by_ai(message, context)
-            print(f"[IntentClassifier] AI 結果: intent={ai_result.intent.value}, confidence={ai_result.confidence}")
+            logger.debug(f"AI 結果: intent={ai_result.intent.value}, confidence={ai_result.confidence}")
 
             # 選擇信心度更高的結果
             if ai_result.confidence > rule_result.confidence:
-                print(f"[IntentClassifier] 採用 AI 結果 (AI {ai_result.confidence} > Rule {rule_result.confidence})")
+                logger.debug(f"採用 AI 結果 (AI {ai_result.confidence} > Rule {rule_result.confidence})")
                 return ai_result
             else:
-                print(f"[IntentClassifier] 採用規則結果 (Rule {rule_result.confidence} >= AI {ai_result.confidence})")
+                logger.debug(f"採用規則結果 (Rule {rule_result.confidence} >= AI {ai_result.confidence})")
 
-        print(f"[IntentClassifier] 最終結果: intent={rule_result.intent.value}, entities={rule_result.entities}")
+        logger.debug(f"最終結果: intent={rule_result.intent.value}, entities={rule_result.entities}")
         return rule_result
     
     def _classify_by_rules(self, message: str) -> IntentResult:
@@ -291,9 +294,9 @@ class IntentClassifier:
         entities = self._extract_entities(message)
 
         # Debug logging
-        print(f"[IntentClassifier] 輸入: {message}")
-        print(f"[IntentClassifier] 提取實體: {entities}")
-        print(f"[IntentClassifier] 產品名稱庫大小: {len(self.product_names)}")
+        logger.debug(f"輸入: {message}")
+        logger.debug(f"提取實體: {entities}")
+        logger.debug(f"產品名稱庫大小: {len(self.product_names)}")
         
         # 計算每個意圖的匹配分數
         scores = {}
@@ -307,8 +310,8 @@ class IntentClassifier:
             if score > 0:
                 scores[intent] = score
 
-        print(f"[IntentClassifier] 匹配關鍵詞: {matched_keywords}")
-        print(f"[IntentClassifier] 意圖分數: {[(k.value, v) for k, v in scores.items()]}")
+        logger.debug(f"匹配關鍵詞: {matched_keywords}")
+        logger.debug(f"意圖分數: {[(k.value, v) for k, v in scores.items()]}")
 
         # 如果沒有匹配
         if not scores:
@@ -385,12 +388,12 @@ class IntentClassifier:
         )
         
         try:
-            print(f"[IntentClassifier] 調用 AI API...")
+            logger.debug("調用 AI API...")
             response = await self.ai_service.call_ai(prompt)
-            print(f"[IntentClassifier] AI 回應 success={response.success}, content長度={len(response.content) if response.content else 0}")
+            logger.debug(f"AI 回應 success={response.success}, content長度={len(response.content) if response.content else 0}")
 
             if not response.success:
-                print(f"[IntentClassifier] AI 調用失敗: {response.error}")
+                logger.warning(f"AI 調用失敗: {response.error}")
                 return IntentResult(
                     intent=IntentType.UNKNOWN,
                     entities=[],
@@ -406,7 +409,7 @@ class IntentClassifier:
             else:
                 result = json.loads(response.content)
 
-            print(f"[IntentClassifier] AI JSON 解析成功: {result}")
+            logger.debug(f"AI JSON 解析成功: {result}")
 
             intent_str = result.get("intent", "UNKNOWN")
             try:
@@ -416,7 +419,7 @@ class IntentClassifier:
                 try:
                     intent = IntentType(intent_str.lower())
                 except ValueError:
-                    print(f"[IntentClassifier] 無法識別意圖類型: {intent_str}")
+                    logger.warning(f"無法識別意圖類型: {intent_str}")
                     intent = IntentType.UNKNOWN
 
             entities = result.get("entities", [])
@@ -430,7 +433,7 @@ class IntentClassifier:
                 reasoning=reasoning
             )
         except Exception as e:
-            print(f"[IntentClassifier] AI 識別異常: {type(e).__name__}: {str(e)}")
+            logger.error(f"AI 識別異常: {type(e).__name__}: {str(e)}", exc_info=True)
             return IntentResult(
                 intent=IntentType.UNKNOWN,
                 entities=[],

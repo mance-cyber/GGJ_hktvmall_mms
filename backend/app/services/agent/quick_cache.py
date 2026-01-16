@@ -6,15 +6,18 @@
 # 目標：<100ms 回覆時間
 #
 
-from typing import Any, Dict, List, Optional
-from datetime import datetime, timedelta
-from dataclasses import dataclass
 import json
+import logging
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.order import Order
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -233,7 +236,7 @@ class QuickCacheService:
             self._set_cache("orders_today", data)
 
         except Exception as e:
-            print(f"[QuickCache] 刷新 orders_today 失敗: {e}")
+            logger.warning(f"刷新 orders_today 失敗: {e}")
             # 設置空數據避免重複查詢
             self._set_cache("orders_today", {
                 "count": 0,
@@ -271,7 +274,7 @@ class QuickCacheService:
             self._set_cache("orders_pending", data)
 
         except Exception as e:
-            print(f"[QuickCache] 刷新 orders_pending 失敗: {e}")
+            logger.warning(f"刷新 orders_pending 失敗: {e}")
             self._set_cache("orders_pending", {
                 "pending": 0,
                 "to_ship": 0,
@@ -320,7 +323,7 @@ class QuickCacheService:
             self._set_cache("finance_month", data)
 
         except Exception as e:
-            print(f"[QuickCache] 刷新 finance_month 失敗: {e}")
+            logger.warning(f"刷新 finance_month 失敗: {e}")
             self._set_cache("finance_month", {
                 "revenue": 0,
                 "orders": 0,
@@ -365,7 +368,7 @@ class QuickCacheService:
             }
 
         except Exception as e:
-            print(f"[QuickCache] 刷新 alerts_summary 失敗: {e}")
+            logger.warning(f"刷新 alerts_summary 失敗: {e}")
 
         self._set_cache("alerts_summary", data)
 
