@@ -21,12 +21,12 @@ logger = logging.getLogger(__name__)
 
 def utcnow() -> datetime:
     """
-    獲取 UTC 時間（使用 timezone-aware datetime）
+    獲取 UTC 時間（返回 naive datetime 以兼容 TIMESTAMP WITHOUT TIME ZONE）
 
-    取代已棄用的 datetime.utcnow()
-    Python 3.12+ 建議使用 datetime.now(timezone.utc)
+    注意：返回的是 UTC 時間，但不帶 tzinfo
+    這樣可以直接存入 PostgreSQL 的 TIMESTAMP WITHOUT TIME ZONE 欄位
     """
-    return datetime.now(timezone.utc)
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class Base(DeclarativeBase):
