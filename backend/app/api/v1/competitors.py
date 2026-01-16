@@ -42,42 +42,54 @@ async def list_competitors(
     is_active: Optional[bool] = None,
 ):
     """列出所有競爭對手"""
-    query = select(Competitor)
+    # 使用子查詢避免 N+1 問題
+    # 統計每個競爭對手的商品數量和最後爬取時間
+    product_stats_subquery = (
+        select(
+            CompetitorProduct.competitor_id,
+            func.count(CompetitorProduct.id).label("product_count"),
+            func.max(CompetitorProduct.last_scraped_at).label("last_scraped_at"),
+        )
+        .group_by(CompetitorProduct.competitor_id)
+        .subquery()
+    )
+
+    # 主查詢：左連接統計子查詢
+    query = (
+        select(
+            Competitor,
+            func.coalesce(product_stats_subquery.c.product_count, 0).label("product_count"),
+            product_stats_subquery.c.last_scraped_at,
+        )
+        .outerjoin(
+            product_stats_subquery,
+            Competitor.id == product_stats_subquery.c.competitor_id
+        )
+    )
+
     if is_active is not None:
         query = query.where(Competitor.is_active == is_active)
     query = query.order_by(Competitor.created_at.desc())
 
     result = await db.execute(query)
-    competitors = result.scalars().all()
+    rows = result.all()
 
-    # 獲取每個競爭對手的商品數量
-    data = []
-    for comp in competitors:
-        count_query = select(func.count(CompetitorProduct.id)).where(
-            CompetitorProduct.competitor_id == comp.id
+    # 構建響應（單次查詢，無 N+1）
+    data = [
+        CompetitorResponse(
+            id=row.Competitor.id,
+            name=row.Competitor.name,
+            platform=row.Competitor.platform,
+            base_url=row.Competitor.base_url,
+            notes=row.Competitor.notes,
+            is_active=row.Competitor.is_active,
+            created_at=row.Competitor.created_at,
+            updated_at=row.Competitor.updated_at,
+            product_count=row.product_count,
+            last_scraped_at=row.last_scraped_at,
         )
-        count_result = await db.execute(count_query)
-        product_count = count_result.scalar() or 0
-
-        # 獲取最後爬取時間
-        last_scraped_query = select(func.max(CompetitorProduct.last_scraped_at)).where(
-            CompetitorProduct.competitor_id == comp.id
-        )
-        last_scraped_result = await db.execute(last_scraped_query)
-        last_scraped_at = last_scraped_result.scalar()
-
-        data.append(CompetitorResponse(
-            id=comp.id,
-            name=comp.name,
-            platform=comp.platform,
-            base_url=comp.base_url,
-            notes=comp.notes,
-            is_active=comp.is_active,
-            created_at=comp.created_at,
-            updated_at=comp.updated_at,
-            product_count=product_count,
-            last_scraped_at=last_scraped_at,
-        ))
+        for row in rows
+    ]
 
     return CompetitorListResponse(data=data, total=len(data))
 
@@ -201,9 +213,9 @@ async def delete_competitor(
 async def list_competitor_products(
     competitor_id: UUID,
     db: AsyncSession = Depends(get_db),
-    page: int = Query(default=1, ge=1),
-    limit: int = Query(default=20, ge=1, le=100),
-    search: Optional[str] = None,
+    page: int = Query(default=1, ge=1, le=1000, description="頁碼（最大 1000）"),
+    limit: int = Query(default=20, ge=1, le=100, description="每頁數量（最大 100）"),
+    search: Optional[str] = Query(default=None, max_length=100, description="搜索關鍵字（最大 100 字符）"),
 ):
     """列出競品商品"""
     # 確認競爭對手存在
@@ -560,9 +572,9 @@ async def trigger_scrape(
 @alerts_router.get("", response_model=PriceAlertListResponse)
 async def list_alerts(
     db: AsyncSession = Depends(get_db),
-    is_read: Optional[bool] = None,
-    alert_type: Optional[str] = None,
-    limit: int = Query(default=50, ge=1, le=200),
+    is_read: Optional[bool] = Query(default=None, description="是否已讀"),
+    alert_type: Optional[str] = Query(default=None, max_length=50, description="警報類型"),
+    limit: int = Query(default=50, ge=1, le=200, description="返回數量（最大 200）"),
 ):
     """獲取價格警報"""
     query = select(PriceAlert).options(

@@ -8,13 +8,16 @@ import re
 import time
 import hashlib
 import asyncio
+import logging
 from typing import Optional, Dict, Any, List, Tuple
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from dataclasses import dataclass, field
 from datetime import datetime
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 from app.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 # =============================================
@@ -485,14 +488,14 @@ class HKTVScraper:
         if json_data.get("current_price"):
             try:
                 price = Decimal(str(json_data["current_price"]))
-            except:
-                pass
+            except (ValueError, TypeError, InvalidOperation) as e:
+                logger.debug(f"無法解析 current_price: {json_data.get('current_price')}, 錯誤: {e}")
 
         if json_data.get("original_price"):
             try:
                 original_price = Decimal(str(json_data["original_price"]))
-            except:
-                pass
+            except (ValueError, TypeError, InvalidOperation) as e:
+                logger.debug(f"無法解析 original_price: {json_data.get('original_price')}, 錯誤: {e}")
 
         # 計算折扣
         discount_percent = None
@@ -507,8 +510,8 @@ class HKTVScraper:
         if json_data.get("rating"):
             try:
                 rating = Decimal(str(json_data["rating"]))
-            except:
-                pass
+            except (ValueError, TypeError, InvalidOperation) as e:
+                logger.debug(f"無法解析 rating: {json_data.get('rating')}, 錯誤: {e}")
 
         # 獲取圖片
         image_url = json_data.get("image_url")
@@ -626,7 +629,8 @@ class HKTVScraper:
                     # 過濾不合理的價格
                     if Decimal("1") <= price <= Decimal("100000"):
                         prices.append(price)
-                except:
+                except (ValueError, TypeError, InvalidOperation):
+                    # 無法解析的價格字符串，跳過
                     pass
 
         if not prices:

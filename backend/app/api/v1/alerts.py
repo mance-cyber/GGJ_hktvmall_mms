@@ -29,10 +29,10 @@ class UnreadCountResponse(BaseModel):
 @router.get("", response_model=PriceAlertListResponse)
 async def list_alerts(
     db: AsyncSession = Depends(get_db),
-    page: int = Query(default=1, ge=1),
-    limit: int = Query(default=20, ge=1, le=100),
-    alert_type: Optional[str] = None,
-    is_read: Optional[bool] = None,
+    page: int = Query(default=1, ge=1, le=1000, description="頁碼（最大 1000）"),
+    limit: int = Query(default=20, ge=1, le=100, description="每頁數量（最大 100）"),
+    alert_type: Optional[str] = Query(default=None, max_length=50, description="警報類型"),
+    is_read: Optional[bool] = Query(default=None, description="是否已讀"),
 ):
     """獲取警報列表"""
     query = select(PriceAlert)

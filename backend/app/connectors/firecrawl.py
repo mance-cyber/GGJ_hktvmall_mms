@@ -4,12 +4,15 @@
 # 使用 JSON Mode 結構化提取、Map 發現 URL、Actions 處理動態頁面
 
 import re
+import logging
 from typing import Optional, Dict, Any, List
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from dataclasses import dataclass, field
 from pydantic import BaseModel
 
 from app.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 # =============================================
@@ -421,14 +424,14 @@ class FirecrawlConnector:
         if json_data.get("current_price"):
             try:
                 price = Decimal(str(json_data["current_price"]))
-            except:
-                pass
+            except (ValueError, TypeError, InvalidOperation) as e:
+                logger.debug(f"無法解析 current_price: {json_data.get('current_price')}, 錯誤: {e}")
 
         if json_data.get("original_price"):
             try:
                 original_price = Decimal(str(json_data["original_price"]))
-            except:
-                pass
+            except (ValueError, TypeError, InvalidOperation) as e:
+                logger.debug(f"無法解析 original_price: {json_data.get('original_price')}, 錯誤: {e}")
 
         # 計算折扣
         discount_percent = None
@@ -443,8 +446,8 @@ class FirecrawlConnector:
         if json_data.get("rating"):
             try:
                 rating = Decimal(str(json_data["rating"]))
-            except:
-                pass
+            except (ValueError, TypeError, InvalidOperation) as e:
+                logger.debug(f"無法解析 rating: {json_data.get('rating')}, 錯誤: {e}")
 
         # 獲取圖片 URL
         image_url = json_data.get("image_url") or self._extract_image(raw_data)
@@ -556,7 +559,8 @@ class FirecrawlConnector:
                     price = Decimal(match.replace(",", ""))
                     if price > 0:
                         prices.append(price)
-                except:
+                except (ValueError, TypeError, InvalidOperation):
+                    # 無法解析的價格字符串，跳過
                     pass
 
         if not prices:

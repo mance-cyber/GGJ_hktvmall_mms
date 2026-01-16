@@ -12,11 +12,14 @@
 
 import re
 import json
+import logging
 from typing import Optional, List, Dict, Any, Tuple
 from dataclasses import dataclass
 from decimal import Decimal
 from datetime import datetime
 import asyncio
+
+logger = logging.getLogger(__name__)
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -78,7 +81,11 @@ class HKTVMallSearchStrategy:
             urls = self.firecrawl.discover_hktv_products(search_url, max_products=limit)
             return urls
         except Exception as e:
-            print(f"[ERROR] Failed to extract products from {search_url}: {e}")
+            logger.error(
+                f"從搜索結果提取商品 URL 失敗: {search_url}",
+                exc_info=True,
+                extra={"search_url": search_url, "limit": limit}
+            )
             return []
 
 
@@ -177,7 +184,14 @@ class ClaudeMatcher:
             )
             
         except Exception as e:
-            print(f"[ERROR] Claude match failed: {e}")
+            logger.error(
+                f"Claude 匹配判斷失敗: {str(e)}",
+                exc_info=True,
+                extra={
+                    "our_product": our_product.get('name_zh', ''),
+                    "candidate": candidate.get('name', ''),
+                }
+            )
             return self._heuristic_match(our_product, candidate)
     
     def _heuristic_match(

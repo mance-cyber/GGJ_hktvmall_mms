@@ -245,10 +245,10 @@ async def get_batch_task_status(task_id: str):
 @router.get("/history", response_model=ContentListResponse)
 async def list_content_history(
     db: AsyncSession = Depends(get_db),
-    product_id: Optional[UUID] = None,
-    status: Optional[str] = None,
-    content_type: Optional[str] = None,
-    limit: int = Query(default=50, ge=1, le=200),
+    product_id: Optional[UUID] = Query(default=None, description="商品ID"),
+    status: Optional[str] = Query(default=None, max_length=50, description="狀態"),
+    content_type: Optional[str] = Query(default=None, max_length=50, description="內容類型"),
+    limit: int = Query(default=50, ge=1, le=200, description="返回數量（最大 200）"),
 ):
     """獲取生成歷史"""
     query = select(AIContent)

@@ -1,3 +1,4 @@
+import json
 import httpx
 from typing import Dict, List, Optional, Union, Any
 import logging
@@ -218,7 +219,7 @@ class HKTVMallClient:
                 try:
                     err_json = e.response.json()
                     err_msg = err_json.get('message', e.response.text)
-                except:
+                except (ValueError, json.JSONDecodeError):
                     err_msg = e.response.text
                 raise Exception(f"HKTVmall API Error: {e.response.status_code} - {err_msg}")
             except Exception as e:

@@ -19,12 +19,23 @@ class Settings(BaseSettings):
     @field_validator('secret_key')
     @classmethod
     def validate_secret_key(cls, v, info):
-        """C-01: 驗證 SECRET_KEY 強度"""
+        """C-01: 驗證 SECRET_KEY 強度 - 生產環境必須使用強密鑰"""
         app_env = info.data.get('app_env', 'production')
         if app_env != 'development':
-            if 'dev-secret-key' in v or len(v) < 32:
+            # 生產環境必須檢查
+            if not v:
                 raise ValueError(
-                    "SECRET_KEY must be a strong random string (min 32 chars) in production. "
+                    "SECRET_KEY is required in production. "
+                    "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(64))\""
+                )
+            if 'dev-secret-key' in v.lower() or 'change' in v.lower() or 'default' in v.lower():
+                raise ValueError(
+                    "SECRET_KEY contains unsafe default value. Please set a strong random key. "
+                    "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(64))\""
+                )
+            if len(v) < 32:
+                raise ValueError(
+                    f"SECRET_KEY is too short ({len(v)} chars). Minimum 32 characters required. "
                     "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(64))\""
                 )
         return v
@@ -116,6 +127,33 @@ class Settings(BaseSettings):
 
     # 存儲配置
     use_r2_storage: bool = Field(default=False, alias="USE_R2_STORAGE")
+
+    # CORS 配置
+    cors_origins_production: str = Field(
+        default="https://ggj-front.zeabur.app,https://ggj-back.zeabur.app",
+        alias="CORS_ORIGINS_PRODUCTION"
+    )
+    cors_origins_development: str = Field(
+        default="http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,http://127.0.0.1:8000",
+        alias="CORS_ORIGINS_DEVELOPMENT"
+    )
+
+    # OpenAI 兼容 API（用於 AI 設定服務的預設值）
+    openai_base_url: str = Field(
+        default="https://api.openai.com/v1",
+        alias="OPENAI_BASE_URL"
+    )
+    openai_default_model: str = Field(
+        default="gpt-4o",
+        alias="OPENAI_DEFAULT_MODEL"
+    )
+
+    def get_cors_origins(self) -> list[str]:
+        """獲取 CORS 允許的來源列表"""
+        origins = [o.strip() for o in self.cors_origins_production.split(",") if o.strip()]
+        if self.debug:
+            origins.extend([o.strip() for o in self.cors_origins_development.split(",") if o.strip()])
+        return origins
 
     @field_validator('nano_banana_api_key')
     @classmethod

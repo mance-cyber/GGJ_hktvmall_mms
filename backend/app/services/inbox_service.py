@@ -3,7 +3,7 @@
 # =============================================
 
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Union
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from sqlalchemy.orm import selectinload
@@ -16,10 +16,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 class InboxService:
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
-        
-    def _get_client(self):
+
+    def _get_client(self) -> Union[HKTVMallClient, HKTVMallMockClient]:
+        """獲取 HKTVmall API 客戶端（真實或 Mock）"""
         if settings.hktv_access_token and settings.hktv_access_token != "mock_token":
             return HKTVMallClient()
         return HKTVMallMockClient()
@@ -41,8 +42,8 @@ class InboxService:
                 last_msg_at = datetime.now()
                 try:
                     last_msg_at = datetime.strptime(item.get("lastMessageAt"), "%Y-%m-%d %H:%M:%S")
-                except:
-                    pass
+                except (ValueError, TypeError) as e:
+                    logger.debug(f"無法解析 lastMessageAt: {item.get('lastMessageAt')}, 使用當前時間")
 
                 if not conv:
                     conv = Conversation(
@@ -60,7 +61,8 @@ class InboxService:
             await self.db.commit()
             return len(data)
         except Exception as e:
-            logger.error(f"Sync conversations failed: {e}")
+            await self.db.rollback()
+            logger.error(f"Sync conversations failed: {e}", exc_info=True)
             return 0
 
     async def get_conversations(self):
@@ -91,9 +93,9 @@ class InboxService:
                     sent_at = datetime.now()
                     try:
                         sent_at = datetime.strptime(item.get("sentAt"), "%Y-%m-%d %H:%M:%S")
-                    except:
-                        pass
-                        
+                    except (ValueError, TypeError) as e:
+                        logger.debug(f"無法解析 sentAt: {item.get('sentAt')}, 使用當前時間")
+
                     msg = Message(
                         conversation_id=conv.id,
                         hktv_message_id=msg_id,
@@ -104,8 +106,9 @@ class InboxService:
                     self.db.add(msg)
             await self.db.commit()
         except Exception as e:
-            logger.error(f"Sync messages failed: {e}")
-            
+            await self.db.rollback()
+            logger.error(f"Sync messages failed: {e}", exc_info=True)
+
         # 3. Return local messages
         query = select(Message).where(Message.conversation_id == conversation_id).order_by(Message.sent_at)
         result = await self.db.execute(query)

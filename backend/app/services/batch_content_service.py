@@ -10,9 +10,12 @@
 import asyncio
 import json
 import uuid
+import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field
+
+logger = logging.getLogger(__name__)
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -304,6 +307,15 @@ class BatchContentService:
 
             except Exception as e:
                 failed += 1
+                logger.error(
+                    f"批量任務 {task_id} 第 {i} 項處理失敗: {str(e)}",
+                    exc_info=True,
+                    extra={
+                        "task_id": task_id,
+                        "item_index": i,
+                        "product_id": item_data.get("product_id"),
+                    }
+                )
                 BatchTaskStore.update_task(
                     task_id,
                     completed=completed,
@@ -317,6 +329,9 @@ class BatchContentService:
                 )
 
         # 任務完成
+        logger.info(
+            f"批量任務 {task_id} 完成: 成功 {completed}, 失敗 {failed}, 總計 {len(task.items)}"
+        )
         final_status = "completed" if failed < len(task.items) else "failed"
         BatchTaskStore.update_task(task_id, status=final_status)
 
@@ -480,6 +495,15 @@ class BatchContentService:
             )
 
         except Exception as e:
+            logger.error(
+                f"生成文案失敗 [index={index}, product={product_name or '未知'}]: {str(e)}",
+                exc_info=True,
+                extra={
+                    "index": index,
+                    "product_name": product_name,
+                    "content_type": content_type,
+                }
+            )
             return BatchResultItem(
                 index=index,
                 success=False,

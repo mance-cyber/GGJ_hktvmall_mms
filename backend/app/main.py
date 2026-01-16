@@ -16,6 +16,7 @@ from app.config import get_settings
 from app.models.database import init_db
 from app.api.v1.router import api_router
 from app.core.logging import setup_logging
+from app.core.exceptions import register_exception_handlers
 
 
 # =============================================
@@ -194,20 +195,9 @@ def create_app() -> FastAPI:
         login_limit=5,           # 登入每分鐘 5 次
     )
 
-    # C-02: CORS 設定 - 明確指定允許的來源和標頭
-    # 始終包含生產環境域名，開發環境額外添加 localhost
-    allowed_origins = [
-        "https://ggj-front.zeabur.app",
-        "https://ggj-back.zeabur.app",
-    ]
-
-    if settings.debug:
-        allowed_origins.extend([
-            "http://localhost:3000",
-            "http://127.0.0.1:3000",
-            "http://localhost:8000",
-            "http://127.0.0.1:8000",
-        ])
+    # C-02: CORS 設定 - 從配置讀取允許的來源
+    # 生產環境和開發環境的 CORS 來源可通過環境變數配置
+    allowed_origins = settings.get_cors_origins()
 
     app.add_middleware(
         CORSMiddleware,
@@ -218,6 +208,9 @@ def create_app() -> FastAPI:
         expose_headers=["Content-Type", "X-Total-Count"],
         max_age=3600,  # 預檢請求緩存 1 小時
     )
+
+    # 註冊標準化異常處理器
+    register_exception_handlers(app)
 
     # 註冊 API 路由
     app.include_router(api_router, prefix="/api/v1")

@@ -4,7 +4,7 @@
 
 from typing import Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,6 +16,7 @@ from app.schemas.product import (
     ProductResponse,
     ProductListResponse,
 )
+from app.core.exceptions import NotFoundError, DuplicateError
 
 router = APIRouter()
 
@@ -23,11 +24,11 @@ router = APIRouter()
 @router.get("", response_model=ProductListResponse)
 async def list_products(
     db: AsyncSession = Depends(get_db),
-    page: int = Query(default=1, ge=1),
-    limit: int = Query(default=20, ge=1, le=100),
-    search: Optional[str] = None,
-    status: Optional[str] = None,
-    category: Optional[str] = None,
+    page: int = Query(default=1, ge=1, le=1000, description="頁碼（最大 1000）"),
+    limit: int = Query(default=20, ge=1, le=100, description="每頁數量（最大 100）"),
+    search: Optional[str] = Query(default=None, max_length=100, description="搜索關鍵字（最大 100 字符）"),
+    status: Optional[str] = Query(default=None, max_length=50),
+    category: Optional[str] = Query(default=None, max_length=100),
 ):
     """列出所有商品"""
     query = select(Product)
@@ -72,7 +73,7 @@ async def create_product(
         select(Product).where(Product.sku == product_in.sku)
     )
     if existing.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="SKU 已存在")
+        raise DuplicateError(resource="商品", field="SKU")
 
     product = Product(**product_in.model_dump())
     db.add(product)
@@ -93,7 +94,7 @@ async def get_product(
     )
     product = result.scalar_one_or_none()
     if not product:
-        raise HTTPException(status_code=404, detail="商品不存在")
+        raise NotFoundError(resource="商品")
 
     return ProductResponse.model_validate(product)
 
@@ -110,7 +111,7 @@ async def update_product(
     )
     product = result.scalar_one_or_none()
     if not product:
-        raise HTTPException(status_code=404, detail="商品不存在")
+        raise NotFoundError(resource="商品")
 
     update_data = product_in.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -133,6 +134,6 @@ async def delete_product(
     )
     product = result.scalar_one_or_none()
     if not product:
-        raise HTTPException(status_code=404, detail="商品不存在")
+        raise NotFoundError(resource="商品")
 
     await db.delete(product)

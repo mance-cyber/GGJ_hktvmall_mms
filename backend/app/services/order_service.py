@@ -3,7 +3,7 @@
 # =============================================
 
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import List, Optional, Union
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from sqlalchemy.orm import selectinload
@@ -16,10 +16,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 class OrderService:
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
-        
-    def _get_client(self):
+
+    def _get_client(self) -> Union[HKTVMallClient, HKTVMallMockClient]:
+        """獲取 HKTVmall API 客戶端（真實或 Mock）"""
         if settings.hktv_access_token and settings.hktv_access_token != "mock_token":
             return HKTVMallClient()
         return HKTVMallMockClient()
@@ -47,10 +48,11 @@ class OrderService:
                 
             await self.db.commit()
             return synced_count
-            
+
         except Exception as e:
-            logger.error(f"Sync orders exception: {e}")
-            raise e
+            await self.db.rollback()
+            logger.error(f"Sync orders exception: {e}", exc_info=True)
+            raise
 
     async def _upsert_order(self, data: dict):
         """更新或插入訂單"""
@@ -63,15 +65,16 @@ class OrderService:
         # Parse Dates
         try:
             order_date = datetime.strptime(data.get("orderDate"), "%Y-%m-%d %H:%M:%S")
-        except:
-            order_date = datetime.now() # Fallback
-            
+        except (ValueError, TypeError) as e:
+            logger.debug(f"無法解析 orderDate: {data.get('orderDate')}, 使用當前時間")
+            order_date = datetime.now()  # Fallback
+
         ship_by = None
         if data.get("shipByDate"):
             try:
                 ship_by = datetime.strptime(data.get("shipByDate"), "%Y-%m-%d %H:%M:%S")
-            except:
-                pass
+            except (ValueError, TypeError) as e:
+                logger.debug(f"無法解析 shipByDate: {data.get('shipByDate')}")
 
         if not order:
             order = Order(

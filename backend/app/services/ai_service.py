@@ -3,7 +3,7 @@
 # =============================================
 
 from typing import Optional, Dict, Any, List
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import httpx
 import json
 from datetime import datetime
@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.models.system import SystemSetting
+from app.config import get_settings
 
 
 # 常用模型列表
@@ -38,13 +39,23 @@ AVAILABLE_MODELS = [
 ]
 
 
+def _get_default_base_url() -> str:
+    """獲取預設 Base URL（從配置讀取）"""
+    return get_settings().openai_base_url
+
+
+def _get_default_model() -> str:
+    """獲取預設模型（從配置讀取）"""
+    return get_settings().openai_default_model
+
+
 @dataclass
 class AIConfig:
     """AI 配置"""
     api_key: str = ""
-    base_url: str = "https://api.openai.com/v1"  # 默認 OpenAI，可改為中轉站
-    insights_model: str = "gpt-4o"  # 數據摘要用的模型
-    strategy_model: str = "gpt-4o"  # Marketing 策略用的模型
+    base_url: str = field(default_factory=_get_default_base_url)  # 從配置讀取預設值
+    insights_model: str = field(default_factory=_get_default_model)  # 數據摘要用的模型
+    strategy_model: str = field(default_factory=_get_default_model)  # Marketing 策略用的模型
 
 
 @dataclass
