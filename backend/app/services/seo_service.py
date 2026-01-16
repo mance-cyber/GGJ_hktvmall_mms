@@ -643,12 +643,13 @@ class SEOService:
         category: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """使用 AI 生成關鍵詞建議"""
+        category_section = f"## 分類\n{category}" if category else ""
         prompt = f"""你是一位 SEO 關鍵詞研究專家，專注於香港電商市場。
 請為以下查詢提供關鍵詞建議。
 
 ## 查詢
 {query}
-{"## 分類\n" + category if category else ""}
+{category_section}
 
 ## 要求
 請返回 10 個相關的 SEO 關鍵詞，包括：
