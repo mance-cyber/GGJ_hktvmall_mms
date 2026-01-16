@@ -10,7 +10,7 @@ from sqlalchemy import String, Text, Boolean, ForeignKey, Numeric, Integer, Inde
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.database import Base
+from app.models.database import Base, utcnow
 
 
 class Product(Base):
@@ -37,8 +37,8 @@ class Product(Base):
     images: Mapped[Optional[list]] = mapped_column(JSONB, default=[])
     attributes: Mapped[Optional[dict]] = mapped_column(JSONB, default={})
     hktv_data: Mapped[Optional[dict]] = mapped_column(JSONB, comment="HKTVmall MMS API 原始數據")
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
 
     # =============================================
     # Market Response Center (MRC) 擴展欄位
@@ -65,6 +65,9 @@ class Product(Base):
     ai_contents: Mapped[List["AIContent"]] = relationship(back_populates="product")
     price_proposals: Mapped[List["PriceProposal"]] = relationship(back_populates="product")
     price_snapshots: Mapped[List["OwnPriceSnapshot"]] = relationship(back_populates="product", cascade="all, delete-orphan")
+    # SEO & GEO 關聯
+    seo_contents: Mapped[List["SEOContent"]] = relationship(back_populates="product")
+    structured_data: Mapped[List["StructuredData"]] = relationship(back_populates="product")
 
     __table_args__ = (
         Index("idx_products_sku", "sku"),
@@ -87,7 +90,7 @@ class ProductHistory(Base):
     field_changed: Mapped[str] = mapped_column(String(100), nullable=False)
     old_value: Mapped[Optional[str]] = mapped_column(Text)
     new_value: Mapped[Optional[str]] = mapped_column(Text)
-    changed_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    changed_at: Mapped[datetime] = mapped_column(default=utcnow)
 
     # 關聯
     product: Mapped["Product"] = relationship(back_populates="history")
@@ -103,7 +106,7 @@ class ProductCompetitorMapping(Base):
     match_confidence: Mapped[Optional[Decimal]] = mapped_column(Numeric(3, 2), comment="0.00 - 1.00 匹配信心度")
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, comment="人工確認")
     notes: Mapped[Optional[str]] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
     # 關聯
     product: Mapped["Product"] = relationship(back_populates="competitor_mappings")
@@ -130,7 +133,7 @@ class OwnPriceSnapshot(Base):
     discount_percent: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2))
     stock_status: Mapped[Optional[str]] = mapped_column(String(50), comment="in_stock, out_of_stock, low_stock")
     promotion_text: Mapped[Optional[str]] = mapped_column(Text)
-    recorded_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    recorded_at: Mapped[datetime] = mapped_column(default=utcnow)
 
     # 關聯
     product: Mapped["Product"] = relationship(back_populates="price_snapshots")
@@ -143,4 +146,5 @@ class OwnPriceSnapshot(Base):
 
 # 避免循環導入
 from app.models.content import AIContent
+from app.models.seo import SEOContent, StructuredData
 # from app.models.pricing import PriceProposal  # 注意: 這裡不能循環導入，只能使用字串引用 "PriceProposal"

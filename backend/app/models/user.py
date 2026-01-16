@@ -8,7 +8,7 @@ from typing import Optional
 from sqlalchemy import String, Boolean, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
-from app.models.database import Base
+from app.models.database import Base, utcnow
 import enum
 
 class UserRole(str, enum.Enum):
@@ -26,8 +26,8 @@ class User(Base):
     full_name: Mapped[Optional[str]] = mapped_column(String(255))
     role: Mapped[UserRole] = mapped_column(SAEnum(UserRole), default=UserRole.VIEWER, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
 
     def is_admin(self) -> bool:
         return self.role == UserRole.ADMIN

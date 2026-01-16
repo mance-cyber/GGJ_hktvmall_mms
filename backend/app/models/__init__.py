@@ -20,6 +20,13 @@ from app.models.image_generation import (
     GenerationMode,
     TaskStatus
 )
+from app.models.seo import (
+    SEOContent,
+    StructuredData,
+    BrandKnowledge,
+    KeywordResearch,
+    ContentAudit
+)
 
 __all__ = [
     # 數據庫
@@ -62,4 +69,10 @@ __all__ = [
     "OutputImage",
     "GenerationMode",
     "TaskStatus",
+    # SEO & GEO
+    "SEOContent",
+    "StructuredData",
+    "BrandKnowledge",
+    "KeywordResearch",
+    "ContentAudit",
 ]

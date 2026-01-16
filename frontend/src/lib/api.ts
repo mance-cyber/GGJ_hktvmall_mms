@@ -2,11 +2,14 @@
 // API 客戶端
 // =============================================
 
+import { getToken } from './secure-token'
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
 async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}${endpoint}`
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  // 使用安全 token 管理器
+  const token = getToken()
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options?.headers as Record<string, string>),
@@ -1391,19 +1394,383 @@ export const authApi = {
       body: formData.toString(),
     });
   },
-    
-  loginGoogle: (credential: string) => 
+
+  loginGoogle: (credential: string) =>
     fetchAPI<LoginResponse>('/auth/google', {
       method: 'POST',
       body: JSON.stringify({ credential }),
     }),
 
-  register: (data: any) => 
+  register: (data: any) =>
     fetchAPI<User>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  getMe: () => 
+  getMe: () =>
     fetchAPI<User>('/auth/me'),
+}
+
+// =============================================
+// SEO 優化 API 類型
+// =============================================
+
+export interface SEOScoreBreakdown {
+  title_score: number
+  description_score: number
+  keyword_score: number
+  readability_score: number
+}
+
+export interface SEOContentData {
+  meta_title: string
+  meta_description: string
+  primary_keyword?: string
+  secondary_keywords?: string[]
+  long_tail_keywords?: string[]
+  og_title?: string
+  og_description?: string
+  seo_score?: number
+  score_breakdown?: SEOScoreBreakdown
+  improvement_suggestions?: string[]
+  localized?: Record<string, any>
+}
+
+export interface SEOContentResponse {
+  id: string
+  product_id?: string
+  content: SEOContentData
+  language: string
+  version: number
+  status: string
+  generation_metadata: Record<string, any>
+  created_at: string
+}
+
+export interface SEOGenerateRequest {
+  product_id?: string
+  product_info?: ProductInfo
+  target_keywords?: string[]
+  target_languages?: string[]
+  include_og?: boolean
+}
+
+export interface SEOBatchGenerateRequest {
+  items: { product_id?: string; product_info?: ProductInfo; target_keywords?: string[] }[]
+  target_languages?: string[]
+  include_og?: boolean
+}
+
+export interface SEOBatchResultItem {
+  index: number
+  success: boolean
+  product_name?: string
+  content_id?: string
+  content?: SEOContentData
+  error?: string
+}
+
+export interface SEOBatchSyncResponse {
+  mode: 'sync'
+  results: SEOBatchResultItem[]
+  summary: { total: number; success: number; failed: number }
+}
+
+export interface SEOBatchAsyncResponse {
+  mode: 'async'
+  task_id: string
+  total: number
+  message: string
+}
+
+export type SEOBatchResponse = SEOBatchSyncResponse | SEOBatchAsyncResponse
+
+export interface SEOScoreResponse {
+  product_id: string
+  seo_score: number
+  score_breakdown: SEOScoreBreakdown
+  improvement_suggestions: string[]
+  analyzed_at: string
+}
+
+export interface KeywordData {
+  keyword: string
+  search_volume?: number
+  difficulty?: number
+  intent?: string
+}
+
+export interface KeywordExtractionResponse {
+  primary_keyword: string
+  secondary_keywords: string[]
+  long_tail_keywords: string[]
+  all_keywords: KeywordData[]
+}
+
+export interface KeywordExtractRequest {
+  product_id?: string
+  product_info?: ProductInfo
+  max_keywords?: number
+  include_long_tail?: boolean
+}
+
+export interface KeywordSuggestionsResponse {
+  query: string
+  suggestions: KeywordData[]
+  related_categories: string[]
+}
+
+export interface ContentAuditResponse {
+  id: string
+  product_id?: string
+  audit_type: string
+  overall_score: number
+  scores: Record<string, number>
+  issues: { type: string; severity: string; message: string; suggestion?: string }[]
+  recommendations: string[]
+  audited_at: string
+}
+
+// =============================================
+// SEO 優化 API
+// =============================================
+
+export const seoApi = {
+  // SEO 內容生成
+  generateSEO: (data: SEOGenerateRequest) =>
+    fetchAPI<SEOContentResponse>('/seo/generate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // 批量生成 SEO 內容
+  batchGenerateSEO: (data: SEOBatchGenerateRequest) =>
+    fetchAPI<SEOBatchResponse>('/seo/batch-generate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // 獲取 SEO 評分
+  getSEOScore: (productId: string) =>
+    fetchAPI<SEOScoreResponse>(`/seo/${productId}/score`),
+
+  // 分析內容
+  analyzeSEO: (data: { product_id?: string; title: string; description: string; keywords?: string[]; audit_type?: string }) =>
+    fetchAPI<ContentAuditResponse>('/seo/analyze', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // 提取關鍵詞
+  extractKeywords: (data: KeywordExtractRequest) =>
+    fetchAPI<KeywordExtractionResponse>('/seo/keywords/extract', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // 獲取關鍵詞建議
+  getKeywordSuggestions: (query: string, category?: string, limit = 10) => {
+    const params = new URLSearchParams({ query, limit: String(limit) })
+    if (category) params.append('category', category)
+    return fetchAPI<KeywordSuggestionsResponse>(`/seo/keywords/suggestions?${params}`)
+  },
+
+  // 獲取 SEO 內容詳情
+  getSEOContent: (contentId: string) =>
+    fetchAPI<SEOContentResponse>(`/seo/${contentId}`),
+
+  // 列出 SEO 內容
+  listSEOContents: (productId?: string, status?: string, limit = 20, offset = 0) => {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) })
+    if (productId) params.append('product_id', productId)
+    if (status) params.append('status', status)
+    return fetchAPI<{ data: any[]; total: number }>(`/seo/?${params}`)
+  },
+
+  // 審批 SEO 內容
+  approveSEOContent: (contentId: string) =>
+    fetchAPI<{ id: string; status: string; approved_at: string }>(`/seo/${contentId}/approve`, {
+      method: 'PATCH',
+    }),
+}
+
+// =============================================
+// GEO 結構化數據 API 類型
+// =============================================
+
+export interface StructuredDataResponse {
+  id: string
+  product_id?: string
+  schema_type: string
+  json_ld: Record<string, any>
+  ai_summary?: string
+  ai_facts?: string[]
+  is_valid: boolean
+  validation_errors?: string[]
+  created_at: string
+}
+
+export interface ProductSchemaRequest {
+  product_id?: string
+  product_info?: ProductInfo
+  include_reviews?: boolean
+  include_offers?: boolean
+}
+
+export interface FAQSchemaRequest {
+  product_id?: string
+  faqs?: { question: string; answer: string }[]
+  max_faqs?: number
+}
+
+export interface BreadcrumbSchemaRequest {
+  product_id?: string
+  breadcrumb_path?: { name: string; url: string }[]
+}
+
+export interface BatchSchemaResponse {
+  results: StructuredDataResponse[]
+  summary: { total_products: number; total_schemas: number; schema_types: string[] }
+}
+
+export interface AISummaryResponse {
+  product_id?: string
+  summary: string
+  facts: string[]
+  entities: Record<string, any>
+}
+
+export interface SchemaValidationResponse {
+  is_valid: boolean
+  errors: string[]
+  warnings: string[]
+  suggestions: string[]
+}
+
+export interface BrandKnowledgeResponse {
+  id: string
+  knowledge_type: string
+  title: string
+  content: string
+  summary?: string
+  related_products?: string[]
+  related_categories?: string[]
+  credibility_score?: number
+  source_type: string
+  source_reference?: string
+  author?: string
+  tags?: string[]
+  is_active: boolean
+  is_featured: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface BrandKnowledgeCreate {
+  knowledge_type: string
+  title: string
+  content: string
+  summary?: string
+  related_products?: string[]
+  related_categories?: string[]
+  source_type?: string
+  source_reference?: string
+  author?: string
+  tags?: string[]
+}
+
+export interface ExpertContentRequest {
+  topic: string
+  product_id?: string
+  knowledge_type?: string
+  tone?: string
+}
+
+// =============================================
+// GEO 結構化數據 API
+// =============================================
+
+export const geoApi = {
+  // 生成 Product Schema
+  generateProductSchema: (data: ProductSchemaRequest) =>
+    fetchAPI<StructuredDataResponse>('/geo/schema/product', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // 生成 FAQ Schema
+  generateFAQSchema: (data: FAQSchemaRequest) =>
+    fetchAPI<StructuredDataResponse>('/geo/schema/faq', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // 生成 Breadcrumb Schema
+  generateBreadcrumbSchema: (data: BreadcrumbSchemaRequest) =>
+    fetchAPI<StructuredDataResponse>('/geo/schema/breadcrumb', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // 批量生成 Schema
+  batchGenerateSchemas: (productIds: string[], schemaTypes: string[]) =>
+    fetchAPI<BatchSchemaResponse>('/geo/schema/batch', {
+      method: 'POST',
+      body: JSON.stringify({ product_ids: productIds, schema_types: schemaTypes }),
+    }),
+
+  // 生成 AI 摘要
+  generateAISummary: (data: { product_id?: string; product_info?: ProductInfo; max_facts?: number }) =>
+    fetchAPI<AISummaryResponse>('/geo/ai-summary', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // 驗證 Schema
+  validateSchema: (jsonLd: Record<string, any>) =>
+    fetchAPI<SchemaValidationResponse>('/geo/validate', {
+      method: 'POST',
+      body: JSON.stringify({ json_ld: jsonLd }),
+    }),
+
+  // 獲取結構化數據詳情
+  getStructuredData: (dataId: string) =>
+    fetchAPI<StructuredDataResponse>(`/geo/schema/${dataId}`),
+
+  // 列出結構化數據
+  listStructuredData: (productId?: string, schemaType?: string, limit = 20, offset = 0) => {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) })
+    if (productId) params.append('product_id', productId)
+    if (schemaType) params.append('schema_type', schemaType)
+    return fetchAPI<{ data: any[]; total: number }>(`/geo/schema?${params}`)
+  },
+
+  // 品牌知識 - 創建
+  createBrandKnowledge: (data: BrandKnowledgeCreate) =>
+    fetchAPI<BrandKnowledgeResponse>('/geo/knowledge', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // 品牌知識 - 搜索
+  searchBrandKnowledge: (query: string, knowledgeType?: string, limit = 10) => {
+    const params = new URLSearchParams({ query, limit: String(limit) })
+    if (knowledgeType) params.append('knowledge_type', knowledgeType)
+    return fetchAPI<{ data: BrandKnowledgeResponse[]; total: number }>(`/geo/knowledge/search?${params}`)
+  },
+
+  // 品牌知識 - 獲取產品相關知識
+  getProductKnowledge: (productId: string) =>
+    fetchAPI<{ data: BrandKnowledgeResponse[]; total: number }>(`/geo/knowledge/product/${productId}`),
+
+  // 品牌知識 - AI 生成專家內容
+  generateExpertContent: (data: ExpertContentRequest) =>
+    fetchAPI<BrandKnowledgeResponse>('/geo/knowledge/generate-expert', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // 品牌知識 - 獲取詳情
+  getBrandKnowledge: (knowledgeId: string) =>
+    fetchAPI<BrandKnowledgeResponse>(`/geo/knowledge/${knowledgeId}`),
 }

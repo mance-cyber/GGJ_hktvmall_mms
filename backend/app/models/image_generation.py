@@ -8,7 +8,7 @@ from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from datetime import datetime
 from enum import Enum
-from .database import Base
+from .database import Base, utcnow
 
 
 class GenerationMode(str, Enum):
@@ -49,8 +49,8 @@ class ImageGenerationTask(Base):
     celery_task_id = Column(String(255), nullable=True)
 
     # 時間戳
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
     completed_at = Column(DateTime(timezone=True), nullable=True)
 
     # 關聯
@@ -89,7 +89,7 @@ class InputImage(Base):
     analysis_result = Column(JSON, nullable=True)
 
     # 時間戳
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
 
     # 關聯
     task = relationship("ImageGenerationTask", back_populates="input_images")
@@ -113,7 +113,7 @@ class OutputImage(Base):
     generation_params = Column(JSON, nullable=True)  # 生成參數
 
     # 時間戳
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
 
     # 關聯
     task = relationship("ImageGenerationTask", back_populates="output_images")

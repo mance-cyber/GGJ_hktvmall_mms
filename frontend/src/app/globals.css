@@ -151,6 +151,33 @@
       margin-top: 1.5rem;
     }
   }
+
+  /* 極窄螢幕優化 (< 320px) */
+  @media (max-width: 320px) {
+    .space-mobile > * + * {
+      margin-top: 0.5rem;
+    }
+    
+    .card-mobile {
+      @apply p-2;
+    }
+  }
+
+  /* 防止文字垂直排列 */
+  .prevent-vertical-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* 自適應文字大小 */
+  .text-adaptive {
+    font-size: clamp(10px, 2.5vw, 12px);
+  }
+
+  .text-adaptive-sm {
+    font-size: clamp(11px, 3vw, 14px);
+  }
 }
 
 /* =============================================

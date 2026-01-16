@@ -9,7 +9,7 @@ from sqlalchemy import String, Text, Integer, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.database import Base
+from app.models.database import Base, utcnow
 
 
 class AIContent(Base):
@@ -27,7 +27,7 @@ class AIContent(Base):
     status: Mapped[str] = mapped_column(String(50), default="draft", comment="draft, approved, published, rejected")
     generation_metadata: Mapped[Optional[dict]] = mapped_column(JSONB, comment="tokens_used, model, duration_ms")
     input_data: Mapped[Optional[dict]] = mapped_column(JSONB, comment="生成時的輸入資料")
-    generated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    generated_at: Mapped[datetime] = mapped_column(default=utcnow)
     approved_at: Mapped[Optional[datetime]] = mapped_column()
     approved_by: Mapped[Optional[str]] = mapped_column(String(255))
     rejected_reason: Mapped[Optional[str]] = mapped_column(Text)

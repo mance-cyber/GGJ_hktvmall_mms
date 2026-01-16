@@ -6,7 +6,7 @@ from sqlalchemy import String, DateTime, Numeric, ForeignKey, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.database import Base
+from app.models.database import Base, utcnow
 
 class Settlement(Base):
     """HKTVmall 結算單 (Statement)"""
@@ -32,7 +32,7 @@ class Settlement(Base):
     
     items: Mapped[List["SettlementItem"]] = relationship("SettlementItem", back_populates="settlement", cascade="all, delete-orphan")
     
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
 
 class SettlementItem(Base):

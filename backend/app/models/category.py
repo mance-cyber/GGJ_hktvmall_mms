@@ -8,7 +8,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 
-from app.models.database import Base
+from app.models.database import Base, utcnow
 
 
 class CategoryDatabase(Base):
@@ -25,8 +25,8 @@ class CategoryDatabase(Base):
     scrape_frequency = Column(String(50))                         # 抓取頻率
     is_active = Column(Boolean, default=True)                     # 是否啟用
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     # 關聯
     products = relationship("CategoryProduct", back_populates="category", cascade="all, delete-orphan")
@@ -86,8 +86,8 @@ class CategoryProduct(Base):
     is_monitored = Column(Boolean, default=True)                 # 是否納入監控
 
     # 時間戳
-    first_seen_at = Column(DateTime, default=datetime.utcnow)
-    last_updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    first_seen_at = Column(DateTime, default=utcnow)
+    last_updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     # 關聯
     category = relationship("CategoryDatabase", back_populates="products")
@@ -109,7 +109,7 @@ class CategoryPriceSnapshot(Base):
     stock_status = Column(String(50))
     is_available = Column(Boolean)
 
-    scraped_at = Column(DateTime, default=datetime.utcnow)
+    scraped_at = Column(DateTime, default=utcnow)
 
     # 關聯
     product = relationship("CategoryProduct", back_populates="price_snapshots")
@@ -135,9 +135,9 @@ class CategoryAnalysisReport(Base):
 
     # 元數據
     generated_by = Column(String(50))                            # AI 模型名稱
-    generated_at = Column(DateTime, default=datetime.utcnow)
+    generated_at = Column(DateTime, default=utcnow)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     # 關聯
     category = relationship("CategoryDatabase", back_populates="reports")
@@ -160,7 +160,7 @@ class CategoryUrlCache(Base):
     url_hash = Column(String(64), nullable=False, index=True)    # URL 的 SHA256 hash，用於快速查詢
 
     # 發現元數據
-    discovered_at = Column(DateTime, default=datetime.utcnow)
+    discovered_at = Column(DateTime, default=utcnow)
     last_verified_at = Column(DateTime)                          # 最後驗證 URL 有效時間
     is_valid = Column(Boolean, default=True)                     # URL 是否仍然有效
     verification_error = Column(Text)                            # 驗證失敗的錯誤信息
@@ -168,8 +168,8 @@ class CategoryUrlCache(Base):
     # 關聯的商品（如果已抓取）
     product_id = Column(UUID(as_uuid=True), ForeignKey("category_products.id"))
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
 
 class ScrapeQuotaUsage(Base):
@@ -196,4 +196,4 @@ class ScrapeQuotaUsage(Base):
     url = Column(Text)
 
     # 時間戳
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)

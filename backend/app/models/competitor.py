@@ -10,7 +10,7 @@ from sqlalchemy import String, Text, Boolean, ForeignKey, Numeric, Integer, Inde
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.database import Base
+from app.models.database import Base, utcnow
 
 
 class Competitor(Base):
@@ -30,8 +30,8 @@ class Competitor(Base):
     )
     category_patterns: Mapped[Optional[list]] = mapped_column(JSONB, default=list)
 
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
 
     # 關聯
     products: Mapped[List["CompetitorProduct"]] = relationship(back_populates="competitor", cascade="all, delete-orphan")
@@ -61,8 +61,8 @@ class CompetitorProduct(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     last_scraped_at: Mapped[Optional[datetime]] = mapped_column()
     scrape_error: Mapped[Optional[str]] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
 
     # 關聯
     competitor: Mapped["Competitor"] = relationship(back_populates="products")
@@ -91,7 +91,7 @@ class PriceSnapshot(Base):
     review_count: Mapped[Optional[int]] = mapped_column(Integer)
     promotion_text: Mapped[Optional[str]] = mapped_column(Text)
     raw_data: Mapped[Optional[dict]] = mapped_column(JSONB, comment="Firecrawl 返回的完整數據")
-    scraped_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    scraped_at: Mapped[datetime] = mapped_column(default=utcnow)
 
     # 新增欄位
     brand: Mapped[Optional[str]] = mapped_column(String(255))
@@ -120,7 +120,7 @@ class PriceAlert(Base):
     change_percent: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2))
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
     is_notified: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
     # 關聯
     product: Mapped["CompetitorProduct"] = relationship(back_populates="alerts")

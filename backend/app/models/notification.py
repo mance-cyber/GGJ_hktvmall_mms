@@ -2,7 +2,7 @@
 # 通知與 Webhook 模型
 # =============================================
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 import uuid
@@ -12,6 +12,12 @@ from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.database import Base
+from app.core.encryption import encrypt_value, decrypt_value, is_encrypted
+
+
+def _utcnow() -> datetime:
+    """獲取 UTC 時間（使用 timezone-aware datetime）"""
+    return datetime.now(timezone.utc)
 
 
 class Notification(Base):
@@ -46,7 +52,7 @@ class Notification(Base):
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
     read_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=_utcnow)
 
     __table_args__ = (
         Index("idx_notifications_created_at", "created_at"),
@@ -73,7 +79,13 @@ class Notification(Base):
 
 
 class Webhook(Base):
-    """Webhook 配置"""
+    """
+    Webhook 配置
+
+    注意：secret 欄位使用加密存儲
+    - 設置時使用 set_secret() 方法
+    - 讀取時使用 get_secret_decrypted() 方法
+    """
 
     __tablename__ = "webhooks"
 
@@ -83,7 +95,12 @@ class Webhook(Base):
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     url: Mapped[str] = mapped_column(String(1000), nullable=False)
-    secret: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
+    # 加密存儲的 secret（存儲格式：base64(salt).base64(ciphertext)）
+    # 增加長度以容納加密後的數據
+    _encrypted_secret: Mapped[Optional[str]] = mapped_column(
+        "secret", String(500), nullable=True
+    )
 
     # 訂閱事件
     events: Mapped[List] = mapped_column(
@@ -96,12 +113,46 @@ class Webhook(Base):
     last_status_code: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     failure_count: Mapped[int] = mapped_column(Integer, default=0)
 
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow, onupdate=datetime.utcnow
+        default=_utcnow, onupdate=_utcnow
     )
 
     __table_args__ = (Index("idx_webhooks_is_active", "is_active"),)
+
+    def set_secret(self, plaintext: Optional[str]) -> None:
+        """
+        設置 secret（自動加密）
+
+        Args:
+            plaintext: 明文 secret，None 表示清除
+        """
+        if plaintext:
+            self._encrypted_secret = encrypt_value(plaintext)
+        else:
+            self._encrypted_secret = None
+
+    def get_secret_decrypted(self) -> Optional[str]:
+        """
+        獲取解密後的 secret
+
+        Returns:
+            解密後的明文，如果沒有設置或解密失敗返回 None
+        """
+        if not self._encrypted_secret:
+            return None
+
+        # 如果是舊數據（未加密），直接返回並標記需要遷移
+        if not is_encrypted(self._encrypted_secret):
+            # 舊數據，返回原值（在下次更新時會自動加密）
+            return self._encrypted_secret
+
+        return decrypt_value(self._encrypted_secret)
+
+    @property
+    def has_secret(self) -> bool:
+        """檢查是否設置了 secret"""
+        return bool(self._encrypted_secret)
 
     def to_dict(self) -> Dict[str, Any]:
         """轉換為字典"""
@@ -109,7 +160,7 @@ class Webhook(Base):
             "id": str(self.id),
             "name": self.name,
             "url": self.url,
-            "secret": "***" if self.secret else None,  # 隱藏 secret
+            "has_secret": self.has_secret,  # 只顯示是否有 secret，不暴露內容
             "events": self.events,
             "is_active": self.is_active,
             "last_triggered_at": (

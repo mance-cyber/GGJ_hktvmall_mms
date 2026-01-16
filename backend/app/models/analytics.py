@@ -12,7 +12,7 @@ from sqlalchemy import Column, String, Integer, Boolean, Text, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
-from app.models.database import Base
+from app.models.database import Base, utcnow
 
 
 class PriceAnalytics(Base):
@@ -51,7 +51,7 @@ class PriceAnalytics(Base):
     # 商品計數
     total_products: Mapped[int] = mapped_column(Integer, default=0)
 
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
     # 關聯
     competitor = relationship("Competitor")
@@ -120,7 +120,7 @@ class MarketReport(Base):
     # 時間
     generated_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
     expires_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
     __table_args__ = (
         Index("idx_market_reports_status", "status"),

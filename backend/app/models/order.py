@@ -10,7 +10,7 @@ from sqlalchemy import String, Text, Boolean, ForeignKey, Numeric, Integer, Inde
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.database import Base
+from app.models.database import Base, utcnow
 
 class OrderStatus:
     PENDING = "Pending"           # 待處理
@@ -52,9 +52,9 @@ class Order(Base):
     
     # 系統資訊
     is_synced: Mapped[bool] = mapped_column(Boolean, default=True)
-    last_synced_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_synced_at: Mapped[datetime] = mapped_column(default=utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
 
     # 關聯
     items: Mapped[List["OrderItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")

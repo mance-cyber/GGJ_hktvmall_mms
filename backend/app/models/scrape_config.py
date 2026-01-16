@@ -11,7 +11,7 @@ from sqlalchemy import Column, String, Integer, Boolean, Text, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
-from app.models.database import Base
+from app.models.database import Base, utcnow
 
 
 class ScrapeConfig(Base):
@@ -51,9 +51,9 @@ class ScrapeConfig(Base):
     proxy_pool: Mapped[List] = mapped_column(JSONB, default=list)
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow, onupdate=datetime.utcnow
+        default=utcnow, onupdate=utcnow
     )
 
     # 關聯

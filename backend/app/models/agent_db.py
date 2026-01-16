@@ -7,7 +7,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from datetime import datetime
-from .database import Base
+from .database import Base, utcnow
 
 class AgentConversation(Base):
     __tablename__ = "agent_conversations"
@@ -19,8 +19,8 @@ class AgentConversation(Base):
     slots = Column(JSON, default={})
     current_intent = Column(String(50), nullable=True)
     
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
     # 關聯
     messages = relationship("AgentMessage", back_populates="conversation", cascade="all, delete-orphan", order_by="AgentMessage.created_at")
@@ -37,7 +37,7 @@ class AgentMessage(Base):
     # 使用 quote=True 或直接定義 name 避免關鍵字衝突
     meta_data = Column("metadata", JSON, default={})
     
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
 
     # 關聯
     conversation = relationship("AgentConversation", back_populates="messages")

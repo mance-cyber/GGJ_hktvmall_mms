@@ -9,7 +9,7 @@ from sqlalchemy import String, Text, Boolean, ForeignKey, Index, DateTime
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.database import Base
+from app.models.database import Base, utcnow
 
 class Conversation(Base):
     """HKTVmall 對話 (Topic/Session)"""
@@ -30,8 +30,8 @@ class Conversation(Base):
     has_unread: Mapped[bool] = mapped_column(Boolean, default=False)
     
     # 時間
-    last_message_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    last_message_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
     
     # 關聯
     messages: Mapped[List["Message"]] = relationship(back_populates="conversation", cascade="all, delete-orphan")
@@ -58,7 +58,7 @@ class Message(Base):
     ai_generated: Mapped[bool] = mapped_column(Boolean, default=False)
     is_draft: Mapped[bool] = mapped_column(Boolean, default=False, comment="如果是 AI 草稿，尚未發送")
     
-    sent_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    sent_at: Mapped[datetime] = mapped_column(default=utcnow)
     
     # 關聯
     conversation: Mapped["Conversation"] = relationship(back_populates="messages")

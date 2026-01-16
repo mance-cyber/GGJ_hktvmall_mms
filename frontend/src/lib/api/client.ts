@@ -1,5 +1,11 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from "axios";
 import { ApiError } from "@/types/api";
+import {
+  getToken,
+  setTokenFromJWT,
+  clearToken,
+  hasValidToken,
+} from "@/lib/secure-token";
 
 // ==================== API 客戶端配置 ====================
 
@@ -29,44 +35,35 @@ export const apiClient: AxiosInstance = axios.create({
 });
 
 // ==================== 認證 Token 管理 ====================
+// 使用安全 Token 管理器（sessionStorage + 內存緩存）
 
 /**
- * 從本地儲存獲取 Token
+ * 從安全存儲獲取 Token
  */
 function getAuthToken(): string | null {
-  if (typeof window === "undefined") return null;
-
-  try {
-    return localStorage.getItem("token");
-  } catch {
-    return null;
-  }
+  return getToken();
 }
 
 /**
- * 儲存 Token 到本地儲存
+ * 儲存 Token 到安全存儲
+ * @param token - JWT token
  */
 export function setAuthToken(token: string): void {
-  if (typeof window === "undefined") return;
-
-  try {
-    localStorage.setItem("token", token);
-  } catch (error) {
-    console.error("Failed to save auth token:", error);
-  }
+  setTokenFromJWT(token);
 }
 
 /**
- * 清除本地儲存的 Token
+ * 清除安全存儲的 Token
  */
 export function clearAuthToken(): void {
-  if (typeof window === "undefined") return;
+  clearToken();
+}
 
-  try {
-    localStorage.removeItem("token");
-  } catch (error) {
-    console.error("Failed to clear auth token:", error);
-  }
+/**
+ * 檢查是否有有效的 Token
+ */
+export function hasAuthToken(): boolean {
+  return hasValidToken();
 }
 
 // ==================== 請求攔截器 ====================

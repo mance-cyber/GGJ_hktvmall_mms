@@ -5,7 +5,7 @@ from sqlalchemy import String, DateTime, Numeric, ForeignKey, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.database import Base
+from app.models.database import Base, utcnow
 
 class PromotionProposal(Base):
     """AI 推廣建議與活動記錄"""
@@ -38,7 +38,7 @@ class PromotionProposal(Base):
     # 狀態: pending, approved, rejected, active, expired
     status: Mapped[str] = mapped_column(String(50), default="pending")
     
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
     
     # 關聯
     product = relationship("Product")

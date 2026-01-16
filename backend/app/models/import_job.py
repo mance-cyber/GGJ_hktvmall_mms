@@ -11,7 +11,7 @@ from sqlalchemy import Column, String, Integer, Boolean, Text, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
-from app.models.database import Base
+from app.models.database import Base, utcnow
 
 
 class ImportJob(Base):
@@ -51,7 +51,7 @@ class ImportJob(Base):
     # 時間戳
     started_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
     completed_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
     # 關聯
     competitor = relationship("Competitor", back_populates="import_jobs")
@@ -119,7 +119,7 @@ class ImportJobItem(Base):
 
     # 處理時間
     processed_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
     # 關聯
     import_job = relationship("ImportJob", back_populates="items")

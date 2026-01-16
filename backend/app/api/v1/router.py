@@ -8,7 +8,7 @@ from app.api.v1 import (
     competitors, products, content, analytics, scrape, categories,
     telegram, market_response, ai_settings, agent, hktvmall,
     pricing, orders, inbox, finance, promotions, auth, image_generation,
-    price_trends
+    price_trends, seo, geo
 )
 
 api_router = APIRouter()
@@ -150,4 +150,18 @@ api_router.include_router(
     price_trends.router,
     prefix="/price-trends",
     tags=["價格趨勢"]
+)
+
+# SEO 優化
+api_router.include_router(
+    seo.router,
+    prefix="/seo",
+    tags=["SEO 優化"]
+)
+
+# GEO 結構化數據
+api_router.include_router(
+    geo.router,
+    prefix="/geo",
+    tags=["GEO 結構化數據"]
 )

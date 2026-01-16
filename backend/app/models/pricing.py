@@ -10,7 +10,7 @@ from sqlalchemy import String, Text, Boolean, ForeignKey, Numeric, Enum
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.database import Base
+from app.models.database import Base, utcnow
 
 class ProposalStatus:
     PENDING = "pending"
@@ -43,7 +43,7 @@ class PriceProposal(Base):
     reason: Mapped[Optional[str]] = mapped_column(Text, comment="AI 給出的建議原因")
     ai_model_used: Mapped[Optional[str]] = mapped_column(String(100), comment="生成建議的模型")
     
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
     reviewed_at: Mapped[Optional[datetime]] = mapped_column()
     reviewed_by: Mapped[Optional[str]] = mapped_column(String(100), comment="審批人")
     executed_at: Mapped[Optional[datetime]] = mapped_column()
@@ -69,7 +69,7 @@ class AuditLog(Base):
     user_id: Mapped[Optional[str]] = mapped_column(String(100), default="system")
     details: Mapped[Optional[dict]] = mapped_column(JSONB, comment="操作詳情 snapshot")
     
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
 # 避免循環導入
 from app.models.product import Product

@@ -25,6 +25,7 @@ import {
   MessageSquare,
   LogOut,
   Image,
+  Search,
   LucideIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -191,6 +192,18 @@ const navigationGroups: NavGroup[] = [
         name: 'AI 文案',
         href: '/ai-content',
         icon: Sparkles,
+        permissions: [PERMISSIONS.AGENT_READ]
+      },
+      {
+        name: 'SEO 優化',
+        href: '/seo',
+        icon: Search,
+        permissions: [PERMISSIONS.AGENT_READ]
+      },
+      {
+        name: 'GEO 數據',
+        href: '/geo',
+        icon: Globe,
         permissions: [PERMISSIONS.AGENT_READ]
       },
       {

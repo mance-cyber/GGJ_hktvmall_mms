@@ -164,7 +164,8 @@ export default function DashboardPage() {
               />
               <Link href="/competitors">
                 <HoloButton variant="primary" size="sm" icon={<Zap className="w-3.5 h-3.5" />}>
-                  抓取
+                  <span className="hidden xs:inline">抓取</span>
+                  <span className="xs:hidden" aria-label="抓取"></span>
                 </HoloButton>
               </Link>
             </motion.div>
@@ -185,7 +186,7 @@ export default function DashboardPage() {
               </HoloBadge>
             </div>
 
-            <div className="grid grid-cols-4 gap-1.5 sm:gap-3">
+            <div className="grid grid-cols-2 xs:grid-cols-4 gap-1.5 sm:gap-3">
               <SystemStatus icon={Wifi} label="API" status="online" />
               <SystemStatus icon={Database} label="數據庫" status="online" />
               <SystemStatus icon={Cpu} label="AI" status="processing" />
@@ -199,7 +200,7 @@ export default function DashboardPage() {
               <Sparkles className="w-4 h-4 text-amber-500" />
               <h2 className="text-sm sm:text-base font-semibold text-slate-800">今日摘要</h2>
             </div>
-            <div className="grid grid-cols-4 gap-1.5 sm:gap-3">
+            <div className="grid grid-cols-2 xs:grid-cols-4 gap-1.5 sm:gap-3">
               <TodayStat
                 icon={Bell}
                 label="警報"
@@ -265,7 +266,7 @@ export default function DashboardPage() {
           )}
 
           {/* ========== 關鍵指標 ========== */}
-          <StaggerContainer className="grid grid-cols-4 gap-1.5 sm:gap-3">
+          <StaggerContainer className="grid grid-cols-2 xs:grid-cols-4 gap-1.5 sm:gap-3">
             <DataMetric
               label="類別"
               value={categories?.total || 0}
@@ -302,7 +303,7 @@ export default function DashboardPage() {
                   <Zap className="w-4 h-4 text-amber-500" />
                   <h2 className="text-sm sm:text-base font-semibold text-slate-800">快速操作</h2>
                 </div>
-                <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
                   <QuickAction
                     icon={Plus}
                     label="新增"
@@ -334,7 +335,11 @@ export default function DashboardPage() {
               <HoloCard glowColor="blue" scanLine className="overflow-hidden">
                 <HoloPanelHeader
                   title="競爭對手監測"
-                  subtitle={`${activeCompetitors} 個活躍監測`}
+                  subtitle={
+                    <span className="text-xs sm:text-sm whitespace-nowrap">
+                      {activeCompetitors} 個活躍監測
+                    </span>
+                  }
                   icon={<Building2 className="w-5 h-5" />}
                   action={
                     <Link href="/competitors">

@@ -9,7 +9,7 @@ from sqlalchemy import String, Text, Integer, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.database import Base
+from app.models.database import Base, utcnow
 
 
 class ScrapeLog(Base):
@@ -28,7 +28,7 @@ class ScrapeLog(Base):
     started_at: Mapped[Optional[datetime]] = mapped_column()
     completed_at: Mapped[Optional[datetime]] = mapped_column()
     duration_seconds: Mapped[Optional[int]] = mapped_column(Integer)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
     __table_args__ = (
         Index("idx_scrape_logs_status", "status"),
@@ -51,7 +51,7 @@ class SyncLog(Base):
     errors: Mapped[Optional[list]] = mapped_column(JSONB)
     started_at: Mapped[Optional[datetime]] = mapped_column()
     completed_at: Mapped[Optional[datetime]] = mapped_column()
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
 
 class Settings(Base):
@@ -61,7 +61,7 @@ class Settings(Base):
     key: Mapped[str] = mapped_column(String(255), primary_key=True)
     value: Mapped[dict] = mapped_column(JSONB, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
 
 
 class SystemSetting(Base):
@@ -71,4 +71,4 @@ class SystemSetting(Base):
     key: Mapped[str] = mapped_column(String(255), primary_key=True)
     value: Mapped[str] = mapped_column(Text, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
