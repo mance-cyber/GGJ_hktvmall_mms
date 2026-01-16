@@ -1619,12 +1619,14 @@ export interface ProductSchemaRequest {
 
 export interface FAQSchemaRequest {
   product_id?: string
+  product_info?: ProductInfo
   faqs?: { question: string; answer: string }[]
   max_faqs?: number
 }
 
 export interface BreadcrumbSchemaRequest {
   product_id?: string
+  product_info?: ProductInfo
   breadcrumb_path?: { name: string; url: string }[]
 }
 

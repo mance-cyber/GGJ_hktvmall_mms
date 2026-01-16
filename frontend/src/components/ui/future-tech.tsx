@@ -535,7 +535,7 @@ export function HoloButton({
 interface HoloBadgeProps {
   children: React.ReactNode
   variant?: 'default' | 'success' | 'warning' | 'error' | 'info'
-  size?: 'sm' | 'md'
+  size?: 'sm' | 'md' | 'lg'
   pulse?: boolean
   className?: string
 }
@@ -558,6 +558,7 @@ export function HoloBadge({
   const sizes = {
     sm: 'px-2 py-0.5 text-xs',
     md: 'px-2.5 py-1 text-sm',
+    lg: 'px-3 py-1.5 text-base',
   }
 
   return (
@@ -678,7 +679,7 @@ export function StaggerContainer({
 
 interface HoloPanelHeaderProps {
   title: string
-  subtitle?: string
+  subtitle?: React.ReactNode
   icon?: React.ReactNode
   action?: React.ReactNode
 }

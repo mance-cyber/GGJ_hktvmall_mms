@@ -238,6 +238,7 @@ class ProductSchemaRequest(BaseModel):
 class FAQSchemaRequest(BaseModel):
     """FAQ Schema 生成請求"""
     product_id: Optional[UUID] = None
+    product_info: Optional[ProductInfo] = None
     faqs: Optional[List[Dict[str, str]]] = Field(
         default=None,
         description="FAQ 列表 [{question: '...', answer: '...'}]，如不提供則 AI 生成"
@@ -248,6 +249,7 @@ class FAQSchemaRequest(BaseModel):
 class BreadcrumbSchemaRequest(BaseModel):
     """Breadcrumb Schema 生成請求"""
     product_id: Optional[UUID] = None
+    product_info: Optional[ProductInfo] = None
     breadcrumb_path: Optional[List[Dict[str, str]]] = Field(
         default=None,
         description="麵包屑路徑 [{name: '...', url: '...'}]"
