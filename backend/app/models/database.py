@@ -82,21 +82,22 @@ async def run_migrations(conn):
 async def init_db():
     """初始化數據庫（創建表 + 遷移）"""
     from app.models import (
-        competitor, 
-        product, 
-        notification, 
-        scrape_config, 
-        import_job, 
-        analytics, 
-        content, 
-        category, 
+        competitor,
+        product,
+        notification,
+        scrape_config,
+        import_job,
+        analytics,
+        content,
+        category,
         system,
         pricing,
         order,
         inbox,
         finance,
         promotion,
-        user
+        user,
+        seo,
     )
     
     try:
