@@ -390,9 +390,8 @@ export default function ContentHistoryPage() {
         {/* ========== 歷史記錄列表 ========== */}
         <HoloCard className="overflow-hidden">
           <HoloPanelHeader
-            title="生成記錄"
+            title={`生成記錄${history ? ` (${history.total} 條)` : ''}`}
             icon={<Clock className="w-4 h-4" />}
-            badge={history ? `${history.total} 條` : undefined}
           />
 
           {history?.items.length === 0 ? (
