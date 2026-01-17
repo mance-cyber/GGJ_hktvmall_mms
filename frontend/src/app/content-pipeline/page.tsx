@@ -35,7 +35,7 @@ import {
 // 統一內容生成流水線頁面
 // =============================================
 
-type PipelineStage = 'content' | 'seo' | 'geo'
+type PipelineStage = 'content' | 'geo'
 
 interface StageConfig {
   id: PipelineStage
@@ -48,17 +48,10 @@ interface StageConfig {
 const STAGES: StageConfig[] = [
   {
     id: 'content',
-    name: '文案生成',
-    description: '標題、賣點、描述',
+    name: '內容生成',
+    description: '文案 + SEO 優化',
     icon: <FileText className="w-5 h-5" />,
-    color: 'from-blue-500 to-cyan-500',
-  },
-  {
-    id: 'seo',
-    name: 'SEO 優化',
-    description: 'Meta 標籤、關鍵詞',
-    icon: <Search className="w-5 h-5" />,
-    color: 'from-emerald-500 to-teal-500',
+    color: 'from-blue-500 to-emerald-500',
   },
   {
     id: 'geo',
@@ -88,7 +81,7 @@ export default function ContentPipelinePage() {
 
   // 選項狀態
   const [selectedStages, setSelectedStages] = useState<Set<PipelineStage>>(
-    new Set<PipelineStage>(['content', 'seo', 'geo'])
+    new Set<PipelineStage>(['content', 'geo'])
   )
   const [language, setLanguage] = useState('zh-HK')
   const [tone, setTone] = useState('professional')
@@ -102,7 +95,7 @@ export default function ContentPipelinePage() {
 
   // 展開狀態
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(['content', 'seo', 'geo'])
+    new Set(['content', 'geo'])
   )
 
   const toggleStage = (stage: PipelineStage) => {
@@ -652,20 +645,14 @@ A5 和牛
                     <div className="p-4 space-y-3">
                       {res.content && (
                         <div>
-                          <span className="text-xs font-medium text-blue-600 uppercase">文案</span>
-                          <p className="text-sm font-medium text-slate-800 mt-1">{res.content.title}</p>
-                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">{res.content.description}</p>
-                        </div>
-                      )}
-                      {res.seo && (
-                        <div>
-                          <span className="text-xs font-medium text-emerald-600 uppercase flex items-center gap-1">
-                            SEO
+                          <span className="text-xs font-medium text-blue-600 uppercase flex items-center gap-1">
+                            內容
                             <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-bold">
-                              {res.seo.seo_score}分
+                              SEO {res.content.seo_score}分
                             </span>
                           </span>
-                          <p className="text-sm text-slate-700 mt-1">{res.seo.meta_title}</p>
+                          <p className="text-sm font-medium text-slate-800 mt-1">{res.content.title}</p>
+                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">{res.content.description}</p>
                         </div>
                       )}
                       {res.geo && (
@@ -699,90 +686,88 @@ A5 和牛
                   </div>
                 </div>
 
-                {/* 文案結果 */}
+                {/* 內容生成結果（文案 + SEO 合併） */}
                 {result.content && (
                   <ResultSection
-                    title="文案生成"
+                    title="內容生成"
                     icon={<FileText className="w-5 h-5" />}
                     color="blue"
                     expanded={expandedSections.has('content')}
                     onToggle={() => toggleSection('content')}
-                  >
-                    <div className="space-y-4">
-                      <ResultItem
-                        label="標題"
-                        value={result.content.title}
-                        onCopy={() => copyToClipboard(result.content!.title)}
-                      />
-                      <ResultItem
-                        label="賣點"
-                        value={result.content.selling_points.map((p, i) => `${i + 1}. ${p}`).join('\n')}
-                        onCopy={() => copyToClipboard(result.content!.selling_points.join('\n'))}
-                        multiline
-                      />
-                      <ResultItem
-                        label="描述"
-                        value={result.content.description}
-                        onCopy={() => copyToClipboard(result.content!.description)}
-                        multiline
-                      />
-                      <div>
-                        <span className="text-xs font-medium text-slate-500 uppercase">關鍵詞</span>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {result.content.keywords.map((kw, i) => (
-                            <span
-                              key={i}
-                              className="px-2 py-1 text-sm bg-blue-50 text-blue-700 rounded-lg"
-                            >
-                              {kw}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </ResultSection>
-                )}
-
-                {/* SEO 結果 */}
-                {result.seo && (
-                  <ResultSection
-                    title="SEO 優化"
-                    icon={<Search className="w-5 h-5" />}
-                    color="emerald"
-                    expanded={expandedSections.has('seo')}
-                    onToggle={() => toggleSection('seo')}
                     badge={
                       <span className="px-2 py-0.5 text-xs font-bold bg-emerald-100 text-emerald-700 rounded-full">
-                        {result.seo.seo_score} 分
+                        SEO {result.content.seo_score} 分
                       </span>
                     }
                   >
                     <div className="space-y-4">
-                      <ResultItem
-                        label={`Meta Title (${result.seo.meta_title.length}/70)`}
-                        value={result.seo.meta_title}
-                        onCopy={() => copyToClipboard(result.seo!.meta_title)}
-                      />
-                      <ResultItem
-                        label={`Meta Description (${result.seo.meta_description.length}/160)`}
-                        value={result.seo.meta_description}
-                        onCopy={() => copyToClipboard(result.seo!.meta_description)}
-                        multiline
-                      />
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <span className="text-xs font-medium text-slate-500 uppercase">主關鍵詞</span>
-                          <p className="mt-1 font-medium text-emerald-700">{result.seo.primary_keyword}</p>
+                      {/* 文案部分 */}
+                      <div className="pb-4 border-b border-slate-100">
+                        <h4 className="text-xs font-semibold text-blue-600 uppercase mb-3">文案</h4>
+                        <ResultItem
+                          label="標題"
+                          value={result.content.title}
+                          onCopy={() => copyToClipboard(result.content!.title)}
+                        />
+                        <div className="mt-3">
+                          <ResultItem
+                            label="賣點"
+                            value={result.content.selling_points.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+                            onCopy={() => copyToClipboard(result.content!.selling_points.join('\n'))}
+                            multiline
+                          />
                         </div>
-                        <div>
-                          <span className="text-xs font-medium text-slate-500 uppercase">評分明細</span>
-                          <div className="mt-1 space-y-1">
-                            {Object.entries(result.seo.score_breakdown).map(([key, value]) => (
-                              <div key={key} className="flex justify-between text-sm">
-                                <span className="text-slate-600">{key}</span>
-                                <span className="font-medium">{value}</span>
+                        <div className="mt-3">
+                          <ResultItem
+                            label="描述"
+                            value={result.content.description}
+                            onCopy={() => copyToClipboard(result.content!.description)}
+                            multiline
+                          />
+                        </div>
+                      </div>
+
+                      {/* SEO 部分 */}
+                      <div>
+                        <h4 className="text-xs font-semibold text-emerald-600 uppercase mb-3">SEO 優化</h4>
+                        <ResultItem
+                          label={`Meta Title (${result.content.meta_title.length}/70)`}
+                          value={result.content.meta_title}
+                          onCopy={() => copyToClipboard(result.content!.meta_title)}
+                        />
+                        <div className="mt-3">
+                          <ResultItem
+                            label={`Meta Description (${result.content.meta_description.length}/160)`}
+                            value={result.content.meta_description}
+                            onCopy={() => copyToClipboard(result.content!.meta_description)}
+                            multiline
+                          />
+                        </div>
+                        <div className="mt-3 grid grid-cols-2 gap-4">
+                          <div>
+                            <span className="text-xs font-medium text-slate-500 uppercase">主關鍵詞</span>
+                            <p className="mt-1 font-medium text-emerald-700">{result.content.primary_keyword}</p>
+                            <div className="mt-2">
+                              <span className="text-xs text-slate-400">次要關鍵詞</span>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {result.content.secondary_keywords.map((kw, i) => (
+                                  <span key={i} className="px-2 py-0.5 text-xs bg-slate-100 text-slate-600 rounded">
+                                    {kw}
+                                  </span>
+                                ))}
                               </div>
-                            ))}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-xs font-medium text-slate-500 uppercase">評分明細</span>
+                            <div className="mt-1 space-y-1">
+                              {Object.entries(result.content.score_breakdown).map(([key, value]) => (
+                                <div key={key} className="flex justify-between text-sm">
+                                  <span className="text-slate-600">{key}</span>
+                                  <span className="font-medium">{String(value)}</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       </div>

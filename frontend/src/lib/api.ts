@@ -1803,14 +1803,13 @@ export interface ContentPipelineRequest {
 }
 
 export interface ContentResultResponse {
+  // 文案部分
   title: string
   selling_points: string[]
   description: string
-  keywords: string[]
   tone: string
-}
 
-export interface SEOResultResponse {
+  // SEO 部分（已合併）
   meta_title: string
   meta_description: string
   primary_keyword: string
@@ -1833,8 +1832,7 @@ export interface GEOResultResponse {
 export interface ContentPipelineResponse {
   success: boolean
   product_info: Record<string, any>
-  content?: ContentResultResponse
-  seo?: SEOResultResponse
+  content?: ContentResultResponse    // 已包含 SEO
   geo?: GEOResultResponse
   stages_executed: string[]
   content_id?: string
@@ -1847,7 +1845,7 @@ export interface ContentPipelineResponse {
 
 export interface BatchPipelineRequest {
   products: ContentPipelineInput[]
-  stages?: ('content' | 'seo' | 'geo')[]
+  stages?: ('content' | 'geo')[]    // content 已包含 SEO
   language?: string
   tone?: string
   include_faq?: boolean
@@ -1872,37 +1870,23 @@ export interface BatchPipelineResponse {
 }
 
 export const contentPipelineApi = {
-  // 執行完整流水線（文案 + SEO + GEO）
+  // 執行完整流水線（內容 + GEO）
   generate: (data: ContentPipelineRequest) =>
     fetchAPI<ContentPipelineResponse>('/content-pipeline/generate', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // 只生成文案
+  // 只生成內容（文案 + SEO，不含 GEO）
   generateContentOnly: (data: ContentPipelineRequest) =>
     fetchAPI<ContentPipelineResponse>('/content-pipeline/generate/content-only', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // 只生成 SEO
-  generateSEOOnly: (data: ContentPipelineRequest) =>
-    fetchAPI<ContentPipelineResponse>('/content-pipeline/generate/seo-only', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-
-  // 只生成 GEO
+  // 只生成 GEO（結構化數據）
   generateGEOOnly: (data: ContentPipelineRequest) =>
     fetchAPI<ContentPipelineResponse>('/content-pipeline/generate/geo-only', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-
-  // 生成文案 + SEO
-  generateContentAndSEO: (data: ContentPipelineRequest) =>
-    fetchAPI<ContentPipelineResponse>('/content-pipeline/generate/content-seo', {
       method: 'POST',
       body: JSON.stringify(data),
     }),

@@ -28,8 +28,7 @@ from app.services.ai_service import AIAnalysisService, AISettingsService
 
 class PipelineStage(str, Enum):
     """流水線階段"""
-    CONTENT = "content"      # 文案生成
-    SEO = "seo"              # SEO 優化
+    CONTENT = "content"      # 內容生成（文案 + SEO 合併）
     GEO = "geo"              # GEO 結構化數據
 
 
@@ -39,17 +38,14 @@ class PipelineStage(str, Enum):
 
 @dataclass
 class ContentResult:
-    """文案生成結果"""
+    """內容生成結果（文案 + SEO 合併）"""
+    # 文案部分
     title: str = ""
     selling_points: List[str] = field(default_factory=list)
     description: str = ""
-    keywords: List[str] = field(default_factory=list)
     tone: str = "professional"
 
-
-@dataclass
-class SEOResult:
-    """SEO 優化結果"""
+    # SEO 部分
     meta_title: str = ""           # max 70 chars
     meta_description: str = ""     # max 160 chars
     primary_keyword: str = ""
@@ -77,9 +73,8 @@ class PipelineResult:
     success: bool = True
     product_info: Dict[str, Any] = field(default_factory=dict)
 
-    # 各階段結果
+    # 各階段結果（content 已包含 SEO）
     content: Optional[ContentResult] = None
-    seo: Optional[SEOResult] = None
     geo: Optional[GEOResult] = None
 
     # 執行的階段
@@ -162,7 +157,7 @@ class ContentPipelineService:
         Args:
             product_id: 產品 ID（從數據庫獲取）
             product_info: 產品信息字典（手動提供）
-            stages: 要執行的階段，默認全部
+            stages: 要執行的階段，默認全部 [content, geo]
             language: 目標語言
             tone: 文案語氣 (professional/casual/luxury)
             include_faq: GEO 階段是否生成 FAQ Schema
@@ -173,9 +168,9 @@ class ContentPipelineService:
         """
         start_time = datetime.now()
 
-        # 默認執行所有階段
+        # 默認執行所有階段（content 已包含 SEO）
         if stages is None:
-            stages = {PipelineStage.CONTENT, PipelineStage.SEO, PipelineStage.GEO}
+            stages = {PipelineStage.CONTENT, PipelineStage.GEO}
 
         result = PipelineResult()
 
@@ -188,34 +183,15 @@ class ContentPipelineService:
 
         result.product_info = product_data
 
-        # Stage 1: 文案生成
+        # Stage 1: 內容生成（文案 + SEO 合併）
         if PipelineStage.CONTENT in stages:
             content_result = await self._stage_content(product_data, language, tone)
             result.content = content_result
             result.stages_executed.append("content")
 
-        # Stage 2: SEO 優化（使用 Stage 1 的關鍵詞）
-        if PipelineStage.SEO in stages:
-            # 從文案階段獲取關鍵詞
-            keywords = result.content.keywords if result.content else []
-            description = result.content.description if result.content else None
-
-            seo_result = await self._stage_seo(
-                product_data,
-                language,
-                existing_keywords=keywords,
-                existing_description=description
-            )
-            result.seo = seo_result
-            result.stages_executed.append("seo")
-
-        # Stage 3: GEO 結構化數據（使用前面階段的描述和關鍵詞）
+        # Stage 2: GEO 結構化數據
         if PipelineStage.GEO in stages:
-            description = None
-            if result.content:
-                description = result.content.description
-            elif result.seo:
-                description = result.seo.meta_description
+            description = result.content.description if result.content else None
 
             geo_result = await self._stage_geo(
                 product_data,
@@ -237,7 +213,7 @@ class ContentPipelineService:
         return result
 
     # =============================================
-    # Stage 1: 文案生成
+    # Stage 1: 內容生成（文案 + SEO 合併）
     # =============================================
 
     async def _stage_content(
@@ -246,12 +222,14 @@ class ContentPipelineService:
         language: str,
         tone: str,
     ) -> ContentResult:
-        """Stage 1: 生成產品文案"""
+        """Stage 1: 生成產品文案 + SEO（合併為一次 AI 調用）"""
 
         prompt = f"""{GOGOJAP_BRAND_CONTEXT}
 
 ## 任務
-為以下產品生成電商文案，包括標題、賣點和詳細描述。
+為以下產品生成完整的電商內容，包括：
+1. 產品文案（標題、賣點、描述）
+2. SEO 優化內容（Meta 標籤、關鍵詞）
 
 ## 產品資訊
 - 名稱: {product_data.get('name', '')}
@@ -262,74 +240,12 @@ class ContentPipelineService:
 - 價格: {product_data.get('price', '')}
 - 產地: {product_data.get('origin', '')}
 
-## 要求
+## 文案要求
 1. 語言: {language}
 2. 語氣: {tone}
 3. 標題要吸引眼球，突出核心賣點
 4. 賣點用 3-5 個精煉短句
 5. 描述要詳細但不冗長，150-300 字
-6. 提取 5-8 個 SEO 關鍵詞
-
-## 返回格式 (JSON)
-```json
-{{
-    "title": "產品標題",
-    "selling_points": ["賣點1", "賣點2", "賣點3"],
-    "description": "詳細描述...",
-    "keywords": ["關鍵詞1", "關鍵詞2", ...]
-}}
-```
-
-請只返回 JSON，不要其他內容。"""
-
-        response = await self.ai_service.call_ai(prompt, max_tokens=1500)
-
-        result = ContentResult(tone=tone)
-
-        if response.success:
-            try:
-                content = self._parse_json_response(response.content)
-                result.title = content.get("title", "")
-                result.selling_points = content.get("selling_points", [])
-                result.description = content.get("description", "")
-                result.keywords = content.get("keywords", [])
-            except Exception:
-                # 如果解析失敗，嘗試提取文本
-                result.title = product_data.get("name", "")
-                result.description = response.content[:500]
-
-        return result
-
-    # =============================================
-    # Stage 2: SEO 優化
-    # =============================================
-
-    async def _stage_seo(
-        self,
-        product_data: Dict[str, Any],
-        language: str,
-        existing_keywords: List[str] = None,
-        existing_description: str = None,
-    ) -> SEOResult:
-        """Stage 2: 生成 SEO 優化內容"""
-
-        keywords_hint = ""
-        if existing_keywords:
-            keywords_hint = f"\n已有關鍵詞參考: {', '.join(existing_keywords[:5])}"
-
-        desc_hint = ""
-        if existing_description:
-            desc_hint = f"\n已有產品描述參考: {existing_description[:200]}..."
-
-        prompt = f"""## 任務
-為以下產品生成 SEO 優化的 Meta 標籤和關鍵詞。
-
-## 產品資訊
-- 名稱: {product_data.get('name', '')}
-- 品牌: {product_data.get('brand', 'GoGoJap')}
-- 分類: {product_data.get('category', '')}
-{keywords_hint}
-{desc_hint}
 
 ## SEO 要求
 1. Meta Title: 最多 70 個字符，包含主關鍵詞
@@ -337,9 +253,8 @@ class ContentPipelineService:
 3. 主關鍵詞: 1 個核心搜索詞
 4. 次要關鍵詞: 3-5 個相關詞
 5. 長尾關鍵詞: 2-3 個精準詞組
-6. Open Graph 標題和描述
 
-## 評分標準
+## SEO 評分標準
 - title_score: 標題關鍵詞覆蓋 (0-100)
 - description_score: 描述完整性 (0-100)
 - keyword_score: 關鍵詞相關性 (0-100)
@@ -348,10 +263,13 @@ class ContentPipelineService:
 ## 返回格式 (JSON)
 ```json
 {{
+    "title": "產品標題（用於頁面展示）",
+    "selling_points": ["賣點1", "賣點2", "賣點3"],
+    "description": "詳細產品描述 150-300 字...",
     "meta_title": "SEO 標題 (max 70 chars)",
     "meta_description": "SEO 描述 (max 160 chars)",
     "primary_keyword": "主關鍵詞",
-    "secondary_keywords": ["次要1", "次要2"],
+    "secondary_keywords": ["次要1", "次要2", "次要3"],
     "long_tail_keywords": ["長尾1", "長尾2"],
     "seo_score": 85,
     "score_breakdown": {{
@@ -367,13 +285,20 @@ class ContentPipelineService:
 
 請只返回 JSON，不要其他內容。"""
 
-        response = await self.ai_service.call_ai(prompt, max_tokens=1000)
+        response = await self.ai_service.call_ai(prompt, max_tokens=2000)
 
-        result = SEOResult()
+        result = ContentResult(tone=tone)
 
         if response.success:
             try:
                 content = self._parse_json_response(response.content)
+
+                # 文案部分
+                result.title = content.get("title", "")
+                result.selling_points = content.get("selling_points", [])
+                result.description = content.get("description", "")
+
+                # SEO 部分
                 result.meta_title = content.get("meta_title", "")[:70]
                 result.meta_description = content.get("meta_description", "")[:160]
                 result.primary_keyword = content.get("primary_keyword", "")
@@ -383,8 +308,11 @@ class ContentPipelineService:
                 result.score_breakdown = content.get("score_breakdown", {})
                 result.og_title = content.get("og_title", "")
                 result.og_description = content.get("og_description", "")
+
             except Exception:
-                pass
+                # 如果解析失敗，嘗試提取文本
+                result.title = product_data.get("name", "")
+                result.description = response.content[:500]
 
         return result
 
@@ -592,33 +520,37 @@ class ContentPipelineService:
 
         # 保存文案內容
         if result.content:
+            # 提取關鍵詞列表（合併主詞、次詞、長尾詞）
+            all_keywords = [result.content.primary_keyword] if result.content.primary_keyword else []
+            all_keywords.extend(result.content.secondary_keywords)
+            all_keywords.extend(result.content.long_tail_keywords)
+
             ai_content = AIContent(
                 id=uuid.uuid4(),
                 product_id=product_id,
                 title=result.content.title,
                 description=result.content.description,
                 selling_points=result.content.selling_points,
-                keywords=result.content.keywords,
+                keywords=all_keywords,
                 status="draft",
                 generated_at=utcnow(),
             )
             self.db.add(ai_content)
             result.content_id = ai_content.id
 
-        # 保存 SEO 內容
-        if result.seo:
+            # 同時保存 SEO 內容（從合併的 content 中提取）
             seo_content = SEOContent(
                 id=uuid.uuid4(),
                 product_id=product_id,
-                meta_title=result.seo.meta_title,
-                meta_description=result.seo.meta_description,
-                primary_keyword=result.seo.primary_keyword,
-                secondary_keywords=result.seo.secondary_keywords,
-                long_tail_keywords=result.seo.long_tail_keywords,
-                seo_score=result.seo.seo_score,
-                score_breakdown=result.seo.score_breakdown,
-                og_title=result.seo.og_title,
-                og_description=result.seo.og_description,
+                meta_title=result.content.meta_title,
+                meta_description=result.content.meta_description,
+                primary_keyword=result.content.primary_keyword,
+                secondary_keywords=result.content.secondary_keywords,
+                long_tail_keywords=result.content.long_tail_keywords,
+                seo_score=result.content.seo_score,
+                score_breakdown=result.content.score_breakdown,
+                og_title=result.content.og_title,
+                og_description=result.content.og_description,
                 language=language,
                 status="draft",
                 created_at=utcnow(),
@@ -680,7 +612,7 @@ class ContentPipelineService:
         start_time = datetime.now()
 
         if stages is None:
-            stages = {PipelineStage.CONTENT, PipelineStage.SEO, PipelineStage.GEO}
+            stages = {PipelineStage.CONTENT, PipelineStage.GEO}
 
         results: List[PipelineResult] = []
         errors: List[Dict[str, Any]] = []

@@ -39,9 +39,8 @@ class ProductInfoInput(BaseModel):
 
 class PipelineStageEnum(str, Enum):
     """可選階段"""
-    content = "content"
-    seo = "seo"
-    geo = "geo"
+    content = "content"   # 內容生成（包含文案 + SEO）
+    geo = "geo"           # GEO 結構化數據
 
 
 class PipelineRequest(BaseModel):
@@ -50,7 +49,7 @@ class PipelineRequest(BaseModel):
     product_info: Optional[ProductInfoInput] = Field(default=None, description="產品信息（手動輸入）")
     stages: Optional[List[PipelineStageEnum]] = Field(
         default=None,
-        description="要執行的階段，默認全部 [content, seo, geo]"
+        description="要執行的階段，默認全部 [content, geo]"
     )
     language: str = Field(default="zh-HK", description="目標語言")
     tone: str = Field(default="professional", description="文案語氣: professional/casual/luxury")
@@ -59,16 +58,14 @@ class PipelineRequest(BaseModel):
 
 
 class ContentResultResponse(BaseModel):
-    """文案結果"""
+    """內容生成結果（文案 + SEO 合併）"""
+    # 文案部分
     title: str
     selling_points: List[str]
     description: str
-    keywords: List[str]
     tone: str
 
-
-class SEOResultResponse(BaseModel):
-    """SEO 結果"""
+    # SEO 部分
     meta_title: str
     meta_description: str
     primary_keyword: str
@@ -94,9 +91,8 @@ class PipelineResponse(BaseModel):
     success: bool
     product_info: dict
 
-    # 各階段結果
+    # 各階段結果（content 已包含 SEO）
     content: Optional[ContentResultResponse] = None
-    seo: Optional[SEOResultResponse] = None
     geo: Optional[GEOResultResponse] = None
 
     # 執行信息
@@ -169,7 +165,7 @@ async def generate_content_only(
     request: PipelineRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """只生成文案（標題、賣點、描述）"""
+    """只生成內容（文案 + SEO，不含 GEO 結構化數據）"""
 
     if not request.product_id and not request.product_info:
         raise HTTPException(status_code=400, detail="必須提供 product_id 或 product_info")
@@ -189,36 +185,12 @@ async def generate_content_only(
     return _convert_to_response(result)
 
 
-@router.post("/generate/seo-only", response_model=PipelineResponse)
-async def generate_seo_only(
-    request: PipelineRequest,
-    db: AsyncSession = Depends(get_db),
-):
-    """只生成 SEO（Meta 標籤、關鍵詞）"""
-
-    if not request.product_id and not request.product_info:
-        raise HTTPException(status_code=400, detail="必須提供 product_id 或 product_info")
-
-    product_info = request.product_info.model_dump() if request.product_info else None
-
-    service = await get_content_pipeline_service(db)
-    result = await service.run(
-        product_id=request.product_id,
-        product_info=product_info,
-        stages={PipelineStage.SEO},
-        language=request.language,
-        save_to_db=request.save_to_db,
-    )
-
-    return _convert_to_response(result)
-
-
 @router.post("/generate/geo-only", response_model=PipelineResponse)
 async def generate_geo_only(
     request: PipelineRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """只生成 GEO（結構化數據）"""
+    """只生成 GEO（結構化數據，不含內容生成）"""
 
     if not request.product_id and not request.product_info:
         raise HTTPException(status_code=400, detail="必須提供 product_id 或 product_info")
@@ -237,31 +209,6 @@ async def generate_geo_only(
     return _convert_to_response(result)
 
 
-@router.post("/generate/content-seo", response_model=PipelineResponse)
-async def generate_content_and_seo(
-    request: PipelineRequest,
-    db: AsyncSession = Depends(get_db),
-):
-    """生成文案 + SEO（不含結構化數據）"""
-
-    if not request.product_id and not request.product_info:
-        raise HTTPException(status_code=400, detail="必須提供 product_id 或 product_info")
-
-    product_info = request.product_info.model_dump() if request.product_info else None
-
-    service = await get_content_pipeline_service(db)
-    result = await service.run(
-        product_id=request.product_id,
-        product_info=product_info,
-        stages={PipelineStage.CONTENT, PipelineStage.SEO},
-        language=request.language,
-        tone=request.tone,
-        save_to_db=request.save_to_db,
-    )
-
-    return _convert_to_response(result)
-
-
 # =============================================
 # 輔助函數
 # =============================================
@@ -272,25 +219,21 @@ def _convert_to_response(result: PipelineResult) -> PipelineResponse:
     content_response = None
     if result.content:
         content_response = ContentResultResponse(
+            # 文案部分
             title=result.content.title,
             selling_points=result.content.selling_points,
             description=result.content.description,
-            keywords=result.content.keywords,
             tone=result.content.tone,
-        )
-
-    seo_response = None
-    if result.seo:
-        seo_response = SEOResultResponse(
-            meta_title=result.seo.meta_title,
-            meta_description=result.seo.meta_description,
-            primary_keyword=result.seo.primary_keyword,
-            secondary_keywords=result.seo.secondary_keywords,
-            long_tail_keywords=result.seo.long_tail_keywords,
-            seo_score=result.seo.seo_score,
-            score_breakdown=result.seo.score_breakdown,
-            og_title=result.seo.og_title,
-            og_description=result.seo.og_description,
+            # SEO 部分
+            meta_title=result.content.meta_title,
+            meta_description=result.content.meta_description,
+            primary_keyword=result.content.primary_keyword,
+            secondary_keywords=result.content.secondary_keywords,
+            long_tail_keywords=result.content.long_tail_keywords,
+            seo_score=result.content.seo_score,
+            score_breakdown=result.content.score_breakdown,
+            og_title=result.content.og_title,
+            og_description=result.content.og_description,
         )
 
     geo_response = None
@@ -307,7 +250,6 @@ def _convert_to_response(result: PipelineResult) -> PipelineResponse:
         success=result.success,
         product_info=result.product_info,
         content=content_response,
-        seo=seo_response,
         geo=geo_response,
         stages_executed=result.stages_executed,
         content_id=str(result.content_id) if result.content_id else None,
