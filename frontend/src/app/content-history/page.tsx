@@ -447,7 +447,7 @@ export default function ContentHistoryPage() {
                                 </p>
                               </div>
                               {item.is_batch && (
-                                <HoloBadge color="blue" size="sm">
+                                <HoloBadge variant="info" size="sm">
                                   批量 #{(item.batch_index ?? 0) + 1}
                                 </HoloBadge>
                               )}
