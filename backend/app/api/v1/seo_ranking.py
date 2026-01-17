@@ -419,9 +419,9 @@ async def get_ranking_leaderboard(
 
     # 排序
     if sort_by == "rank_asc":
-        query = query.order_by(asc(rank_field.nulls_last()))
+        query = query.order_by(asc(rank_field).nullslast())
     elif sort_by == "rank_desc":
-        query = query.order_by(desc(rank_field.nulls_last()))
+        query = query.order_by(desc(rank_field).nullslast())
 
     query = query.limit(limit)
 
