@@ -203,24 +203,6 @@ const navigationGroups: NavGroup[] = [
         permissions: [PERMISSIONS.AGENT_READ]
       },
       {
-        name: 'AI 文案',
-        href: '/ai-content',
-        icon: Sparkles,
-        permissions: [PERMISSIONS.AGENT_READ]
-      },
-      {
-        name: 'SEO 優化',
-        href: '/seo',
-        icon: Search,
-        permissions: [PERMISSIONS.AGENT_READ]
-      },
-      {
-        name: 'GEO 數據',
-        href: '/geo',
-        icon: Globe,
-        permissions: [PERMISSIONS.AGENT_READ]
-      },
-      {
         name: 'AI 分析',
         href: '/ai-analysis',
         icon: Brain,
