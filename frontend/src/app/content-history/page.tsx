@@ -259,7 +259,7 @@ export default function ContentHistoryPage() {
               label="批量生成"
               value={stats.batch}
               icon={<CheckCheck className="w-5 h-5" />}
-              color="emerald"
+              color="green"
             />
           </HoloCard>
         </StaggerContainer>
