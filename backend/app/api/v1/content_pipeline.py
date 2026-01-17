@@ -1,8 +1,8 @@
 # =============================================
-# 統一內容生成流水線 API
+# 統一內容生成流水線 API（支持多語言）
 # =============================================
 
-from typing import Optional, List
+from typing import Optional, List, Dict
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -14,6 +14,7 @@ from app.services.content_pipeline import (
     ContentPipelineService,
     PipelineResult,
     BatchPipelineResult,
+    LocalizedContent,
     get_content_pipeline_service,
 )
 
@@ -39,22 +40,23 @@ class PipelineRequest(BaseModel):
     """流水線請求"""
     product_id: Optional[UUID] = Field(default=None, description="產品 ID（從數據庫獲取）")
     product_info: Optional[ProductInfoInput] = Field(default=None, description="產品信息（手動輸入）")
-    language: str = Field(default="zh-HK", description="目標語言")
+    languages: List[str] = Field(
+        default=["zh-HK"],
+        description="目標語言列表，如 ['zh-HK', 'zh-CN', 'en']"
+    )
     tone: str = Field(default="professional", description="文案語氣: professional/casual/luxury")
     include_faq: bool = Field(default=False, description="是否生成 FAQ Schema")
     save_to_db: bool = Field(default=True, description="是否保存到數據庫")
 
 
-class PipelineResponse(BaseModel):
-    """流水線響應（一次生成全部內容）"""
-    success: bool
-    product_info: dict
+class LocalizedContentResponse(BaseModel):
+    """單一語言的內容"""
+    language: str
 
     # 文案部分
     title: str
     selling_points: List[str]
     description: str
-    tone: str
 
     # SEO 部分
     meta_title: str
@@ -67,18 +69,31 @@ class PipelineResponse(BaseModel):
     og_title: str
     og_description: str
 
-    # GEO 部分
-    product_schema: dict
-    faq_schema: Optional[dict] = None
+    # AI 摘要部分
     ai_summary: str
     ai_facts: List[str]
 
-    # 存儲 ID
-    content_id: Optional[str] = None
-    seo_content_id: Optional[str] = None
+
+class PipelineResponse(BaseModel):
+    """流水線響應（支持多語言）"""
+    success: bool
+    product_info: dict
+
+    # 多語言內容（key = language code）
+    localized: Dict[str, LocalizedContentResponse]
+
+    # 共用部分
+    tone: str
+    product_schema: dict
+    faq_schema: Optional[dict] = None
+
+    # 存儲 ID（每語言一個）
+    content_ids: Dict[str, str]
+    seo_content_ids: Dict[str, str]
     structured_data_id: Optional[str] = None
 
     # 元數據
+    languages: List[str]
     generation_time_ms: int
     model_used: str
     error: Optional[str] = None
@@ -94,12 +109,14 @@ async def generate_content_pipeline(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    統一內容生成流水線
+    統一內容生成流水線（支持多語言）
 
-    一次 AI 調用生成完整內容包：
+    一次 AI 調用生成多種語言的完整內容包：
     - **文案**: 標題、賣點、描述
     - **SEO**: Meta 標籤、關鍵詞、評分
     - **GEO**: Schema.org JSON-LD、AI 摘要
+
+    支持的語言：zh-HK（繁體中文）、zh-CN（簡體中文）、en（英文）、ja（日文）
     """
 
     # 驗證輸入
@@ -107,6 +124,18 @@ async def generate_content_pipeline(
         raise HTTPException(
             status_code=400,
             detail="必須提供 product_id 或 product_info"
+        )
+
+    if not request.languages:
+        raise HTTPException(
+            status_code=400,
+            detail="必須至少選擇一種語言"
+        )
+
+    if len(request.languages) > 4:
+        raise HTTPException(
+            status_code=400,
+            detail="最多支持 4 種語言"
         )
 
     # 轉換產品信息
@@ -119,7 +148,7 @@ async def generate_content_pipeline(
     result = await service.run(
         product_id=request.product_id,
         product_info=product_info,
-        language=request.language,
+        languages=request.languages,
         tone=request.tone,
         include_faq=request.include_faq,
         save_to_db=request.save_to_db,
@@ -133,37 +162,57 @@ async def generate_content_pipeline(
 # 輔助函數
 # =============================================
 
+def _convert_localized(localized: LocalizedContent) -> LocalizedContentResponse:
+    """轉換單一語言內容"""
+    return LocalizedContentResponse(
+        language=localized.language,
+        title=localized.title,
+        selling_points=localized.selling_points,
+        description=localized.description,
+        meta_title=localized.meta_title,
+        meta_description=localized.meta_description,
+        primary_keyword=localized.primary_keyword,
+        secondary_keywords=localized.secondary_keywords,
+        long_tail_keywords=localized.long_tail_keywords,
+        seo_score=localized.seo_score,
+        score_breakdown=localized.score_breakdown,
+        og_title=localized.og_title,
+        og_description=localized.og_description,
+        ai_summary=localized.ai_summary,
+        ai_facts=localized.ai_facts,
+    )
+
+
 def _convert_to_response(result: PipelineResult) -> PipelineResponse:
     """轉換內部結果為 API 響應"""
+
+    # 轉換多語言內容
+    localized_responses = {
+        lang: _convert_localized(content)
+        for lang, content in result.localized.items()
+    }
+
+    # 轉換存儲 ID
+    content_ids = {
+        lang: str(uid)
+        for lang, uid in result.content_ids.items()
+    }
+    seo_content_ids = {
+        lang: str(uid)
+        for lang, uid in result.seo_content_ids.items()
+    }
 
     return PipelineResponse(
         success=result.success,
         product_info=result.product_info,
-        # 文案部分
-        title=result.title,
-        selling_points=result.selling_points,
-        description=result.description,
+        localized=localized_responses,
         tone=result.tone,
-        # SEO 部分
-        meta_title=result.meta_title,
-        meta_description=result.meta_description,
-        primary_keyword=result.primary_keyword,
-        secondary_keywords=result.secondary_keywords,
-        long_tail_keywords=result.long_tail_keywords,
-        seo_score=result.seo_score,
-        score_breakdown=result.score_breakdown,
-        og_title=result.og_title,
-        og_description=result.og_description,
-        # GEO 部分
         product_schema=result.product_schema,
         faq_schema=result.faq_schema,
-        ai_summary=result.ai_summary,
-        ai_facts=result.ai_facts,
-        # 存儲 ID
-        content_id=str(result.content_id) if result.content_id else None,
-        seo_content_id=str(result.seo_content_id) if result.seo_content_id else None,
+        content_ids=content_ids,
+        seo_content_ids=seo_content_ids,
         structured_data_id=str(result.structured_data_id) if result.structured_data_id else None,
-        # 元數據
+        languages=result.languages,
         generation_time_ms=result.generation_time_ms,
         model_used=result.model_used,
         error=result.error,
@@ -182,7 +231,10 @@ class BatchPipelineRequest(BaseModel):
         max_length=20,
         description="產品信息列表（最多 20 個）"
     )
-    language: str = Field(default="zh-HK", description="目標語言")
+    languages: List[str] = Field(
+        default=["zh-HK"],
+        description="目標語言列表"
+    )
     tone: str = Field(default="professional", description="文案語氣")
     include_faq: bool = Field(default=False, description="是否生成 FAQ")
     save_to_db: bool = Field(default=True, description="是否保存到數據庫")
@@ -204,6 +256,7 @@ class BatchPipelineResponse(BaseModel):
     results: List[PipelineResponse]
     errors: List[BatchErrorItem]
     total_time_ms: int
+    languages: List[str]
 
 
 @router.post("/batch", response_model=BatchPipelineResponse)
@@ -212,14 +265,18 @@ async def batch_generate(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    批量生成內容流水線
+    批量生成內容流水線（支持多語言）
 
     一次處理多個產品，最多 20 個。
+    每個產品生成所有指定語言的內容。
     並發處理，提高效率。
     """
 
     if not request.products:
         raise HTTPException(status_code=400, detail="必須提供至少一個產品")
+
+    if len(request.languages) > 4:
+        raise HTTPException(status_code=400, detail="最多支持 4 種語言")
 
     # 轉換產品信息
     products = [p.model_dump() for p in request.products]
@@ -228,7 +285,7 @@ async def batch_generate(
     service = await get_content_pipeline_service(db)
     batch_result = await service.run_batch(
         products=products,
-        language=request.language,
+        languages=request.languages,
         tone=request.tone,
         include_faq=request.include_faq,
         save_to_db=request.save_to_db,
@@ -250,4 +307,5 @@ async def batch_generate(
             for e in batch_result.errors
         ],
         total_time_ms=batch_result.total_time_ms,
+        languages=batch_result.languages,
     )

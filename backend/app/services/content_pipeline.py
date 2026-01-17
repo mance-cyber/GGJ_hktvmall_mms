@@ -26,16 +26,14 @@ from app.services.ai_service import AIAnalysisService, AISettingsService
 # =============================================
 
 @dataclass
-class PipelineResult:
-    """流水線完整結果（一次生成全部）"""
-    success: bool = True
-    product_info: Dict[str, Any] = field(default_factory=dict)
+class LocalizedContent:
+    """單一語言的內容"""
+    language: str = ""
 
     # 文案部分
     title: str = ""
     selling_points: List[str] = field(default_factory=list)
     description: str = ""
-    tone: str = "professional"
 
     # SEO 部分
     meta_title: str = ""           # max 70 chars
@@ -48,18 +46,32 @@ class PipelineResult:
     og_title: str = ""
     og_description: str = ""
 
-    # GEO 部分
-    product_schema: Dict[str, Any] = field(default_factory=dict)
-    faq_schema: Optional[Dict[str, Any]] = None
+    # AI 摘要部分
     ai_summary: str = ""
     ai_facts: List[str] = field(default_factory=list)
 
-    # 存儲的記錄 ID
-    content_id: Optional[uuid.UUID] = None
-    seo_content_id: Optional[uuid.UUID] = None
+
+@dataclass
+class PipelineResult:
+    """流水線完整結果（支持多語言）"""
+    success: bool = True
+    product_info: Dict[str, Any] = field(default_factory=dict)
+
+    # 多語言內容（key = language code，如 "zh-HK", "zh-CN", "en"）
+    localized: Dict[str, LocalizedContent] = field(default_factory=dict)
+
+    # 共用部分（不需要翻譯）
+    tone: str = "professional"
+    product_schema: Dict[str, Any] = field(default_factory=dict)
+    faq_schema: Optional[Dict[str, Any]] = None
+
+    # 存儲的記錄 ID（每語言一個）
+    content_ids: Dict[str, uuid.UUID] = field(default_factory=dict)
+    seo_content_ids: Dict[str, uuid.UUID] = field(default_factory=dict)
     structured_data_id: Optional[uuid.UUID] = None
 
     # 元數據
+    languages: List[str] = field(default_factory=list)
     generation_time_ms: int = 0
     model_used: str = ""
     error: Optional[str] = None
@@ -117,28 +129,32 @@ class ContentPipelineService:
         self,
         product_id: Optional[uuid.UUID] = None,
         product_info: Optional[Dict[str, Any]] = None,
-        language: str = "zh-HK",
+        languages: Optional[List[str]] = None,
         tone: str = "professional",
         include_faq: bool = False,
         save_to_db: bool = True,
     ) -> PipelineResult:
         """
-        執行內容生成流水線（一次 AI 調用生成全部）
+        執行內容生成流水線（一次 AI 調用生成多語言內容）
 
         Args:
             product_id: 產品 ID（從數據庫獲取）
             product_info: 產品信息字典（手動提供）
-            language: 目標語言
+            languages: 目標語言列表，如 ["zh-HK", "zh-CN", "en"]，默認 ["zh-HK"]
             tone: 文案語氣 (professional/casual/luxury)
             include_faq: 是否生成 FAQ Schema
             save_to_db: 是否保存到數據庫
 
         Returns:
-            PipelineResult 包含所有生成內容
+            PipelineResult 包含所有語言的生成內容
         """
         start_time = datetime.now()
 
-        result = PipelineResult(tone=tone)
+        # 默認語言
+        if not languages:
+            languages = ["zh-HK"]
+
+        result = PipelineResult(tone=tone, languages=languages)
 
         # 獲取產品信息
         product_data = await self._get_product_data(product_id, product_info)
@@ -149,11 +165,14 @@ class ContentPipelineService:
 
         result.product_info = product_data
 
-        # 一次 AI 調用生成全部內容（文案 + SEO + AI 摘要）
-        await self._generate_all_content(result, product_data, language, tone)
+        # 一次 AI 調用生成全部語言的內容（文案 + SEO + AI 摘要）
+        await self._generate_all_content(result, product_data, languages, tone)
 
         # 構建 Product Schema（用代碼構建，不需要 AI）
-        result.product_schema = self._build_product_schema(product_data, result.description)
+        # 使用第一個語言的描述
+        first_lang = languages[0]
+        description = result.localized.get(first_lang, LocalizedContent()).description
+        result.product_schema = self._build_product_schema(product_data, description)
 
         # 可選：生成 FAQ Schema（需要額外 AI 調用）
         if include_faq:
@@ -161,7 +180,7 @@ class ContentPipelineService:
 
         # 保存到數據庫
         if save_to_db:
-            await self._save_results(result, product_id, language)
+            await self._save_results(result, product_id)
 
         # 計算執行時間
         end_time = datetime.now()
@@ -178,15 +197,30 @@ class ContentPipelineService:
         self,
         result: PipelineResult,
         product_data: Dict[str, Any],
-        language: str,
+        languages: List[str],
         tone: str,
     ) -> None:
-        """一次 AI 調用生成全部內容（文案 + SEO + AI 摘要）"""
+        """一次 AI 調用生成多語言內容（文案 + SEO + AI 摘要）"""
+
+        # 語言名稱映射
+        lang_names = {
+            "zh-HK": "繁體中文（香港）",
+            "zh-TW": "繁體中文（台灣）",
+            "zh-CN": "簡體中文",
+            "en": "English",
+            "ja": "日本語",
+        }
+
+        lang_list = ", ".join([f'"{lang}"' for lang in languages])
+        lang_desc = ", ".join([lang_names.get(lang, lang) for lang in languages])
 
         prompt = f"""{GOGOJAP_BRAND_CONTEXT}
 
 ## 任務
-為以下產品生成完整的電商內容，一次輸出：
+為以下產品生成完整的電商內容，**同時輸出 {len(languages)} 種語言版本**：
+- 語言: {lang_desc}
+
+每種語言都需要：
 1. 產品文案（標題、賣點、描述）
 2. SEO 優化（Meta 標籤、關鍵詞、評分）
 3. AI 搜索引擎摘要（給 Perplexity/ChatGPT 等 AI 搜索引擎用）
@@ -201,16 +235,16 @@ class ContentPipelineService:
 - 產地: {product_data.get('origin', '')}
 
 ## 文案要求
-1. 語言: {language}
-2. 語氣: {tone}
-3. 標題要吸引眼球，突出核心賣點
-4. 賣點用 3-5 個精煉短句
-5. 描述要詳細但不冗長，150-300 字
+1. 語氣: {tone}
+2. 標題要吸引眼球，突出核心賣點
+3. 賣點用 3-5 個精煉短句
+4. 描述要詳細但不冗長，150-300 字
+5. **每種語言要地道自然，不是機械翻譯**
 
-## SEO 要求
-1. Meta Title: 最多 70 個字符，包含主關鍵詞
+## SEO 要求（每種語言獨立優化）
+1. Meta Title: 最多 70 個字符，包含該語言的主關鍵詞
 2. Meta Description: 最多 160 個字符，包含 CTA
-3. 主關鍵詞: 1 個核心搜索詞
+3. 主關鍵詞: 1 個核心搜索詞（該語言用戶常用的搜索詞）
 4. 次要關鍵詞: 3-5 個相關詞
 5. 長尾關鍵詞: 2-3 個精準詞組
 
@@ -225,62 +259,75 @@ class ContentPipelineService:
 - readability_score: 可讀性 (0-100)
 
 ## 返回格式 (JSON)
+以語言代碼為 key，每種語言的內容為 value：
 ```json
 {{
-    "title": "產品標題（用於頁面展示）",
-    "selling_points": ["賣點1", "賣點2", "賣點3"],
-    "description": "詳細產品描述 150-300 字...",
-    "meta_title": "SEO 標題 (max 70 chars)",
-    "meta_description": "SEO 描述 (max 160 chars)",
-    "primary_keyword": "主關鍵詞",
-    "secondary_keywords": ["次要1", "次要2", "次要3"],
-    "long_tail_keywords": ["長尾1", "長尾2"],
-    "seo_score": 85,
-    "score_breakdown": {{
-        "title_score": 90,
-        "description_score": 85,
-        "keyword_score": 80,
-        "readability_score": 85
-    }},
-    "og_title": "OG 標題",
-    "og_description": "OG 描述",
-    "ai_summary": "AI 搜索引擎友好摘要...",
-    "ai_facts": ["事實1", "事實2", "事實3"]
+    {lang_list.replace('"', '').split(', ')[0] if languages else "zh-HK"}: {{
+        "title": "產品標題",
+        "selling_points": ["賣點1", "賣點2", "賣點3"],
+        "description": "詳細產品描述...",
+        "meta_title": "SEO 標題 (max 70 chars)",
+        "meta_description": "SEO 描述 (max 160 chars)",
+        "primary_keyword": "主關鍵詞",
+        "secondary_keywords": ["次要1", "次要2"],
+        "long_tail_keywords": ["長尾1", "長尾2"],
+        "seo_score": 85,
+        "score_breakdown": {{"title_score": 90, "description_score": 85, "keyword_score": 80, "readability_score": 85}},
+        "og_title": "OG 標題",
+        "og_description": "OG 描述",
+        "ai_summary": "AI 摘要...",
+        "ai_facts": ["事實1", "事實2"]
+    }}
 }}
 ```
 
+請為以下語言生成內容: [{lang_list}]
 請只返回 JSON，不要其他內容。"""
 
-        response = await self.ai_service.call_ai(prompt, max_tokens=2500)
+        # 多語言需要更多 token
+        max_tokens = 1500 * len(languages)
+        response = await self.ai_service.call_ai(prompt, max_tokens=max_tokens)
 
         if response.success:
             try:
                 content = self._parse_json_response(response.content)
 
-                # 文案部分
-                result.title = content.get("title", "")
-                result.selling_points = content.get("selling_points", [])
-                result.description = content.get("description", "")
+                # 解析每種語言的內容
+                for lang in languages:
+                    lang_content = content.get(lang, {})
+                    if not lang_content:
+                        continue
 
-                # SEO 部分
-                result.meta_title = content.get("meta_title", "")[:70]
-                result.meta_description = content.get("meta_description", "")[:160]
-                result.primary_keyword = content.get("primary_keyword", "")
-                result.secondary_keywords = content.get("secondary_keywords", [])
-                result.long_tail_keywords = content.get("long_tail_keywords", [])
-                result.seo_score = content.get("seo_score", 0)
-                result.score_breakdown = content.get("score_breakdown", {})
-                result.og_title = content.get("og_title", "")
-                result.og_description = content.get("og_description", "")
-
-                # AI 摘要部分
-                result.ai_summary = content.get("ai_summary", "")
-                result.ai_facts = content.get("ai_facts", [])
+                    localized = LocalizedContent(
+                        language=lang,
+                        # 文案部分
+                        title=lang_content.get("title", ""),
+                        selling_points=lang_content.get("selling_points", []),
+                        description=lang_content.get("description", ""),
+                        # SEO 部分
+                        meta_title=lang_content.get("meta_title", "")[:70],
+                        meta_description=lang_content.get("meta_description", "")[:160],
+                        primary_keyword=lang_content.get("primary_keyword", ""),
+                        secondary_keywords=lang_content.get("secondary_keywords", []),
+                        long_tail_keywords=lang_content.get("long_tail_keywords", []),
+                        seo_score=lang_content.get("seo_score", 0),
+                        score_breakdown=lang_content.get("score_breakdown", {}),
+                        og_title=lang_content.get("og_title", ""),
+                        og_description=lang_content.get("og_description", ""),
+                        # AI 摘要部分
+                        ai_summary=lang_content.get("ai_summary", ""),
+                        ai_facts=lang_content.get("ai_facts", []),
+                    )
+                    result.localized[lang] = localized
 
             except Exception:
-                # 如果解析失敗，嘗試提取文本
-                result.title = product_data.get("name", "")
-                result.description = response.content[:500]
+                # 如果解析失敗，為第一個語言創建基本內容
+                first_lang = languages[0] if languages else "zh-HK"
+                result.localized[first_lang] = LocalizedContent(
+                    language=first_lang,
+                    title=product_data.get("name", ""),
+                    description=response.content[:500] if response.content else "",
+                )
 
     def _build_product_schema(
         self,
@@ -419,60 +466,67 @@ class ContentPipelineService:
         self,
         result: PipelineResult,
         product_id: Optional[uuid.UUID],
-        language: str,
     ) -> None:
-        """保存結果到數據庫"""
+        """保存結果到數據庫（每種語言獨立保存）"""
 
-        # 保存文案內容
-        if result.title:
-            # 提取關鍵詞列表（合併主詞、次詞、長尾詞）
-            all_keywords = [result.primary_keyword] if result.primary_keyword else []
-            all_keywords.extend(result.secondary_keywords)
-            all_keywords.extend(result.long_tail_keywords)
+        # 為每種語言保存內容
+        for lang, localized in result.localized.items():
+            if not localized.title:
+                continue
 
+            # 提取關鍵詞列表
+            all_keywords = [localized.primary_keyword] if localized.primary_keyword else []
+            all_keywords.extend(localized.secondary_keywords)
+            all_keywords.extend(localized.long_tail_keywords)
+
+            # 保存文案內容
             ai_content = AIContent(
                 id=uuid.uuid4(),
                 product_id=product_id,
-                title=result.title,
-                description=result.description,
-                selling_points=result.selling_points,
+                title=localized.title,
+                description=localized.description,
+                selling_points=localized.selling_points,
                 keywords=all_keywords,
                 status="draft",
                 generated_at=utcnow(),
             )
             self.db.add(ai_content)
-            result.content_id = ai_content.id
+            result.content_ids[lang] = ai_content.id
 
-            # 同時保存 SEO 內容
+            # 保存 SEO 內容
             seo_content = SEOContent(
                 id=uuid.uuid4(),
                 product_id=product_id,
-                meta_title=result.meta_title,
-                meta_description=result.meta_description,
-                primary_keyword=result.primary_keyword,
-                secondary_keywords=result.secondary_keywords,
-                long_tail_keywords=result.long_tail_keywords,
-                seo_score=result.seo_score,
-                score_breakdown=result.score_breakdown,
-                og_title=result.og_title,
-                og_description=result.og_description,
-                language=language,
+                meta_title=localized.meta_title,
+                meta_description=localized.meta_description,
+                primary_keyword=localized.primary_keyword,
+                secondary_keywords=localized.secondary_keywords,
+                long_tail_keywords=localized.long_tail_keywords,
+                seo_score=localized.seo_score,
+                score_breakdown=localized.score_breakdown,
+                og_title=localized.og_title,
+                og_description=localized.og_description,
+                language=lang,
                 status="draft",
                 created_at=utcnow(),
                 updated_at=utcnow(),
             )
             self.db.add(seo_content)
-            result.seo_content_id = seo_content.id
+            result.seo_content_ids[lang] = seo_content.id
 
-        # 保存結構化數據
+        # 保存結構化數據（共用，不按語言分）
         if result.product_schema:
+            # 使用第一個語言的 AI 摘要
+            first_lang = result.languages[0] if result.languages else "zh-HK"
+            first_localized = result.localized.get(first_lang, LocalizedContent())
+
             structured_data = StructuredData(
                 id=uuid.uuid4(),
                 product_id=product_id,
                 schema_type="Product",
                 json_ld=result.product_schema,
-                ai_summary=result.ai_summary,
-                ai_facts=result.ai_facts,
+                ai_summary=first_localized.ai_summary,
+                ai_facts=first_localized.ai_facts,
                 is_valid=True,
                 created_at=utcnow(),
                 updated_at=utcnow(),
@@ -489,7 +543,7 @@ class ContentPipelineService:
     async def run_batch(
         self,
         products: List[Dict[str, Any]],
-        language: str = "zh-HK",
+        languages: Optional[List[str]] = None,
         tone: str = "professional",
         include_faq: bool = False,
         save_to_db: bool = True,
@@ -500,7 +554,7 @@ class ContentPipelineService:
 
         Args:
             products: 產品信息列表，每個包含 name, brand, category 等
-            language: 目標語言
+            languages: 目標語言列表，如 ["zh-HK", "en"]
             tone: 文案語氣
             include_faq: 是否生成 FAQ
             save_to_db: 是否保存到數據庫
@@ -514,6 +568,9 @@ class ContentPipelineService:
 
         start_time = datetime.now()
 
+        if not languages:
+            languages = ["zh-HK"]
+
         results: List[PipelineResult] = []
         errors: List[Dict[str, Any]] = []
 
@@ -525,7 +582,7 @@ class ContentPipelineService:
                 try:
                     result = await self.run(
                         product_info=product_info,
-                        language=language,
+                        languages=languages,
                         tone=tone,
                         include_faq=include_faq,
                         save_to_db=save_to_db,
@@ -560,6 +617,7 @@ class ContentPipelineService:
             results=sorted_results,
             errors=errors,
             total_time_ms=total_time_ms,
+            languages=languages,
         )
 
 
@@ -573,6 +631,7 @@ class BatchPipelineResult:
     results: List[PipelineResult] = field(default_factory=list)
     errors: List[Dict[str, Any]] = field(default_factory=list)
     total_time_ms: int = 0
+    languages: List[str] = field(default_factory=list)
 
 
 # =============================================

@@ -1781,7 +1781,7 @@ export const geoApi = {
 // =============================================
 // 內容生成流水線 API (Content Pipeline)
 // =============================================
-// 一次 AI 調用生成完整內容包：文案 + SEO + GEO
+// 一次 AI 調用生成多語言完整內容包：文案 + SEO + GEO
 
 export interface ContentPipelineInput {
   name: string
@@ -1796,21 +1796,20 @@ export interface ContentPipelineInput {
 export interface ContentPipelineRequest {
   product_id?: string
   product_info?: ContentPipelineInput
-  language?: string
+  languages?: string[]  // 多語言支持，如 ['zh-HK', 'en']
   tone?: string
   include_faq?: boolean
   save_to_db?: boolean
 }
 
-export interface ContentPipelineResponse {
-  success: boolean
-  product_info: Record<string, any>
+// 單一語言的內容
+export interface LocalizedContentResponse {
+  language: string
 
   // 文案部分
   title: string
   selling_points: string[]
   description: string
-  tone: string
 
   // SEO 部分
   meta_title: string
@@ -1823,18 +1822,30 @@ export interface ContentPipelineResponse {
   og_title: string
   og_description: string
 
-  // GEO 部分
-  product_schema: Record<string, any>
-  faq_schema?: Record<string, any>
+  // AI 摘要部分
   ai_summary: string
   ai_facts: string[]
+}
 
-  // 存儲 ID
-  content_id?: string
-  seo_content_id?: string
+export interface ContentPipelineResponse {
+  success: boolean
+  product_info: Record<string, any>
+
+  // 多語言內容（key = language code）
+  localized: Record<string, LocalizedContentResponse>
+
+  // 共用部分
+  tone: string
+  product_schema: Record<string, any>
+  faq_schema?: Record<string, any>
+
+  // 存儲 ID（每語言一個）
+  content_ids: Record<string, string>
+  seo_content_ids: Record<string, string>
   structured_data_id?: string
 
   // 元數據
+  languages: string[]
   generation_time_ms: number
   model_used: string
   error?: string
@@ -1842,7 +1853,7 @@ export interface ContentPipelineResponse {
 
 export interface BatchPipelineRequest {
   products: ContentPipelineInput[]
-  language?: string
+  languages?: string[]  // 多語言支持
   tone?: string
   include_faq?: boolean
   save_to_db?: boolean
@@ -1862,10 +1873,11 @@ export interface BatchPipelineResponse {
   results: ContentPipelineResponse[]
   errors: BatchErrorItem[]
   total_time_ms: number
+  languages: string[]
 }
 
 export const contentPipelineApi = {
-  // 生成完整內容（文案 + SEO + GEO）
+  // 生成多語言內容（文案 + SEO + GEO）
   generate: (data: ContentPipelineRequest) =>
     fetchAPI<ContentPipelineResponse>('/content-pipeline/generate', {
       method: 'POST',
