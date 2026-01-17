@@ -8,7 +8,7 @@ from app.api.v1 import (
     competitors, products, content, analytics, scrape, categories,
     telegram, market_response, ai_settings, agent, hktvmall,
     pricing, orders, inbox, finance, promotions, auth, image_generation,
-    price_trends, seo, geo
+    price_trends, seo, geo, content_pipeline
 )
 
 api_router = APIRouter()
@@ -164,4 +164,11 @@ api_router.include_router(
     geo.router,
     prefix="/geo",
     tags=["GEO 結構化數據"]
+)
+
+# 統一內容生成流水線
+api_router.include_router(
+    content_pipeline.router,
+    prefix="/content-pipeline",
+    tags=["內容生成流水線"]
 )

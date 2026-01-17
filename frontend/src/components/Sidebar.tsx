@@ -26,6 +26,7 @@ import {
   LogOut,
   Image,
   Search,
+  Zap,
   LucideIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -186,6 +187,12 @@ const navigationGroups: NavGroup[] = [
         name: 'AI 圖片生成',
         href: '/image-generation/upload',
         icon: Image,
+        permissions: [PERMISSIONS.AGENT_READ]
+      },
+      {
+        name: '內容流水線',
+        href: '/content-pipeline',
+        icon: Zap,
         permissions: [PERMISSIONS.AGENT_READ]
       },
       {

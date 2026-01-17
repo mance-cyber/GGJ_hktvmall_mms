@@ -1776,3 +1776,108 @@ export const geoApi = {
   getBrandKnowledge: (knowledgeId: string) =>
     fetchAPI<BrandKnowledgeResponse>(`/geo/knowledge/${knowledgeId}`),
 }
+
+
+// =============================================
+// 內容生成流水線 API (Content Pipeline)
+// =============================================
+
+export interface ContentPipelineInput {
+  name: string
+  brand?: string
+  category?: string
+  description?: string
+  features?: string[]
+  price?: number
+  origin?: string
+}
+
+export interface ContentPipelineRequest {
+  product_id?: string
+  product_info?: ContentPipelineInput
+  stages?: ('content' | 'seo' | 'geo')[]
+  language?: string
+  tone?: string
+  include_faq?: boolean
+  save_to_db?: boolean
+}
+
+export interface ContentResultResponse {
+  title: string
+  selling_points: string[]
+  description: string
+  keywords: string[]
+  tone: string
+}
+
+export interface SEOResultResponse {
+  meta_title: string
+  meta_description: string
+  primary_keyword: string
+  secondary_keywords: string[]
+  long_tail_keywords: string[]
+  seo_score: number
+  score_breakdown: Record<string, number>
+  og_title: string
+  og_description: string
+}
+
+export interface GEOResultResponse {
+  product_schema: Record<string, any>
+  faq_schema?: Record<string, any>
+  breadcrumb_schema?: Record<string, any>
+  ai_summary: string
+  ai_facts: string[]
+}
+
+export interface ContentPipelineResponse {
+  success: boolean
+  product_info: Record<string, any>
+  content?: ContentResultResponse
+  seo?: SEOResultResponse
+  geo?: GEOResultResponse
+  stages_executed: string[]
+  content_id?: string
+  seo_content_id?: string
+  structured_data_id?: string
+  generation_time_ms: number
+  model_used: string
+  error?: string
+}
+
+export const contentPipelineApi = {
+  // 執行完整流水線（文案 + SEO + GEO）
+  generate: (data: ContentPipelineRequest) =>
+    fetchAPI<ContentPipelineResponse>('/content-pipeline/generate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // 只生成文案
+  generateContentOnly: (data: ContentPipelineRequest) =>
+    fetchAPI<ContentPipelineResponse>('/content-pipeline/generate/content-only', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // 只生成 SEO
+  generateSEOOnly: (data: ContentPipelineRequest) =>
+    fetchAPI<ContentPipelineResponse>('/content-pipeline/generate/seo-only', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // 只生成 GEO
+  generateGEOOnly: (data: ContentPipelineRequest) =>
+    fetchAPI<ContentPipelineResponse>('/content-pipeline/generate/geo-only', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // 生成文案 + SEO
+  generateContentAndSEO: (data: ContentPipelineRequest) =>
+    fetchAPI<ContentPipelineResponse>('/content-pipeline/generate/content-seo', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+}
