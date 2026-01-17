@@ -2,9 +2,8 @@
 # 統一內容生成流水線 API
 # =============================================
 
-from typing import Optional, List, Set
+from typing import Optional, List
 from uuid import UUID
-from enum import Enum
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -13,7 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.database import get_db
 from app.services.content_pipeline import (
     ContentPipelineService,
-    PipelineStage,
     PipelineResult,
     BatchPipelineResult,
     get_content_pipeline_service,
@@ -37,28 +35,21 @@ class ProductInfoInput(BaseModel):
     origin: Optional[str] = Field(default=None, description="產地")
 
 
-class PipelineStageEnum(str, Enum):
-    """可選階段"""
-    content = "content"   # 內容生成（包含文案 + SEO）
-    geo = "geo"           # GEO 結構化數據
-
-
 class PipelineRequest(BaseModel):
     """流水線請求"""
     product_id: Optional[UUID] = Field(default=None, description="產品 ID（從數據庫獲取）")
     product_info: Optional[ProductInfoInput] = Field(default=None, description="產品信息（手動輸入）")
-    stages: Optional[List[PipelineStageEnum]] = Field(
-        default=None,
-        description="要執行的階段，默認全部 [content, geo]"
-    )
     language: str = Field(default="zh-HK", description="目標語言")
     tone: str = Field(default="professional", description="文案語氣: professional/casual/luxury")
     include_faq: bool = Field(default=False, description="是否生成 FAQ Schema")
     save_to_db: bool = Field(default=True, description="是否保存到數據庫")
 
 
-class ContentResultResponse(BaseModel):
-    """內容生成結果（文案 + SEO 合併）"""
+class PipelineResponse(BaseModel):
+    """流水線響應（一次生成全部內容）"""
+    success: bool
+    product_info: dict
+
     # 文案部分
     title: str
     selling_points: List[str]
@@ -76,27 +67,13 @@ class ContentResultResponse(BaseModel):
     og_title: str
     og_description: str
 
-
-class GEOResultResponse(BaseModel):
-    """GEO 結果"""
+    # GEO 部分
     product_schema: dict
     faq_schema: Optional[dict] = None
-    breadcrumb_schema: Optional[dict] = None
     ai_summary: str
     ai_facts: List[str]
 
-
-class PipelineResponse(BaseModel):
-    """流水線響應"""
-    success: bool
-    product_info: dict
-
-    # 各階段結果（content 已包含 SEO）
-    content: Optional[ContentResultResponse] = None
-    geo: Optional[GEOResultResponse] = None
-
-    # 執行信息
-    stages_executed: List[str]
+    # 存儲 ID
     content_id: Optional[str] = None
     seo_content_id: Optional[str] = None
     structured_data_id: Optional[str] = None
@@ -119,12 +96,10 @@ async def generate_content_pipeline(
     """
     統一內容生成流水線
 
-    一次生成：
-    - **文案** (content): 標題、賣點、描述、關鍵詞
-    - **SEO** (seo): Meta 標籤、關鍵詞優化、評分
-    - **GEO** (geo): Schema.org JSON-LD、AI 摘要
-
-    各階段結果自動傳遞，減少重複輸入。
+    一次 AI 調用生成完整內容包：
+    - **文案**: 標題、賣點、描述
+    - **SEO**: Meta 標籤、關鍵詞、評分
+    - **GEO**: Schema.org JSON-LD、AI 摘要
     """
 
     # 驗證輸入
@@ -133,11 +108,6 @@ async def generate_content_pipeline(
             status_code=400,
             detail="必須提供 product_id 或 product_info"
         )
-
-    # 轉換階段
-    stages: Optional[Set[PipelineStage]] = None
-    if request.stages:
-        stages = {PipelineStage(s.value) for s in request.stages}
 
     # 轉換產品信息
     product_info = None
@@ -149,7 +119,6 @@ async def generate_content_pipeline(
     result = await service.run(
         product_id=request.product_id,
         product_info=product_info,
-        stages=stages,
         language=request.language,
         tone=request.tone,
         include_faq=request.include_faq,
@@ -160,55 +129,6 @@ async def generate_content_pipeline(
     return _convert_to_response(result)
 
 
-@router.post("/generate/content-only", response_model=PipelineResponse)
-async def generate_content_only(
-    request: PipelineRequest,
-    db: AsyncSession = Depends(get_db),
-):
-    """只生成內容（文案 + SEO，不含 GEO 結構化數據）"""
-
-    if not request.product_id and not request.product_info:
-        raise HTTPException(status_code=400, detail="必須提供 product_id 或 product_info")
-
-    product_info = request.product_info.model_dump() if request.product_info else None
-
-    service = await get_content_pipeline_service(db)
-    result = await service.run(
-        product_id=request.product_id,
-        product_info=product_info,
-        stages={PipelineStage.CONTENT},
-        language=request.language,
-        tone=request.tone,
-        save_to_db=request.save_to_db,
-    )
-
-    return _convert_to_response(result)
-
-
-@router.post("/generate/geo-only", response_model=PipelineResponse)
-async def generate_geo_only(
-    request: PipelineRequest,
-    db: AsyncSession = Depends(get_db),
-):
-    """只生成 GEO（結構化數據，不含內容生成）"""
-
-    if not request.product_id and not request.product_info:
-        raise HTTPException(status_code=400, detail="必須提供 product_id 或 product_info")
-
-    product_info = request.product_info.model_dump() if request.product_info else None
-
-    service = await get_content_pipeline_service(db)
-    result = await service.run(
-        product_id=request.product_id,
-        product_info=product_info,
-        stages={PipelineStage.GEO},
-        include_faq=request.include_faq,
-        save_to_db=request.save_to_db,
-    )
-
-    return _convert_to_response(result)
-
-
 # =============================================
 # 輔助函數
 # =============================================
@@ -216,45 +136,34 @@ async def generate_geo_only(
 def _convert_to_response(result: PipelineResult) -> PipelineResponse:
     """轉換內部結果為 API 響應"""
 
-    content_response = None
-    if result.content:
-        content_response = ContentResultResponse(
-            # 文案部分
-            title=result.content.title,
-            selling_points=result.content.selling_points,
-            description=result.content.description,
-            tone=result.content.tone,
-            # SEO 部分
-            meta_title=result.content.meta_title,
-            meta_description=result.content.meta_description,
-            primary_keyword=result.content.primary_keyword,
-            secondary_keywords=result.content.secondary_keywords,
-            long_tail_keywords=result.content.long_tail_keywords,
-            seo_score=result.content.seo_score,
-            score_breakdown=result.content.score_breakdown,
-            og_title=result.content.og_title,
-            og_description=result.content.og_description,
-        )
-
-    geo_response = None
-    if result.geo:
-        geo_response = GEOResultResponse(
-            product_schema=result.geo.product_schema,
-            faq_schema=result.geo.faq_schema,
-            breadcrumb_schema=result.geo.breadcrumb_schema,
-            ai_summary=result.geo.ai_summary,
-            ai_facts=result.geo.ai_facts,
-        )
-
     return PipelineResponse(
         success=result.success,
         product_info=result.product_info,
-        content=content_response,
-        geo=geo_response,
-        stages_executed=result.stages_executed,
+        # 文案部分
+        title=result.title,
+        selling_points=result.selling_points,
+        description=result.description,
+        tone=result.tone,
+        # SEO 部分
+        meta_title=result.meta_title,
+        meta_description=result.meta_description,
+        primary_keyword=result.primary_keyword,
+        secondary_keywords=result.secondary_keywords,
+        long_tail_keywords=result.long_tail_keywords,
+        seo_score=result.seo_score,
+        score_breakdown=result.score_breakdown,
+        og_title=result.og_title,
+        og_description=result.og_description,
+        # GEO 部分
+        product_schema=result.product_schema,
+        faq_schema=result.faq_schema,
+        ai_summary=result.ai_summary,
+        ai_facts=result.ai_facts,
+        # 存儲 ID
         content_id=str(result.content_id) if result.content_id else None,
         seo_content_id=str(result.seo_content_id) if result.seo_content_id else None,
         structured_data_id=str(result.structured_data_id) if result.structured_data_id else None,
+        # 元數據
         generation_time_ms=result.generation_time_ms,
         model_used=result.model_used,
         error=result.error,
@@ -272,10 +181,6 @@ class BatchPipelineRequest(BaseModel):
         min_length=1,
         max_length=20,
         description="產品信息列表（最多 20 個）"
-    )
-    stages: Optional[List[PipelineStageEnum]] = Field(
-        default=None,
-        description="要執行的階段，默認全部"
     )
     language: str = Field(default="zh-HK", description="目標語言")
     tone: str = Field(default="professional", description="文案語氣")
@@ -299,7 +204,6 @@ class BatchPipelineResponse(BaseModel):
     results: List[PipelineResponse]
     errors: List[BatchErrorItem]
     total_time_ms: int
-    stages_executed: List[str]
 
 
 @router.post("/batch", response_model=BatchPipelineResponse)
@@ -317,11 +221,6 @@ async def batch_generate(
     if not request.products:
         raise HTTPException(status_code=400, detail="必須提供至少一個產品")
 
-    # 轉換階段
-    stages = None
-    if request.stages:
-        stages = {PipelineStage(s.value) for s in request.stages}
-
     # 轉換產品信息
     products = [p.model_dump() for p in request.products]
 
@@ -329,7 +228,6 @@ async def batch_generate(
     service = await get_content_pipeline_service(db)
     batch_result = await service.run_batch(
         products=products,
-        stages=stages,
         language=request.language,
         tone=request.tone,
         include_faq=request.include_faq,
@@ -352,5 +250,4 @@ async def batch_generate(
             for e in batch_result.errors
         ],
         total_time_ms=batch_result.total_time_ms,
-        stages_executed=batch_result.stages_executed,
     )

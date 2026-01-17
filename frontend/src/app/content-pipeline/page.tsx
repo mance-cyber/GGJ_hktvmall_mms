@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Wand2,
-  Search,
   Code,
   ArrowRight,
   Check,
@@ -35,33 +34,6 @@ import {
 // 統一內容生成流水線頁面
 // =============================================
 
-type PipelineStage = 'content' | 'geo'
-
-interface StageConfig {
-  id: PipelineStage
-  name: string
-  description: string
-  icon: React.ReactNode
-  color: string
-}
-
-const STAGES: StageConfig[] = [
-  {
-    id: 'content',
-    name: '內容生成',
-    description: '文案 + SEO 優化',
-    icon: <FileText className="w-5 h-5" />,
-    color: 'from-blue-500 to-emerald-500',
-  },
-  {
-    id: 'geo',
-    name: 'GEO 結構化',
-    description: 'Schema.org JSON-LD',
-    icon: <Code className="w-5 h-5" />,
-    color: 'from-purple-500 to-pink-500',
-  },
-]
-
 export default function ContentPipelinePage() {
   // Tab 狀態
   const [activeTab, setActiveTab] = useState<'single' | 'batch'>('single')
@@ -80,9 +52,6 @@ export default function ContentPipelinePage() {
   const [batchProducts, setBatchProducts] = useState<ContentPipelineInput[]>([])
 
   // 選項狀態
-  const [selectedStages, setSelectedStages] = useState<Set<PipelineStage>>(
-    new Set<PipelineStage>(['content', 'geo'])
-  )
   const [language, setLanguage] = useState('zh-HK')
   const [tone, setTone] = useState('professional')
   const [includeFaq, setIncludeFaq] = useState(false)
@@ -95,18 +64,8 @@ export default function ContentPipelinePage() {
 
   // 展開狀態
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(['content', 'geo'])
+    new Set(['content', 'seo', 'geo'])
   )
-
-  const toggleStage = (stage: PipelineStage) => {
-    const newStages = new Set(selectedStages)
-    if (newStages.has(stage)) {
-      newStages.delete(stage)
-    } else {
-      newStages.add(stage)
-    }
-    setSelectedStages(newStages)
-  }
 
   const toggleSection = (section: string) => {
     const newSections = new Set(expandedSections)
@@ -121,11 +80,6 @@ export default function ContentPipelinePage() {
   const handleGenerate = async () => {
     if (!productName.trim()) {
       setError('請輸入產品名稱')
-      return
-    }
-
-    if (selectedStages.size === 0) {
-      setError('請至少選擇一個生成階段')
       return
     }
 
@@ -144,7 +98,6 @@ export default function ContentPipelinePage() {
           price: price ? parseFloat(price) : undefined,
           origin: origin || undefined,
         },
-        stages: Array.from(selectedStages),
         language,
         tone,
         include_faq: includeFaq,
@@ -210,11 +163,6 @@ export default function ContentPipelinePage() {
       return
     }
 
-    if (selectedStages.size === 0) {
-      setError('請至少選擇一個生成階段')
-      return
-    }
-
     setIsLoading(true)
     setError(null)
     setBatchResult(null)
@@ -223,7 +171,6 @@ export default function ContentPipelinePage() {
     try {
       const request: BatchPipelineRequest = {
         products,
-        stages: Array.from(selectedStages),
         language,
         tone,
         include_faq: includeFaq,
@@ -251,7 +198,7 @@ export default function ContentPipelinePage() {
             <div>
               <h1 className="text-2xl font-bold text-slate-800">內容生成流水線</h1>
               <p className="text-slate-500 text-sm">
-                一次輸入，自動生成文案、SEO、結構化數據
+                一次 AI 調用，自動生成文案、SEO、結構化數據
               </p>
             </div>
           </div>
@@ -437,36 +384,8 @@ A5 和牛
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
               <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
                 <Target className="w-5 h-5 text-emerald-500" />
-                生成階段
+                生成選項
               </h2>
-
-              {/* 階段選擇 */}
-              <div className="flex gap-3 mb-6 flex-wrap">
-                {STAGES.map((stage, index) => (
-                  <div key={stage.id} className="flex items-center gap-2">
-                    <button
-                      onClick={() => toggleStage(stage.id)}
-                      className={`
-                        flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 transition-all
-                        ${selectedStages.has(stage.id)
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-slate-200 hover:border-slate-300 text-slate-600'
-                        }
-                      `}
-                    >
-                      {selectedStages.has(stage.id) ? (
-                        <Check className="w-4 h-4" />
-                      ) : (
-                        stage.icon
-                      )}
-                      <span className="font-medium">{stage.name}</span>
-                    </button>
-                    {index < STAGES.length - 1 && (
-                      <ArrowRight className="w-4 h-4 text-slate-300 hidden sm:block" />
-                    )}
-                  </div>
-                ))}
-              </div>
 
               {/* 其他選項 */}
               <div className="grid grid-cols-2 gap-4">
@@ -500,19 +419,17 @@ A5 和牛
                 </div>
               </div>
 
-              {selectedStages.has('geo') && (
-                <div className="mt-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={includeFaq}
-                      onChange={(e) => setIncludeFaq(e.target.checked)}
-                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-slate-700">生成 FAQ Schema</span>
-                  </label>
-                </div>
-              )}
+              <div className="mt-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={includeFaq}
+                    onChange={(e) => setIncludeFaq(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-700">生成 FAQ Schema（額外 AI 調用）</span>
+                </label>
+              </div>
 
               {/* 生成按鈕 */}
               {activeTab === 'single' ? (
@@ -643,22 +560,22 @@ A5 和牛
                       </span>
                     </div>
                     <div className="p-4 space-y-3">
-                      {res.content && (
+                      {res.title && (
                         <div>
                           <span className="text-xs font-medium text-blue-600 uppercase flex items-center gap-1">
                             內容
                             <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-bold">
-                              SEO {res.content.seo_score}分
+                              SEO {res.seo_score}分
                             </span>
                           </span>
-                          <p className="text-sm font-medium text-slate-800 mt-1">{res.content.title}</p>
-                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">{res.content.description}</p>
+                          <p className="text-sm font-medium text-slate-800 mt-1">{res.title}</p>
+                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">{res.description}</p>
                         </div>
                       )}
-                      {res.geo && (
+                      {res.ai_summary && (
                         <div>
-                          <span className="text-xs font-medium text-purple-600 uppercase">GEO</span>
-                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">{res.geo.ai_summary}</p>
+                          <span className="text-xs font-medium text-purple-600 uppercase">GEO 摘要</span>
+                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">{res.ai_summary}</p>
                         </div>
                       )}
                     </div>
@@ -679,95 +596,104 @@ A5 和牛
                         <Clock className="w-4 h-4" />
                         {result.generation_time_ms}ms
                       </span>
-                      <span>
-                        {result.stages_executed.length} 個階段
+                      <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs font-medium">
+                        SEO {result.seo_score} 分
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* 內容生成結果（文案 + SEO 合併） */}
-                {result.content && (
+                {/* 文案結果 */}
+                {result.title && (
                   <ResultSection
-                    title="內容生成"
+                    title="文案生成"
                     icon={<FileText className="w-5 h-5" />}
                     color="blue"
                     expanded={expandedSections.has('content')}
                     onToggle={() => toggleSection('content')}
+                  >
+                    <div className="space-y-4">
+                      <ResultItem
+                        label="標題"
+                        value={result.title}
+                        onCopy={() => copyToClipboard(result.title)}
+                      />
+                      <ResultItem
+                        label="賣點"
+                        value={result.selling_points.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+                        onCopy={() => copyToClipboard(result.selling_points.join('\n'))}
+                        multiline
+                      />
+                      <ResultItem
+                        label="描述"
+                        value={result.description}
+                        onCopy={() => copyToClipboard(result.description)}
+                        multiline
+                      />
+                    </div>
+                  </ResultSection>
+                )}
+
+                {/* SEO 結果 */}
+                {result.meta_title && (
+                  <ResultSection
+                    title="SEO 優化"
+                    icon={<Target className="w-5 h-5" />}
+                    color="emerald"
+                    expanded={expandedSections.has('seo')}
+                    onToggle={() => toggleSection('seo')}
                     badge={
                       <span className="px-2 py-0.5 text-xs font-bold bg-emerald-100 text-emerald-700 rounded-full">
-                        SEO {result.content.seo_score} 分
+                        {result.seo_score} 分
                       </span>
                     }
                   >
                     <div className="space-y-4">
-                      {/* 文案部分 */}
-                      <div className="pb-4 border-b border-slate-100">
-                        <h4 className="text-xs font-semibold text-blue-600 uppercase mb-3">文案</h4>
-                        <ResultItem
-                          label="標題"
-                          value={result.content.title}
-                          onCopy={() => copyToClipboard(result.content!.title)}
-                        />
-                        <div className="mt-3">
-                          <ResultItem
-                            label="賣點"
-                            value={result.content.selling_points.map((p, i) => `${i + 1}. ${p}`).join('\n')}
-                            onCopy={() => copyToClipboard(result.content!.selling_points.join('\n'))}
-                            multiline
-                          />
-                        </div>
-                        <div className="mt-3">
-                          <ResultItem
-                            label="描述"
-                            value={result.content.description}
-                            onCopy={() => copyToClipboard(result.content!.description)}
-                            multiline
-                          />
-                        </div>
-                      </div>
-
-                      {/* SEO 部分 */}
-                      <div>
-                        <h4 className="text-xs font-semibold text-emerald-600 uppercase mb-3">SEO 優化</h4>
-                        <ResultItem
-                          label={`Meta Title (${result.content.meta_title.length}/70)`}
-                          value={result.content.meta_title}
-                          onCopy={() => copyToClipboard(result.content!.meta_title)}
-                        />
-                        <div className="mt-3">
-                          <ResultItem
-                            label={`Meta Description (${result.content.meta_description.length}/160)`}
-                            value={result.content.meta_description}
-                            onCopy={() => copyToClipboard(result.content!.meta_description)}
-                            multiline
-                          />
-                        </div>
-                        <div className="mt-3 grid grid-cols-2 gap-4">
-                          <div>
-                            <span className="text-xs font-medium text-slate-500 uppercase">主關鍵詞</span>
-                            <p className="mt-1 font-medium text-emerald-700">{result.content.primary_keyword}</p>
-                            <div className="mt-2">
-                              <span className="text-xs text-slate-400">次要關鍵詞</span>
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {result.content.secondary_keywords.map((kw, i) => (
-                                  <span key={i} className="px-2 py-0.5 text-xs bg-slate-100 text-slate-600 rounded">
-                                    {kw}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                          <div>
-                            <span className="text-xs font-medium text-slate-500 uppercase">評分明細</span>
-                            <div className="mt-1 space-y-1">
-                              {Object.entries(result.content.score_breakdown).map(([key, value]) => (
-                                <div key={key} className="flex justify-between text-sm">
-                                  <span className="text-slate-600">{key}</span>
-                                  <span className="font-medium">{String(value)}</span>
-                                </div>
+                      <ResultItem
+                        label={`Meta Title (${result.meta_title.length}/70)`}
+                        value={result.meta_title}
+                        onCopy={() => copyToClipboard(result.meta_title)}
+                      />
+                      <ResultItem
+                        label={`Meta Description (${result.meta_description.length}/160)`}
+                        value={result.meta_description}
+                        onCopy={() => copyToClipboard(result.meta_description)}
+                        multiline
+                      />
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-xs font-medium text-slate-500 uppercase">主關鍵詞</span>
+                          <p className="mt-1 font-medium text-emerald-700">{result.primary_keyword}</p>
+                          <div className="mt-2">
+                            <span className="text-xs text-slate-400">次要關鍵詞</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {result.secondary_keywords.map((kw, i) => (
+                                <span key={i} className="px-2 py-0.5 text-xs bg-slate-100 text-slate-600 rounded">
+                                  {kw}
+                                </span>
                               ))}
                             </div>
+                          </div>
+                          <div className="mt-2">
+                            <span className="text-xs text-slate-400">長尾關鍵詞</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {result.long_tail_keywords.map((kw, i) => (
+                                <span key={i} className="px-2 py-0.5 text-xs bg-blue-50 text-blue-600 rounded">
+                                  {kw}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-xs font-medium text-slate-500 uppercase">評分明細</span>
+                          <div className="mt-1 space-y-1">
+                            {Object.entries(result.score_breakdown).map(([key, value]) => (
+                              <div key={key} className="flex justify-between text-sm">
+                                <span className="text-slate-600">{key}</span>
+                                <span className="font-medium">{String(value)}</span>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </div>
@@ -776,7 +702,7 @@ A5 和牛
                 )}
 
                 {/* GEO 結果 */}
-                {result.geo && (
+                {result.product_schema && (
                   <ResultSection
                     title="GEO 結構化數據"
                     icon={<Code className="w-5 h-5" />}
@@ -789,31 +715,31 @@ A5 和牛
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-medium text-slate-500 uppercase">Product Schema JSON-LD</span>
                           <button
-                            onClick={() => copyToClipboard(JSON.stringify(result.geo!.product_schema, null, 2))}
+                            onClick={() => copyToClipboard(JSON.stringify(result.product_schema, null, 2))}
                             className="text-purple-600 hover:text-purple-700"
                           >
                             <Copy className="w-4 h-4" />
                           </button>
                         </div>
                         <pre className="p-3 bg-slate-900 text-slate-100 rounded-xl text-xs overflow-x-auto max-h-48">
-                          {JSON.stringify(result.geo.product_schema, null, 2)}
+                          {JSON.stringify(result.product_schema, null, 2)}
                         </pre>
                       </div>
 
-                      {result.geo.ai_summary && (
+                      {result.ai_summary && (
                         <ResultItem
                           label="AI 摘要"
-                          value={result.geo.ai_summary}
-                          onCopy={() => copyToClipboard(result.geo!.ai_summary)}
+                          value={result.ai_summary}
+                          onCopy={() => copyToClipboard(result.ai_summary)}
                           multiline
                         />
                       )}
 
-                      {result.geo.ai_facts && result.geo.ai_facts.length > 0 && (
+                      {result.ai_facts && result.ai_facts.length > 0 && (
                         <div>
                           <span className="text-xs font-medium text-slate-500 uppercase">AI 事實</span>
                           <ul className="mt-1 space-y-1">
-                            {result.geo.ai_facts.map((fact, i) => (
+                            {result.ai_facts.map((fact, i) => (
                               <li key={i} className="text-sm text-slate-700 flex items-start gap-2">
                                 <Globe className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
                                 {fact}
@@ -823,19 +749,19 @@ A5 和牛
                         </div>
                       )}
 
-                      {result.geo.faq_schema && (
+                      {result.faq_schema && (
                         <div>
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-medium text-slate-500 uppercase">FAQ Schema</span>
                             <button
-                              onClick={() => copyToClipboard(JSON.stringify(result.geo!.faq_schema, null, 2))}
+                              onClick={() => copyToClipboard(JSON.stringify(result.faq_schema, null, 2))}
                               className="text-purple-600 hover:text-purple-700"
                             >
                               <Copy className="w-4 h-4" />
                             </button>
                           </div>
                           <pre className="p-3 bg-slate-900 text-slate-100 rounded-xl text-xs overflow-x-auto max-h-32">
-                            {JSON.stringify(result.geo.faq_schema, null, 2)}
+                            {JSON.stringify(result.faq_schema, null, 2)}
                           </pre>
                         </div>
                       )}
@@ -862,7 +788,7 @@ A5 和牛
                 </h3>
                 <p className="text-slate-500 text-sm max-w-sm mx-auto">
                   {activeTab === 'single'
-                    ? '輸入產品信息，選擇生成階段，一鍵生成文案、SEO 優化內容和結構化數據'
+                    ? '輸入產品信息，一次 AI 調用生成文案、SEO 優化內容和結構化數據'
                     : '輸入多個產品（每行一個或 JSON 格式），批量生成內容，提高效率'}
                 </p>
 
@@ -876,20 +802,25 @@ A5 和牛
                       <ArrowRight className="w-4 h-4 text-slate-300" />
                     </>
                   )}
-                  {STAGES.map((stage, index) => (
-                    <div key={stage.id} className="flex items-center gap-2">
-                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stage.color} flex items-center justify-center text-white`}>
-                        {stage.icon}
-                      </div>
-                      {index < STAGES.length - 1 && (
-                        <ArrowRight className="w-4 h-4 text-slate-300" />
-                      )}
-                    </div>
-                  ))}
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-slate-300" />
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white">
+                    <Target className="w-5 h-5" />
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-slate-300" />
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white">
+                    <Code className="w-5 h-5" />
+                  </div>
+                </div>
+
+                <div className="mt-4 text-xs text-slate-400">
+                  文案 → SEO → GEO（一次 AI 調用）
                 </div>
 
                 {activeTab === 'batch' && (
-                  <div className="mt-6 text-xs text-slate-400">
+                  <div className="mt-2 text-xs text-slate-400">
                     最多支持 20 個產品，並發處理提高效率
                   </div>
                 )}

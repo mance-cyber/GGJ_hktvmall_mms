@@ -1781,6 +1781,7 @@ export const geoApi = {
 // =============================================
 // 內容生成流水線 API (Content Pipeline)
 // =============================================
+// 一次 AI 調用生成完整內容包：文案 + SEO + GEO
 
 export interface ContentPipelineInput {
   name: string
@@ -1795,21 +1796,23 @@ export interface ContentPipelineInput {
 export interface ContentPipelineRequest {
   product_id?: string
   product_info?: ContentPipelineInput
-  stages?: ('content' | 'seo' | 'geo')[]
   language?: string
   tone?: string
   include_faq?: boolean
   save_to_db?: boolean
 }
 
-export interface ContentResultResponse {
+export interface ContentPipelineResponse {
+  success: boolean
+  product_info: Record<string, any>
+
   // 文案部分
   title: string
   selling_points: string[]
   description: string
   tone: string
 
-  // SEO 部分（已合併）
+  // SEO 部分
   meta_title: string
   meta_description: string
   primary_keyword: string
@@ -1819,25 +1822,19 @@ export interface ContentResultResponse {
   score_breakdown: Record<string, number>
   og_title: string
   og_description: string
-}
 
-export interface GEOResultResponse {
+  // GEO 部分
   product_schema: Record<string, any>
   faq_schema?: Record<string, any>
-  breadcrumb_schema?: Record<string, any>
   ai_summary: string
   ai_facts: string[]
-}
 
-export interface ContentPipelineResponse {
-  success: boolean
-  product_info: Record<string, any>
-  content?: ContentResultResponse    // 已包含 SEO
-  geo?: GEOResultResponse
-  stages_executed: string[]
+  // 存儲 ID
   content_id?: string
   seo_content_id?: string
   structured_data_id?: string
+
+  // 元數據
   generation_time_ms: number
   model_used: string
   error?: string
@@ -1845,7 +1842,6 @@ export interface ContentPipelineResponse {
 
 export interface BatchPipelineRequest {
   products: ContentPipelineInput[]
-  stages?: ('content' | 'geo')[]    // content 已包含 SEO
   language?: string
   tone?: string
   include_faq?: boolean
@@ -1866,27 +1862,12 @@ export interface BatchPipelineResponse {
   results: ContentPipelineResponse[]
   errors: BatchErrorItem[]
   total_time_ms: number
-  stages_executed: string[]
 }
 
 export const contentPipelineApi = {
-  // 執行完整流水線（內容 + GEO）
+  // 生成完整內容（文案 + SEO + GEO）
   generate: (data: ContentPipelineRequest) =>
     fetchAPI<ContentPipelineResponse>('/content-pipeline/generate', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-
-  // 只生成內容（文案 + SEO，不含 GEO）
-  generateContentOnly: (data: ContentPipelineRequest) =>
-    fetchAPI<ContentPipelineResponse>('/content-pipeline/generate/content-only', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-
-  // 只生成 GEO（結構化數據）
-  generateGEOOnly: (data: ContentPipelineRequest) =>
-    fetchAPI<ContentPipelineResponse>('/content-pipeline/generate/geo-only', {
       method: 'POST',
       body: JSON.stringify(data),
     }),

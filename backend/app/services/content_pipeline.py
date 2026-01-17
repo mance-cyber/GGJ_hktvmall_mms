@@ -8,9 +8,8 @@ import uuid
 import json
 import re
 from datetime import datetime
-from typing import Optional, List, Dict, Any, Set
+from typing import Optional, List, Dict, Any
 from dataclasses import dataclass, field
-from enum import Enum
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -23,22 +22,15 @@ from app.services.ai_service import AIAnalysisService, AISettingsService
 
 
 # =============================================
-# 流水線階段定義
-# =============================================
-
-class PipelineStage(str, Enum):
-    """流水線階段"""
-    CONTENT = "content"      # 內容生成（文案 + SEO 合併）
-    GEO = "geo"              # GEO 結構化數據
-
-
-# =============================================
 # 結果數據結構
 # =============================================
 
 @dataclass
-class ContentResult:
-    """內容生成結果（文案 + SEO 合併）"""
+class PipelineResult:
+    """流水線完整結果（一次生成全部）"""
+    success: bool = True
+    product_info: Dict[str, Any] = field(default_factory=dict)
+
     # 文案部分
     title: str = ""
     selling_points: List[str] = field(default_factory=list)
@@ -56,29 +48,11 @@ class ContentResult:
     og_title: str = ""
     og_description: str = ""
 
-
-@dataclass
-class GEOResult:
-    """GEO 結構化數據結果"""
+    # GEO 部分
     product_schema: Dict[str, Any] = field(default_factory=dict)
     faq_schema: Optional[Dict[str, Any]] = None
-    breadcrumb_schema: Optional[Dict[str, Any]] = None
     ai_summary: str = ""
     ai_facts: List[str] = field(default_factory=list)
-
-
-@dataclass
-class PipelineResult:
-    """流水線完整結果"""
-    success: bool = True
-    product_info: Dict[str, Any] = field(default_factory=dict)
-
-    # 各階段結果（content 已包含 SEO）
-    content: Optional[ContentResult] = None
-    geo: Optional[GEOResult] = None
-
-    # 執行的階段
-    stages_executed: List[str] = field(default_factory=list)
 
     # 存儲的記錄 ID
     content_id: Optional[uuid.UUID] = None
@@ -118,12 +92,10 @@ class ContentPipelineService:
     """
     統一內容生成流水線
 
-    一次輸入產品資訊，可選擇性執行：
-    1. 文案生成 (Content) - 標題、賣點、描述
-    2. SEO 優化 - Meta 標籤、關鍵詞、評分
-    3. GEO 結構化數據 - Schema.org JSON-LD
-
-    各階段結果會自動傳遞，避免重複輸入
+    一次 AI 調用生成完整內容包：
+    - 文案：標題、賣點、描述
+    - SEO：Meta 標籤、關鍵詞、評分
+    - GEO：AI 摘要、結構化數據 (Schema.org JSON-LD)
     """
 
     def __init__(self, db: AsyncSession, ai_service: AIAnalysisService):
@@ -145,22 +117,20 @@ class ContentPipelineService:
         self,
         product_id: Optional[uuid.UUID] = None,
         product_info: Optional[Dict[str, Any]] = None,
-        stages: Optional[Set[PipelineStage]] = None,
         language: str = "zh-HK",
         tone: str = "professional",
         include_faq: bool = False,
         save_to_db: bool = True,
     ) -> PipelineResult:
         """
-        執行內容生成流水線
+        執行內容生成流水線（一次 AI 調用生成全部）
 
         Args:
             product_id: 產品 ID（從數據庫獲取）
             product_info: 產品信息字典（手動提供）
-            stages: 要執行的階段，默認全部 [content, geo]
             language: 目標語言
             tone: 文案語氣 (professional/casual/luxury)
-            include_faq: GEO 階段是否生成 FAQ Schema
+            include_faq: 是否生成 FAQ Schema
             save_to_db: 是否保存到數據庫
 
         Returns:
@@ -168,11 +138,7 @@ class ContentPipelineService:
         """
         start_time = datetime.now()
 
-        # 默認執行所有階段（content 已包含 SEO）
-        if stages is None:
-            stages = {PipelineStage.CONTENT, PipelineStage.GEO}
-
-        result = PipelineResult()
+        result = PipelineResult(tone=tone)
 
         # 獲取產品信息
         product_data = await self._get_product_data(product_id, product_info)
@@ -183,23 +149,15 @@ class ContentPipelineService:
 
         result.product_info = product_data
 
-        # Stage 1: 內容生成（文案 + SEO 合併）
-        if PipelineStage.CONTENT in stages:
-            content_result = await self._stage_content(product_data, language, tone)
-            result.content = content_result
-            result.stages_executed.append("content")
+        # 一次 AI 調用生成全部內容（文案 + SEO + AI 摘要）
+        await self._generate_all_content(result, product_data, language, tone)
 
-        # Stage 2: GEO 結構化數據
-        if PipelineStage.GEO in stages:
-            description = result.content.description if result.content else None
+        # 構建 Product Schema（用代碼構建，不需要 AI）
+        result.product_schema = self._build_product_schema(product_data, result.description)
 
-            geo_result = await self._stage_geo(
-                product_data,
-                existing_description=description,
-                include_faq=include_faq
-            )
-            result.geo = geo_result
-            result.stages_executed.append("geo")
+        # 可選：生成 FAQ Schema（需要額外 AI 調用）
+        if include_faq:
+            result.faq_schema = await self._generate_faq_schema(product_data)
 
         # 保存到數據庫
         if save_to_db:
@@ -213,23 +171,25 @@ class ContentPipelineService:
         return result
 
     # =============================================
-    # Stage 1: 內容生成（文案 + SEO 合併）
+    # 一次生成全部內容
     # =============================================
 
-    async def _stage_content(
+    async def _generate_all_content(
         self,
+        result: PipelineResult,
         product_data: Dict[str, Any],
         language: str,
         tone: str,
-    ) -> ContentResult:
-        """Stage 1: 生成產品文案 + SEO（合併為一次 AI 調用）"""
+    ) -> None:
+        """一次 AI 調用生成全部內容（文案 + SEO + AI 摘要）"""
 
         prompt = f"""{GOGOJAP_BRAND_CONTEXT}
 
 ## 任務
-為以下產品生成完整的電商內容，包括：
+為以下產品生成完整的電商內容，一次輸出：
 1. 產品文案（標題、賣點、描述）
-2. SEO 優化內容（Meta 標籤、關鍵詞）
+2. SEO 優化（Meta 標籤、關鍵詞、評分）
+3. AI 搜索引擎摘要（給 Perplexity/ChatGPT 等 AI 搜索引擎用）
 
 ## 產品資訊
 - 名稱: {product_data.get('name', '')}
@@ -253,6 +213,10 @@ class ContentPipelineService:
 3. 主關鍵詞: 1 個核心搜索詞
 4. 次要關鍵詞: 3-5 個相關詞
 5. 長尾關鍵詞: 2-3 個精準詞組
+
+## AI 摘要要求
+1. ai_summary: 50-100 字的產品摘要，突出核心價值
+2. ai_facts: 3-5 個客觀事實，方便 AI 引用
 
 ## SEO 評分標準
 - title_score: 標題關鍵詞覆蓋 (0-100)
@@ -279,15 +243,15 @@ class ContentPipelineService:
         "readability_score": 85
     }},
     "og_title": "OG 標題",
-    "og_description": "OG 描述"
+    "og_description": "OG 描述",
+    "ai_summary": "AI 搜索引擎友好摘要...",
+    "ai_facts": ["事實1", "事實2", "事實3"]
 }}
 ```
 
 請只返回 JSON，不要其他內容。"""
 
-        response = await self.ai_service.call_ai(prompt, max_tokens=2000)
-
-        result = ContentResult(tone=tone)
+        response = await self.ai_service.call_ai(prompt, max_tokens=2500)
 
         if response.success:
             try:
@@ -309,40 +273,14 @@ class ContentPipelineService:
                 result.og_title = content.get("og_title", "")
                 result.og_description = content.get("og_description", "")
 
+                # AI 摘要部分
+                result.ai_summary = content.get("ai_summary", "")
+                result.ai_facts = content.get("ai_facts", [])
+
             except Exception:
                 # 如果解析失敗，嘗試提取文本
                 result.title = product_data.get("name", "")
                 result.description = response.content[:500]
-
-        return result
-
-    # =============================================
-    # Stage 3: GEO 結構化數據
-    # =============================================
-
-    async def _stage_geo(
-        self,
-        product_data: Dict[str, Any],
-        existing_description: str = None,
-        include_faq: bool = False,
-    ) -> GEOResult:
-        """Stage 3: 生成 GEO 結構化數據"""
-
-        result = GEOResult()
-
-        # 生成 Product Schema
-        result.product_schema = self._build_product_schema(product_data, existing_description)
-
-        # 生成 FAQ Schema（如果需要）
-        if include_faq:
-            result.faq_schema = await self._generate_faq_schema(product_data)
-
-        # 生成 AI 摘要（用於 AI 搜索引擎）
-        ai_summary_result = await self._generate_ai_summary(product_data, existing_description)
-        result.ai_summary = ai_summary_result.get("summary", "")
-        result.ai_facts = ai_summary_result.get("facts", [])
-
-        return result
 
     def _build_product_schema(
         self,
@@ -437,39 +375,6 @@ class ContentPipelineService:
 
         return schema
 
-    async def _generate_ai_summary(
-        self,
-        product_data: Dict[str, Any],
-        description: str = None,
-    ) -> Dict[str, Any]:
-        """生成 AI 搜索引擎友好的摘要"""
-
-        prompt = f"""為以下產品生成適合 AI 搜索引擎（如 Perplexity、ChatGPT）的結構化摘要。
-
-產品: {product_data.get('name', '')}
-品牌: {product_data.get('brand', 'GoGoJap')}
-描述: {description or product_data.get('description', '')}
-
-返回格式 (JSON):
-```json
-{{
-    "summary": "一段 50-100 字的產品摘要，突出核心價值",
-    "facts": ["事實1", "事實2", "事實3"]
-}}
-```
-
-請只返回 JSON。"""
-
-        response = await self.ai_service.call_ai(prompt, max_tokens=500)
-
-        if response.success:
-            try:
-                return self._parse_json_response(response.content)
-            except Exception:
-                pass
-
-        return {"summary": "", "facts": []}
-
     # =============================================
     # 輔助方法
     # =============================================
@@ -519,18 +424,18 @@ class ContentPipelineService:
         """保存結果到數據庫"""
 
         # 保存文案內容
-        if result.content:
+        if result.title:
             # 提取關鍵詞列表（合併主詞、次詞、長尾詞）
-            all_keywords = [result.content.primary_keyword] if result.content.primary_keyword else []
-            all_keywords.extend(result.content.secondary_keywords)
-            all_keywords.extend(result.content.long_tail_keywords)
+            all_keywords = [result.primary_keyword] if result.primary_keyword else []
+            all_keywords.extend(result.secondary_keywords)
+            all_keywords.extend(result.long_tail_keywords)
 
             ai_content = AIContent(
                 id=uuid.uuid4(),
                 product_id=product_id,
-                title=result.content.title,
-                description=result.content.description,
-                selling_points=result.content.selling_points,
+                title=result.title,
+                description=result.description,
+                selling_points=result.selling_points,
                 keywords=all_keywords,
                 status="draft",
                 generated_at=utcnow(),
@@ -538,19 +443,19 @@ class ContentPipelineService:
             self.db.add(ai_content)
             result.content_id = ai_content.id
 
-            # 同時保存 SEO 內容（從合併的 content 中提取）
+            # 同時保存 SEO 內容
             seo_content = SEOContent(
                 id=uuid.uuid4(),
                 product_id=product_id,
-                meta_title=result.content.meta_title,
-                meta_description=result.content.meta_description,
-                primary_keyword=result.content.primary_keyword,
-                secondary_keywords=result.content.secondary_keywords,
-                long_tail_keywords=result.content.long_tail_keywords,
-                seo_score=result.content.seo_score,
-                score_breakdown=result.content.score_breakdown,
-                og_title=result.content.og_title,
-                og_description=result.content.og_description,
+                meta_title=result.meta_title,
+                meta_description=result.meta_description,
+                primary_keyword=result.primary_keyword,
+                secondary_keywords=result.secondary_keywords,
+                long_tail_keywords=result.long_tail_keywords,
+                seo_score=result.seo_score,
+                score_breakdown=result.score_breakdown,
+                og_title=result.og_title,
+                og_description=result.og_description,
                 language=language,
                 status="draft",
                 created_at=utcnow(),
@@ -560,14 +465,14 @@ class ContentPipelineService:
             result.seo_content_id = seo_content.id
 
         # 保存結構化數據
-        if result.geo and result.geo.product_schema:
+        if result.product_schema:
             structured_data = StructuredData(
                 id=uuid.uuid4(),
                 product_id=product_id,
                 schema_type="Product",
-                json_ld=result.geo.product_schema,
-                ai_summary=result.geo.ai_summary,
-                ai_facts=result.geo.ai_facts,
+                json_ld=result.product_schema,
+                ai_summary=result.ai_summary,
+                ai_facts=result.ai_facts,
                 is_valid=True,
                 created_at=utcnow(),
                 updated_at=utcnow(),
@@ -584,7 +489,6 @@ class ContentPipelineService:
     async def run_batch(
         self,
         products: List[Dict[str, Any]],
-        stages: Optional[Set[PipelineStage]] = None,
         language: str = "zh-HK",
         tone: str = "professional",
         include_faq: bool = False,
@@ -596,7 +500,6 @@ class ContentPipelineService:
 
         Args:
             products: 產品信息列表，每個包含 name, brand, category 等
-            stages: 要執行的階段
             language: 目標語言
             tone: 文案語氣
             include_faq: 是否生成 FAQ
@@ -611,9 +514,6 @@ class ContentPipelineService:
 
         start_time = datetime.now()
 
-        if stages is None:
-            stages = {PipelineStage.CONTENT, PipelineStage.GEO}
-
         results: List[PipelineResult] = []
         errors: List[Dict[str, Any]] = []
 
@@ -625,13 +525,12 @@ class ContentPipelineService:
                 try:
                     result = await self.run(
                         product_info=product_info,
-                        stages=stages,
                         language=language,
                         tone=tone,
                         include_faq=include_faq,
                         save_to_db=save_to_db,
                     )
-                    results.append(result)
+                    results.append((index, result))  # 保持順序
                 except Exception as e:
                     errors.append({
                         "index": index,
@@ -646,18 +545,21 @@ class ContentPipelineService:
         ]
         await asyncio.gather(*tasks)
 
+        # 按原始順序排列結果
+        results.sort(key=lambda x: x[0])
+        sorted_results = [r[1] for r in results]
+
         end_time = datetime.now()
         total_time_ms = int((end_time - start_time).total_seconds() * 1000)
 
         return BatchPipelineResult(
             success=len(errors) == 0,
             total_products=len(products),
-            successful_count=len(results),
+            successful_count=len(sorted_results),
             failed_count=len(errors),
-            results=results,
+            results=sorted_results,
             errors=errors,
             total_time_ms=total_time_ms,
-            stages_executed=list(stages),
         )
 
 
@@ -671,7 +573,6 @@ class BatchPipelineResult:
     results: List[PipelineResult] = field(default_factory=list)
     errors: List[Dict[str, Any]] = field(default_factory=list)
     total_time_ms: int = 0
-    stages_executed: List[str] = field(default_factory=list)
 
 
 # =============================================
