@@ -18,11 +18,17 @@ import {
   Globe,
   Zap,
   Clock,
+  List,
+  AlertCircle,
+  CheckCircle,
 } from 'lucide-react'
 import {
   contentPipelineApi,
   ContentPipelineRequest,
   ContentPipelineResponse,
+  BatchPipelineRequest,
+  BatchPipelineResponse,
+  ContentPipelineInput,
 } from '@/lib/api'
 
 // =============================================
@@ -64,7 +70,10 @@ const STAGES: StageConfig[] = [
 ]
 
 export default function ContentPipelinePage() {
-  // 輸入狀態
+  // Tab 狀態
+  const [activeTab, setActiveTab] = useState<'single' | 'batch'>('single')
+
+  // 單個產品輸入狀態
   const [productName, setProductName] = useState('')
   const [brand, setBrand] = useState('GoGoJap')
   const [category, setCategory] = useState('')
@@ -72,6 +81,10 @@ export default function ContentPipelinePage() {
   const [features, setFeatures] = useState('')
   const [price, setPrice] = useState('')
   const [origin, setOrigin] = useState('')
+
+  // 批量輸入狀態
+  const [batchInput, setBatchInput] = useState('')
+  const [batchProducts, setBatchProducts] = useState<ContentPipelineInput[]>([])
 
   // 選項狀態
   const [selectedStages, setSelectedStages] = useState<Set<PipelineStage>>(
@@ -84,6 +97,7 @@ export default function ContentPipelinePage() {
   // 結果狀態
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<ContentPipelineResponse | null>(null)
+  const [batchResult, setBatchResult] = useState<BatchPipelineResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   // 展開狀態
@@ -157,6 +171,81 @@ export default function ContentPipelinePage() {
     navigator.clipboard.writeText(text)
   }
 
+  // 解析批量輸入（支持 JSON 數組或每行一個產品名）
+  const parseBatchInput = (input: string): ContentPipelineInput[] => {
+    const trimmed = input.trim()
+    if (!trimmed) return []
+
+    // 嘗試解析為 JSON
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed)
+        if (Array.isArray(parsed)) {
+          return parsed.map(item => ({
+            name: item.name || item,
+            brand: item.brand || 'GoGoJap',
+            category: item.category,
+            description: item.description,
+            features: item.features,
+            price: item.price,
+            origin: item.origin,
+          }))
+        }
+      } catch {
+        // 不是有效 JSON，繼續嘗試其他格式
+      }
+    }
+
+    // 按行分割，每行作為一個產品名
+    const lines = trimmed.split('\n').filter(line => line.trim())
+    return lines.map(line => ({
+      name: line.trim(),
+      brand: 'GoGoJap',
+    }))
+  }
+
+  const handleBatchGenerate = async () => {
+    const products = parseBatchInput(batchInput)
+
+    if (products.length === 0) {
+      setError('請輸入產品信息')
+      return
+    }
+
+    if (products.length > 20) {
+      setError('最多支持 20 個產品')
+      return
+    }
+
+    if (selectedStages.size === 0) {
+      setError('請至少選擇一個生成階段')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+    setBatchResult(null)
+    setBatchProducts(products)
+
+    try {
+      const request: BatchPipelineRequest = {
+        products,
+        stages: Array.from(selectedStages),
+        language,
+        tone,
+        include_faq: includeFaq,
+        save_to_db: true,
+      }
+
+      const response = await contentPipelineApi.batchGenerate(request)
+      setBatchResult(response)
+    } catch (err: any) {
+      setError(err.message || '批量生成失敗')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 p-6">
       <div className="max-w-7xl mx-auto">
@@ -175,29 +264,60 @@ export default function ContentPipelinePage() {
           </div>
         </div>
 
+        {/* Tab 切換 */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveTab('single')}
+            className={`px-4 py-2 rounded-xl font-medium transition-all ${
+              activeTab === 'single'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <Wand2 className="w-4 h-4" />
+              單個生成
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('batch')}
+            className={`px-4 py-2 rounded-xl font-medium transition-all ${
+              activeTab === 'batch'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <List className="w-4 h-4" />
+              批量生成
+            </span>
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* 左側：輸入區 */}
           <div className="space-y-6">
-            {/* 產品信息 */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-              <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-500" />
-                產品信息
-              </h2>
+            {activeTab === 'single' ? (
+              /* 單個產品輸入 */
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-amber-500" />
+                  產品信息
+                </h2>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    產品名稱 <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={productName}
-                    onChange={(e) => setProductName(e.target.value)}
-                    placeholder="例：A5 和牛"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                  />
-                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      產品名稱 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={productName}
+                      onChange={(e) => setProductName(e.target.value)}
+                      placeholder="例：A5 和牛"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                    />
+                  </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -280,6 +400,45 @@ export default function ContentPipelinePage() {
                 </div>
               </div>
             </div>
+            ) : (
+              /* 批量產品輸入 */
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                  <List className="w-5 h-5 text-amber-500" />
+                  批量產品輸入
+                </h2>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      產品列表 <span className="text-red-500">*</span>
+                      <span className="font-normal text-slate-500 ml-2">（最多 20 個）</span>
+                    </label>
+                    <textarea
+                      value={batchInput}
+                      onChange={(e) => setBatchInput(e.target.value)}
+                      placeholder={`輸入方式一：每行一個產品名
+A5 和牛
+北海道帆立貝
+博多明太子
+
+輸入方式二：JSON 格式（可附加詳細信息）
+[
+  {"name": "A5 和牛", "brand": "GoGoJap", "category": "和牛"},
+  {"name": "北海道帆立貝", "origin": "日本北海道"}
+]`}
+                      rows={10}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all resize-none font-mono text-sm"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>批量生成將並發處理，每次最多同時處理 3 個產品</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* 流水線選項 */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
@@ -289,7 +448,7 @@ export default function ContentPipelinePage() {
               </h2>
 
               {/* 階段選擇 */}
-              <div className="flex gap-3 mb-6">
+              <div className="flex gap-3 mb-6 flex-wrap">
                 {STAGES.map((stage, index) => (
                   <div key={stage.id} className="flex items-center gap-2">
                     <button
@@ -310,7 +469,7 @@ export default function ContentPipelinePage() {
                       <span className="font-medium">{stage.name}</span>
                     </button>
                     {index < STAGES.length - 1 && (
-                      <ArrowRight className="w-4 h-4 text-slate-300" />
+                      <ArrowRight className="w-4 h-4 text-slate-300 hidden sm:block" />
                     )}
                   </div>
                 ))}
@@ -363,30 +522,57 @@ export default function ContentPipelinePage() {
               )}
 
               {/* 生成按鈕 */}
-              <button
-                onClick={handleGenerate}
-                disabled={isLoading || !productName.trim()}
-                className={`
-                  w-full mt-6 py-3 rounded-xl font-semibold text-white
-                  flex items-center justify-center gap-2 transition-all
-                  ${isLoading || !productName.trim()
-                    ? 'bg-slate-300 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:shadow-lg hover:shadow-blue-500/25'
-                  }
-                `}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    生成中...
-                  </>
-                ) : (
-                  <>
-                    <Wand2 className="w-5 h-5" />
-                    一鍵生成
-                  </>
-                )}
-              </button>
+              {activeTab === 'single' ? (
+                <button
+                  onClick={handleGenerate}
+                  disabled={isLoading || !productName.trim()}
+                  className={`
+                    w-full mt-6 py-3 rounded-xl font-semibold text-white
+                    flex items-center justify-center gap-2 transition-all
+                    ${isLoading || !productName.trim()
+                      ? 'bg-slate-300 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:shadow-lg hover:shadow-blue-500/25'
+                    }
+                  `}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      生成中...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="w-5 h-5" />
+                      一鍵生成
+                    </>
+                  )}
+                </button>
+              ) : (
+                <button
+                  onClick={handleBatchGenerate}
+                  disabled={isLoading || !batchInput.trim()}
+                  className={`
+                    w-full mt-6 py-3 rounded-xl font-semibold text-white
+                    flex items-center justify-center gap-2 transition-all
+                    ${isLoading || !batchInput.trim()
+                      ? 'bg-slate-300 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:shadow-lg hover:shadow-amber-500/25'
+                    }
+                  `}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      批量生成中...
+                    </>
+                  ) : (
+                    <>
+                      <List className="w-5 h-5" />
+                      批量生成
+                    </>
+                  )}
+                </button>
+              )}
 
               {error && (
                 <p className="mt-3 text-sm text-red-600 text-center">{error}</p>
@@ -396,9 +582,105 @@ export default function ContentPipelinePage() {
 
           {/* 右側：結果區 */}
           <div className="space-y-4">
-            {result ? (
+            {/* 批量結果顯示 */}
+            {activeTab === 'batch' && batchResult ? (
               <>
-                {/* 執行摘要 */}
+                {/* 批量執行摘要 */}
+                <div className={`rounded-2xl p-4 text-white ${
+                  batchResult.failed_count === 0
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                    : batchResult.successful_count === 0
+                    ? 'bg-gradient-to-r from-red-500 to-rose-500'
+                    : 'bg-gradient-to-r from-amber-500 to-orange-500'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {batchResult.failed_count === 0 ? (
+                        <CheckCircle className="w-6 h-6" />
+                      ) : (
+                        <AlertCircle className="w-6 h-6" />
+                      )}
+                      <span className="font-semibold">
+                        批量生成完成
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4 text-white/80 text-sm">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        {batchResult.total_time_ms}ms
+                      </span>
+                      <span>
+                        成功 {batchResult.successful_count}/{batchResult.total_products}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 錯誤列表 */}
+                {batchResult.errors.length > 0 && (
+                  <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+                    <h3 className="text-sm font-semibold text-red-700 mb-2 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" />
+                      失敗項目 ({batchResult.errors.length})
+                    </h3>
+                    <ul className="space-y-1">
+                      {batchResult.errors.map((err, i) => (
+                        <li key={i} className="text-sm text-red-600">
+                          #{err.index + 1} {err.product_name}: {err.error}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* 成功結果列表 */}
+                {batchResult.results.map((res, index) => (
+                  <div key={index} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-xs font-bold flex items-center justify-center">
+                          {index + 1}
+                        </span>
+                        <span className="font-medium text-slate-800">
+                          {res.product_info?.name || `產品 ${index + 1}`}
+                        </span>
+                      </div>
+                      <span className="text-xs text-slate-500">
+                        {res.generation_time_ms}ms
+                      </span>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      {res.content && (
+                        <div>
+                          <span className="text-xs font-medium text-blue-600 uppercase">文案</span>
+                          <p className="text-sm font-medium text-slate-800 mt-1">{res.content.title}</p>
+                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">{res.content.description}</p>
+                        </div>
+                      )}
+                      {res.seo && (
+                        <div>
+                          <span className="text-xs font-medium text-emerald-600 uppercase flex items-center gap-1">
+                            SEO
+                            <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-bold">
+                              {res.seo.seo_score}分
+                            </span>
+                          </span>
+                          <p className="text-sm text-slate-700 mt-1">{res.seo.meta_title}</p>
+                        </div>
+                      )}
+                      {res.geo && (
+                        <div>
+                          <span className="text-xs font-medium text-purple-600 uppercase">GEO</span>
+                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">{res.geo.ai_summary}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </>
+            ) : result ? (
+              <>
+                {/* 單個執行摘要 */}
                 <div className="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl p-4 text-white">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -579,18 +861,36 @@ export default function ContentPipelinePage() {
             ) : (
               /* 空狀態 */
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-12 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center mx-auto mb-4">
-                  <Wand2 className="w-8 h-8 text-blue-600" />
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 ${
+                  activeTab === 'single'
+                    ? 'bg-gradient-to-br from-blue-100 to-purple-100'
+                    : 'bg-gradient-to-br from-amber-100 to-orange-100'
+                }`}>
+                  {activeTab === 'single' ? (
+                    <Wand2 className="w-8 h-8 text-blue-600" />
+                  ) : (
+                    <List className="w-8 h-8 text-amber-600" />
+                  )}
                 </div>
                 <h3 className="text-lg font-semibold text-slate-800 mb-2">
-                  一站式內容生成
+                  {activeTab === 'single' ? '一站式內容生成' : '批量內容生成'}
                 </h3>
                 <p className="text-slate-500 text-sm max-w-sm mx-auto">
-                  輸入產品信息，選擇生成階段，一鍵生成文案、SEO 優化內容和結構化數據
+                  {activeTab === 'single'
+                    ? '輸入產品信息，選擇生成階段，一鍵生成文案、SEO 優化內容和結構化數據'
+                    : '輸入多個產品（每行一個或 JSON 格式），批量生成內容，提高效率'}
                 </p>
 
                 {/* 流程圖 */}
-                <div className="mt-8 flex items-center justify-center gap-2">
+                <div className="mt-8 flex items-center justify-center gap-2 flex-wrap">
+                  {activeTab === 'batch' && (
+                    <>
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-400 flex items-center justify-center text-white">
+                        <List className="w-5 h-5" />
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-slate-300" />
+                    </>
+                  )}
                   {STAGES.map((stage, index) => (
                     <div key={stage.id} className="flex items-center gap-2">
                       <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stage.color} flex items-center justify-center text-white`}>
@@ -602,6 +902,12 @@ export default function ContentPipelinePage() {
                     </div>
                   ))}
                 </div>
+
+                {activeTab === 'batch' && (
+                  <div className="mt-6 text-xs text-slate-400">
+                    最多支持 20 個產品，並發處理提高效率
+                  </div>
+                )}
               </div>
             )}
           </div>

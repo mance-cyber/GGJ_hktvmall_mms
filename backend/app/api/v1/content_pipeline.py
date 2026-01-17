@@ -15,6 +15,7 @@ from app.services.content_pipeline import (
     ContentPipelineService,
     PipelineStage,
     PipelineResult,
+    BatchPipelineResult,
     get_content_pipeline_service,
 )
 
@@ -315,4 +316,99 @@ def _convert_to_response(result: PipelineResult) -> PipelineResponse:
         generation_time_ms=result.generation_time_ms,
         model_used=result.model_used,
         error=result.error,
+    )
+
+
+# =============================================
+# 批量生成 API
+# =============================================
+
+class BatchPipelineRequest(BaseModel):
+    """批量流水線請求"""
+    products: List[ProductInfoInput] = Field(
+        ...,
+        min_length=1,
+        max_length=20,
+        description="產品信息列表（最多 20 個）"
+    )
+    stages: Optional[List[PipelineStageEnum]] = Field(
+        default=None,
+        description="要執行的階段，默認全部"
+    )
+    language: str = Field(default="zh-HK", description="目標語言")
+    tone: str = Field(default="professional", description="文案語氣")
+    include_faq: bool = Field(default=False, description="是否生成 FAQ")
+    save_to_db: bool = Field(default=True, description="是否保存到數據庫")
+
+
+class BatchErrorItem(BaseModel):
+    """批量錯誤項"""
+    index: int
+    product_name: str
+    error: str
+
+
+class BatchPipelineResponse(BaseModel):
+    """批量流水線響應"""
+    success: bool
+    total_products: int
+    successful_count: int
+    failed_count: int
+    results: List[PipelineResponse]
+    errors: List[BatchErrorItem]
+    total_time_ms: int
+    stages_executed: List[str]
+
+
+@router.post("/batch", response_model=BatchPipelineResponse)
+async def batch_generate(
+    request: BatchPipelineRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    批量生成內容流水線
+
+    一次處理多個產品，最多 20 個。
+    並發處理，提高效率。
+    """
+
+    if not request.products:
+        raise HTTPException(status_code=400, detail="必須提供至少一個產品")
+
+    # 轉換階段
+    stages = None
+    if request.stages:
+        stages = {PipelineStage(s.value) for s in request.stages}
+
+    # 轉換產品信息
+    products = [p.model_dump() for p in request.products]
+
+    # 執行批量生成
+    service = await get_content_pipeline_service(db)
+    batch_result = await service.run_batch(
+        products=products,
+        stages=stages,
+        language=request.language,
+        tone=request.tone,
+        include_faq=request.include_faq,
+        save_to_db=request.save_to_db,
+    )
+
+    # 轉換結果
+    return BatchPipelineResponse(
+        success=batch_result.success,
+        total_products=batch_result.total_products,
+        successful_count=batch_result.successful_count,
+        failed_count=batch_result.failed_count,
+        results=[_convert_to_response(r) for r in batch_result.results],
+        errors=[
+            BatchErrorItem(
+                index=e["index"],
+                product_name=e["product_name"],
+                error=e["error"]
+            )
+            for e in batch_result.errors
+        ],
+        total_time_ms=batch_result.total_time_ms,
+        stages_executed=batch_result.stages_executed,
     )

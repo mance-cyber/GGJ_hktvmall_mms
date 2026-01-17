@@ -1845,6 +1845,32 @@ export interface ContentPipelineResponse {
   error?: string
 }
 
+export interface BatchPipelineRequest {
+  products: ContentPipelineInput[]
+  stages?: ('content' | 'seo' | 'geo')[]
+  language?: string
+  tone?: string
+  include_faq?: boolean
+  save_to_db?: boolean
+}
+
+export interface BatchErrorItem {
+  index: number
+  product_name: string
+  error: string
+}
+
+export interface BatchPipelineResponse {
+  success: boolean
+  total_products: number
+  successful_count: number
+  failed_count: number
+  results: ContentPipelineResponse[]
+  errors: BatchErrorItem[]
+  total_time_ms: number
+  stages_executed: string[]
+}
+
 export const contentPipelineApi = {
   // 執行完整流水線（文案 + SEO + GEO）
   generate: (data: ContentPipelineRequest) =>
@@ -1877,6 +1903,13 @@ export const contentPipelineApi = {
   // 生成文案 + SEO
   generateContentAndSEO: (data: ContentPipelineRequest) =>
     fetchAPI<ContentPipelineResponse>('/content-pipeline/generate/content-seo', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // 批量生成
+  batchGenerate: (data: BatchPipelineRequest) =>
+    fetchAPI<BatchPipelineResponse>('/content-pipeline/batch', {
       method: 'POST',
       body: JSON.stringify(data),
     }),

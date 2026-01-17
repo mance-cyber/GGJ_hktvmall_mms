@@ -645,6 +645,102 @@ class ContentPipelineService:
 
         await self.db.commit()
 
+    # =============================================
+    # 批量生成
+    # =============================================
+
+    async def run_batch(
+        self,
+        products: List[Dict[str, Any]],
+        stages: Optional[Set[PipelineStage]] = None,
+        language: str = "zh-HK",
+        tone: str = "professional",
+        include_faq: bool = False,
+        save_to_db: bool = True,
+        max_concurrent: int = 3,
+    ) -> "BatchPipelineResult":
+        """
+        批量執行內容生成流水線
+
+        Args:
+            products: 產品信息列表，每個包含 name, brand, category 等
+            stages: 要執行的階段
+            language: 目標語言
+            tone: 文案語氣
+            include_faq: 是否生成 FAQ
+            save_to_db: 是否保存到數據庫
+            max_concurrent: 最大並發數
+
+        Returns:
+            BatchPipelineResult 包含所有產品的結果
+        """
+        import asyncio
+        from datetime import datetime
+
+        start_time = datetime.now()
+
+        if stages is None:
+            stages = {PipelineStage.CONTENT, PipelineStage.SEO, PipelineStage.GEO}
+
+        results: List[PipelineResult] = []
+        errors: List[Dict[str, Any]] = []
+
+        # 使用信號量限制並發
+        semaphore = asyncio.Semaphore(max_concurrent)
+
+        async def process_product(index: int, product_info: Dict[str, Any]) -> None:
+            async with semaphore:
+                try:
+                    result = await self.run(
+                        product_info=product_info,
+                        stages=stages,
+                        language=language,
+                        tone=tone,
+                        include_faq=include_faq,
+                        save_to_db=save_to_db,
+                    )
+                    results.append(result)
+                except Exception as e:
+                    errors.append({
+                        "index": index,
+                        "product_name": product_info.get("name", "unknown"),
+                        "error": str(e),
+                    })
+
+        # 並發處理所有產品
+        tasks = [
+            process_product(i, product)
+            for i, product in enumerate(products)
+        ]
+        await asyncio.gather(*tasks)
+
+        end_time = datetime.now()
+        total_time_ms = int((end_time - start_time).total_seconds() * 1000)
+
+        return BatchPipelineResult(
+            success=len(errors) == 0,
+            total_products=len(products),
+            successful_count=len(results),
+            failed_count=len(errors),
+            results=results,
+            errors=errors,
+            total_time_ms=total_time_ms,
+            stages_executed=list(stages),
+        )
+
+
+@dataclass
+class BatchPipelineResult:
+    """批量流水線結果"""
+    success: bool = True
+    total_products: int = 0
+    successful_count: int = 0
+    failed_count: int = 0
+    results: List[PipelineResult] = field(default_factory=list)
+    errors: List[Dict[str, Any]] = field(default_factory=list)
+    total_time_ms: int = 0
+    stages_executed: List[str] = field(default_factory=list)
+
 
 # =============================================
 # 工廠函數
