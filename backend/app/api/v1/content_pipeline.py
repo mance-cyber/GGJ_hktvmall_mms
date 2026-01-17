@@ -4,12 +4,15 @@
 
 from typing import Optional, List, Dict
 from uuid import UUID
+from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
+from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.database import get_db
+from app.models.content import PipelineSession
 from app.services.content_pipeline import (
     ContentPipelineService,
     PipelineResult,
@@ -309,3 +312,190 @@ async def batch_generate(
         total_time_ms=batch_result.total_time_ms,
         languages=batch_result.languages,
     )
+
+
+# =============================================
+# 歷史記錄 API
+# =============================================
+
+class HistoryItemResponse(BaseModel):
+    """歷史記錄項"""
+    id: str
+    product_id: Optional[str] = None
+    product_name: str
+    languages: List[str]
+    tone: str
+    preview_title: Optional[str] = None
+    preview_seo_score: Optional[int] = None
+    generation_time_ms: int
+    model_used: Optional[str] = None
+    is_batch: bool
+    batch_index: Optional[int] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class HistoryDetailResponse(BaseModel):
+    """歷史記錄詳情"""
+    id: str
+    product_id: Optional[str] = None
+    product_name: str
+    product_info: Optional[dict] = None
+    languages: List[str]
+    tone: str
+    content_ids: Optional[dict] = None
+    seo_content_ids: Optional[dict] = None
+    structured_data_id: Optional[str] = None
+    preview_title: Optional[str] = None
+    preview_seo_score: Optional[int] = None
+    generation_time_ms: int
+    model_used: Optional[str] = None
+    is_batch: bool
+    batch_index: Optional[int] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class HistoryListResponse(BaseModel):
+    """歷史記錄列表響應"""
+    items: List[HistoryItemResponse]
+    total: int
+    page: int
+    page_size: int
+    has_more: bool
+
+
+@router.get("/history", response_model=HistoryListResponse)
+async def list_pipeline_history(
+    db: AsyncSession = Depends(get_db),
+    page: int = Query(default=1, ge=1, description="頁碼"),
+    page_size: int = Query(default=20, ge=1, le=100, description="每頁數量"),
+    language: Optional[str] = Query(default=None, description="篩選語言"),
+    is_batch: Optional[bool] = Query(default=None, description="是否批量生成"),
+    search: Optional[str] = Query(default=None, description="搜索產品名稱"),
+):
+    """
+    獲取內容生成歷史記錄列表
+
+    支持分頁、語言篩選、批量標記篩選、產品名稱搜索
+    """
+    query = select(PipelineSession)
+
+    # 篩選條件
+    if language:
+        query = query.where(PipelineSession.languages.contains([language]))
+    if is_batch is not None:
+        query = query.where(PipelineSession.is_batch == is_batch)
+    if search:
+        query = query.where(PipelineSession.product_name.ilike(f"%{search}%"))
+
+    # 統計總數
+    count_query = select(PipelineSession)
+    if language:
+        count_query = count_query.where(PipelineSession.languages.contains([language]))
+    if is_batch is not None:
+        count_query = count_query.where(PipelineSession.is_batch == is_batch)
+    if search:
+        count_query = count_query.where(PipelineSession.product_name.ilike(f"%{search}%"))
+
+    count_result = await db.execute(count_query)
+    total = len(count_result.scalars().all())
+
+    # 分頁查詢
+    offset = (page - 1) * page_size
+    query = query.order_by(desc(PipelineSession.created_at)).offset(offset).limit(page_size)
+
+    result = await db.execute(query)
+    sessions = result.scalars().all()
+
+    items = [
+        HistoryItemResponse(
+            id=str(s.id),
+            product_id=str(s.product_id) if s.product_id else None,
+            product_name=s.product_name,
+            languages=s.languages or [],
+            tone=s.tone or "professional",
+            preview_title=s.preview_title,
+            preview_seo_score=s.preview_seo_score,
+            generation_time_ms=s.generation_time_ms or 0,
+            model_used=s.model_used,
+            is_batch=s.is_batch or False,
+            batch_index=s.batch_index,
+            created_at=s.created_at,
+        )
+        for s in sessions
+    ]
+
+    return HistoryListResponse(
+        items=items,
+        total=total,
+        page=page,
+        page_size=page_size,
+        has_more=(offset + page_size) < total,
+    )
+
+
+@router.get("/history/{session_id}", response_model=HistoryDetailResponse)
+async def get_pipeline_history_detail(
+    session_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    獲取單個歷史記錄詳情
+
+    包含完整的產品信息和所有關聯 ID
+    """
+    result = await db.execute(
+        select(PipelineSession).where(PipelineSession.id == session_id)
+    )
+    session = result.scalar_one_or_none()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="歷史記錄不存在")
+
+    return HistoryDetailResponse(
+        id=str(session.id),
+        product_id=str(session.product_id) if session.product_id else None,
+        product_name=session.product_name,
+        product_info=session.product_info,
+        languages=session.languages or [],
+        tone=session.tone or "professional",
+        content_ids=session.content_ids,
+        seo_content_ids=session.seo_content_ids,
+        structured_data_id=str(session.structured_data_id) if session.structured_data_id else None,
+        preview_title=session.preview_title,
+        preview_seo_score=session.preview_seo_score,
+        generation_time_ms=session.generation_time_ms or 0,
+        model_used=session.model_used,
+        is_batch=session.is_batch or False,
+        batch_index=session.batch_index,
+        created_at=session.created_at,
+    )
+
+
+@router.delete("/history/{session_id}")
+async def delete_pipeline_history(
+    session_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    刪除單個歷史記錄
+
+    僅刪除會話記錄，不刪除關聯的內容
+    """
+    result = await db.execute(
+        select(PipelineSession).where(PipelineSession.id == session_id)
+    )
+    session = result.scalar_one_or_none()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="歷史記錄不存在")
+
+    await db.delete(session)
+    await db.commit()
+
+    return {"message": "已刪除", "id": str(session_id)}

@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.models.product import Product
-from app.models.content import AIContent
+from app.models.content import AIContent, PipelineSession
 from app.models.seo import SEOContent, StructuredData
 from app.models.database import utcnow
 from app.services.ai_service import AIAnalysisService, AISettingsService
@@ -133,6 +133,8 @@ class ContentPipelineService:
         tone: str = "professional",
         include_faq: bool = False,
         save_to_db: bool = True,
+        is_batch: bool = False,
+        batch_index: Optional[int] = None,
     ) -> PipelineResult:
         """
         執行內容生成流水線（一次 AI 調用生成多語言內容）
@@ -180,7 +182,7 @@ class ContentPipelineService:
 
         # 保存到數據庫
         if save_to_db:
-            await self._save_results(result, product_id)
+            await self._save_results(result, product_id, product_data, is_batch, batch_index)
 
         # 計算執行時間
         end_time = datetime.now()
@@ -466,6 +468,9 @@ class ContentPipelineService:
         self,
         result: PipelineResult,
         product_id: Optional[uuid.UUID],
+        product_info: Dict[str, Any],
+        is_batch: bool = False,
+        batch_index: Optional[int] = None,
     ) -> None:
         """保存結果到數據庫（每種語言獨立保存）"""
 
@@ -483,10 +488,15 @@ class ContentPipelineService:
             ai_content = AIContent(
                 id=uuid.uuid4(),
                 product_id=product_id,
-                title=localized.title,
-                description=localized.description,
-                selling_points=localized.selling_points,
-                keywords=all_keywords,
+                content_type="full_copy",
+                language=lang,
+                content=localized.description,
+                content_json={
+                    "title": localized.title,
+                    "selling_points": localized.selling_points,
+                    "description": localized.description,
+                    "keywords": all_keywords,
+                },
                 status="draft",
                 generated_at=utcnow(),
             )
@@ -533,6 +543,30 @@ class ContentPipelineService:
             )
             self.db.add(structured_data)
             result.structured_data_id = structured_data.id
+
+        # 保存生成會話（用於歷史記錄）
+        first_lang = result.languages[0] if result.languages else "zh-HK"
+        first_localized = result.localized.get(first_lang, LocalizedContent())
+
+        session = PipelineSession(
+            id=uuid.uuid4(),
+            product_id=product_id,
+            product_name=product_info.get("name", ""),
+            product_info=product_info,
+            languages=result.languages,
+            tone=result.tone,
+            content_ids={k: str(v) for k, v in result.content_ids.items()},
+            seo_content_ids={k: str(v) for k, v in result.seo_content_ids.items()},
+            structured_data_id=result.structured_data_id,
+            preview_title=first_localized.title,
+            preview_seo_score=first_localized.seo_score,
+            generation_time_ms=result.generation_time_ms,
+            model_used=result.model_used,
+            is_batch=is_batch,
+            batch_index=batch_index,
+            created_at=utcnow(),
+        )
+        self.db.add(session)
 
         await self.db.commit()
 
@@ -586,6 +620,8 @@ class ContentPipelineService:
                         tone=tone,
                         include_faq=include_faq,
                         save_to_db=save_to_db,
+                        is_batch=True,
+                        batch_index=index,
                     )
                     results.append((index, result))  # 保持順序
                 except Exception as e:

@@ -27,6 +27,7 @@ import {
   Image,
   Search,
   Zap,
+  Clock,
   LucideIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -193,6 +194,12 @@ const navigationGroups: NavGroup[] = [
         name: '內容流水線',
         href: '/content-pipeline',
         icon: Zap,
+        permissions: [PERMISSIONS.AGENT_READ]
+      },
+      {
+        name: '生成歷史',
+        href: '/content-history',
+        icon: Clock,
         permissions: [PERMISSIONS.AGENT_READ]
       },
       {

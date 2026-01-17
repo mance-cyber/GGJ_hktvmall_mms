@@ -1876,6 +1876,48 @@ export interface BatchPipelineResponse {
   languages: string[]
 }
 
+// =============================================
+// 內容生成歷史記錄
+// =============================================
+
+export interface PipelineHistoryItem {
+  id: string
+  product_id: string | null
+  product_name: string
+  languages: string[]
+  tone: string
+  preview_title: string | null
+  preview_seo_score: number | null
+  generation_time_ms: number
+  model_used: string | null
+  is_batch: boolean
+  batch_index: number | null
+  created_at: string
+}
+
+export interface PipelineHistoryDetail extends PipelineHistoryItem {
+  product_info: Record<string, unknown> | null
+  content_ids: Record<string, string> | null
+  seo_content_ids: Record<string, string> | null
+  structured_data_id: string | null
+}
+
+export interface PipelineHistoryListResponse {
+  items: PipelineHistoryItem[]
+  total: number
+  page: number
+  page_size: number
+  has_more: boolean
+}
+
+export interface PipelineHistoryParams {
+  page?: number
+  page_size?: number
+  language?: string
+  is_batch?: boolean
+  search?: string
+}
+
 export const contentPipelineApi = {
   // 生成多語言內容（文案 + SEO + GEO）
   generate: (data: ContentPipelineRequest) =>
@@ -1889,5 +1931,30 @@ export const contentPipelineApi = {
     fetchAPI<BatchPipelineResponse>('/content-pipeline/batch', {
       method: 'POST',
       body: JSON.stringify(data),
+    }),
+
+  // 獲取歷史記錄列表
+  getHistory: (params?: PipelineHistoryParams) => {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.page_size) searchParams.set('page_size', params.page_size.toString())
+    if (params?.language) searchParams.set('language', params.language)
+    if (params?.is_batch !== undefined) searchParams.set('is_batch', params.is_batch.toString())
+    if (params?.search) searchParams.set('search', params.search)
+
+    const queryString = searchParams.toString()
+    return fetchAPI<PipelineHistoryListResponse>(
+      `/content-pipeline/history${queryString ? `?${queryString}` : ''}`
+    )
+  },
+
+  // 獲取歷史記錄詳情
+  getHistoryDetail: (sessionId: string) =>
+    fetchAPI<PipelineHistoryDetail>(`/content-pipeline/history/${sessionId}`),
+
+  // 刪除歷史記錄
+  deleteHistory: (sessionId: string) =>
+    fetchAPI<{ message: string; id: string }>(`/content-pipeline/history/${sessionId}`, {
+      method: 'DELETE',
     }),
 }
