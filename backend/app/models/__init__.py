@@ -27,6 +27,17 @@ from app.models.seo import (
     KeywordResearch,
     ContentAudit
 )
+from app.models.seo_ranking import (
+    KeywordConfig,
+    KeywordRanking,
+    SEOReport,
+    RankingAlert,
+    RankingScrapeJob,
+    KeywordType,
+    RankingSource,
+    ReportType,
+    AlertSeverity
+)
 
 __all__ = [
     # 數據庫
@@ -76,4 +87,14 @@ __all__ = [
     "BrandKnowledge",
     "KeywordResearch",
     "ContentAudit",
+    # SEO 排名追蹤
+    "KeywordConfig",
+    "KeywordRanking",
+    "SEOReport",
+    "RankingAlert",
+    "RankingScrapeJob",
+    "KeywordType",
+    "RankingSource",
+    "ReportType",
+    "AlertSeverity",
 ]

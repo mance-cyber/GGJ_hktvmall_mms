@@ -18,6 +18,7 @@ celery_app = Celery(
         "app.tasks.scrape_tasks",
         "app.tasks.content_tasks",
         "app.tasks.image_generation_tasks",
+        "app.tasks.seo_ranking_tasks",
     ]
 )
 
@@ -56,5 +57,18 @@ celery_app.conf.beat_schedule = {
     "cleanup-old-image-tasks-daily": {
         "task": "cleanup_old_image_tasks",
         "schedule": crontab(hour=3, minute=0),  # 每天凌晨 03:00
+    },
+    # =============================================
+    # SEO 排名追蹤定時任務
+    # =============================================
+    # 每日追蹤所有關鍵詞排名（早上 6 點，避開高峰）
+    "track-all-keyword-rankings-daily": {
+        "task": "app.tasks.seo_ranking_tasks.track_all_keywords",
+        "schedule": crontab(hour=6, minute=0),
+    },
+    # 每週生成 SEO 報告（週一早上 8 點）
+    "generate-weekly-seo-reports": {
+        "task": "app.tasks.seo_ranking_tasks.generate_weekly_reports",
+        "schedule": crontab(hour=8, minute=0, day_of_week=1),
     },
 }

@@ -98,6 +98,7 @@ async def init_db():
         promotion,
         user,
         seo,
+        seo_ranking,
     )
     
     try:
