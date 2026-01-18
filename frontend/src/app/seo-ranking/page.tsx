@@ -342,7 +342,7 @@ export default function SEORankingPage() {
               title="排名警報"
               subtitle="需要關注的排名變化"
               icon={<AlertTriangle className="w-5 h-5" />}
-              badge={
+              action={
                 dashboard?.recent_alerts?.filter((a) => !a.is_read).length ? (
                   <HoloBadge variant="warning" pulse>
                     {dashboard.recent_alerts.filter((a) => !a.is_read).length} 未讀
