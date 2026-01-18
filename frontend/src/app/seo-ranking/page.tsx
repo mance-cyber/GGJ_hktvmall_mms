@@ -177,8 +177,7 @@ export default function SEORankingPage() {
             <DataMetric
               label="追蹤關鍵詞"
               value={overview?.total_keywords || 0}
-              trend={overview?.active_keywords ? "up" : undefined}
-              trendValue={`${overview?.active_keywords || 0} 啟用中`}
+              suffix={` / ${overview?.active_keywords || 0} 啟用`}
               color="cyan"
             />
           </HoloCard>
@@ -199,7 +198,7 @@ export default function SEORankingPage() {
               label="排名下降"
               value={overview?.declined_keywords || 0}
               icon={<TrendingDown className="w-5 h-5" />}
-              color="red"
+              color="orange"
             />
           </HoloCard>
         </StaggerContainer>
