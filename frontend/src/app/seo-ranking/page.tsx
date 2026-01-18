@@ -165,8 +165,8 @@ export default function SEORankingPage() {
                   (overview?.seo_health_score || 0) >= 70
                     ? "green"
                     : (overview?.seo_health_score || 0) >= 40
-                    ? "amber"
-                    : "red"
+                    ? "cyan"
+                    : "purple"
                 }
               />
             </div>
