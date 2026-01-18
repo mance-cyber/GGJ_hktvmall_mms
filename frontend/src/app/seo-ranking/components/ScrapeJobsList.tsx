@@ -101,7 +101,7 @@ export function ScrapeJobsList({ jobs }: ScrapeJobsListProps) {
                   size={40}
                   strokeWidth={3}
                   color="cyan"
-                  showPercent
+                  showLabel
                 />
               </div>
             )}
