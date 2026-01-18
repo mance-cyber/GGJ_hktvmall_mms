@@ -300,7 +300,7 @@ export default function SEORankingPage() {
             title="關鍵詞排行榜"
             subtitle="按當前排名排序"
             icon={<TrendingUp className="w-5 h-5" />}
-            actions={
+            action={
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setSelectedSource("google_hk")}
