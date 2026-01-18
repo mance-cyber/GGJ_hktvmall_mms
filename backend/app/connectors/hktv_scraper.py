@@ -1,8 +1,9 @@
 # =============================================
-# HKTVmall 專用精準抓取器
+# HKTVmall 專用精準抓取器（優化版）
 # =============================================
 # 針對 HKTVmall JavaScript SPA 設計的專用抓取方案
 # 解決：動態加載、Algolia 搜尋、商品識別等問題
+# 優化：timeout 配置、智能等待、批量抓取
 
 import re
 import time
@@ -18,6 +19,32 @@ from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
+
+
+# =============================================
+# HKTVmall 優化配置常量
+# =============================================
+
+# 基於 Firecrawl 最佳實踐的配置
+HKTV_CONFIG = {
+    # 頁面加載配置
+    "page_load_wait_ms": 10000,      # SPA 需要較長等待
+    "scroll_wait_ms": 2000,           # 滾動後等待
+    "max_scroll_count": 5,            # 最大滾動次數
+
+    # 超時配置
+    "timeout_ms": 60000,              # 60 秒超時
+
+    # 重試配置
+    "max_retries": 3,
+    "retry_delay_seconds": 2.0,
+
+    # TLS 配置
+    "skip_tls_verification": True,    # HKTVmall 某些 CDN 需要
+
+    # 請求間隔（避免速率限制）
+    "request_delay_seconds": 1.0,
+}
 
 
 # =============================================
@@ -181,13 +208,18 @@ class HKTVUrlParser:
 
 class HKTVScraper:
     """
-    HKTVmall 專用抓取器
+    HKTVmall 專用抓取器（優化版）
 
     設計原則：
     1. 針對 JavaScript SPA 優化
     2. 使用 Actions 等待頁面渲染
     3. 嚴格驗證商品 URL 格式
     4. 精準提取商品數據
+
+    優化：
+    - 正確傳遞 timeout 到 Firecrawl API
+    - 使用 skipTlsVerification 處理 CDN
+    - 智能重試和錯誤處理
     """
 
     def __init__(self):
@@ -196,11 +228,13 @@ class HKTVScraper:
         self._app = None
         self.url_parser = HKTVUrlParser()
 
-        # 配置參數
-        self.page_load_wait_ms = 8000     # 等待頁面加載
-        self.scroll_wait_ms = 2000         # 每次滾動後等待
-        self.max_scroll_count = 5          # 最大滾動次數
-        self.request_timeout_seconds = 60  # 請求超時
+        # 從全局配置加載（便於統一調整）
+        self.page_load_wait_ms = HKTV_CONFIG["page_load_wait_ms"]
+        self.scroll_wait_ms = HKTV_CONFIG["scroll_wait_ms"]
+        self.max_scroll_count = HKTV_CONFIG["max_scroll_count"]
+        self.request_timeout_ms = HKTV_CONFIG["timeout_ms"]
+        self.skip_tls_verification = HKTV_CONFIG["skip_tls_verification"]
+        self.request_delay_seconds = HKTV_CONFIG["request_delay_seconds"]
 
     @property
     def app(self):
@@ -223,7 +257,7 @@ class HKTVScraper:
         scroll_count: int = None
     ) -> Dict[str, Any]:
         """
-        使用 JavaScript 渲染抓取頁面
+        使用 JavaScript 渲染抓取頁面（優化版）
 
         Args:
             url: 要抓取的 URL
@@ -251,18 +285,27 @@ class HKTVScraper:
         # 最後滾動回頂部
         actions.append({"type": "scroll", "direction": "up", "amount": 99999})
 
-        result = self.app.scrape(
-            url,
-            formats=["markdown", "html"],
-            only_main_content=False,  # 獲取完整頁面
-            actions=actions,
-        )
+        # 構建參數（包含 timeout 和 skipTlsVerification）
+        scrape_kwargs = {
+            "formats": ["markdown", "html"],
+            "only_main_content": False,  # 獲取完整頁面
+            "actions": actions,
+            "timeout": self.request_timeout_ms,  # 正確傳遞 timeout
+        }
+
+        # 添加 TLS 跳過（HKTVmall CDN 需要）
+        if self.skip_tls_verification:
+            scrape_kwargs["skip_tls_verification"] = True
+
+        logger.debug(f"Scraping with JS render: {url}, timeout={self.request_timeout_ms}ms")
+
+        result = self.app.scrape(url, **scrape_kwargs)
 
         return self._document_to_dict(result)
 
     def scrape_product_page(self, url: str) -> Dict[str, Any]:
         """
-        抓取單個商品頁面
+        抓取單個商品頁面（優化版）
 
         使用 JSON Mode 結構化提取商品數據
         """
@@ -288,9 +331,9 @@ class HKTVScraper:
             image_url: Optional[str] = None
             promotion_text: Optional[str] = None
 
-        result = self.app.scrape(
-            url,
-            formats=[
+        # 構建參數（包含優化配置）
+        scrape_kwargs = {
+            "formats": [
                 {
                     "type": "json",
                     "schema": HKTVProductSchema.model_json_schema(),
@@ -298,9 +341,17 @@ class HKTVScraper:
                 "markdown",
                 "html"
             ],
-            only_main_content=True,
-            wait_for=5000,  # 商品頁等待 5 秒
-        )
+            "only_main_content": True,
+            "wait_for": 8000,             # 商品頁等待 8 秒（SPA 需要更長）
+            "timeout": self.request_timeout_ms,
+        }
+
+        if self.skip_tls_verification:
+            scrape_kwargs["skip_tls_verification"] = True
+
+        logger.debug(f"Scraping product page: {url}")
+
+        result = self.app.scrape(url, **scrape_kwargs)
 
         return self._document_to_dict(result)
 
@@ -752,8 +803,8 @@ class HKTVScraper:
                     failed_urls.append(url)
                     logger.warning(f"抓取商品失敗 {url}: {e}")
 
-                # 防止過快請求
-                await asyncio.sleep(0.5)
+                # 防止過快請求（使用配置的延遲）
+                await asyncio.sleep(self.request_delay_seconds)
         else:
             # 不抓取詳情，只返回 URL
             for url in product_urls:

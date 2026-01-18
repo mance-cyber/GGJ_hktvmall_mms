@@ -1,7 +1,8 @@
 # =============================================
-# 爬取執行器
+# 爬取執行器（優化版）
 # =============================================
 # 核心爬取邏輯，包含重試、錯誤處理、配置管理
+# 優化：正確傳遞 timeout、使用 ScrapeOptions
 
 import asyncio
 import random
@@ -12,7 +13,10 @@ from enum import Enum
 from typing import Optional, Dict, Any, List
 from urllib.parse import urlparse
 
-from app.connectors.firecrawl import FirecrawlConnector, ProductInfo, get_firecrawl_connector
+from app.connectors.firecrawl import (
+    FirecrawlConnector, ProductInfo, get_firecrawl_connector,
+    ScrapeOptions, ScrapeMode
+)
 
 
 class ErrorType(Enum):
@@ -28,7 +32,7 @@ class ErrorType(Enum):
 
 @dataclass
 class ScrapeConfig:
-    """爬取配置"""
+    """爬取配置（優化版）"""
     # 請求配置
     wait_time_ms: int = 3000
     use_actions: bool = False
@@ -43,6 +47,46 @@ class ScrapeConfig:
 
     # 超時配置
     request_timeout_seconds: float = 30.0
+
+    # 新增：高級選項
+    skip_tls_verification: bool = False
+    mobile: bool = False
+    headers: Optional[Dict[str, str]] = None
+    max_age: Optional[int] = None  # 緩存最大年齡（毫秒）
+
+    def to_scrape_options(self) -> ScrapeOptions:
+        """轉換為 ScrapeOptions"""
+        return ScrapeOptions(
+            wait_for=self.wait_time_ms,
+            timeout=int(self.request_timeout_seconds * 1000),
+            skip_tls_verification=self.skip_tls_verification,
+            mobile=self.mobile,
+            headers=self.headers,
+            max_age=self.max_age,
+        )
+
+    @classmethod
+    def for_hktvmall(cls) -> "ScrapeConfig":
+        """HKTVmall 優化配置"""
+        return cls(
+            wait_time_ms=8000,
+            request_timeout_seconds=60.0,
+            skip_tls_verification=True,
+            use_json_mode=True,
+            max_retries=3,
+        )
+
+    @classmethod
+    def for_google(cls) -> "ScrapeConfig":
+        """Google SERP 配置"""
+        return cls(
+            wait_time_ms=5000,
+            request_timeout_seconds=30.0,
+            use_json_mode=False,
+            headers={
+                "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.8"
+            }
+        )
 
 
 @dataclass
@@ -176,7 +220,7 @@ class ScrapeExecutor:
         config: Optional[ScrapeConfig] = None
     ) -> ScrapeResult:
         """
-        執行爬取（無重試）
+        執行爬取（無重試）（優化版）
 
         Args:
             url: 要爬取的 URL
@@ -188,19 +232,23 @@ class ScrapeExecutor:
         config = config or ScrapeConfig()
         start_time = time.time()
 
+        # 轉換為 ScrapeOptions（正確傳遞 timeout）
+        scrape_options = config.to_scrape_options()
+
         try:
             # 根據配置決定爬取方式
             if config.use_actions and config.actions_config:
                 raw_data = self.connector.scrape_with_actions(
                     url,
                     actions=config.actions_config,
-                    take_screenshot=False
+                    take_screenshot=False,
+                    options=scrape_options  # 傳遞選項
                 )
             else:
                 raw_data = self.connector.scrape_url(
                     url,
                     use_json_mode=config.use_json_mode,
-                    wait_for=config.wait_time_ms
+                    options=scrape_options  # 傳遞選項（包含 timeout）
                 )
 
             # 解析商品信息
@@ -340,7 +388,7 @@ class SmartScrapeExecutor(ScrapeExecutor):
 
     async def smart_execute(self, url: str) -> ScrapeResult:
         """
-        智能爬取
+        智能爬取（優化版）
 
         自動選擇配置並處理失敗重試
         """
@@ -353,21 +401,38 @@ class SmartScrapeExecutor(ScrapeExecutor):
 
         # JSON Mode 失敗，嘗試備用方案
         if result.error_type == ErrorType.PARSE:
-            # 禁用 JSON Mode 重試
+            # 禁用 JSON Mode，使用更長等待時間
             fallback_config = ScrapeConfig(
-                wait_time_ms=config.wait_time_ms,
+                wait_time_ms=config.wait_time_ms + 3000,  # 增加 3 秒
+                request_timeout_seconds=config.request_timeout_seconds + 15,  # 增加 15 秒
                 use_actions=True,
                 actions_config=[
+                    {"type": "wait", "milliseconds": 3000},
+                    {"type": "scroll", "direction": "down", "amount": 500},
                     {"type": "wait", "milliseconds": 2000},
                     {"type": "scroll", "direction": "down", "amount": 500},
                     {"type": "wait", "milliseconds": 1000},
                 ],
                 use_json_mode=False,
                 max_retries=1,
+                skip_tls_verification=config.skip_tls_verification,
             )
             fallback_result = await self.execute_with_retry(url, fallback_config)
             if fallback_result.success:
                 return fallback_result
+
+        # 超時錯誤，嘗試更長超時
+        if result.error_type == ErrorType.TIMEOUT:
+            timeout_config = ScrapeConfig(
+                wait_time_ms=config.wait_time_ms,
+                request_timeout_seconds=90.0,  # 90 秒超時
+                use_json_mode=config.use_json_mode,
+                max_retries=1,
+                skip_tls_verification=True,
+            )
+            timeout_result = await self.execute_with_retry(url, timeout_config)
+            if timeout_result.success:
+                return timeout_result
 
         return result
 

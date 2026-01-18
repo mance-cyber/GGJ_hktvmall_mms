@@ -1,5 +1,5 @@
 # =============================================
-# SEO 排名抓取服務
+# SEO 排名抓取服務（優化版）
 # =============================================
 #
 # 功能：
@@ -7,6 +7,11 @@
 #   - Google SERP 排名抓取
 #   - 排名記錄與分析
 #   - 警報生成
+#
+# 優化：
+#   - 正確傳遞 timeout 到 Firecrawl API
+#   - 使用 ScrapeOptions 統一配置
+#   - 智能延遲避免速率限制
 # =============================================
 
 import re
@@ -25,11 +30,32 @@ from app.models.seo_ranking import (
     KeywordType, RankingSource, AlertSeverity
 )
 from app.models.product import Product
-from app.connectors.firecrawl import FirecrawlConnector
+from app.connectors.firecrawl import FirecrawlConnector, ScrapeOptions
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
+
+
+# =============================================
+# SEO 排名抓取優化配置
+# =============================================
+
+SEO_SCRAPE_CONFIG = {
+    # HKTVmall 搜尋配置
+    "hktvmall": {
+        "wait_for": 8000,
+        "timeout": 60000,
+        "skip_tls_verification": True,
+        "request_delay": 2.0,  # 請求間隔
+    },
+    # Google SERP 配置
+    "google": {
+        "wait_for": 5000,
+        "timeout": 30000,
+        "request_delay": 2.5,  # Google 需要更長間隔
+    }
+}
 
 
 # =============================================
@@ -87,6 +113,14 @@ class HKTVmallSearchScraper:
 
     def __init__(self):
         self.firecrawl = FirecrawlConnector()
+        # 使用優化配置
+        self.config = SEO_SCRAPE_CONFIG["hktvmall"]
+        self.scrape_options = ScrapeOptions(
+            wait_for=self.config["wait_for"],
+            timeout=self.config["timeout"],
+            skip_tls_verification=self.config["skip_tls_verification"],
+            only_main_content=False,  # 搜尋結果頁需要完整內容
+        )
 
     async def scrape_keyword_ranking(
         self,
@@ -152,8 +186,8 @@ class HKTVmallSearchScraper:
                 if page == 1 and "total_results" in page_data:
                     total_results = page_data["total_results"]
 
-                # 延遲避免被封
-                await asyncio.sleep(1.5)
+                # 延遲避免被封（使用配置的間隔）
+                await asyncio.sleep(self.config["request_delay"])
 
             result.total_results = total_results or len(all_products)
 
@@ -193,16 +227,16 @@ class HKTVmallSearchScraper:
 
     async def _scrape_search_page(self, url: str) -> Optional[Dict[str, Any]]:
         """
-        抓取單頁搜尋結果
+        抓取單頁搜尋結果（優化版）
 
         使用 Firecrawl 的 JSON Mode 結構化提取產品列表
         """
         try:
-            # 抓取頁面
+            # 使用優化的 ScrapeOptions 抓取頁面
             raw_data = self.firecrawl.scrape_url(
                 url,
                 use_json_mode=False,
-                wait_for=5000  # HKTVmall 需要更長等待時間
+                options=self.scrape_options  # 傳遞優化配置
             )
 
             if not raw_data:

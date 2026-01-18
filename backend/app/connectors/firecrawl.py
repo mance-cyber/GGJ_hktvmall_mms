@@ -1,18 +1,91 @@
 # =============================================
-# Firecrawl 爬蟲連接器（升級版）
+# Firecrawl 爬蟲連接器（優化版）
 # =============================================
 # 使用 JSON Mode 結構化提取、Map 發現 URL、Actions 處理動態頁面
+# 優化：timeout、skipTlsVerification、headers、mobile、batch 支持
 
 import re
 import logging
-from typing import Optional, Dict, Any, List
+import asyncio
+from typing import Optional, Dict, Any, List, Callable
 from decimal import Decimal, InvalidOperation
 from dataclasses import dataclass, field
 from pydantic import BaseModel
+from enum import Enum
 
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
+
+
+# =============================================
+# 抓取配置
+# =============================================
+
+class ScrapeMode(Enum):
+    """抓取模式"""
+    FAST = "fast"           # 快速模式：較短等待時間
+    STANDARD = "standard"   # 標準模式：平衡速度和成功率
+    THOROUGH = "thorough"   # 徹底模式：較長等待時間，適合 SPA
+
+
+@dataclass
+class ScrapeOptions:
+    """抓取選項（對應 Firecrawl API 參數）"""
+    # 等待配置
+    wait_for: int = 3000                    # 等待時間（毫秒）
+    wait_for_selector: Optional[str] = None  # 等待特定元素出現
+
+    # 超時配置
+    timeout: int = 30000                     # 請求超時（毫秒）
+
+    # TLS 配置
+    skip_tls_verification: bool = False      # 跳過 TLS 驗證
+
+    # 設備模擬
+    mobile: bool = False                     # 模擬手機
+
+    # 請求頭
+    headers: Optional[Dict[str, str]] = None
+
+    # 緩存配置
+    max_age: Optional[int] = None            # 緩存最大年齡（毫秒）
+
+    # 內容配置
+    only_main_content: bool = True           # 只提取主要內容
+    include_tags: Optional[List[str]] = None
+    exclude_tags: Optional[List[str]] = None
+
+    @classmethod
+    def for_hktvmall(cls) -> "ScrapeOptions":
+        """HKTVmall 優化配置"""
+        return cls(
+            wait_for=8000,
+            timeout=60000,
+            skip_tls_verification=True,
+            only_main_content=False,  # HKTVmall 需要完整頁面
+        )
+
+    @classmethod
+    def for_google(cls) -> "ScrapeOptions":
+        """Google SERP 配置"""
+        return cls(
+            wait_for=5000,
+            timeout=30000,
+            headers={
+                "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.8"
+            }
+        )
+
+    @classmethod
+    def for_mode(cls, mode: ScrapeMode) -> "ScrapeOptions":
+        """根據模式創建配置"""
+        if mode == ScrapeMode.FAST:
+            return cls(wait_for=2000, timeout=20000)
+        elif mode == ScrapeMode.THOROUGH:
+            return cls(wait_for=10000, timeout=60000)
+        else:
+            return cls()  # STANDARD
 
 
 # =============================================
@@ -88,18 +161,30 @@ class FirecrawlConnector:
     # 核心抓取方法
     # =============================================
 
-    def scrape_url(self, url: str, use_json_mode: bool = False, wait_for: int = 3000) -> Dict[str, Any]:
+    def scrape_url(
+        self,
+        url: str,
+        use_json_mode: bool = False,
+        options: Optional[ScrapeOptions] = None,
+        wait_for: Optional[int] = None  # 向後兼容
+    ) -> Dict[str, Any]:
         """
-        爬取單個 URL
+        爬取單個 URL（優化版）
 
         Args:
             url: 要爬取的 URL
             use_json_mode: 是否使用 JSON Mode 結構化提取
-            wait_for: 等待頁面載入時間（毫秒）
+            options: 抓取選項（推薦使用）
+            wait_for: 等待頁面載入時間（向後兼容，優先使用 options）
 
         Returns:
             Firecrawl 返回的原始數據（轉換為 dict 格式）
         """
+        # 使用選項或創建默認
+        opts = options or ScrapeOptions()
+        if wait_for is not None:
+            opts.wait_for = wait_for
+
         # SDK v4.x 使用直接參數而非 params dict
         formats = ["markdown", "html"]
 
@@ -114,12 +199,31 @@ class FirecrawlConnector:
                 "html"
             ]
 
-        result = self.app.scrape(
-            url,
-            formats=formats,
-            only_main_content=True,
-            wait_for=wait_for,
-        )
+        # 構建 scrape 參數
+        scrape_kwargs = {
+            "formats": formats,
+            "only_main_content": opts.only_main_content,
+            "wait_for": opts.wait_for,
+            "timeout": opts.timeout,
+        }
+
+        # 可選參數（只有設置時才傳遞）
+        if opts.skip_tls_verification:
+            scrape_kwargs["skip_tls_verification"] = True
+        if opts.mobile:
+            scrape_kwargs["mobile"] = True
+        if opts.headers:
+            scrape_kwargs["headers"] = opts.headers
+        if opts.max_age is not None:
+            scrape_kwargs["max_age"] = opts.max_age
+        if opts.include_tags:
+            scrape_kwargs["include_tags"] = opts.include_tags
+        if opts.exclude_tags:
+            scrape_kwargs["exclude_tags"] = opts.exclude_tags
+
+        logger.debug(f"Scraping URL: {url} with options: timeout={opts.timeout}ms, wait_for={opts.wait_for}ms")
+
+        result = self.app.scrape(url, **scrape_kwargs)
 
         # 將 Document 對象轉換為 dict
         return self._document_to_dict(result)
@@ -128,29 +232,45 @@ class FirecrawlConnector:
         self,
         url: str,
         actions: List[Dict[str, Any]],
-        take_screenshot: bool = False
+        take_screenshot: bool = False,
+        options: Optional[ScrapeOptions] = None
     ) -> Dict[str, Any]:
         """
-        使用 Actions 爬取動態頁面
+        使用 Actions 爬取動態頁面（優化版）
 
         Args:
             url: 要爬取的 URL
             actions: 動作列表（click, scroll, wait 等）
             take_screenshot: 是否截圖
+            options: 抓取選項
 
         Returns:
             Firecrawl 返回的數據
         """
+        opts = options or ScrapeOptions()
+
         action_list = list(actions)
         if take_screenshot:
             action_list.append({"type": "screenshot", "fullPage": True})
 
-        result = self.app.scrape(
-            url,
-            formats=["markdown", "html"],
-            only_main_content=True,
-            actions=action_list,
-        )
+        # 構建參數
+        scrape_kwargs = {
+            "formats": ["markdown", "html"],
+            "only_main_content": opts.only_main_content,
+            "actions": action_list,
+            "timeout": opts.timeout,
+        }
+
+        if opts.skip_tls_verification:
+            scrape_kwargs["skip_tls_verification"] = True
+        if opts.mobile:
+            scrape_kwargs["mobile"] = True
+        if opts.headers:
+            scrape_kwargs["headers"] = opts.headers
+
+        logger.debug(f"Scraping URL with actions: {url}, {len(action_list)} actions")
+
+        result = self.app.scrape(url, **scrape_kwargs)
 
         return self._document_to_dict(result)
 
@@ -641,6 +761,163 @@ class FirecrawlConnector:
             return []
         except Exception:
             return []
+
+    def batch_scrape(
+        self,
+        urls: List[str],
+        options: Optional[ScrapeOptions] = None,
+        use_json_mode: bool = False,
+        on_progress: Optional[Callable[[int, int], None]] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        批量抓取多個 URL（使用 Firecrawl Batch API）
+
+        Args:
+            urls: URL 列表
+            options: 抓取選項
+            use_json_mode: 是否使用 JSON Mode
+            on_progress: 進度回調 (completed, total)
+
+        Returns:
+            抓取結果列表
+        """
+        if not urls:
+            return []
+
+        opts = options or ScrapeOptions()
+
+        # 構建格式
+        formats = ["markdown", "html"]
+        if use_json_mode:
+            formats = [
+                {
+                    "type": "json",
+                    "schema": ProductSchema.model_json_schema(),
+                },
+                "markdown",
+                "html"
+            ]
+
+        logger.info(f"Starting batch scrape of {len(urls)} URLs")
+
+        try:
+            # 使用 Firecrawl batch_scrape API
+            job = self.app.batch_scrape(
+                urls,
+                formats=formats,
+                only_main_content=opts.only_main_content,
+                wait_for=opts.wait_for,
+                timeout=opts.timeout,
+            )
+
+            # 等待完成並收集結果
+            results = []
+            if hasattr(job, 'data') and job.data:
+                for doc in job.data:
+                    results.append(self._document_to_dict(doc))
+
+            logger.info(f"Batch scrape completed: {len(results)}/{len(urls)} successful")
+            return results
+
+        except AttributeError:
+            # SDK 版本不支持 batch_scrape，回退到逐個抓取
+            logger.warning("Firecrawl SDK does not support batch_scrape, falling back to sequential")
+            return self._fallback_batch_scrape(urls, opts, use_json_mode, on_progress)
+
+        except Exception as e:
+            logger.error(f"Batch scrape failed: {e}")
+            return self._fallback_batch_scrape(urls, opts, use_json_mode, on_progress)
+
+    def _fallback_batch_scrape(
+        self,
+        urls: List[str],
+        options: ScrapeOptions,
+        use_json_mode: bool,
+        on_progress: Optional[Callable[[int, int], None]] = None
+    ) -> List[Dict[str, Any]]:
+        """批量抓取的回退實現（逐個抓取）"""
+        import time
+
+        results = []
+        total = len(urls)
+
+        for idx, url in enumerate(urls):
+            try:
+                result = self.scrape_url(url, use_json_mode=use_json_mode, options=options)
+                results.append(result)
+            except Exception as e:
+                logger.warning(f"Failed to scrape {url}: {e}")
+                results.append({"error": str(e), "url": url})
+
+            if on_progress:
+                on_progress(idx + 1, total)
+
+            # 請求間延遲（避免速率限制）
+            if idx < total - 1:
+                time.sleep(1.0)
+
+        return results
+
+    async def batch_scrape_async(
+        self,
+        urls: List[str],
+        options: Optional[ScrapeOptions] = None,
+        use_json_mode: bool = False,
+        max_concurrent: int = 5,
+        on_progress: Optional[Callable[[int, int], None]] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        異步批量抓取（並發執行）
+
+        Args:
+            urls: URL 列表
+            options: 抓取選項
+            use_json_mode: 是否使用 JSON Mode
+            max_concurrent: 最大並發數
+            on_progress: 進度回調
+
+        Returns:
+            抓取結果列表
+        """
+        import asyncio
+        from concurrent.futures import ThreadPoolExecutor
+
+        opts = options or ScrapeOptions()
+        results = [None] * len(urls)
+        completed = 0
+
+        async def scrape_one(idx: int, url: str):
+            nonlocal completed
+            loop = asyncio.get_event_loop()
+            with ThreadPoolExecutor() as executor:
+                try:
+                    result = await loop.run_in_executor(
+                        executor,
+                        lambda: self.scrape_url(url, use_json_mode=use_json_mode, options=opts)
+                    )
+                    results[idx] = result
+                except Exception as e:
+                    logger.warning(f"Failed to scrape {url}: {e}")
+                    results[idx] = {"error": str(e), "url": url}
+
+                completed += 1
+                if on_progress:
+                    on_progress(completed, len(urls))
+
+        # 使用 semaphore 控制並發
+        semaphore = asyncio.Semaphore(max_concurrent)
+
+        async def bounded_scrape(idx: int, url: str):
+            async with semaphore:
+                await scrape_one(idx, url)
+                # 並發請求間的小延遲
+                await asyncio.sleep(0.5)
+
+        # 並發執行
+        tasks = [bounded_scrape(idx, url) for idx, url in enumerate(urls)]
+        await asyncio.gather(*tasks)
+
+        return results
 
 
 # =============================================
