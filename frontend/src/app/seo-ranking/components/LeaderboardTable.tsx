@@ -39,7 +39,7 @@ export function LeaderboardTable({ entries, isLoading, source }: LeaderboardTabl
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="text-left text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800">
+          <tr className="text-left text-xs text-slate-500 uppercase tracking-wider border-b border-slate-200">
             <th className="pb-3 pl-2">#</th>
             <th className="pb-3">關鍵詞</th>
             <th className="pb-3 text-center">類型</th>
@@ -49,22 +49,22 @@ export function LeaderboardTable({ entries, isLoading, source }: LeaderboardTabl
             <th className="pb-3 text-right">差距</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-800/50">
+        <tbody className="divide-y divide-slate-100">
           {entries.map((entry) => (
             <tr
               key={entry.keyword_config_id}
-              className="group hover:bg-cyan-500/5 transition-colors"
+              className="group hover:bg-cyan-50/50 transition-colors"
             >
               {/* 排名位置 */}
               <td className="py-3 pl-2">
-                <span className="text-gray-500 text-sm">{entry.rank}</span>
+                <span className="text-slate-400 text-sm">{entry.rank}</span>
               </td>
 
               {/* 關鍵詞 */}
               <td className="py-3">
                 <Link
                   href={`/seo-ranking/keywords/${entry.keyword_config_id}`}
-                  className="text-white hover:text-cyan-400 transition-colors flex items-center gap-1"
+                  className="text-slate-800 font-medium hover:text-cyan-600 transition-colors flex items-center gap-1"
                 >
                   {entry.keyword}
                   <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-50" />
@@ -83,7 +83,7 @@ export function LeaderboardTable({ entries, isLoading, source }: LeaderboardTabl
                     #{entry.current_rank}
                   </span>
                 ) : (
-                  <span className="text-gray-600">-</span>
+                  <span className="text-slate-400">-</span>
                 )}
               </td>
 
@@ -95,9 +95,9 @@ export function LeaderboardTable({ entries, isLoading, source }: LeaderboardTabl
               {/* 目標排名 */}
               <td className="py-3 text-right">
                 {entry.target_rank ? (
-                  <span className="text-purple-400">#{entry.target_rank}</span>
+                  <span className="text-purple-600 font-medium">#{entry.target_rank}</span>
                 ) : (
-                  <span className="text-gray-600">-</span>
+                  <span className="text-slate-400">-</span>
                 )}
               </td>
 
@@ -106,13 +106,13 @@ export function LeaderboardTable({ entries, isLoading, source }: LeaderboardTabl
                 {entry.target_gap !== null ? (
                   <span
                     className={
-                      entry.target_gap <= 0 ? "text-green-400" : "text-amber-400"
+                      entry.target_gap <= 0 ? "text-emerald-600 font-medium" : "text-amber-600"
                     }
                   >
                     {entry.target_gap <= 0 ? "已達成" : `還差 ${entry.target_gap}`}
                   </span>
                 ) : (
-                  <span className="text-gray-600">-</span>
+                  <span className="text-slate-400">-</span>
                 )}
               </td>
             </tr>
@@ -142,7 +142,7 @@ function KeywordTypeBadge({ type }: { type: string }) {
 function RankChange({ change }: { change: number | null }) {
   if (change === null || change === 0) {
     return (
-      <span className="text-gray-500 flex items-center justify-end gap-1">
+      <span className="text-slate-400 flex items-center justify-end gap-1">
         <Minus className="w-3 h-3" />
         <span>-</span>
       </span>
@@ -151,7 +151,7 @@ function RankChange({ change }: { change: number | null }) {
 
   if (change > 0) {
     return (
-      <span className="text-green-400 flex items-center justify-end gap-1">
+      <span className="text-emerald-600 flex items-center justify-end gap-1">
         <TrendingUp className="w-3 h-3" />
         <span>+{change}</span>
       </span>
@@ -159,7 +159,7 @@ function RankChange({ change }: { change: number | null }) {
   }
 
   return (
-    <span className="text-red-400 flex items-center justify-end gap-1">
+    <span className="text-red-500 flex items-center justify-end gap-1">
       <TrendingDown className="w-3 h-3" />
       <span>{change}</span>
     </span>
@@ -167,8 +167,8 @@ function RankChange({ change }: { change: number | null }) {
 }
 
 function getRankColor(rank: number): string {
-  if (rank <= 3) return "text-green-400 font-bold";
-  if (rank <= 10) return "text-cyan-400";
-  if (rank <= 30) return "text-white";
-  return "text-gray-400";
+  if (rank <= 3) return "text-emerald-600 font-bold";
+  if (rank <= 10) return "text-cyan-600 font-medium";
+  if (rank <= 30) return "text-slate-700";
+  return "text-slate-500";
 }
