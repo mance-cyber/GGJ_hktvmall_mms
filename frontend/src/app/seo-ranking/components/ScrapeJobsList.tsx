@@ -7,8 +7,22 @@
 import { Clock, CheckCircle, XCircle, Loader2, PlayCircle } from "lucide-react";
 import { HoloBadge, ProgressRing } from "@/components/ui/future-tech";
 import { RankingScrapeJob } from "@/lib/api/seo-ranking";
-import { formatDistanceToNow } from "date-fns";
-import { zhTW } from "date-fns/locale";
+
+// 時間格式化工具
+function formatTimeAgo(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+
+  if (diffSec < 60) return "剛剛";
+  if (diffMin < 60) return `${diffMin} 分鐘前`;
+  if (diffHour < 24) return `${diffHour} 小時前`;
+  if (diffDay < 30) return `${diffDay} 天前`;
+  return date.toLocaleDateString("zh-TW");
+}
 
 interface ScrapeJobsListProps {
   jobs: RankingScrapeJob[];
@@ -72,19 +86,10 @@ export function ScrapeJobsList({ jobs }: ScrapeJobsListProps) {
               {/* 時間 */}
               <p className="text-gray-600 text-xs mt-2">
                 {job.completed_at
-                  ? `完成於 ${formatDistanceToNow(new Date(job.completed_at), {
-                      addSuffix: true,
-                      locale: zhTW,
-                    })}`
+                  ? `完成於 ${formatTimeAgo(new Date(job.completed_at))}`
                   : job.started_at
-                  ? `開始於 ${formatDistanceToNow(new Date(job.started_at), {
-                      addSuffix: true,
-                      locale: zhTW,
-                    })}`
-                  : `建立於 ${formatDistanceToNow(new Date(job.created_at), {
-                      addSuffix: true,
-                      locale: zhTW,
-                    })}`}
+                  ? `開始於 ${formatTimeAgo(new Date(job.started_at))}`
+                  : `建立於 ${formatTimeAgo(new Date(job.created_at))}`}
               </p>
             </div>
 

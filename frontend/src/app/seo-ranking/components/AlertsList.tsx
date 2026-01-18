@@ -8,8 +8,22 @@ import { AlertTriangle, AlertCircle, Info, TrendingDown, TrendingUp, Check } fro
 import { HoloBadge } from "@/components/ui/future-tech";
 import { RankingAlert } from "@/lib/api/seo-ranking";
 import { useMarkAlertRead } from "../hooks/useSEORanking";
-import { formatDistanceToNow } from "date-fns";
-import { zhTW } from "date-fns/locale";
+
+// 時間格式化工具
+function formatTimeAgo(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+
+  if (diffSec < 60) return "剛剛";
+  if (diffMin < 60) return `${diffMin} 分鐘前`;
+  if (diffHour < 24) return `${diffHour} 小時前`;
+  if (diffDay < 30) return `${diffDay} 天前`;
+  return date.toLocaleDateString("zh-TW");
+}
 
 interface AlertsListProps {
   alerts: RankingAlert[];
@@ -75,10 +89,7 @@ export function AlertsList({ alerts }: AlertsListProps) {
 
               {/* 時間 */}
               <p className="text-gray-600 text-xs mt-2">
-                {formatDistanceToNow(new Date(alert.created_at), {
-                  addSuffix: true,
-                  locale: zhTW,
-                })}
+                {formatTimeAgo(new Date(alert.created_at))}
               </p>
             </div>
 
