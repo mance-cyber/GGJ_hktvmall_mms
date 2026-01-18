@@ -43,7 +43,7 @@ export function ScrapeJobsList({ jobs }: ScrapeJobsListProps) {
       {jobs.map((job) => (
         <div
           key={job.id}
-          className="p-3 rounded-lg bg-gray-900/50 border border-gray-800 hover:border-gray-700 transition-colors"
+          className="p-3 rounded-lg bg-white border border-slate-200 hover:border-cyan-400 hover:shadow-sm transition-colors"
         >
           <div className="flex items-center gap-3">
             {/* 狀態圖標 */}
@@ -55,19 +55,19 @@ export function ScrapeJobsList({ jobs }: ScrapeJobsListProps) {
             <div className="flex-1 min-w-0">
               {/* 標題行 */}
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-white font-medium text-sm">
+                <span className="text-slate-800 font-medium text-sm">
                   {getJobTypeLabel(job.job_type)}
                 </span>
                 <StatusBadge status={job.status} />
               </div>
 
               {/* 進度信息 */}
-              <div className="flex items-center gap-4 text-xs text-gray-400">
+              <div className="flex items-center gap-4 text-xs text-slate-500">
                 <span>
                   {job.processed_keywords} / {job.total_keywords} 關鍵詞
                 </span>
                 {job.success_rate !== null && (
-                  <span className="text-green-400">
+                  <span className="text-emerald-600">
                     成功率 {job.success_rate}%
                   </span>
                 )}
@@ -78,13 +78,13 @@ export function ScrapeJobsList({ jobs }: ScrapeJobsListProps) {
 
               {/* 錯誤信息 */}
               {job.errors && job.errors.length > 0 && (
-                <p className="text-red-400 text-xs mt-1">
+                <p className="text-red-500 text-xs mt-1">
                   {job.errors.length} 個錯誤
                 </p>
               )}
 
               {/* 時間 */}
-              <p className="text-gray-600 text-xs mt-2">
+              <p className="text-slate-400 text-xs mt-2">
                 {job.completed_at
                   ? `完成於 ${formatTimeAgo(new Date(job.completed_at))}`
                   : job.started_at
@@ -123,15 +123,15 @@ function StatusIcon({
 }) {
   switch (status) {
     case "completed":
-      return <CheckCircle className="w-5 h-5 text-green-500" />;
+      return <CheckCircle className="w-5 h-5 text-emerald-500" />;
     case "failed":
       return <XCircle className="w-5 h-5 text-red-500" />;
     case "running":
-      return <Loader2 className="w-5 h-5 text-cyan-400 animate-spin" />;
+      return <Loader2 className="w-5 h-5 text-cyan-500 animate-spin" />;
     case "pending":
-      return <PlayCircle className="w-5 h-5 text-amber-400" />;
+      return <PlayCircle className="w-5 h-5 text-amber-500" />;
     default:
-      return <Clock className="w-5 h-5 text-gray-500" />;
+      return <Clock className="w-5 h-5 text-slate-400" />;
   }
 }
 
