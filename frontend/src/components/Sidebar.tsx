@@ -166,6 +166,12 @@ const navigationGroups: NavGroup[] = [
         icon: TrendingUp,
         permissions: [PERMISSIONS.PRICES_READ]
       },
+      {
+        name: 'SEO 排名',
+        href: '/seo-ranking',
+        icon: Search,
+        permissions: [PERMISSIONS.COMPETITORS_READ]
+      },
     ]
   },
   {
