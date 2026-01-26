@@ -1,7 +1,7 @@
 // ==================== Clawdbot Hook ====================
 // 用途: 在前端調用 clawdbot 抓取功能
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 
 // ==================== 類型定義 ====================
@@ -68,10 +68,14 @@ export function useClawdbot() {
     queryKey: ['clawdbot', 'health'],
     queryFn: checkClawdbotHealth,
     refetchInterval: 30000, // 每 30 秒檢查一次
-    onSuccess: (data) => {
-      setIsConnected(data.status === 'connected');
-    },
   });
+
+  // React Query v5: 使用 useEffect 響應數據變化
+  useEffect(() => {
+    if (healthStatus) {
+      setIsConnected(healthStatus.status === 'connected');
+    }
+  }, [healthStatus]);
 
   // 抓取單個商品
   const scrapeProductMutation = useMutation({
@@ -109,11 +113,11 @@ export function useClawdbot() {
     scrapeBatch: scrapeBatchMutation.mutateAsync,
     scrapeCustom: scrapeCustomMutation.mutateAsync,
 
-    // Loading 狀態
-    isScrapingProduct: scrapeProductMutation.isLoading,
-    isScrapingSearchRank: scrapeSearchRankMutation.isLoading,
-    isScrapingBatch: scrapeBatchMutation.isLoading,
-    isScrapingCustom: scrapeCustomMutation.isLoading,
+    // Loading 狀態 (React Query v5: isLoading → isPending)
+    isScrapingProduct: scrapeProductMutation.isPending,
+    isScrapingSearchRank: scrapeSearchRankMutation.isPending,
+    isScrapingBatch: scrapeBatchMutation.isPending,
+    isScrapingCustom: scrapeCustomMutation.isPending,
 
     // 錯誤
     productError: scrapeProductMutation.error,
