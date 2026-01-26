@@ -134,7 +134,7 @@ class Settings(BaseSettings):
         alias="CORS_ORIGINS_PRODUCTION"
     )
     cors_origins_development: str = Field(
-        default="http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,http://127.0.0.1:8000",
+        default="http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:8000,http://127.0.0.1:8000",
         alias="CORS_ORIGINS_DEVELOPMENT"
     )
 

@@ -99,3 +99,6 @@ backend/uploads/*
 nul
 backend/nul
 tmpclaude-*
+
+# Clawdbot (external dependency, install via scripts/setup-clawdbot.*)
+clawdbot/
