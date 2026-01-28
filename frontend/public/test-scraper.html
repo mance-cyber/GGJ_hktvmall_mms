@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HKTVmall 抓取测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ccc;
+        }
+
+        .status-dot.connected {
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .badge-blue {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .badge-orange {
+            background: #f97316;
+            color: white;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: background 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            background: #5a67d8;
+        }
+
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result.success {
+            background: #d1fae5;
+            border-left-color: #10b981;
+        }
+
+        .result.error {
+            background: #fee2e2;
+            border-left-color: #ef4444;
+        }
+
+        .result-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .metadata {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        pre {
+            background: #1f2937;
+            color: #f3f4f6;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 标题 -->
+        <div class="card">
+            <h1>🛍️ HKTVmall 商品抓取测试</h1>
+            <p class="subtitle">测试混合爬虫架构的自动切换功能</p>
+        </div>
+
+        <!-- 爬虫状态 -->
+        <div class="card">
+            <h2 style="margin-bottom: 20px;">📊 当前爬虫配置</h2>
+            <div id="status-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>加载配置中...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 测试区域 -->
+        <div class="card">
+            <h2 style="margin-bottom: 20px;">🧪 测试抓取</h2>
+
+            <label for="test-url">测试 URL</label>
+            <input
+                type="text"
+                id="test-url"
+                placeholder="https://www.hktvmall.com/..."
+                value="https://www.hktvmall.com/hktv/zh/main/GoGo-Nihon/s/H8935001"
+            >
+
+            <button id="scrape-btn" onclick="startScrape()">开始抓取</button>
+
+            <div id="result-container"></div>
+        </div>
+    </div>
+
+    <script>
+        let scraperConfig = null;
+
+        // 页面加载时获取配置
+        window.addEventListener('load', async () => {
+            await fetchScraperConfig();
+        });
+
+        // 获取爬虫配置
+        async function fetchScraperConfig() {
+            try {
+                const response = await fetch('/api/v1/scrape');
+                const data = await response.json();
+
+                scraperConfig = data.scraper;
+                displayStatus(data);
+            } catch (error) {
+                document.getElementById('status-container').innerHTML = `
+                    <div class="result error">
+                        <div class="result-title">❌ 无法连接到 API</div>
+                        <p>请确保开发服务器已启动: npm run dev</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 显示状态
+        function displayStatus(data) {
+            const isConnected = data.scraper.status === 'connected';
+            const scraperType = data.scraper.type;
+            const badgeClass = scraperType === 'clawdbot' ? 'badge-blue' : 'badge-orange';
+            const emoji = scraperType === 'clawdbot' ? '🤖' : '🔥';
+
+            document.getElementById('status-container').innerHTML = `
+                <div class="status">
+                    <div class="status-dot ${isConnected ? 'connected' : ''}"></div>
+                    <strong>爬虫类型:</strong>
+                    <span class="badge ${badgeClass}">${emoji} ${scraperType === 'clawdbot' ? 'Clawdbot' : 'Firecrawl'}</span>
+                </div>
+                <div class="status">
+                    <strong>连接状态:</strong>
+                    <span>${isConnected ? '✅ 已连接' : '❌ 未连接'}</span>
+                </div>
+                <div class="status">
+                    <strong>环境:</strong>
+                    <span>${data.environment}</span>
+                </div>
+                <div class="status">
+                    <strong>端点:</strong>
+                    <code style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px;">${data.scraper.endpoint}</code>
+                </div>
+            `;
+        }
+
+        // 开始抓取
+        async function startScrape() {
+            const testUrl = document.getElementById('test-url').value;
+            const btn = document.getElementById('scrape-btn');
+            const resultContainer = document.getElementById('result-container');
+
+            if (!testUrl) {
+                alert('请输入测试 URL');
+                return;
+            }
+
+            // 禁用按钮
+            btn.disabled = true;
+            btn.textContent = '抓取中...';
+
+            // 显示加载状态
+            resultContainer.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>正在抓取，请稍候...</p>
+                </div>
+            `;
+
+            const startTime = Date.now();
+
+            try {
+                const response = await fetch('/api/v1/scrape', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'scrape_product',
+                        params: { url: testUrl }
+                    })
+                });
+
+                const result = await response.json();
+                const duration = Date.now() - startTime;
+
+                if (result.success) {
+                    displaySuccess(result, duration);
+                } else {
+                    displayError(result, duration);
+                }
+            } catch (error) {
+                const duration = Date.now() - startTime;
+                displayError({ error: error.message }, duration);
+            } finally {
+                // 恢复按钮
+                btn.disabled = false;
+                btn.textContent = '开始抓取';
+            }
+        }
+
+        // 显示成功结果
+        function displaySuccess(result, duration) {
+            const metadata = result.metadata || {};
+
+            document.getElementById('result-container').innerHTML = `
+                <div class="result success">
+                    <div class="result-title">✅ 抓取成功</div>
+                    <div class="metadata">
+                        <strong>使用爬虫:</strong> ${metadata.scraper || 'N/A'} |
+                        <strong>耗时:</strong> ${(duration / 1000).toFixed(1)}秒 |
+                        <strong>任务 ID:</strong> ${metadata.taskId || 'N/A'}
+                    </div>
+                    <label>完整 JSON 数据:</label>
+                    <pre>${JSON.stringify(result.data || {}, null, 2)}</pre>
+                </div>
+            `;
+        }
+
+        // 显示错误结果
+        function displayError(result, duration) {
+            document.getElementById('result-container').innerHTML = `
+                <div class="result error">
+                    <div class="result-title">❌ 抓取失败</div>
+                    <div class="metadata">
+                        <strong>耗时:</strong> ${(duration / 1000).toFixed(1)}秒
+                    </div>
+                    <p><strong>错误信息:</strong> ${result.error || '未知错误'}</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
