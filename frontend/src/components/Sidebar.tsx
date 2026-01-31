@@ -28,6 +28,7 @@ import {
   Search,
   Zap,
   Clock,
+  DollarSign,
   LucideIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -136,6 +137,7 @@ const navigationGroups: NavGroup[] = [
     color: categoryColors.blue,
     items: [
       { name: '儀表板', href: '/', icon: LayoutDashboard },
+      { name: '投資回報', href: '/roi', icon: DollarSign, description: 'GoGoJap 幫你賺了多少錢' },
     ]
   },
   {

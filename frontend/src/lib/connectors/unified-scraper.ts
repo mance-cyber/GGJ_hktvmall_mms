@@ -7,7 +7,7 @@ import {
   ScrapeTask,
   ScrapeResult,
 } from './clawdbot-connector';
-import { getScraperConfig, ScraperType } from '../config/scraper.config';
+import { getScraperConfig, ScraperType, getAPIKeySafe } from '../config/scraper.config';
 
 // ==================== 统一任务接口 ====================
 
@@ -191,9 +191,13 @@ export class UnifiedScraper {
       });
     } else {
       console.log('🔥 初始化 Firecrawl 连接器');
+      const apiKey = getAPIKeySafe();
+      if (!apiKey) {
+        throw new Error('FIRECRAWL_API_KEY 環境變量未配置');
+      }
       this.firecrawlConnector = new FirecrawlConnector({
         apiUrl: this.config.endpoint,
-        apiKey: this.config.apiKey!,
+        apiKey: apiKey,
         timeout: this.config.timeout,
         retryAttempts: this.config.retryAttempts,
       });
@@ -376,9 +380,11 @@ export class UnifiedScraper {
         return await this.clawdbotConnector.healthCheck();
       } else if (this.config.type === 'firecrawl' && this.firecrawlConnector) {
         // Firecrawl 健康检查: 尝试获取配额
+        const apiKey = getAPIKeySafe();
+        if (!apiKey) return false;
         const response = await fetch(`${this.config.endpoint}/health`, {
           headers: {
-            Authorization: `Bearer ${this.config.apiKey}`,
+            Authorization: `Bearer ${apiKey}`,
           },
         });
         return response.ok;

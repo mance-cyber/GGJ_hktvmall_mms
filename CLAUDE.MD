@@ -1,3 +1,118 @@
+<!-- OPENSPEC:START -->
+# OpenSpec Instructions
+
+These instructions are for AI assistants working in this project.
+
+Always open `@/openspec/AGENTS.md` when the request:
+- Mentions planning or proposals (words like proposal, spec, change, plan)
+- Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
+- Sounds ambiguous and you need the authoritative spec before coding
+
+Use `@/openspec/AGENTS.md` to learn:
+- How to create and apply change proposals
+- Spec format and conventions
+- Project structure and guidelines
+
+Keep this managed block so 'openspec update' can refresh the instructions.
+
+1. Populate your project context:
+   "Please read openspec/project.md and help me fill it out
+    with details about my project, tech stack, and conventions"
+
+2. Create your first change proposal:
+   "I want to add [YOUR FEATURE HERE]. Please create an
+    OpenSpec change proposal for this feature"
+
+3. Learn the OpenSpec workflow:
+   "Please explain the OpenSpec workflow from openspec/AGENTS.md
+    and how I should work with you on this project"
+
+<!-- OPENSPEC:END -->
+
+---
+
+# GoGoJap - HKTVmall AI 智能運營系統
+
+## 項目概述
+GoGoJap 是一個 AI 驅動的電商運營平台，專為 HKTVmall 賣家設計，提供競品監測、智能定價、AI 文案生成、SEO 優化等功能。
+
+## 技術棧
+
+### 後端
+- **框架**: FastAPI 0.109 (Python 3.11+)
+- **數據庫**: PostgreSQL 14+ (Neon)
+- **ORM**: SQLAlchemy 2.0 + Alembic
+- **任務隊列**: Celery 5.3 + Redis
+- **AI**: Anthropic Claude API
+- **抓取**: Firecrawl + Clawdbot 混合架構
+
+### 前端
+- **框架**: Next.js 14 + React 18
+- **UI**: shadcn/ui + Radix UI + Tailwind CSS
+- **狀態**: TanStack Query 5
+- **圖表**: Recharts
+
+### 部署
+- **前端**: Cloudflare Pages
+- **後端**: Zeabur
+- **存儲**: Cloudflare R2
+
+## 目錄結構
+
+```
+GoGoJap/
+├── backend/                    # FastAPI 後端
+│   ├── app/
+│   │   ├── api/v1/            # API 路由
+│   │   ├── models/            # SQLAlchemy 模型
+│   │   ├── schemas/           # Pydantic Schema
+│   │   ├── services/          # 業務邏輯服務
+│   │   └── config.py          # 配置管理
+│   └── alembic/               # 數據庫遷移
+│
+├── frontend/                   # Next.js 前端
+│   ├── src/
+│   │   ├── app/               # App Router 頁面
+│   │   ├── components/        # React 組件
+│   │   └── lib/               # 工具函數、API 客戶端
+│   └── public/
+│
+├── docs/                       # 文檔中心
+│   ├── technical/             # 技術架構
+│   ├── guides/                # 使用指南
+│   ├── features/              # 功能說明
+│   ├── investor/              # 投資者文檔
+│   └── archive/               # 歷史存檔
+│
+└── openspec/                   # OpenSpec 變更提案
+```
+
+## 核心模塊
+
+| 模塊 | 路徑 | 說明 |
+|-----|------|------|
+| **競品監測** | `api/v1/competitors.py` | Firecrawl 抓取、價格追蹤、異動告警 |
+| **智能定價** | `api/v1/pricing.py` | AI 改價提案、Human-in-the-Loop 審批 |
+| **AI 文案** | `api/v1/content.py` | Claude 生成商品描述 |
+| **SEO 優化** | `api/v1/seo.py` | Ranking 監測、內容優化 |
+| **市場應對** | `api/v1/market_response.py` | MRC 中心、動態定價響應 |
+| **財務分析** | `api/v1/finance.py` | 結算同步、利潤統計 |
+
+## 開發命令
+
+```bash
+# 後端
+cd backend && uvicorn app.main:app --reload
+
+# 前端
+cd frontend && npm run dev
+
+# 數據庫遷移
+cd backend && alembic upgrade head
+```
+
+---
+
 <identity>
 你是世界顶级程序，编码，软件工程师，长期为 Linus Torvalds 级别的工程师服务：
 - 目标用户：Linux 内核级开发者、三十年代码审阅者、开源架构师

@@ -245,7 +245,7 @@ export async function GET() {
         type: config.type,
         status: isHealthy ? 'connected' : 'disconnected',
         endpoint: config.endpoint,
-        hasApiKey: !!config.apiKey,
+        hasApiKey: config.type === 'firecrawl' && !!process.env.FIRECRAWL_API_KEY,
       },
       environment: process.env.NODE_ENV || 'development',
       timestamp: new Date().toISOString(),

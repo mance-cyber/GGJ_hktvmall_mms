@@ -4,6 +4,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
+// 擴展 globalThis 類型以支持 rateLimitCache
+declare global {
+  // eslint-disable-next-line no-var
+  var rateLimitCache: Map<string, { count: number; resetAt: number }> | undefined;
+}
+
 /**
  * API 認證結果
  */
