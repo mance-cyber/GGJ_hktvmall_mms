@@ -21,11 +21,11 @@ interface SourceBadgeProps {
 }
 
 function SourceBadge({ sourceType, conversationId }: SourceBadgeProps) {
-  const config: Record<SourceType, { label: string; icon: React.ReactNode; variant: 'default' | 'secondary' | 'destructive' }> = {
+  const config: Record<SourceType, { label: string; icon: React.ReactNode; variant: 'default' | 'info' | 'warning' }> = {
     manual: {
       label: '手動',
       icon: <User className="w-3 h-3" />,
-      variant: 'secondary',
+      variant: 'info',
     },
     ai_suggestion: {
       label: 'AI 建議',
@@ -35,7 +35,7 @@ function SourceBadge({ sourceType, conversationId }: SourceBadgeProps) {
     auto_alert: {
       label: '自動告警',
       icon: <AlertTriangle className="w-3 h-3" />,
-      variant: 'destructive',
+      variant: 'warning',
     },
   }
 
