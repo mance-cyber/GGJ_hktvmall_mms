@@ -23,6 +23,13 @@ class ProposalType:
     PRICE_UPDATE = "price_update"
     STOCK_UPDATE = "stock_update"
 
+class SourceType:
+    """提案來源類型"""
+    MANUAL = "manual"           # 手動創建
+    AI_SUGGESTION = "ai_suggestion"  # AI 對話建議
+    AUTO_ALERT = "auto_alert"   # 自動告警觸發
+
+
 class PriceProposal(Base):
     """
     AI 改價/庫存提案
@@ -32,22 +39,51 @@ class PriceProposal(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     product_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"))
-    
+
     proposal_type: Mapped[str] = mapped_column(String(50), default=ProposalType.PRICE_UPDATE, comment="price_update, stock_update")
     status: Mapped[str] = mapped_column(String(50), default=ProposalStatus.PENDING, index=True)
-    
+
     current_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2))
     proposed_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2))
     final_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), comment="最終執行價格(可能被人類修改)")
-    
+
     reason: Mapped[Optional[str]] = mapped_column(Text, comment="AI 給出的建議原因")
     ai_model_used: Mapped[Optional[str]] = mapped_column(String(100), comment="生成建議的模型")
-    
+
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
     reviewed_at: Mapped[Optional[datetime]] = mapped_column()
     reviewed_by: Mapped[Optional[str]] = mapped_column(String(100), comment="審批人")
     executed_at: Mapped[Optional[datetime]] = mapped_column()
     error_message: Mapped[Optional[str]] = mapped_column(Text)
+
+    # =============================================
+    # Workflow 擴展欄位
+    # =============================================
+    source_conversation_id: Mapped[Optional[str]] = mapped_column(
+        String(100),
+        nullable=True,
+        index=True,
+        comment="來自邊個 AI 對話"
+    )
+    source_type: Mapped[str] = mapped_column(
+        String(50),
+        default=SourceType.MANUAL,
+        index=True,
+        comment="manual | ai_suggestion | auto_alert"
+    )
+    assigned_to: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        nullable=True,
+        comment="指定審批人"
+    )
+    due_date: Mapped[Optional[datetime]] = mapped_column(
+        nullable=True,
+        comment="審批期限"
+    )
+    reminder_sent: Mapped[bool] = mapped_column(
+        default=False,
+        comment="已發提醒"
+    )
 
     # 關聯
     product: Mapped["Product"] = relationship(back_populates="price_proposals")

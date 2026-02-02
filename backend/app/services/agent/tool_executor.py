@@ -34,6 +34,16 @@ from .tools import (
     NavigationGuideTool,
     AddCompetitorGuideTool,
     AddProductGuideTool,
+    # 工作流工具
+    CreateApprovalTaskTool,
+    GetPendingProposalsTool,
+    SuggestPriceChangeTool,
+    # 排程工具
+    CreateScheduleTool,
+    ListSchedulesTool,
+    PauseScheduleTool,
+    ResumeScheduleTool,
+    DeleteScheduleTool,
 )
 
 
@@ -85,6 +95,18 @@ class ToolExecutor:
         IntentType.ADD_PRODUCT: ["add_product_guide"],
         IntentType.NAVIGATE: ["navigation_guide"],
 
+        # 工作流相關
+        IntentType.CREATE_APPROVAL_TASK: ["suggest_price_change", "create_approval_task"],
+        IntentType.CONFIRM_ACTION: [],  # 特殊處理，不需要工具
+        IntentType.DECLINE_ACTION: [],  # 特殊處理，不需要工具
+
+        # 排程相關
+        IntentType.CREATE_SCHEDULED_REPORT: ["create_schedule"],
+        IntentType.PAUSE_SCHEDULED_REPORT: ["pause_schedule"],
+        IntentType.RESUME_SCHEDULED_REPORT: ["resume_schedule"],
+        IntentType.DELETE_SCHEDULED_REPORT: ["delete_schedule"],
+        IntentType.LIST_SCHEDULES: ["list_schedules"],
+
         # 舊意圖 (保留向後兼容)
         IntentType.FINANCE_ANALYSIS: ["finance_summary", "query_sales"],
         IntentType.ORDER_QUERY: ["order_stats"],
@@ -120,6 +142,16 @@ class ToolExecutor:
             "navigation_guide": NavigationGuideTool(),
             "add_competitor_guide": AddCompetitorGuideTool(),
             "add_product_guide": AddProductGuideTool(),
+            # 工作流工具
+            "create_approval_task": CreateApprovalTaskTool(db),
+            "get_pending_proposals": GetPendingProposalsTool(db),
+            "suggest_price_change": SuggestPriceChangeTool(db),
+            # 排程工具
+            "create_schedule": CreateScheduleTool(db),
+            "list_schedules": ListSchedulesTool(db),
+            "pause_schedule": PauseScheduleTool(db),
+            "resume_schedule": ResumeScheduleTool(db),
+            "delete_schedule": DeleteScheduleTool(db),
         }
     
     def get_execution_plan(

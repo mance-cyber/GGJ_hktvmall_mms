@@ -36,6 +36,36 @@ class ProductDetail:
 
 
 @dataclass
+class ScheduleSlots:
+    """排程槽位"""
+    # 頻率
+    frequency: Optional[str] = None  # daily, weekly, monthly
+    # 執行時間
+    schedule_time: Optional[str] = None  # HH:MM
+    # 執行日 (週幾/月幾號)
+    schedule_day: Optional[int] = None
+    # 報告類型
+    report_type: Optional[str] = None
+    # 產品列表
+    products: List[str] = field(default_factory=list)
+    # 排程名稱
+    name: Optional[str] = None
+    # 交付渠道
+    delivery_channel: Optional[str] = None  # telegram, email
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "frequency": self.frequency,
+            "schedule_time": self.schedule_time,
+            "schedule_day": self.schedule_day,
+            "report_type": self.report_type,
+            "products": self.products,
+            "name": self.name,
+            "delivery_channel": self.delivery_channel,
+        }
+
+
+@dataclass
 class AnalysisSlots:
     """分析查詢的槽位"""
     
@@ -421,30 +451,248 @@ class SlotManager:
     def generate_clarification_message(self, questions: List[Dict]) -> Dict[str, Any]:
         """
         生成澄清問題訊息
-        
+
         Args:
             questions: 澄清問題列表
-        
+
         Returns:
             格式化的訊息
         """
         if not questions:
             return {"message": "", "options": []}
-        
+
         message_parts = ["好！想再確認幾樣嘢：\n"]
         formatted_options = []
-        
+
         for i, q in enumerate(questions, 1):
             message_parts.append(f"\n{i}. {q['question']}")
-            
+
             formatted_options.append({
                 "slot_name": q["slot_name"],
                 "label": q["question"],
                 "type": q.get("question_type", "single"),
                 "options": q.get("options", [])
             })
-        
+
         return {
             "message": "".join(message_parts),
             "options": formatted_options
         }
+
+    # =============================================
+    # 排程槽位提取
+    # =============================================
+
+    def extract_schedule_slots(self, message: str, entities: List[str] = None) -> ScheduleSlots:
+        """
+        從用戶訊息中提取排程槽位
+
+        Args:
+            message: 用戶訊息
+            entities: 已識別的實體
+
+        Returns:
+            提取的排程槽位
+        """
+        slots = ScheduleSlots()
+        message_lower = message.lower()
+
+        # 提取頻率
+        slots.frequency = self._extract_frequency(message_lower)
+
+        # 提取時間
+        slots.schedule_time = self._extract_schedule_time(message_lower)
+
+        # 提取執行日
+        slots.schedule_day = self._extract_schedule_day(message_lower, slots.frequency)
+
+        # 提取報告類型
+        slots.report_type = self._extract_report_type(message_lower)
+
+        # 提取產品
+        slots.products = self._extract_products(message, entities)
+
+        # 提取交付渠道
+        slots.delivery_channel = self._extract_delivery_channel(message_lower)
+
+        # 自動生成名稱
+        if slots.products and slots.frequency:
+            slots.name = self._generate_schedule_name(slots)
+
+        return slots
+
+    def _extract_frequency(self, message: str) -> Optional[str]:
+        """提取排程頻率"""
+        frequency_patterns = {
+            "daily": ["每日", "每天", "daily", "每朝", "每晚"],
+            "weekly": ["每週", "每周", "weekly", "每星期", "每禮拜"],
+            "monthly": ["每月", "每個月", "monthly"],
+        }
+
+        for freq, patterns in frequency_patterns.items():
+            for pattern in patterns:
+                if pattern in message:
+                    return freq
+
+        return None
+
+    def _extract_schedule_time(self, message: str) -> Optional[str]:
+        """提取執行時間"""
+        import re
+
+        # 嘗試匹配 HH:MM 格式
+        time_match = re.search(r'(\d{1,2})[:\s點](\d{2})?', message)
+        if time_match:
+            hour = int(time_match.group(1))
+            minute = int(time_match.group(2)) if time_match.group(2) else 0
+            if 0 <= hour <= 23 and 0 <= minute <= 59:
+                return f"{hour:02d}:{minute:02d}"
+
+        # 時間詞彙映射
+        time_words = {
+            "早上": "09:00",
+            "朝早": "09:00",
+            "上午": "10:00",
+            "中午": "12:00",
+            "下午": "14:00",
+            "傍晚": "18:00",
+            "晚上": "20:00",
+        }
+
+        for word, time in time_words.items():
+            if word in message:
+                return time
+
+        return None
+
+    def _extract_schedule_day(self, message: str, frequency: str = None) -> Optional[int]:
+        """提取執行日期"""
+        import re
+
+        if frequency == "weekly":
+            # 週幾
+            weekday_patterns = {
+                1: ["週一", "周一", "星期一", "禮拜一", "monday"],
+                2: ["週二", "周二", "星期二", "禮拜二", "tuesday"],
+                3: ["週三", "周三", "星期三", "禮拜三", "wednesday"],
+                4: ["週四", "周四", "星期四", "禮拜四", "thursday"],
+                5: ["週五", "周五", "星期五", "禮拜五", "friday"],
+                6: ["週六", "周六", "星期六", "禮拜六", "saturday"],
+                7: ["週日", "周日", "星期日", "禮拜日", "sunday"],
+            }
+
+            for day, patterns in weekday_patterns.items():
+                for pattern in patterns:
+                    if pattern in message:
+                        return day
+
+        elif frequency == "monthly":
+            # 月幾號
+            day_match = re.search(r'(\d{1,2})[號日]', message)
+            if day_match:
+                day = int(day_match.group(1))
+                if 1 <= day <= 31:
+                    return day
+
+        return None
+
+    def _extract_report_type(self, message: str) -> Optional[str]:
+        """提取報告類型"""
+        report_patterns = {
+            "price_analysis": ["價格分析", "價格報告", "price analysis", "價錢"],
+            "competitor_report": ["競品分析", "競品報告", "競爭對手", "competitor"],
+            "sales_summary": ["銷售報告", "銷售摘要", "營收報告", "sales"],
+            "inventory_alert": ["庫存報告", "庫存警報", "inventory"],
+        }
+
+        for report_type, patterns in report_patterns.items():
+            for pattern in patterns:
+                if pattern in message:
+                    return report_type
+
+        return "price_analysis"  # 默認價格分析
+
+    def _extract_delivery_channel(self, message: str) -> Optional[str]:
+        """提取交付渠道"""
+        if any(word in message for word in ["telegram", "tg", "電報"]):
+            return "telegram"
+        if any(word in message for word in ["email", "郵件", "電郵"]):
+            return "email"
+        return "telegram"  # 默認 Telegram
+
+    def _generate_schedule_name(self, slots: ScheduleSlots) -> str:
+        """自動生成排程名稱"""
+        freq_names = {
+            "daily": "每日",
+            "weekly": "每週",
+            "monthly": "每月",
+        }
+
+        freq_name = freq_names.get(slots.frequency, "定時")
+        products_str = "、".join(slots.products[:2])
+        if len(slots.products) > 2:
+            products_str += f" 等 {len(slots.products)} 個產品"
+
+        return f"{freq_name}{products_str}報告"
+
+    def check_schedule_completeness(self, slots: ScheduleSlots) -> SlotCompleteness:
+        """
+        檢查排程槽位完整性
+
+        Args:
+            slots: 當前排程槽位
+
+        Returns:
+            完整性檢查結果
+        """
+        missing = []
+        clarifications = []
+
+        # 檢查頻率
+        if not slots.frequency:
+            missing.append("frequency")
+            clarifications.append({
+                "slot_name": "frequency",
+                "question": "你想幾耐收到報告？",
+                "question_type": "single",
+                "options": [
+                    {"label": "每日", "value": "daily"},
+                    {"label": "每週", "value": "weekly"},
+                    {"label": "每月", "value": "monthly"},
+                ]
+            })
+
+        # 檢查時間
+        if not slots.schedule_time:
+            missing.append("schedule_time")
+            clarifications.append({
+                "slot_name": "schedule_time",
+                "question": "想幾點鐘收到報告？",
+                "question_type": "single",
+                "options": [
+                    {"label": "早上 9 點", "value": "09:00"},
+                    {"label": "中午 12 點", "value": "12:00"},
+                    {"label": "下午 6 點", "value": "18:00"},
+                ]
+            })
+
+        # 檢查產品
+        if not slots.products:
+            missing.append("products")
+            clarifications.append({
+                "slot_name": "products",
+                "question": "你想分析邊啲產品？",
+                "question_type": "text",
+                "options": []
+            })
+
+        confidence = 1.0 - (len(missing) * 0.3)
+        is_complete = len(missing) == 0
+
+        return SlotCompleteness(
+            is_complete=is_complete,
+            missing_slots=missing,
+            ambiguous_slots=[],
+            clarification_needed=clarifications,
+            confidence=max(0, confidence)
+        )

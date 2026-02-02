@@ -6,9 +6,10 @@
 # =============================================
 
 import asyncio
+import json
 import logging
 from datetime import datetime
-from typing import Optional
+from typing import Any, Dict, List, Optional
 from decimal import Decimal
 
 import httpx
@@ -37,6 +38,161 @@ class TelegramNotifier:
             logger.info("Telegram 通知服務未啟用（缺少配置）")
 
     # ==================== 核心發送方法 ====================
+
+    async def send_message_with_buttons(
+        self,
+        text: str,
+        buttons: List[List[Dict[str, str]]],
+        parse_mode: str = "HTML",
+        disable_notification: bool = False,
+        chat_id: Optional[str] = None
+    ) -> dict:
+        """
+        發送帶有 Inline Keyboard 按鈕的消息
+
+        Args:
+            text: 消息內容（支援 HTML 格式）
+            buttons: 按鈕配置，二維列表
+                     每行是一個列表 [{"text": "按鈕文字", "callback_data": "callback_id"}]
+            parse_mode: 解析模式 (HTML / Markdown)
+            disable_notification: 是否靜音發送
+            chat_id: 指定聊天 ID（覆蓋默認值）
+
+        Returns:
+            Telegram API 響應
+        """
+        if not self.enabled:
+            logger.warning("Telegram 未啟用，消息未發送")
+            return {"ok": False, "error": "Telegram 未啟用"}
+
+        target_chat = chat_id or self.chat_id
+        url = f"{self.api_url}/sendMessage"
+
+        # 構建 Inline Keyboard
+        inline_keyboard = []
+        for row in buttons:
+            keyboard_row = []
+            for btn in row:
+                keyboard_row.append({
+                    "text": btn.get("text", ""),
+                    "callback_data": btn.get("callback_data", "")
+                })
+            inline_keyboard.append(keyboard_row)
+
+        payload = {
+            "chat_id": target_chat,
+            "text": text,
+            "parse_mode": parse_mode,
+            "disable_notification": disable_notification,
+            "reply_markup": {
+                "inline_keyboard": inline_keyboard
+            }
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(url, json=payload)
+                result = response.json()
+
+                if not result.get("ok"):
+                    logger.error(f"Telegram 發送失敗: {result}")
+                else:
+                    logger.info(f"Telegram 消息（帶按鈕）已發送至 {target_chat}")
+
+                return result
+
+        except httpx.TimeoutException:
+            logger.error("Telegram API 請求超時")
+            return {"ok": False, "error": "請求超時"}
+        except Exception as e:
+            logger.error(f"Telegram 發送異常: {e}")
+            return {"ok": False, "error": str(e)}
+
+    async def answer_callback_query(
+        self,
+        callback_query_id: str,
+        text: Optional[str] = None,
+        show_alert: bool = False
+    ) -> dict:
+        """
+        回應 Callback Query（按鈕點擊）
+
+        Args:
+            callback_query_id: Callback Query ID
+            text: 顯示給用戶的提示文字
+            show_alert: 是否以彈窗形式顯示
+
+        Returns:
+            Telegram API 響應
+        """
+        if not self.enabled:
+            return {"ok": False, "error": "Telegram 未啟用"}
+
+        url = f"{self.api_url}/answerCallbackQuery"
+
+        payload = {
+            "callback_query_id": callback_query_id,
+            "show_alert": show_alert
+        }
+        if text:
+            payload["text"] = text
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(url, json=payload)
+                return response.json()
+        except Exception as e:
+            logger.error(f"Telegram 回應 Callback 失敗: {e}")
+            return {"ok": False, "error": str(e)}
+
+    async def edit_message_reply_markup(
+        self,
+        chat_id: str,
+        message_id: int,
+        buttons: Optional[List[List[Dict[str, str]]]] = None
+    ) -> dict:
+        """
+        編輯消息的按鈕（用於禁用已點擊的按鈕）
+
+        Args:
+            chat_id: 聊天 ID
+            message_id: 消息 ID
+            buttons: 新的按鈕配置（None 則移除所有按鈕）
+
+        Returns:
+            Telegram API 響應
+        """
+        if not self.enabled:
+            return {"ok": False, "error": "Telegram 未啟用"}
+
+        url = f"{self.api_url}/editMessageReplyMarkup"
+
+        payload = {
+            "chat_id": chat_id,
+            "message_id": message_id
+        }
+
+        if buttons:
+            inline_keyboard = []
+            for row in buttons:
+                keyboard_row = []
+                for btn in row:
+                    keyboard_row.append({
+                        "text": btn.get("text", ""),
+                        "callback_data": btn.get("callback_data", "")
+                    })
+                inline_keyboard.append(keyboard_row)
+            payload["reply_markup"] = {"inline_keyboard": inline_keyboard}
+        else:
+            payload["reply_markup"] = {"inline_keyboard": []}
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(url, json=payload)
+                return response.json()
+        except Exception as e:
+            logger.error(f"Telegram 編輯按鈕失敗: {e}")
+            return {"ok": False, "error": str(e)}
 
     async def send_message(
         self,
@@ -327,6 +483,227 @@ class TelegramNotifier:
 📈 <b>價格上升</b>: {price_increases}
 """
         return await self.send_message(message.strip())
+
+    async def send_alert_notification(
+        self,
+        alert_data: Dict[str, Any],
+        analysis: Optional[Dict[str, Any]] = None,
+        proposal: Optional[Dict[str, Any]] = None,
+        include_action_buttons: bool = True,
+        chat_id: Optional[str] = None
+    ) -> dict:
+        """
+        發送價格告警通知（帶 AI 分析和操作按鈕）
+
+        Args:
+            alert_data: 告警數據 {
+                product_id, product_name, old_price, new_price,
+                change_percent, alert_type, competitor_id
+            }
+            analysis: AI 分析結果 (optional)
+            proposal: 已創建的改價提案 (optional)
+            include_action_buttons: 是否包含操作按鈕
+            chat_id: 指定聊天 ID（覆蓋默認值）
+
+        Returns:
+            Telegram API 響應
+        """
+        product_name = alert_data.get("product_name", "未知產品")
+        old_price = alert_data.get("old_price", 0)
+        new_price = alert_data.get("new_price", 0)
+        change_percent = alert_data.get("change_percent", 0)
+        product_id = alert_data.get("product_id", "")
+
+        # 確定方向和圖標
+        if change_percent < 0:
+            direction = "📉 降價"
+            change_display = f"-{abs(change_percent):.1f}%"
+        else:
+            direction = "📈 漲價"
+            change_display = f"+{change_percent:.1f}%"
+
+        # 構建基本消息
+        message_parts = [
+            f"<b>⚠️ 價格告警: {direction}</b>",
+            "",
+            f"🏷 <b>產品</b>: {self._escape_html(product_name[:50])}",
+            f"💰 <b>原價</b>: HK${float(old_price):.2f}",
+            f"💵 <b>現價</b>: HK${float(new_price):.2f}",
+            f"📊 <b>變動</b>: {change_display}",
+        ]
+
+        # 添加 AI 分析結果
+        if analysis:
+            message_parts.append("")
+            message_parts.append("<b>🤖 AI 分析</b>")
+            impact = analysis.get("impact_assessment", "")
+            if impact:
+                message_parts.append(f"• {self._escape_html(impact)}")
+            recommendations = analysis.get("recommendations", [])
+            if recommendations:
+                message_parts.append(f"• {self._escape_html(recommendations[0])}")
+
+        # 添加提案信息
+        if proposal:
+            message_parts.append("")
+            message_parts.append("<b>📋 改價提案已創建</b>")
+            proposed_price = proposal.get("proposed_price")
+            if proposed_price:
+                message_parts.append(f"• 建議價格: HK${proposed_price:.2f}")
+            proposal_id = proposal.get("id")
+            if proposal_id:
+                message_parts.append(f"• 提案編號: {proposal_id[:8]}...")
+
+        message_parts.append("")
+        message_parts.append(f"🕐 {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+
+        message = "\n".join(message_parts)
+
+        # 決定是否發送帶按鈕的消息
+        if include_action_buttons and not proposal:
+            # 只有在沒有自動創建提案時才顯示創建按鈕
+            buttons = [
+                [
+                    {
+                        "text": "📝 創建改價任務",
+                        "callback_data": f"create_proposal:{product_id}"
+                    },
+                    {
+                        "text": "🔍 查看詳情",
+                        "callback_data": f"view_alert:{product_id}"
+                    }
+                ],
+                [
+                    {
+                        "text": "⏸ 暫時忽略",
+                        "callback_data": f"ignore_alert:{product_id}"
+                    }
+                ]
+            ]
+            return await self.send_message_with_buttons(
+                text=message,
+                buttons=buttons,
+                chat_id=chat_id
+            )
+        elif include_action_buttons and proposal:
+            # 有提案時顯示不同按鈕
+            buttons = [
+                [
+                    {
+                        "text": "✅ 批准提案",
+                        "callback_data": f"approve_proposal:{proposal.get('id', '')}"
+                    },
+                    {
+                        "text": "❌ 拒絕提案",
+                        "callback_data": f"reject_proposal:{proposal.get('id', '')}"
+                    }
+                ],
+                [
+                    {
+                        "text": "🔍 查看詳情",
+                        "callback_data": f"view_proposal:{proposal.get('id', '')}"
+                    }
+                ]
+            ]
+            return await self.send_message_with_buttons(
+                text=message,
+                buttons=buttons,
+                chat_id=chat_id
+            )
+        else:
+            return await self.send_message(
+                text=message,
+                chat_id=chat_id
+            )
+
+    async def send_scheduled_report(
+        self,
+        schedule_name: str,
+        report_type: str,
+        report_content: str,
+        chat_id: Optional[str] = None
+    ) -> dict:
+        """
+        發送排程報告
+
+        Args:
+            schedule_name: 排程名稱
+            report_type: 報告類型
+            report_content: 報告內容（Markdown 格式）
+            chat_id: 指定聊天 ID（覆蓋默認值）
+
+        Returns:
+            Telegram API 響應
+        """
+        now = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+        # 報告類型圖標
+        type_icons = {
+            "price_analysis": "📊",
+            "competitor_report": "⚔️",
+            "sales_summary": "💰",
+            "inventory_alert": "📦",
+            "custom": "📋",
+        }
+        icon = type_icons.get(report_type, "📋")
+
+        # 構建消息頭
+        header = f"""<b>{icon} 排程報告: {self._escape_html(schedule_name)}</b>
+
+<i>自動生成於 {now}</i>
+
+---
+
+"""
+        # 將 Markdown 內容轉為簡單 HTML（基本轉換）
+        content = self._markdown_to_html(report_content)
+
+        # 截取長度（Telegram 限制約 4096 字符）
+        max_length = 3800 - len(header)
+        if len(content) > max_length:
+            content = content[:max_length] + "\n\n<i>... (內容過長，已截取)</i>"
+
+        full_message = header + content
+
+        return await self.send_message(
+            text=full_message,
+            parse_mode="HTML",
+            chat_id=chat_id
+        )
+
+    def _markdown_to_html(self, text: str) -> str:
+        """
+        簡單的 Markdown 轉 HTML
+
+        支援：
+        - # 標題 -> <b>標題</b>
+        - **粗體** -> <b>粗體</b>
+        - *斜體* -> <i>斜體</i>
+        - - 列表項 -> • 列表項
+        """
+        import re
+
+        # 先轉義 HTML 特殊字符
+        text = self._escape_html(text)
+
+        # 標題轉換 (# ## ###)
+        text = re.sub(r'^###\s+(.+)$', r'<b>\1</b>', text, flags=re.MULTILINE)
+        text = re.sub(r'^##\s+(.+)$', r'<b>\1</b>', text, flags=re.MULTILINE)
+        text = re.sub(r'^#\s+(.+)$', r'<b>\1</b>', text, flags=re.MULTILINE)
+
+        # 粗體轉換 **text** -> <b>text</b>
+        text = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
+
+        # 斜體轉換 *text* -> <i>text</i> (注意避免與粗體衝突)
+        text = re.sub(r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)', r'<i>\1</i>', text)
+
+        # 列表項轉換
+        text = re.sub(r'^-\s+', '• ', text, flags=re.MULTILINE)
+
+        # 刪除水平線 ---
+        text = re.sub(r'^---+$', '', text, flags=re.MULTILINE)
+
+        return text.strip()
 
     # ==================== 輔助方法 ====================
 

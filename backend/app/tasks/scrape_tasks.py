@@ -100,7 +100,7 @@ def scrape_competitor(self, competitor_id: str):
                         # 檢查是否需要創建警報
                         if last_snapshot and info.price:
                             await _check_price_alert(
-                                db, product.id, last_snapshot, info, settings.price_alert_threshold
+                                db, product, last_snapshot, info, settings.price_alert_threshold
                             )
 
                         log.products_scraped += 1
@@ -134,8 +134,17 @@ def scrape_competitor(self, competitor_id: str):
     return run_async(_scrape())
 
 
-async def _check_price_alert(db, product_id, last_snapshot, info, threshold):
-    """檢查並創建價格警報"""
+async def _check_price_alert(db, product, last_snapshot, info, threshold):
+    """
+    檢查並創建價格警報
+
+    Args:
+        db: 數據庫 session
+        product: CompetitorProduct 對象
+        last_snapshot: 上一次價格快照
+        info: 當前爬取的產品資訊
+        threshold: 價格變動閾值 (百分比)
+    """
     from app.models.competitor import PriceAlert
     from decimal import Decimal
 
@@ -151,7 +160,7 @@ async def _check_price_alert(db, product_id, last_snapshot, info, threshold):
         if abs(change_percent) >= threshold:
             alert_type = "price_drop" if change_percent < 0 else "price_increase"
             alert = PriceAlert(
-                competitor_product_id=product_id,
+                competitor_product_id=product.id,
                 alert_type=alert_type,
                 old_value=str(old_price),
                 new_value=str(new_price),
@@ -159,11 +168,30 @@ async def _check_price_alert(db, product_id, last_snapshot, info, threshold):
             )
             db.add(alert)
 
+            # =============================================
+            # 觸發告警工作流
+            # =============================================
+            from app.tasks.workflow_tasks import execute_alert_workflow
+
+            alert_data = {
+                "product_id": str(product.id),
+                "product_name": product.name or info.name or "未知產品",
+                "old_price": float(old_price),
+                "new_price": float(new_price),
+                "change_percent": round(change_percent, 2),
+                "category_id": str(product.category_id) if hasattr(product, 'category_id') and product.category_id else None,
+                "alert_type": alert_type,
+                "competitor_id": str(product.competitor_id) if product.competitor_id else None,
+            }
+
+            # 異步觸發告警工作流（不阻塞爬取流程）
+            execute_alert_workflow.delay(alert_data)
+
     # 庫存狀態變動檢查
     if old_stock and new_stock and old_stock != new_stock:
         if old_stock == "in_stock" and new_stock == "out_of_stock":
             alert = PriceAlert(
-                competitor_product_id=product_id,
+                competitor_product_id=product.id,
                 alert_type="out_of_stock",
                 old_value=old_stock,
                 new_value=new_stock,
@@ -171,7 +199,7 @@ async def _check_price_alert(db, product_id, last_snapshot, info, threshold):
             db.add(alert)
         elif old_stock == "out_of_stock" and new_stock == "in_stock":
             alert = PriceAlert(
-                competitor_product_id=product_id,
+                competitor_product_id=product.id,
                 alert_type="back_in_stock",
                 old_value=old_stock,
                 new_value=new_stock,

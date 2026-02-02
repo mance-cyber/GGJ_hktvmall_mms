@@ -56,6 +56,18 @@ class IntentType(Enum):
     ORDER_QUERY = "order_query"
     INVENTORY_QUERY = "inventory_query"
 
+    # 工作流類 - 審批相關
+    CREATE_APPROVAL_TASK = "create_approval_task"  # 創建改價審批任務
+    CONFIRM_ACTION = "confirm_action"              # 確認執行動作
+    DECLINE_ACTION = "decline_action"              # 拒絕執行動作
+
+    # 工作流類 - 排程相關
+    CREATE_SCHEDULED_REPORT = "create_scheduled_report"  # 創建排程報告
+    PAUSE_SCHEDULED_REPORT = "pause_scheduled_report"    # 暫停排程
+    RESUME_SCHEDULED_REPORT = "resume_scheduled_report"  # 恢復排程
+    DELETE_SCHEDULED_REPORT = "delete_scheduled_report"  # 刪除排程
+    LIST_SCHEDULES = "list_schedules"                    # 列出排程
+
     # 對話類
     CLARIFICATION = "clarification"
     FOLLOWUP = "followup"
@@ -170,6 +182,44 @@ class IntentClassifier:
             "how to", "點樣", "點開", "navigate", "go to",
             "打開", "開啟", "進入", "跳轉"
         ],
+        # 工作流審批相關
+        IntentType.CREATE_APPROVAL_TASK: [
+            "創建審批", "創建改價", "幫我創建", "開個任務", "開審批",
+            "create approval", "create task", "改價任務", "提交審批",
+            "開改價", "建議改價", "改呢個價", "幫我改價",
+            "申請改價", "提交改價", "想改價", "要改價"
+        ],
+        IntentType.CONFIRM_ACTION: [
+            "好", "係", "確認", "confirm", "yes", "ok", "得",
+            "冇問題", "同意", "批准", "proceed", "執行", "做啦"
+        ],
+        IntentType.DECLINE_ACTION: [
+            "唔好", "唔係", "取消", "cancel", "no", "算", "唔要",
+            "唔同意", "拒絕", "reject", "decline", "算啦", "唔做"
+        ],
+        # 排程報告相關
+        IntentType.CREATE_SCHEDULED_REPORT: [
+            "排程", "定時", "schedule", "每日", "每週", "每月",
+            "daily", "weekly", "monthly", "自動發送", "定期報告",
+            "創建排程", "設定排程", "新增排程", "建立排程",
+            "每日報告", "每週報告", "每月報告", "自動報告"
+        ],
+        IntentType.PAUSE_SCHEDULED_REPORT: [
+            "暫停排程", "停止排程", "pause schedule", "stop schedule",
+            "暫停報告", "停止報告", "暫停自動", "停止自動"
+        ],
+        IntentType.RESUME_SCHEDULED_REPORT: [
+            "恢復排程", "繼續排程", "resume schedule", "restart schedule",
+            "重啟排程", "恢復報告", "繼續報告"
+        ],
+        IntentType.DELETE_SCHEDULED_REPORT: [
+            "刪除排程", "移除排程", "delete schedule", "remove schedule",
+            "取消排程", "刪除報告排程"
+        ],
+        IntentType.LIST_SCHEDULES: [
+            "我的排程", "查看排程", "排程列表", "list schedules",
+            "有咩排程", "有邊啲排程", "顯示排程", "所有排程"
+        ],
         # 舊意圖 (保留向後兼容)
         IntentType.FINANCE_ANALYSIS: [
             "利潤分析", "財務分析", "sales analysis"
@@ -215,6 +265,14 @@ class IntentClassifier:
 - ADD_PRODUCT: 新增產品/監控項目（例：「加入新產品」「想監控呢個商品」「新增貨品」）
 - NAVIGATE: 導航到特定功能（例：「點去加競爭對手？」「喺邊度可以新增產品？」「how to add competitor」）
 - INVENTORY_QUERY: 庫存查詢（例：「邊啲貨就快賣曬？」）
+- CREATE_APPROVAL_TASK: 創建改價審批任務（例：「幫我創建改價任務」「申請改呢個價」「建議改價到 $99」）
+- CONFIRM_ACTION: 確認執行動作（例：「好」「確認」「係」「執行」）
+- DECLINE_ACTION: 拒絕執行動作（例：「唔好」「取消」「算啦」）
+- CREATE_SCHEDULED_REPORT: 創建排程報告（例：「每日早上 9 點發送和牛價格報告」「設定每週競品分析」）
+- PAUSE_SCHEDULED_REPORT: 暫停排程報告（例：「暫停呢個排程」「停止自動報告」）
+- RESUME_SCHEDULED_REPORT: 恢復排程報告（例：「恢復排程」「繼續自動報告」）
+- DELETE_SCHEDULED_REPORT: 刪除排程報告（例：「刪除呢個排程」「移除自動報告」）
+- LIST_SCHEDULES: 列出排程（例：「我有咩排程？」「顯示所有排程」）
 - CLARIFICATION: 用戶回答澄清問題（例：「全部部位」「淨係睇刺身」）
 - FOLLOWUP: 追問（例：「仲有呢？」「詳細啲？」）
 - GREETING: 問候（例：「你好」）

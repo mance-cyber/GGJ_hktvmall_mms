@@ -2,12 +2,16 @@
 # Telegram 通知管理 API
 # =============================================
 
-from typing import Optional
-from fastapi import APIRouter, HTTPException
+from typing import Any, Dict, List, Optional
+from uuid import UUID
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 
 from app.config import get_settings
+from app.models.database import get_db
 from app.services.telegram import get_telegram_notifier, TelegramNotifier
 
 logger = logging.getLogger(__name__)
@@ -250,6 +254,460 @@ async def send_test_price_change_notification():
     }
 
 
+# =============================================
+# Telegram Webhook 處理
+# =============================================
+
+class TelegramWebhookUpdate(BaseModel):
+    """Telegram Webhook Update 結構"""
+    update_id: int
+    callback_query: Optional[Dict[str, Any]] = None
+    message: Optional[Dict[str, Any]] = None
+
+
+class CallbackResponse(BaseModel):
+    """Callback 處理響應"""
+    success: bool
+    action: str
+    message: str
+    data: Optional[Dict[str, Any]] = None
+
+
+@router.post("/webhook", include_in_schema=False)
+async def telegram_webhook(
+    update: TelegramWebhookUpdate,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Telegram Webhook 端點
+
+    處理來自 Telegram 的 Webhook 更新，包括 Callback Query（按鈕點擊）
+    """
+    notifier = get_telegram_notifier()
+
+    # 處理 Callback Query（按鈕點擊）
+    if update.callback_query:
+        callback = update.callback_query
+        callback_id = callback.get("id")
+        callback_data = callback.get("data", "")
+        chat_id = str(callback.get("message", {}).get("chat", {}).get("id", ""))
+        message_id = callback.get("message", {}).get("message_id")
+
+        # 解析 callback_data
+        try:
+            result = await _handle_callback(
+                db=db,
+                notifier=notifier,
+                callback_data=callback_data,
+                chat_id=chat_id,
+                message_id=message_id,
+            )
+
+            # 回應 Callback Query
+            await notifier.answer_callback_query(
+                callback_query_id=callback_id,
+                text=result.get("toast_message", "操作已處理"),
+                show_alert=result.get("show_alert", False)
+            )
+
+            return {"ok": True, "result": result}
+
+        except Exception as e:
+            logger.error(f"處理 Callback 失敗: {e}")
+            await notifier.answer_callback_query(
+                callback_query_id=callback_id,
+                text=f"處理失敗: {str(e)[:50]}",
+                show_alert=True
+            )
+            return {"ok": False, "error": str(e)}
+
+    return {"ok": True}
+
+
+async def _handle_callback(
+    db: AsyncSession,
+    notifier: TelegramNotifier,
+    callback_data: str,
+    chat_id: str,
+    message_id: int,
+) -> Dict[str, Any]:
+    """
+    處理 Callback Query
+
+    支持的回調：
+    - create_proposal:{product_id} - 創建改價提案
+    - approve_proposal:{proposal_id} - 批准提案
+    - reject_proposal:{proposal_id} - 拒絕提案
+    - view_alert:{product_id} - 查看告警詳情
+    - view_proposal:{proposal_id} - 查看提案詳情
+    - ignore_alert:{product_id} - 忽略告警
+    """
+    parts = callback_data.split(":", 1)
+    action = parts[0]
+    entity_id = parts[1] if len(parts) > 1 else ""
+
+    if action == "create_proposal":
+        return await _handle_create_proposal(db, notifier, entity_id, chat_id, message_id)
+    elif action == "approve_proposal":
+        return await _handle_approve_proposal(db, notifier, entity_id, chat_id, message_id)
+    elif action == "reject_proposal":
+        return await _handle_reject_proposal(db, notifier, entity_id, chat_id, message_id)
+    elif action == "view_alert":
+        return await _handle_view_alert(db, notifier, entity_id, chat_id)
+    elif action == "view_proposal":
+        return await _handle_view_proposal(db, notifier, entity_id, chat_id)
+    elif action == "ignore_alert":
+        return await _handle_ignore_alert(db, notifier, entity_id, chat_id, message_id)
+    else:
+        return {
+            "action": "unknown",
+            "toast_message": "未知操作",
+            "show_alert": True
+        }
+
+
+async def _handle_create_proposal(
+    db: AsyncSession,
+    notifier: TelegramNotifier,
+    product_id: str,
+    chat_id: str,
+    message_id: int,
+) -> Dict[str, Any]:
+    """處理創建改價提案按鈕"""
+    from app.models.pricing import PriceProposal, SourceType, ProposalStatus
+    from app.models.competitor import CompetitorProduct, PriceSnapshot
+    from sqlalchemy import select
+    from decimal import Decimal
+
+    try:
+        # 獲取產品最新價格信息
+        product = await db.get(CompetitorProduct, UUID(product_id))
+        if not product:
+            return {
+                "action": "create_proposal",
+                "toast_message": "找不到產品",
+                "show_alert": True
+            }
+
+        # 獲取最新快照
+        snapshot_result = await db.execute(
+            select(PriceSnapshot)
+            .where(PriceSnapshot.competitor_product_id == UUID(product_id))
+            .order_by(PriceSnapshot.scraped_at.desc())
+            .limit(1)
+        )
+        snapshot = snapshot_result.scalar_one_or_none()
+
+        current_price = snapshot.price if snapshot else None
+
+        # 創建提案
+        proposal = PriceProposal(
+            product_id=None,  # 競品產品，暫無關聯本地產品
+            current_price=current_price,
+            proposed_price=current_price,  # 初始設為當前價格，待用戶調整
+            reason=f"根據競品價格變動創建（來源：Telegram 快捷操作）\n競品產品：{product.name}",
+            source_type=SourceType.TELEGRAM,
+            status=ProposalStatus.PENDING,
+        )
+
+        db.add(proposal)
+        await db.commit()
+        await db.refresh(proposal)
+
+        # 更新消息按鈕（移除創建按鈕，添加提案操作按鈕）
+        new_buttons = [
+            [
+                {
+                    "text": "✅ 批准提案",
+                    "callback_data": f"approve_proposal:{proposal.id}"
+                },
+                {
+                    "text": "❌ 拒絕提案",
+                    "callback_data": f"reject_proposal:{proposal.id}"
+                }
+            ],
+            [
+                {
+                    "text": "🔍 查看詳情",
+                    "callback_data": f"view_proposal:{proposal.id}"
+                }
+            ]
+        ]
+
+        await notifier.edit_message_reply_markup(chat_id, message_id, new_buttons)
+
+        return {
+            "action": "create_proposal",
+            "proposal_id": str(proposal.id),
+            "toast_message": "✅ 改價提案已創建",
+            "show_alert": False
+        }
+
+    except Exception as e:
+        logger.error(f"創建提案失敗: {e}")
+        return {
+            "action": "create_proposal",
+            "toast_message": f"創建失敗: {str(e)[:30]}",
+            "show_alert": True
+        }
+
+
+async def _handle_approve_proposal(
+    db: AsyncSession,
+    notifier: TelegramNotifier,
+    proposal_id: str,
+    chat_id: str,
+    message_id: int,
+) -> Dict[str, Any]:
+    """處理批准提案按鈕"""
+    from app.models.pricing import PriceProposal, ProposalStatus
+    from datetime import datetime
+
+    try:
+        proposal = await db.get(PriceProposal, UUID(proposal_id))
+        if not proposal:
+            return {
+                "action": "approve_proposal",
+                "toast_message": "找不到提案",
+                "show_alert": True
+            }
+
+        if proposal.status != ProposalStatus.PENDING.value:
+            return {
+                "action": "approve_proposal",
+                "toast_message": f"提案已處理 ({proposal.status})",
+                "show_alert": True
+            }
+
+        # 批准提案
+        proposal.status = ProposalStatus.APPROVED.value
+        proposal.approved_at = datetime.utcnow()
+        proposal.approved_by_source = "telegram"
+
+        await db.commit()
+
+        # 移除按鈕
+        await notifier.edit_message_reply_markup(chat_id, message_id, None)
+
+        # 發送確認消息
+        await notifier.send_message(
+            text=f"✅ <b>提案已批准</b>\n\n提案編號: {proposal_id[:8]}...\n\n下一步：請在系統中執行改價操作",
+            chat_id=chat_id
+        )
+
+        return {
+            "action": "approve_proposal",
+            "toast_message": "✅ 提案已批准",
+            "show_alert": False
+        }
+
+    except Exception as e:
+        logger.error(f"批准提案失敗: {e}")
+        return {
+            "action": "approve_proposal",
+            "toast_message": f"操作失敗: {str(e)[:30]}",
+            "show_alert": True
+        }
+
+
+async def _handle_reject_proposal(
+    db: AsyncSession,
+    notifier: TelegramNotifier,
+    proposal_id: str,
+    chat_id: str,
+    message_id: int,
+) -> Dict[str, Any]:
+    """處理拒絕提案按鈕"""
+    from app.models.pricing import PriceProposal, ProposalStatus
+    from datetime import datetime
+
+    try:
+        proposal = await db.get(PriceProposal, UUID(proposal_id))
+        if not proposal:
+            return {
+                "action": "reject_proposal",
+                "toast_message": "找不到提案",
+                "show_alert": True
+            }
+
+        if proposal.status != ProposalStatus.PENDING.value:
+            return {
+                "action": "reject_proposal",
+                "toast_message": f"提案已處理 ({proposal.status})",
+                "show_alert": True
+            }
+
+        # 拒絕提案
+        proposal.status = ProposalStatus.REJECTED.value
+        proposal.rejected_at = datetime.utcnow()
+        proposal.rejected_by_source = "telegram"
+
+        await db.commit()
+
+        # 移除按鈕
+        await notifier.edit_message_reply_markup(chat_id, message_id, None)
+
+        return {
+            "action": "reject_proposal",
+            "toast_message": "❌ 提案已拒絕",
+            "show_alert": False
+        }
+
+    except Exception as e:
+        logger.error(f"拒絕提案失敗: {e}")
+        return {
+            "action": "reject_proposal",
+            "toast_message": f"操作失敗: {str(e)[:30]}",
+            "show_alert": True
+        }
+
+
+async def _handle_view_alert(
+    db: AsyncSession,
+    notifier: TelegramNotifier,
+    product_id: str,
+    chat_id: str,
+) -> Dict[str, Any]:
+    """處理查看告警詳情按鈕"""
+    from app.models.competitor import CompetitorProduct, PriceSnapshot, PriceAlert
+    from sqlalchemy import select
+
+    try:
+        product = await db.get(CompetitorProduct, UUID(product_id))
+        if not product:
+            return {
+                "action": "view_alert",
+                "toast_message": "找不到產品",
+                "show_alert": True
+            }
+
+        # 獲取最近的價格快照
+        snapshots_result = await db.execute(
+            select(PriceSnapshot)
+            .where(PriceSnapshot.competitor_product_id == UUID(product_id))
+            .order_by(PriceSnapshot.scraped_at.desc())
+            .limit(5)
+        )
+        snapshots = snapshots_result.scalars().all()
+
+        # 構建詳情消息
+        message_parts = [
+            f"<b>🔍 產品詳情</b>",
+            "",
+            f"🏷 <b>名稱</b>: {product.name or '未知'}",
+            f"🔗 <b>SKU</b>: {product.sku or '無'}",
+            f"📅 <b>最後更新</b>: {product.last_scraped_at.strftime('%Y-%m-%d %H:%M') if product.last_scraped_at else '未知'}",
+            "",
+            "<b>📊 價格歷史（最近5筆）</b>",
+        ]
+
+        for i, snapshot in enumerate(snapshots):
+            price_str = f"HK${float(snapshot.price):.2f}" if snapshot.price else "無"
+            time_str = snapshot.scraped_at.strftime('%m/%d %H:%M') if snapshot.scraped_at else ""
+            message_parts.append(f"• {time_str}: {price_str}")
+
+        if product.url:
+            message_parts.append("")
+            message_parts.append(f'🔗 <a href="{product.url}">查看原網頁</a>')
+
+        await notifier.send_message(
+            text="\n".join(message_parts),
+            chat_id=chat_id
+        )
+
+        return {
+            "action": "view_alert",
+            "toast_message": "詳情已發送",
+            "show_alert": False
+        }
+
+    except Exception as e:
+        logger.error(f"查看告警詳情失敗: {e}")
+        return {
+            "action": "view_alert",
+            "toast_message": f"查詢失敗: {str(e)[:30]}",
+            "show_alert": True
+        }
+
+
+async def _handle_view_proposal(
+    db: AsyncSession,
+    notifier: TelegramNotifier,
+    proposal_id: str,
+    chat_id: str,
+) -> Dict[str, Any]:
+    """處理查看提案詳情按鈕"""
+    from app.models.pricing import PriceProposal
+
+    try:
+        proposal = await db.get(PriceProposal, UUID(proposal_id))
+        if not proposal:
+            return {
+                "action": "view_proposal",
+                "toast_message": "找不到提案",
+                "show_alert": True
+            }
+
+        # 構建詳情消息
+        message_parts = [
+            f"<b>📋 提案詳情</b>",
+            "",
+            f"🆔 <b>編號</b>: {proposal_id[:8]}...",
+            f"📊 <b>狀態</b>: {proposal.status}",
+            f"💰 <b>當前價格</b>: HK${float(proposal.current_price):.2f}" if proposal.current_price else "💰 <b>當前價格</b>: 無",
+            f"💵 <b>建議價格</b>: HK${float(proposal.proposed_price):.2f}" if proposal.proposed_price else "💵 <b>建議價格</b>: 待設定",
+            f"📝 <b>來源</b>: {proposal.source_type}",
+            f"📅 <b>創建時間</b>: {proposal.created_at.strftime('%Y-%m-%d %H:%M') if proposal.created_at else '未知'}",
+        ]
+
+        if proposal.reason:
+            message_parts.append("")
+            message_parts.append(f"<b>📌 原因</b>:")
+            message_parts.append(proposal.reason[:200])
+
+        await notifier.send_message(
+            text="\n".join(message_parts),
+            chat_id=chat_id
+        )
+
+        return {
+            "action": "view_proposal",
+            "toast_message": "詳情已發送",
+            "show_alert": False
+        }
+
+    except Exception as e:
+        logger.error(f"查看提案詳情失敗: {e}")
+        return {
+            "action": "view_proposal",
+            "toast_message": f"查詢失敗: {str(e)[:30]}",
+            "show_alert": True
+        }
+
+
+async def _handle_ignore_alert(
+    db: AsyncSession,
+    notifier: TelegramNotifier,
+    product_id: str,
+    chat_id: str,
+    message_id: int,
+) -> Dict[str, Any]:
+    """處理忽略告警按鈕"""
+    # 移除按鈕，標記為已忽略
+    await notifier.edit_message_reply_markup(chat_id, message_id, None)
+
+    return {
+        "action": "ignore_alert",
+        "toast_message": "⏸ 告警已忽略",
+        "show_alert": False
+    }
+
+
+# =============================================
+# 設置指南
+# =============================================
+
 @router.get("/setup-guide")
 async def get_setup_guide():
     """
@@ -296,6 +754,16 @@ async def get_setup_guide():
                     "調用 POST /api/v1/telegram/test 測試 Bot 連接",
                     "調用 POST /api/v1/telegram/test-message 發送測試消息",
                     "確認收到 Telegram 消息即表示配置成功"
+                ]
+            },
+            {
+                "step": 5,
+                "title": "設置 Webhook（可選，用於接收按鈕點擊回調）",
+                "instructions": [
+                    "部署應用到公網可訪問的地址",
+                    "調用 Telegram API 設置 Webhook：",
+                    "POST https://api.telegram.org/bot<TOKEN>/setWebhook",
+                    "body: {\"url\": \"https://your-domain.com/api/v1/telegram/webhook\"}"
                 ]
             }
         ],

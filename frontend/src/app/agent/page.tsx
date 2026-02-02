@@ -17,6 +17,7 @@ import {
   Users,
   FileText,
   ChevronRight,
+  ChevronDown,
   Check,
   Copy,
   Download,
@@ -26,7 +27,8 @@ import {
   Plus,
   Menu,
   Clock,
-  ArrowDown
+  ArrowDown,
+  CalendarClock,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -51,6 +53,7 @@ import {
 } from 'recharts'
 import { ConversationList } from '@/components/agent/ConversationList'
 import { QuickActions } from '@/components/agent/QuickActions'
+import { SchedulePanel } from './components/SchedulePanel'
 import { toast } from '@/components/ui/use-toast'
 
 // =============================================
@@ -725,18 +728,8 @@ export default function AgentPage() {
     <PageTransition className="flex h-[calc(100vh-4rem)] bg-slate-50 overflow-hidden">
       {/* Desktop Sidebar */}
       <div className="hidden md:flex w-72 flex-col border-r bg-white shadow-sm z-10">
-        <ConversationList
-          conversations={conversations}
-          currentId={conversationId}
-          onSelect={loadConversation}
-          onNew={handleNewConversation}
-          formatDate={formatDate}
-        />
-      </div>
-
-      {/* Mobile Sidebar (Sheet) */}
-      <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
-        <SheetContent side="left" className="w-72 p-0">
+        {/* Conversations Section */}
+        <div className="flex-1 overflow-hidden flex flex-col">
           <ConversationList
             conversations={conversations}
             currentId={conversationId}
@@ -744,6 +737,60 @@ export default function AgentPage() {
             onNew={handleNewConversation}
             formatDate={formatDate}
           />
+        </div>
+
+        {/* Schedule Section */}
+        <div className="border-t bg-slate-50/50">
+          <details className="group" open>
+            <summary className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors">
+              <span className="flex items-center gap-2 text-sm font-medium text-slate-600">
+                <CalendarClock className="w-4 h-4 text-purple-500" />
+                排程報告
+              </span>
+              <ChevronDown className="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="px-3 pb-3 max-h-64 overflow-y-auto">
+              <SchedulePanel
+                conversationId={conversationId}
+                compact
+              />
+            </div>
+          </details>
+        </div>
+      </div>
+
+      {/* Mobile Sidebar (Sheet) */}
+      <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+        <SheetContent side="left" className="w-72 p-0 flex flex-col">
+          {/* Conversations Section */}
+          <div className="flex-1 overflow-hidden flex flex-col">
+            <ConversationList
+              conversations={conversations}
+              currentId={conversationId}
+              onSelect={loadConversation}
+              onNew={handleNewConversation}
+              formatDate={formatDate}
+            />
+          </div>
+
+          {/* Schedule Section */}
+          <div className="border-t bg-slate-50/50">
+            <details className="group">
+              <summary className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors">
+                <span className="flex items-center gap-2 text-sm font-medium text-slate-600">
+                  <CalendarClock className="w-4 h-4 text-purple-500" />
+                  排程報告
+                </span>
+                <ChevronDown className="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="px-3 pb-3 max-h-48 overflow-y-auto">
+                <SchedulePanel
+                  conversationId={conversationId}
+                  compact
+                />
+              </div>
+            </details>
+          </div>
         </SheetContent>
       </Sheet>
 

@@ -19,7 +19,6 @@ from .intent_classifier import IntentClassifier, IntentType, IntentResult
 from .slot_manager import SlotManager, AnalysisSlots, SlotStatus, SlotCompleteness
 from .tool_executor import ToolExecutor
 from .report_generator import ReportGenerator, Report
-from .mock_data import is_mock_mode_enabled, MockResponseGenerator
 from .quick_cache import QuickCacheService
 from .persona import (
     RESPONSE_TEMPLATES,
@@ -155,8 +154,6 @@ class AgentService:
         self.slot_manager = SlotManager()
         self.tool_executor = ToolExecutor(db)
         self.report_generator = ReportGenerator(ai_service)
-        self.mock_mode = is_mock_mode_enabled()
-        self.mock_generator = MockResponseGenerator() if self.mock_mode else None
         # 快取服務
         self.quick_cache = QuickCacheService(db)
 
@@ -469,11 +466,6 @@ class AgentService:
             state=state
         )
         
-        if self.mock_mode and self.mock_generator:
-            async for response in self._generate_mock_response(state, conversation_id):
-                yield response
-            return
-        
         tool_results = await self.tool_executor.execute(
             intent=state.current_intent,
             slots=state.slots
@@ -566,11 +558,6 @@ class AgentService:
             state=state
         )
         
-        if self.mock_mode and self.mock_generator:
-            async for response in self._generate_mock_response(state, conversation_id):
-                yield response
-            return
-        
         tool_results = await self.tool_executor.execute(
             intent=state.current_intent,
             slots=state.slots
@@ -610,45 +597,6 @@ class AgentService:
             report=report.to_dict(),
             charts=[c.__dict__ for c in report.charts],
             suggestions=clarify_suggestions,
-            state=state
-        )
-
-    async def _generate_mock_response(
-        self,
-        state: AgentState,
-        conversation_id: str
-    ) -> AsyncGenerator[AgentResponse, None]:
-        yield AgentResponse(
-            type=ResponseType.THINKING,
-            content="生成緊模擬報告...",
-            conversation_id=conversation_id,
-            state=state
-        )
-        
-        mock_report = self.mock_generator.generate_mock_report(
-            product_names=state.slots.products or ["和牛"],
-            report_type="price_analysis"
-        )
-        
-        await self._save_message(
-            conversation_id, "assistant", mock_report["markdown"],
-            "report", {"charts": mock_report["charts"], "is_mock": True}
-        )
-
-        # 獲取後續建議按鈕
-        intent_type = state.current_intent.value if state.current_intent else "default"
-        mock_suggestions = get_follow_up_suggestions(
-            intent_type,
-            {"products": state.slots.products}
-        )
-
-        yield AgentResponse(
-            type=ResponseType.REPORT,
-            content=mock_report["markdown"],
-            conversation_id=conversation_id,
-            report=mock_report,
-            charts=mock_report["charts"],
-            suggestions=mock_suggestions,
             state=state
         )
 

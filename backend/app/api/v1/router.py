@@ -8,7 +8,7 @@ from app.api.v1 import (
     competitors, products, content, analytics, scrape, categories,
     telegram, market_response, ai_settings, agent, hktvmall,
     pricing, orders, inbox, finance, promotions, auth, image_generation,
-    price_trends, seo, geo, content_pipeline, seo_ranking, roi
+    price_trends, seo, geo, content_pipeline, seo_ranking, roi, workflow
 )
 
 api_router = APIRouter()
@@ -185,4 +185,10 @@ api_router.include_router(
     roi.router,
     prefix="/roi",
     tags=["ROI 分析"]
+)
+
+# 工作流自動化
+api_router.include_router(
+    workflow.router,
+    tags=["工作流自動化"]
 )
