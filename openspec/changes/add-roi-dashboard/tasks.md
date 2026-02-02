@@ -24,7 +24,7 @@
 
 - [x] 2.2 Register router in `backend/app/api/v1/router.py`
 
-- [ ] 2.3 Write unit tests for ROI calculation logic
+- [x] 2.3 Write unit tests for ROI calculation logic
 
 ## 3. Frontend - API Client & Hooks
 
@@ -70,10 +70,10 @@
 
 ## 6. Testing & Validation
 
-- [ ] 6.1 Backend: Test ROI calculation with mock data
+- [x] 6.1 Backend: Test ROI calculation with mock data
 - [x] 6.2 Frontend: Verify components render correctly (構建成功)
-- [ ] 6.3 E2E: Test full flow from API to UI
-- [ ] 6.4 Performance: Verify query execution time < 500ms
+- [x] 6.3 E2E: Test full flow from API to UI
+- [x] 6.4 Performance: Verify query execution time < 500ms
 
 ## Dependencies
 
@@ -90,6 +90,9 @@
 - `backend/app/services/roi_service.py` - ROI 計算服務
 - `backend/app/api/v1/roi.py` - API 端點
 - `backend/app/api/v1/router.py` - 路由註冊 (已修改)
+- `backend/tests/test_roi_service.py` - ROI 服務單元測試 (18 tests)
+- `backend/tests/e2e/test_roi_e2e.py` - E2E 測試 (17 tests)
+- `backend/tests/conftest.py` - 測試配置 (已修改: 添加 SQLite JSONB/UUID 支持)
 
 ### Frontend
 - `frontend/src/lib/api/roi.ts` - API 客戶端

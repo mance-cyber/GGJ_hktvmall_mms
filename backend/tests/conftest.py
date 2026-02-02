@@ -18,6 +18,25 @@ os.environ["SECRET_KEY"] = "test-secret-key-for-testing-purposes-only-32chars"
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.pool import StaticPool
+from sqlalchemy import JSON
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.sqlite.base import SQLiteTypeCompiler
+
+# 為 SQLite 添加 JSONB 和 UUID 支持
+# SQLite 不原生支持 PostgreSQL 的 JSONB 和 UUID 類型
+# 這裡將它們映射為 SQLite 兼容的類型
+_original_visit_JSON = SQLiteTypeCompiler.visit_JSON
+
+def visit_JSONB(self, type_, **kw):
+    """將 JSONB 編譯為 JSON"""
+    return "JSON"
+
+def visit_UUID(self, type_, **kw):
+    """將 UUID 編譯為 VARCHAR(36)"""
+    return "VARCHAR(36)"
+
+SQLiteTypeCompiler.visit_JSONB = visit_JSONB
+SQLiteTypeCompiler.visit_UUID = visit_UUID
 
 from app.main import app
 from app.models.database import Base, get_db

@@ -29,6 +29,7 @@ import {
   Zap,
   Clock,
   DollarSign,
+  ClipboardCheck,
   LucideIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -180,6 +181,13 @@ const navigationGroups: NavGroup[] = [
     title: '商品管理',
     color: categoryColors.purple,
     items: [
+      {
+        name: '改價審批',
+        href: '/pricing-approval',
+        icon: ClipboardCheck,
+        description: 'Human-in-the-Loop 審批 AI 改價提案',
+        permissions: [PERMISSIONS.PRICES_READ]
+      },
       {
         name: '商品庫',
         href: '/products',

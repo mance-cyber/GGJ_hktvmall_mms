@@ -642,6 +642,7 @@ async def mark_alert_read(
 async def cleanup_mock_data(
     db: AsyncSession = Depends(get_db),
     confirm: bool = Query(default=False, description="確認刪除"),
+    delete_all: bool = Query(default=False, description="刪除所有競品資料"),
 ):
     """
     清理所有 Mock/測試資料
@@ -650,15 +651,41 @@ async def cleanup_mock_data(
     - 名稱以 [Mock] 開頭的競品
     - notes 包含「測試數據」的競品
     - 相關的 competitor_products 和 price_snapshots
+    - delete_all=true 時刪除所有競品資料
     """
-    from sqlalchemy import delete, or_
+    from sqlalchemy import delete, or_, text
+
+    if delete_all:
+        if not confirm:
+            # 統計所有資料
+            comp_count = (await db.execute(select(func.count(Competitor.id)))).scalar() or 0
+            prod_count = (await db.execute(select(func.count(CompetitorProduct.id)))).scalar() or 0
+            return {
+                "preview": True,
+                "mode": "DELETE ALL",
+                "competitors_to_delete": comp_count,
+                "products_to_delete": prod_count,
+                "message": "⚠️ 會刪除所有競品資料！加上 ?delete_all=true&confirm=true 確認"
+            }
+
+        # 刪除所有
+        await db.execute(delete(PriceSnapshot))
+        await db.execute(delete(PriceAlert))
+        await db.execute(delete(CompetitorProduct))
+        await db.execute(delete(Competitor))
+        await db.commit()
+
+        return {"message": "所有競品資料已清除"}
 
     if not confirm:
         # 先統計會刪除幾多
         query = select(Competitor).where(
             or_(
                 Competitor.name.like("[Mock]%"),
-                Competitor.notes.like("%測試數據%")
+                Competitor.name.like("%Mock%"),
+                Competitor.name.like("%mock%"),
+                Competitor.notes.like("%測試%"),
+                Competitor.notes.like("%test%")
             )
         )
         result = await db.execute(query)
@@ -686,7 +713,10 @@ async def cleanup_mock_data(
     query = select(Competitor.id).where(
         or_(
             Competitor.name.like("[Mock]%"),
-            Competitor.notes.like("%測試數據%")
+            Competitor.name.like("%Mock%"),
+            Competitor.name.like("%mock%"),
+            Competitor.notes.like("%測試%"),
+            Competitor.notes.like("%test%")
         )
     )
     result = await db.execute(query)

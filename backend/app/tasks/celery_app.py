@@ -19,6 +19,7 @@ celery_app = Celery(
         "app.tasks.content_tasks",
         "app.tasks.image_generation_tasks",
         "app.tasks.seo_ranking_tasks",
+        "app.tasks.workflow_tasks",
     ]
 )
 
@@ -70,5 +71,13 @@ celery_app.conf.beat_schedule = {
     "generate-weekly-seo-reports": {
         "task": "app.tasks.seo_ranking_tasks.generate_weekly_reports",
         "schedule": crontab(hour=8, minute=0, day_of_week=1),
+    },
+    # =============================================
+    # 工作流排程任務
+    # =============================================
+    # 每分鐘檢查到期的排程報告
+    "check-due-scheduled-reports": {
+        "task": "app.tasks.workflow_tasks.check_and_execute_due_schedules",
+        "schedule": crontab(minute="*"),  # 每分鐘執行
     },
 }
