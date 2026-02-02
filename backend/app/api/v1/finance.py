@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func, delete
 from typing import List
 
 from app.models.database import get_db
+from app.models.finance import Settlement, SettlementItem
 from app.services.finance_service import FinanceService
 from app.schemas.finance import SettlementResponse, ProfitSummary
 
@@ -26,3 +28,26 @@ async def get_profit_summary(db: AsyncSession = Depends(get_db)):
     """獲取利潤統計摘要"""
     service = FinanceService(db)
     return await service.get_profit_summary()
+
+
+@router.delete("/cleanup/mock-data")
+async def cleanup_finance_data(
+    db: AsyncSession = Depends(get_db),
+    confirm: bool = Query(default=False, description="確認刪除"),
+):
+    """清理所有結算資料"""
+    if not confirm:
+        settlement_count = (await db.execute(select(func.count(Settlement.id)))).scalar() or 0
+        item_count = (await db.execute(select(func.count(SettlementItem.id)))).scalar() or 0
+        return {
+            "preview": True,
+            "settlements_to_delete": settlement_count,
+            "items_to_delete": item_count,
+            "message": "加上 ?confirm=true 確認刪除"
+        }
+
+    await db.execute(delete(SettlementItem))
+    await db.execute(delete(Settlement))
+    await db.commit()
+
+    return {"message": "所有結算資料已清除"}
