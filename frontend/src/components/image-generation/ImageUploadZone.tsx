@@ -49,7 +49,23 @@ export function ImageUploadZone({
     console.error('[ImageUploadZone] Files rejected:', rejectedFiles)
     rejectedFiles.forEach((rejection) => {
       console.error(`  - ${rejection.file.name}:`, rejection.errors)
+      console.error(`    File type: ${rejection.file.type}`)
+      console.error(`    File size: ${rejection.file.size}`)
     })
+  }, [])
+
+  // 自定義文件驗證器（基於副檔名，不依賴 MIME type）
+  const fileValidator = useCallback((file: File) => {
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp']
+    const ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'))
+
+    if (!allowedExtensions.includes(ext)) {
+      return {
+        code: 'file-invalid-type',
+        message: `不支持的檔案格式: ${ext}`
+      }
+    }
+    return null
   }, [])
 
   const removeFile = (index: number) => {
@@ -67,11 +83,8 @@ export function ImageUploadZone({
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     onDropRejected,
-    accept: {
-      'image/jpeg': ['.jpg', '.jpeg'],
-      'image/png': ['.png'],
-      'image/webp': ['.webp'],
-    },
+    // 使用自定義驗證器，不依賴 MIME type（相機檔案 MIME type 常不準確）
+    validator: fileValidator,
     maxSize,
     maxFiles: maxFiles - files.length,
     disabled: files.length >= maxFiles,
