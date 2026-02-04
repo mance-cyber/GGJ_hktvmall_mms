@@ -6,7 +6,6 @@
 
 import { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
-import Image from 'next/image'
 import { X, Upload, Image as ImageIcon } from 'lucide-react'
 
 interface ImageUploadZoneProps {
@@ -121,11 +120,11 @@ export function ImageUploadZone({
               key={index}
               className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 group"
             >
-              <Image
+              {/* 使用原生 img 標籤，因為 blob URL 不支援 next/image */}
+              <img
                 src={preview}
                 alt={`預覽 ${index + 1}`}
-                fill
-                className="object-cover"
+                className="absolute inset-0 w-full h-full object-cover"
               />
 
               {/* 刪除按鈕 */}
