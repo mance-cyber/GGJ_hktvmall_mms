@@ -24,8 +24,16 @@ export function ImageUploadZone({
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
+      console.log('[ImageUploadZone] onDrop called, acceptedFiles:', acceptedFiles)
+
+      if (acceptedFiles.length === 0) {
+        console.warn('[ImageUploadZone] No files accepted')
+        return
+      }
+
       // 限制總數量
       const newFiles = [...files, ...acceptedFiles].slice(0, maxFiles)
+      console.log('[ImageUploadZone] Setting files:', newFiles)
       setFiles(newFiles)
       onFilesChange(newFiles)
 
@@ -35,6 +43,14 @@ export function ImageUploadZone({
     },
     [files, maxFiles, onFilesChange]
   )
+
+  // 處理被拒絕的文件
+  const onDropRejected = useCallback((rejectedFiles: any[]) => {
+    console.error('[ImageUploadZone] Files rejected:', rejectedFiles)
+    rejectedFiles.forEach((rejection) => {
+      console.error(`  - ${rejection.file.name}:`, rejection.errors)
+    })
+  }, [])
 
   const removeFile = (index: number) => {
     const newFiles = files.filter((_, i) => i !== index)
@@ -50,6 +66,7 @@ export function ImageUploadZone({
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    onDropRejected,
     accept: {
       'image/jpeg': ['.jpg', '.jpeg'],
       'image/png': ['.png'],
@@ -58,7 +75,12 @@ export function ImageUploadZone({
     maxSize,
     maxFiles: maxFiles - files.length,
     disabled: files.length >= maxFiles,
+    noClick: false,
+    noKeyboard: false,
+    noDrag: false,
   })
+
+  console.log('[ImageUploadZone] Render - files:', files.length, 'disabled:', files.length >= maxFiles)
 
   return (
     <div className="space-y-4">
