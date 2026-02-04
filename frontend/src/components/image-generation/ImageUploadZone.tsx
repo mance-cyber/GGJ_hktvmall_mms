@@ -1,17 +1,83 @@
 // =============================================
-// 圖片上傳區域組件
+// 圖片上傳區域組件（含自動壓縮功能）
 // =============================================
 
 'use client'
 
 import { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { X, Upload, Image as ImageIcon } from 'lucide-react'
+import { X, Upload, Image as ImageIcon, Loader2 } from 'lucide-react'
 
 interface ImageUploadZoneProps {
   onFilesChange: (files: File[]) => void
   maxFiles?: number
   maxSize?: number
+}
+
+// 壓縮圖片的目標大小（8MB，留一些餘量給後端）
+const TARGET_SIZE = 8 * 1024 * 1024
+
+// 使用 Canvas 壓縮圖片
+async function compressImage(file: File, maxSizeBytes: number): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      // 計算需要的壓縮比例
+      let quality = 0.9
+      let scale = 1
+
+      // 如果圖片很大，先縮小尺寸
+      const maxDimension = 4096 // 最大邊長
+      if (img.width > maxDimension || img.height > maxDimension) {
+        scale = maxDimension / Math.max(img.width, img.height)
+      }
+
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width * scale
+      canvas.height = img.height * scale
+
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        reject(new Error('無法創建 Canvas context'))
+        return
+      }
+
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+
+      // 逐步降低質量直到達到目標大小
+      const tryCompress = (q: number) => {
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error('壓縮失敗'))
+              return
+            }
+
+            console.log(`[Compress] quality=${q.toFixed(2)}, size=${(blob.size / 1024 / 1024).toFixed(2)}MB`)
+
+            if (blob.size <= maxSizeBytes || q <= 0.1) {
+              // 達到目標或已到最低質量
+              const compressedFile = new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              })
+              resolve(compressedFile)
+            } else {
+              // 繼續降低質量
+              tryCompress(q - 0.1)
+            }
+          },
+          'image/jpeg',
+          q
+        )
+      }
+
+      tryCompress(quality)
+    }
+
+    img.onerror = () => reject(new Error('無法載入圖片'))
+    img.src = URL.createObjectURL(file)
+  })
 }
 
 export function ImageUploadZone({
@@ -21,27 +87,74 @@ export function ImageUploadZone({
 }: ImageUploadZoneProps) {
   const [files, setFiles] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
+  const [isCompressing, setIsCompressing] = useState(false)
+  const [compressStatus, setCompressStatus] = useState<string>('')
+
+  const processFiles = useCallback(async (inputFiles: File[]) => {
+    const processedFiles: File[] = []
+
+    for (const file of inputFiles) {
+      if (file.size > maxSize) {
+        // 需要壓縮
+        setCompressStatus(`正在壓縮 ${file.name}...`)
+        console.log(`[ImageUploadZone] Compressing ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`)
+
+        try {
+          const compressed = await compressImage(file, TARGET_SIZE)
+          console.log(`[ImageUploadZone] Compressed to ${(compressed.size / 1024 / 1024).toFixed(2)}MB`)
+          processedFiles.push(compressed)
+        } catch (err) {
+          console.error(`[ImageUploadZone] Compression failed for ${file.name}:`, err)
+          // 壓縮失敗，跳過這個文件
+        }
+      } else {
+        processedFiles.push(file)
+      }
+    }
+
+    return processedFiles
+  }, [maxSize])
 
   const onDrop = useCallback(
-    (acceptedFiles: File[]) => {
-      console.log('[ImageUploadZone] onDrop called, acceptedFiles:', acceptedFiles)
+    async (acceptedFiles: File[]) => {
+      console.log('[ImageUploadZone] onDrop called, files:', acceptedFiles.map(f => ({
+        name: f.name,
+        size: `${(f.size / 1024 / 1024).toFixed(2)}MB`,
+        type: f.type
+      })))
 
       if (acceptedFiles.length === 0) {
         console.warn('[ImageUploadZone] No files accepted')
         return
       }
 
-      // 限制總數量
-      const newFiles = [...files, ...acceptedFiles].slice(0, maxFiles)
-      console.log('[ImageUploadZone] Setting files:', newFiles)
-      setFiles(newFiles)
-      onFilesChange(newFiles)
+      setIsCompressing(true)
+      setCompressStatus('處理中...')
 
-      // 生成預覽
-      const newPreviews = acceptedFiles.map((file) => URL.createObjectURL(file))
-      setPreviews((prev) => [...prev, ...newPreviews].slice(0, maxFiles))
+      try {
+        // 處理文件（包括壓縮大文件）
+        const processedFiles = await processFiles(acceptedFiles)
+
+        if (processedFiles.length === 0) {
+          console.warn('[ImageUploadZone] No files after processing')
+          return
+        }
+
+        // 限制總數量
+        const newFiles = [...files, ...processedFiles].slice(0, maxFiles)
+        console.log('[ImageUploadZone] Setting files:', newFiles.length)
+        setFiles(newFiles)
+        onFilesChange(newFiles)
+
+        // 生成預覽
+        const newPreviews = processedFiles.map((file) => URL.createObjectURL(file))
+        setPreviews((prev) => [...prev, ...newPreviews].slice(0, maxFiles))
+      } finally {
+        setIsCompressing(false)
+        setCompressStatus('')
+      }
     },
-    [files, maxFiles, onFilesChange]
+    [files, maxFiles, onFilesChange, processFiles]
   )
 
   // 處理被拒絕的文件
@@ -54,7 +167,7 @@ export function ImageUploadZone({
     })
   }, [])
 
-  // 自定義文件驗證器（基於副檔名，不依賴 MIME type）
+  // 自定義文件驗證器（只檢查副檔名，不檢查大小，因為會自動壓縮）
   const fileValidator = useCallback((file: File) => {
     const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp']
     const ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'))
@@ -84,16 +197,16 @@ export function ImageUploadZone({
     onDrop,
     onDropRejected,
     // 使用自定義驗證器，不依賴 MIME type（相機檔案 MIME type 常不準確）
+    // 不設 maxSize，因為會自動壓縮大圖片
     validator: fileValidator,
-    maxSize,
     maxFiles: maxFiles - files.length,
-    disabled: files.length >= maxFiles,
+    disabled: files.length >= maxFiles || isCompressing,
     noClick: false,
     noKeyboard: false,
     noDrag: false,
   })
 
-  console.log('[ImageUploadZone] Render - files:', files.length, 'disabled:', files.length >= maxFiles)
+  console.log('[ImageUploadZone] Render - files:', files.length, 'isCompressing:', isCompressing)
 
   return (
     <div className="space-y-4">
@@ -115,7 +228,13 @@ export function ImageUploadZone({
         <input {...getInputProps()} />
 
         <div className="flex flex-col items-center justify-center text-center space-y-3">
-          {isDragActive ? (
+          {isCompressing ? (
+            <>
+              <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+              <p className="text-lg font-medium text-blue-600">{compressStatus}</p>
+              <p className="text-sm text-gray-500">大圖片正在自動壓縮中...</p>
+            </>
+          ) : isDragActive ? (
             <>
               <Upload className="w-12 h-12 text-blue-500" />
               <p className="text-lg font-medium text-blue-600">放開以上傳圖片</p>
@@ -135,7 +254,10 @@ export function ImageUploadZone({
                   拖放圖片至此，或點擊選擇
                 </p>
                 <p className="text-sm text-gray-500 mt-1">
-                  支持 JPG、PNG、WEBP 格式，最多 {maxFiles} 張，單張最大 10MB
+                  支持 JPG、PNG、WEBP 格式，最多 {maxFiles} 張
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  大圖片會自動壓縮
                 </p>
               </div>
             </>
