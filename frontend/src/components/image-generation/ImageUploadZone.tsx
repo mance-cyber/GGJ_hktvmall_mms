@@ -146,9 +146,15 @@ export function ImageUploadZone({
         setFiles(newFiles)
         onFilesChange(newFiles)
 
-        // 生成預覽
-        const newPreviews = processedFiles.map((file) => URL.createObjectURL(file))
-        setPreviews((prev) => [...prev, ...newPreviews].slice(0, maxFiles))
+        // 生成預覽（最多保留 10 個預覽 URL，避免大量圖片時記憶體浪費）
+        const PREVIEW_LIMIT = 10
+        setPreviews((prev) => {
+          const currentCount = prev.length
+          if (currentCount >= PREVIEW_LIMIT) return prev
+          const slotsLeft = PREVIEW_LIMIT - currentCount
+          const newPreviews = processedFiles.slice(0, slotsLeft).map((file) => URL.createObjectURL(file))
+          return [...prev, ...newPreviews]
+        })
       } finally {
         setIsCompressing(false)
         setCompressStatus('')
@@ -254,7 +260,7 @@ export function ImageUploadZone({
                   拖放圖片至此，或點擊選擇
                 </p>
                 <p className="text-sm text-gray-500 mt-1">
-                  支持 JPG、PNG、WEBP 格式，最多 {maxFiles} 張
+                  支持 JPG、PNG、WEBP 格式{maxFiles < 100 ? `，最多 ${maxFiles} 張` : ''}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
                   大圖片會自動壓縮
@@ -264,52 +270,80 @@ export function ImageUploadZone({
           )}
 
           <p className="text-xs text-gray-400">
-            已上傳 {files.length} / {maxFiles} 張
+            已上傳 {files.length}{maxFiles < 100 ? ` / ${maxFiles}` : ''} 張
           </p>
         </div>
       </div>
 
       {/* 預覽區域 */}
       {files.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {previews.map((preview, index) => (
-            <div
-              key={index}
-              className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 group"
-            >
-              {/* 使用原生 img 標籤，因為 blob URL 不支援 next/image */}
-              <img
-                src={preview}
-                alt={`預覽 ${index + 1}`}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-
-              {/* 刪除按鈕 */}
+        <>
+          {/* 超過 10 張時顯示計數摘要，只渲染前 10 張預覽避免 DOM 爆炸 */}
+          {files.length > 10 && (
+            <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-5 h-5 text-blue-600" />
+                <span className="text-sm font-medium text-blue-800">
+                  已選擇 {files.length} 張圖片
+                </span>
+                <span className="text-xs text-blue-600">
+                  （僅顯示前 10 張預覽）
+                </span>
+              </div>
               <button
                 type="button"
-                onClick={() => removeFile(index)}
-                className="
-                  absolute top-2 right-2
-                  bg-red-500 text-white rounded-full p-1
-                  opacity-0 group-hover:opacity-100
-                  transition-opacity
-                  hover:bg-red-600
-                "
-                aria-label="刪除圖片"
+                onClick={() => {
+                  previews.forEach((p) => URL.revokeObjectURL(p))
+                  setFiles([])
+                  setPreviews([])
+                  onFilesChange([])
+                }}
+                className="text-sm text-red-600 hover:text-red-800 font-medium"
               >
-                <X className="w-4 h-4" />
+                清除全部
               </button>
-
-              {/* 文件信息 */}
-              <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 text-xs">
-                <p className="truncate">{files[index].name}</p>
-                <p className="text-gray-300">
-                  {(files[index].size / 1024 / 1024).toFixed(2)} MB
-                </p>
-              </div>
             </div>
-          ))}
-        </div>
+          )}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {previews.slice(0, 10).map((preview, index) => (
+              <div
+                key={index}
+                className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 group"
+              >
+                {/* 使用原生 img 標籤，因為 blob URL 不支援 next/image */}
+                <img
+                  src={preview}
+                  alt={`預覽 ${index + 1}`}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+
+                {/* 刪除按鈕 */}
+                <button
+                  type="button"
+                  onClick={() => removeFile(index)}
+                  className="
+                    absolute top-2 right-2
+                    bg-red-500 text-white rounded-full p-1
+                    opacity-0 group-hover:opacity-100
+                    transition-opacity
+                    hover:bg-red-600
+                  "
+                  aria-label="刪除圖片"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+
+                {/* 文件信息 */}
+                <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 text-xs">
+                  <p className="truncate">{files[index].name}</p>
+                  <p className="text-gray-300">
+                    {(files[index].size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   )

@@ -4,20 +4,30 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { ImageUploadZone } from '@/components/image-generation/ImageUploadZone'
 import { createTask, uploadImages, startGeneration, type GenerationMode } from '@/lib/api/image-generation'
+import { usePermissions } from '@/hooks/usePermissions'
 import { Loader2, Sparkles, Image as ImageIcon, History } from 'lucide-react'
 
 export default function ImageGenerationUploadPage() {
   const router = useRouter()
+  const { isAdmin } = usePermissions()
   const [files, setFiles] = useState<File[]>([])
   const [mode, setMode] = useState<GenerationMode>('white_bg_topview')
   const [styleDescription, setStyleDescription] = useState('')
   const [outputsPerImage, setOutputsPerImage] = useState(1)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // 根據角色計算限制
+  const maxFiles = isAdmin ? 999 : 5
+  const maxOutputsPerImage = isAdmin ? 10 : 5
+  const outputOptions = useMemo(
+    () => Array.from({ length: maxOutputsPerImage }, (_, i) => i + 1),
+    [maxOutputsPerImage]
+  )
 
   const handleSubmit = async () => {
     if (files.length === 0) {
@@ -184,11 +194,9 @@ export default function ImageGenerationUploadPage() {
                 text-sm bg-white
               "
             >
-              <option value={1}>1 張</option>
-              <option value={2}>2 張</option>
-              <option value={3}>3 張</option>
-              <option value={4}>4 張</option>
-              <option value={5}>5 張</option>
+              {outputOptions.map((n) => (
+                <option key={n} value={n}>{n} 張</option>
+              ))}
             </select>
             <span className="text-sm text-gray-600">
               預計生成 <span className="font-semibold text-blue-600">{files.length * outputsPerImage}</span> 張圖片
@@ -208,7 +216,7 @@ export default function ImageGenerationUploadPage() {
       {/* 圖片上傳區域 */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">上傳產品圖片</h2>
-        <ImageUploadZone onFilesChange={setFiles} maxFiles={5} />
+        <ImageUploadZone onFilesChange={setFiles} maxFiles={maxFiles} />
       </div>
 
       {/* 錯誤訊息 */}

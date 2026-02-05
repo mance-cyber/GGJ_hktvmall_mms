@@ -37,6 +37,12 @@ settings = get_settings()
 
 router = APIRouter(tags=["image-generation"])
 
+# ==================== 角色限制常量 ====================
+MAX_IMAGES_DEFAULT = 5
+MAX_IMAGES_ADMIN = 0       # 0 = 無上限
+MAX_OUTPUTS_DEFAULT = 5
+MAX_OUTPUTS_ADMIN = 10
+
 
 @router.post("/tasks", response_model=ImageGenerationTaskResponse)
 async def create_image_generation_task(
@@ -50,6 +56,14 @@ async def create_image_generation_task(
     - **mode**: 生成模式（white_bg_topview 或 professional_photo）
     - **style_description**: 風格描述（可選）
     """
+    # 根據角色驗證 outputs_per_image
+    max_outputs = MAX_OUTPUTS_ADMIN if current_user.is_admin() else MAX_OUTPUTS_DEFAULT
+    if task_data.outputs_per_image > max_outputs:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"outputs_per_image 不能超過 {max_outputs}"
+        )
+
     # 創建任務
     task = ImageGenerationTask(
         user_id=current_user.id,
@@ -88,11 +102,12 @@ async def upload_input_images(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    上傳輸入圖片（最多 5 張）
+    上傳輸入圖片（支持分批上傳）
 
     - 支持格式：JPG, PNG, WEBP
     - 單張圖片最大 10MB
-    - 最多上傳 5 張圖片
+    - 普通用戶最多 5 張，Admin 無上限
+    - 可多次調用，upload_order 自動接續遞增
     """
     # 驗證任務存在且屬於當前用戶
     result = await db.execute(
@@ -109,11 +124,29 @@ async def upload_input_images(
             detail="Task not found"
         )
 
-    # 驗證圖片數量
-    if len(files) > 5:
+    # 查詢該 task 已有圖片數量和最大 upload_order（支持分批追加）
+    existing_count_result = await db.execute(
+        select(func.count()).select_from(InputImage).where(
+            InputImage.task_id == task_id
+        )
+    )
+    existing_count = existing_count_result.scalar() or 0
+
+    max_order_result = await db.execute(
+        select(func.max(InputImage.upload_order)).where(
+            InputImage.task_id == task_id
+        )
+    )
+    max_order = max_order_result.scalar() or 0
+
+    # 根據角色驗證圖片數量
+    max_images = MAX_IMAGES_ADMIN if current_user.is_admin() else MAX_IMAGES_DEFAULT
+    total_after_upload = existing_count + len(files)
+
+    if max_images > 0 and total_after_upload > max_images:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Maximum 5 images allowed"
+            detail=f"最多允許 {max_images} 張圖片（已有 {existing_count} 張，本次上傳 {len(files)} 張）"
         )
 
     # 驗證圖片格式和大小
@@ -149,14 +182,14 @@ async def upload_input_images(
         relative_path = f"input/{str(task_id)}/{safe_filename}"
         file_url = storage.save_file(file_data=content, file_path=relative_path)
 
-        # 創建數據庫記錄
+        # 創建數據庫記錄（upload_order 接續已有記錄遞增）
         input_image = InputImage(
             task_id=task_id,
-            file_path=file_url,  # 使用 StorageService 返回的 URL/路徑
+            file_path=file_url,
             file_name=safe_filename,
             file_size=len(content),
             mime_type=file.content_type,
-            upload_order=idx + 1
+            upload_order=max_order + idx + 1
         )
 
         db.add(input_image)
@@ -461,6 +494,24 @@ def _delete_storage_file(storage, file_path: str):
     else:
         # 本地路徑
         storage.delete_file(file_path)
+
+
+@router.get("/limits")
+async def get_limits(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    獲取當前用戶的圖片生成限制
+
+    返回值根據用戶角色動態計算：
+    - max_images: 0 表示無上限
+    - max_outputs_per_image: 每張圖片最大輸出數量
+    """
+    is_admin = current_user.is_admin()
+    return {
+        "max_images": MAX_IMAGES_ADMIN if is_admin else MAX_IMAGES_DEFAULT,
+        "max_outputs_per_image": MAX_OUTPUTS_ADMIN if is_admin else MAX_OUTPUTS_DEFAULT,
+    }
 
 
 @router.get("/presigned-url")

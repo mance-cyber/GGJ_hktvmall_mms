@@ -63,21 +63,47 @@ export async function createTask(data: CreateTaskRequest): Promise<ImageGenerati
 }
 
 /**
- * 上傳輸入圖片
+ * 上傳輸入圖片（自動分批，每批最多 10 張）
+ *
+ * 大量圖片一次 HTTP 上傳會超時/爆記憶體，
+ * 這裡拆成多次循序請求，後端 upload_order 自動接續。
  */
+const UPLOAD_BATCH_SIZE = 10
+
 export async function uploadImages(taskId: string, files: File[]): Promise<InputImage[]> {
-  const formData = new FormData()
-  files.forEach((file) => {
-    formData.append('files', file)
-  })
+  const allUploaded: InputImage[] = []
 
-  const response = await apiClient.post(`/image-generation/tasks/${taskId}/upload`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  })
+  for (let i = 0; i < files.length; i += UPLOAD_BATCH_SIZE) {
+    const batch = files.slice(i, i + UPLOAD_BATCH_SIZE)
+    const formData = new FormData()
+    batch.forEach((file) => {
+      formData.append('files', file)
+    })
 
-  return response as unknown as InputImage[]  // 響應攔截器已返回 data
+    const response = await apiClient.post(`/image-generation/tasks/${taskId}/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+
+    const uploaded = response as unknown as InputImage[]
+    allUploaded.push(...uploaded)
+  }
+
+  return allUploaded
+}
+
+/**
+ * 獲取當前用戶的圖片生成限制
+ */
+export interface ImageGenerationLimits {
+  max_images: number          // 0 = 無上限
+  max_outputs_per_image: number
+}
+
+export async function getLimits(): Promise<ImageGenerationLimits> {
+  const response = await apiClient.get('/image-generation/limits')
+  return response as unknown as ImageGenerationLimits
 }
 
 /**
