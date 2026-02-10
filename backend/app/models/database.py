@@ -3,8 +3,10 @@
 # =============================================
 
 import logging
+import ssl
 from datetime import datetime, timezone
 from typing import AsyncGenerator
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
@@ -37,8 +39,38 @@ class Base(DeclarativeBase):
 # 創建異步引擎
 settings = get_settings()
 
-# 將 postgresql:// 轉換為 postgresql+asyncpg://
-db_url = settings.database_url.replace("postgresql://", "postgresql+asyncpg://")
+
+def _prepare_async_url(url: str) -> tuple[str, dict]:
+    """
+    將 DATABASE_URL 轉為 asyncpg 兼容格式
+
+    asyncpg 不認 sslmode / channel_binding 等 libpq 參數，
+    需要從 URL 中剝離，改用 connect_args 傳入 SSL 上下文。
+    """
+    async_url = url.replace("postgresql://", "postgresql+asyncpg://")
+    parsed = urlparse(async_url)
+    params = parse_qs(parsed.query)
+
+    # 檢測是否需要 SSL
+    needs_ssl = "sslmode" in params and params["sslmode"][0] in ("require", "verify-ca", "verify-full")
+
+    # 移除 asyncpg 不認識的 libpq 參數
+    for key in ("sslmode", "channel_binding"):
+        params.pop(key, None)
+
+    clean_url = urlunparse(parsed._replace(query=urlencode(params, doseq=True)))
+
+    connect_args = {}
+    if needs_ssl:
+        ssl_ctx = ssl.create_default_context()
+        ssl_ctx.check_hostname = False
+        ssl_ctx.verify_mode = ssl.CERT_NONE
+        connect_args["ssl"] = ssl_ctx
+
+    return clean_url, connect_args
+
+
+db_url, connect_args = _prepare_async_url(settings.database_url)
 
 engine = create_async_engine(
     db_url,
@@ -46,6 +78,7 @@ engine = create_async_engine(
     pool_pre_ping=True,
     pool_size=5,
     max_overflow=10,
+    connect_args=connect_args,
 )
 
 # 創建異步 session 工廠

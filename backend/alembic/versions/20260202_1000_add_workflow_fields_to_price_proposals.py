@@ -1,7 +1,7 @@
 """add workflow fields to price_proposals
 
 Revision ID: 20260202_1000
-Revises: 20260117_1000_add_seo_ranking_tables
+Revises: add_seo_ranking_tables
 Create Date: 2026-02-02 10:00:00.000000
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '20260202_1000'
-down_revision = '20260117_1000_add_seo_ranking_tables'
+down_revision = 'add_seo_ranking_tables'
 branch_labels = None
 depends_on = None
 
