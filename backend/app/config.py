@@ -109,6 +109,11 @@ class Settings(BaseSettings):
     scrape_time: str = Field(default="09:00", alias="SCRAPE_TIME")
     price_alert_threshold: int = Field(default=10, alias="PRICE_ALERT_THRESHOLD")
 
+    # HKTVmall 抓取優化配置
+    hktv_metadata_cache_ttl: int = Field(default=86400, alias="HKTV_METADATA_CACHE_TTL")  # 元數據緩存 24h
+    hktv_price_cache_ttl: int = Field(default=86400, alias="HKTV_PRICE_CACHE_TTL")  # 價格緩存 24h
+    hktv_price_only_wait_ms: int = Field(default=5000, alias="HKTV_PRICE_ONLY_WAIT_MS")  # price-only 模式等待時間
+
     # AI Agent 模擬模式（用於測試，設為 true 啟用模擬數據）
     agent_mock_mode: bool = Field(default=False, alias="AGENT_MOCK_MODE")
 

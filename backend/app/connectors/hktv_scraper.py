@@ -17,6 +17,7 @@ from datetime import datetime
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 from app.config import get_settings
+from app.connectors.hktv_http_client import get_hktv_http_client, HKTVMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -742,6 +743,128 @@ class HKTVScraper:
             return "in_stock"
 
         return status
+
+    # =============================================
+    # 價格專用抓取（省 credit）
+    # =============================================
+
+    def scrape_price_only(self, url: str) -> Dict[str, Any]:
+        """
+        最小化 Firecrawl 消耗：只提取價格和庫存
+
+        相比 scrape_product_page 的完整 schema：
+        - schema 只含 price + stock（減少 LLM 提取時間）
+        - wait_for: 5000ms（vs 8000ms，省 37.5% 等待）
+        - only_main_content: True（減少 HTML 傳輸）
+        - 不滾動頁面
+
+        Returns:
+            {"current_price": ..., "original_price": ..., "stock_status": ...}
+        """
+        from pydantic import BaseModel
+
+        class PriceOnlySchema(BaseModel):
+            """精簡 schema：只取價格"""
+            current_price: Optional[float] = None
+            original_price: Optional[float] = None
+            stock_status: Optional[str] = None
+
+        settings = get_settings()
+
+        scrape_kwargs = {
+            "formats": [
+                {
+                    "type": "json",
+                    "schema": PriceOnlySchema.model_json_schema(),
+                },
+            ],
+            "only_main_content": True,
+            "wait_for": settings.hktv_price_only_wait_ms,
+            "timeout": self.request_timeout_ms,
+        }
+
+        if self.skip_tls_verification:
+            scrape_kwargs["skip_tls_verification"] = True
+
+        logger.debug(f"Price-only scrape: {url}")
+
+        result = self.app.scrape(url, **scrape_kwargs)
+
+        # 從 Document 中提取 json 數據
+        json_data = {}
+        if hasattr(result, 'json') and result.json:
+            json_data = result.json
+
+        return {
+            "current_price": json_data.get("current_price"),
+            "original_price": json_data.get("original_price"),
+            "stock_status": self._normalize_stock_status(json_data.get("stock_status")),
+        }
+
+    async def smart_scrape_product(
+        self,
+        url: str,
+        need_price: bool = True
+    ) -> HKTVProduct:
+        """
+        智能抓取：HTTP 優先，Firecrawl 按需
+
+        策略：
+        1. HTTP 取 metadata（0 credits）— 名稱、品牌、圖片
+        2. 如果需要價格，用 Firecrawl price-only 模式（1 credit）
+        3. 合併結果
+
+        Args:
+            url: HKTVmall 商品 URL
+            need_price: 是否需要價格數據（需要 JS 渲染 = 1 credit）
+
+        Returns:
+            HKTVProduct 完整商品數據
+        """
+        sku = HKTVUrlParser.extract_sku(url) or "UNKNOWN"
+
+        # 第一層：HTTP 元數據（0 credits）
+        http_client = get_hktv_http_client()
+        metadata = await http_client.fetch_product_metadata(url)
+
+        price = None
+        original_price = None
+        discount_percent = None
+        stock_status = None
+
+        # 第二層：需要價格時用 Firecrawl（1 credit）
+        # 注意：Firecrawl SDK 是同步的，用 asyncio.to_thread 避免阻塞事件循環
+        if need_price:
+            try:
+                price_data = await asyncio.to_thread(self.scrape_price_only, url)
+
+                if price_data.get("current_price"):
+                    price = Decimal(str(price_data["current_price"]))
+                if price_data.get("original_price"):
+                    original_price = Decimal(str(price_data["original_price"]))
+                if price and original_price and original_price > price:
+                    discount_percent = round((1 - price / original_price) * 100, 2)
+                stock_status = price_data.get("stock_status")
+
+            except Exception as e:
+                logger.warning(f"Price-only scrape 失敗，回退到完整 scrape: {url} - {e}")
+                try:
+                    raw_data = await asyncio.to_thread(self.scrape_product_page, url)
+                    return self.parse_product_data(url, raw_data)
+                except Exception as e2:
+                    logger.error(f"完整 scrape 也失敗: {url} - {e2}")
+
+        return HKTVProduct(
+            sku=sku,
+            name=metadata.name or "未知商品",
+            url=url,
+            price=price,
+            original_price=original_price,
+            discount_percent=discount_percent,
+            brand=metadata.brand,
+            image_url=metadata.image_url,
+            stock_status=stock_status,
+        )
 
     # =============================================
     # 高級抓取方法

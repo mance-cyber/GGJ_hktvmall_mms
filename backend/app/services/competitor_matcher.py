@@ -28,6 +28,9 @@ from app.models.product import Product, ProductCompetitorMapping
 from app.models.competitor import Competitor, CompetitorProduct, PriceSnapshot
 from app.connectors.firecrawl import get_firecrawl_connector, ProductInfo
 from app.connectors.claude import get_claude_connector
+from app.connectors.hktv_http_client import get_hktv_http_client
+from app.connectors.hktv_scraper import get_hktv_scraper, HKTVUrlParser
+from app.config import get_settings
 
 
 # =============================================
@@ -60,23 +63,23 @@ class MatchResult:
 # =============================================
 
 class HKTVMallSearchStrategy:
-    """HKTVmall 搜索策略"""
-    
+    """HKTVmall 搜索策略（優化版：HTTP 優先，Firecrawl 備用）"""
+
     BASE_URL = "https://www.hktvmall.com"
     SEARCH_URL = "https://www.hktvmall.com/hktv/zh/search?q={query}"
-    
+
     def __init__(self):
         self.firecrawl = get_firecrawl_connector()
-    
+        self.http_client = get_hktv_http_client()
+
     def build_search_url(self, query: str) -> str:
         """構建搜索 URL"""
-        # URL encode the query
         import urllib.parse
         encoded_query = urllib.parse.quote(query)
         return self.SEARCH_URL.format(query=encoded_query)
-    
+
     def extract_product_urls_from_search(self, search_url: str, limit: int = 10) -> List[str]:
-        """從搜索結果頁面提取商品 URL"""
+        """從搜索結果頁面提取商品 URL（Firecrawl，用於 JS 渲染的搜索頁）"""
         try:
             urls = self.firecrawl.discover_hktv_products(search_url, max_products=limit)
             return urls
@@ -87,6 +90,18 @@ class HKTVMallSearchStrategy:
                 extra={"search_url": search_url, "limit": limit}
             )
             return []
+
+    async def validate_and_filter_urls(self, urls: List[str]) -> List[str]:
+        """
+        用 HTTP HEAD 請求驗證 URL 有效性（0 credits）
+
+        過濾掉 404/無效的 URL，避免浪費 Firecrawl credits
+        """
+        if not urls:
+            return []
+
+        valid_flags = await self.http_client.batch_validate_urls(urls)
+        return [url for url, valid in zip(urls, valid_flags) if valid]
 
 
 # =============================================
@@ -243,35 +258,76 @@ class ClaudeMatcher:
 # =============================================
 
 class CompetitorMatcherService:
-    """對手匹配服務"""
-    
+    """對手匹配服務（優化版：三層抓取架構）"""
+
     def __init__(self):
         self.firecrawl = get_firecrawl_connector()
         self.hktv_strategy = HKTVMallSearchStrategy()
         self.matcher = ClaudeMatcher()
-    
+        self.http_client = get_hktv_http_client()
+        self.hktv_scraper = get_hktv_scraper()
+
     def generate_search_queries(self, product: Product) -> List[str]:
         """為商品生成搜索關鍵字"""
         queries = []
-        
+
         # 優先使用日文名（最精準）
         if product.name_ja:
             queries.append(product.name_ja)
-        
+
         # 次要使用英文名的主要部分
         if product.name_en:
-            # 提取英文名中的主要詞彙（排除規格數字）
-            main_words = re.sub(r'\([^)]*\)', '', product.name_en)  # 移除括號內容
-            main_words = re.sub(r'\d+.*$', '', main_words).strip()  # 移除數字及之後內容
+            main_words = re.sub(r'\([^)]*\)', '', product.name_en)
+            main_words = re.sub(r'\d+.*$', '', main_words).strip()
             if main_words:
                 queries.append(main_words)
-        
+
         # 最後使用中文名
         if product.name_zh:
             queries.append(product.name_zh)
-        
+
         return queries
-    
+
+    async def _check_price_freshness(
+        self,
+        db: AsyncSession,
+        url: str
+    ) -> bool:
+        """
+        檢查該商品是否在緩存有效期內已有價格數據
+
+        Returns:
+            True = 數據新鮮，不需要重新抓取
+        """
+        settings = get_settings()
+        ttl_seconds = settings.hktv_price_cache_ttl
+
+        # 查找該 URL 對應的 CompetitorProduct
+        stmt = select(CompetitorProduct).where(CompetitorProduct.url == url)
+        result = await db.execute(stmt)
+        cp = result.scalar_one_or_none()
+
+        if not cp:
+            return False
+
+        # 查找最近的 PriceSnapshot
+        from sqlalchemy import desc
+        stmt = (
+            select(PriceSnapshot)
+            .where(PriceSnapshot.competitor_product_id == cp.id)
+            .order_by(desc(PriceSnapshot.scraped_at))
+            .limit(1)
+        )
+        result = await db.execute(stmt)
+        latest = result.scalar_one_or_none()
+
+        if not latest:
+            return False
+
+        # 檢查是否在 TTL 內
+        age = (datetime.utcnow() - latest.scraped_at).total_seconds()
+        return age < ttl_seconds
+
     async def find_competitors_for_product(
         self,
         db: AsyncSession,
@@ -279,17 +335,97 @@ class CompetitorMatcherService:
         platform: str = "hktvmall",
         max_candidates: int = 5
     ) -> List[MatchResult]:
-        """為單個商品尋找競品"""
+        """
+        為單個商品尋找競品（優化版）
+
+        優化策略：
+        1. 搜索頁面仍需 Firecrawl（JS 渲染）發現候選 URL
+        2. 用 HTTP client 免費獲取候選商品的 metadata
+        3. 用 Claude 判斷匹配度
+        4. 只對確認匹配的商品用 Firecrawl 取價格
+        5. freshness 檢查：24h 內有數據則跳過 Firecrawl
+        """
         results = []
-        
+
         # 生成搜索關鍵字
         queries = self.generate_search_queries(product)
-        
         if not queries:
             return results
-        
-        # 搜索競品
+
+        # ==================== 第一步：搜索候選 URL ====================
         candidate_urls = set()
-        
-        for query in queries[:2]:  # 只使用前兩個最佳關鍵字
-            if platfor
+
+        for query in queries[:2]:
+            if platform == "hktvmall":
+                search_url = self.hktv_strategy.build_search_url(query)
+                urls = self.hktv_strategy.extract_product_urls_from_search(
+                    search_url, limit=max_candidates
+                )
+                candidate_urls.update(urls)
+
+        if not candidate_urls:
+            return results
+
+        # 限制候選數量
+        candidate_urls = list(candidate_urls)[:max_candidates * 2]
+
+        # ==================== 第二步：HTTP 驗證 + metadata（0 credits）====================
+        # 用 HTTP 驗證 URL 有效性，過濾掉無效 URL
+        valid_urls = await self.hktv_strategy.validate_and_filter_urls(candidate_urls)
+
+        if not valid_urls:
+            return results
+
+        # 批量獲取 metadata（0 credits）
+        metadata_list = await self.http_client.batch_fetch_metadata(valid_urls)
+
+        # ==================== 第三步：Claude 匹配判斷 ====================
+        our_product_dict = {
+            "id": str(product.id),
+            "name_zh": product.name_zh,
+            "name_ja": getattr(product, 'name_ja', ''),
+            "name_en": getattr(product, 'name_en', ''),
+            "category_main": getattr(product, 'category_main', ''),
+            "category_sub": getattr(product, 'category_sub', ''),
+            "unit": getattr(product, 'unit', ''),
+        }
+
+        for metadata in metadata_list:
+            if not metadata.valid or not metadata.name:
+                continue
+
+            candidate_dict = {
+                "url": metadata.url,
+                "name": metadata.name,
+                "description": metadata.description or "",
+                "price": "需要 JS 渲染取得",
+            }
+
+            match_result = self.matcher.judge_match(our_product_dict, candidate_dict)
+
+            if match_result.is_match and match_result.match_confidence >= 0.5:
+                results.append(match_result)
+
+        # ==================== 第四步：對匹配商品取價格（按需 1 credit）====================
+        for result_item in results:
+            url = result_item.candidate_url
+
+            # freshness 檢查：24h 內有數據則跳過
+            is_fresh = await self._check_price_freshness(db, url)
+            if is_fresh:
+                logger.info(f"價格數據仍然新鮮，跳過 Firecrawl: {url}")
+                continue
+
+            # 用 smart_scrape 取價格（1 credit）
+            try:
+                product_data = await self.hktv_scraper.smart_scrape_product(
+                    url, need_price=True
+                )
+                # 價格數據可在後續流程中用於建立 PriceSnapshot
+                logger.info(
+                    f"取得價格: {product_data.name} = ${product_data.price}"
+                )
+            except Exception as e:
+                logger.warning(f"取得價格失敗: {url} - {e}")
+
+        return results
