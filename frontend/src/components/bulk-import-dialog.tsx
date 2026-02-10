@@ -121,7 +121,7 @@ export function BulkImportDialog({
       const url = new URL(str)
       if (url.protocol !== 'http:' && url.protocol !== 'https:') return false
       // HKTVmall URL 必須包含 /p/H{SKU} 格式（SKU 可帶後綴如 H9423001_S_WNF-003A）
-      if (url.hostname.includes('hktvmall.com') && !/\/p\/H\d{7,}[A-Za-z0-9_-]*/i.test(url.pathname)) {
+      if (url.hostname.includes('hktvmall.com') && !/\/p\/[A-Z]\d{7,}[A-Za-z0-9_-]*/i.test(url.pathname)) {
         return false
       }
       return true

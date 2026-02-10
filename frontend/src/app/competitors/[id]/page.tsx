@@ -1062,8 +1062,8 @@ function EditProductDialog({
     setError('')
 
     // HKTVmall URL 格式驗證
-    if (formData.url.includes('hktvmall.com') && !/\/p\/H\d{7,}[A-Za-z0-9_-]*/i.test(formData.url)) {
-      setError('HKTVmall URL 必須包含 /p/H{SKU} 格式，例如：https://www.hktvmall.com/hktv/zh/main/.../p/H0340001')
+    if (formData.url.includes('hktvmall.com') && !/\/p\/[A-Z]\d{7,}[A-Za-z0-9_-]*/i.test(formData.url)) {
+      setError('HKTVmall URL 必須包含 /p/{SKU} 格式，例如：.../p/H0340001 或 .../p/B1600001_S_F03A-00')
       return
     }
 

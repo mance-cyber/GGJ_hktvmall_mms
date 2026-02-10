@@ -81,7 +81,7 @@ _OG_PATTERNS_REV = {
 }
 
 # HKTVmall SKU 模式
-_SKU_PATTERN = re.compile(r"H\d{7,}")
+_SKU_PATTERN = re.compile(r"[A-Z]\d{7,}[A-Za-z0-9_-]*")
 
 
 def parse_og_tags(html: str) -> Dict[str, Optional[str]]:
@@ -101,7 +101,7 @@ def parse_og_tags(html: str) -> Dict[str, Optional[str]]:
 
 def extract_sku_from_url(url: str) -> Optional[str]:
     """從 URL 中提取 HKTVmall SKU"""
-    match = re.search(r"/p/(H\d{7,})", url, re.IGNORECASE)
+    match = re.search(r"/p/([A-Z]\d{7,}[A-Za-z0-9_-]*)", url, re.IGNORECASE)
     return match.group(1) if match else None
 
 

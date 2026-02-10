@@ -41,7 +41,7 @@ def _build_engine():
     return create_async_engine(clean_url, echo=False, pool_pre_ping=True, pool_size=1, connect_args=connect_args)
 
 
-PRODUCT_URL_RE = re.compile(r"hktvmall\.com.*?/p/(H\d{7,}[A-Za-z0-9_-]*)", re.IGNORECASE)
+PRODUCT_URL_RE = re.compile(r"hktvmall\.com.*?/p/([A-Z]\d{7,}[A-Za-z0-9_-]*)", re.IGNORECASE)
 
 
 async def google_search_hktv(client: httpx.AsyncClient, product_name: str) -> str | None:

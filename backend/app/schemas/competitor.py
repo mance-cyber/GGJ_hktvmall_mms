@@ -58,13 +58,14 @@ class CompetitorListResponse(BaseModel):
 # =============================================
 
 def _validate_hktv_url(url: str) -> str:
-    """驗證 HKTVmall URL 格式：必須包含 /p/H{SKU} 路徑"""
+    """驗證 HKTVmall URL 格式：必須包含 /p/{SKU} 路徑"""
     if "hktvmall.com" in url.lower():
         from app.connectors.hktv_scraper import HKTVUrlParser
         if not HKTVUrlParser.is_product_url(url):
             raise ValueError(
                 "HKTVmall URL 格式錯誤，正確格式如："
-                "https://www.hktvmall.com/hktv/zh/main/.../p/H0340001"
+                "https://www.hktvmall.com/hktv/zh/main/.../p/H0340001 "
+                "或 .../p/B1600001_S_F03A-00"
             )
     return url
 

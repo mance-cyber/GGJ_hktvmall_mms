@@ -120,7 +120,7 @@ class HKTVUrlParser:
     # HKTVmall URL 模式
     # SKU 格式：H0340001 或帶後綴如 H9423001_S_WNF-003A
     PRODUCT_URL_PATTERN = re.compile(
-        r"hktvmall\.com.*?/p/(H\d{7,}[A-Za-z0-9_-]*)",
+        r"hktvmall\.com.*?/p/([A-Z]\d{7,}[A-Za-z0-9_-]*)",
         re.IGNORECASE
     )
     STORE_URL_PATTERN = re.compile(
@@ -131,7 +131,7 @@ class HKTVUrlParser:
         r"hktvmall\.com.*?/c/([A-Z0-9_]+)",  # 分類頁: /c/AA123
         re.IGNORECASE
     )
-    SKU_PATTERN = re.compile(r"H\d{7,}[A-Za-z0-9_-]*")  # SKU 格式（含後綴）
+    SKU_PATTERN = re.compile(r"[A-Z]\d{7,}[A-Za-z0-9_-]*")  # SKU 格式（含後綴，H/B 等前綴）
 
     @classmethod
     def is_product_url(cls, url: str) -> bool:
@@ -455,7 +455,7 @@ class HKTVScraper:
         product_urls = set()
 
         # HKTVmall 商品連結模式（支持帶後綴 SKU 如 H9423001_S_WNF-003A）
-        _sku = r'H\d{7,}[A-Za-z0-9_-]*'
+        _sku = r'[A-Z]\d{7,}[A-Za-z0-9_-]*'
         patterns = [
             # 標準商品頁連結
             rf'href="([^"]*?/p/{_sku}[^"]*)"',
