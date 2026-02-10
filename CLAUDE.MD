@@ -22,10 +22,15 @@ GoGoJap 是一個 AI 驅動的電商運營平台，專為 HKTVmall 賣家設計�
 - **狀態**: TanStack Query 5
 - **圖表**: Recharts
 
-### 部署
+### 部署 (目標架構 - AWS 遷移中)
 - **前端**: Cloudflare Pages
-- **後端**: Zeabur
-- **存儲**: Cloudflare R2
+- **後端**: AWS Lightsail (2 vCPU, 4GB RAM, Ubuntu 22.04)
+- **數據庫**: AWS RDS PostgreSQL (db.t4g.micro)
+- **存儲**: AWS S3 + CloudFront CDN
+- **任務隊列**: Redis (Lightsail 本地)
+
+**遷移狀態**: 🔄 規劃中
+**遷移文檔**: `docs/technical/AWS-MIGRATION-GUIDE.md`
 
 ## 目錄結構
 
