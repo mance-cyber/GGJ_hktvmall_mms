@@ -98,7 +98,16 @@ export function BulkImportDialog({
       
       // 驗證 URL
       const isValid = url ? isValidUrl(url) : false
-      const error = !url ? '缺少 URL' : !isValid ? '無效的 URL 格式' : undefined
+      let error: string | undefined
+      if (!url) {
+        error = '缺少 URL'
+      } else if (!isValid) {
+        if (url.includes('hktvmall.com')) {
+          error = 'HKTVmall URL 需包含 /p/H{SKU}，如 /p/H0340001'
+        } else {
+          error = '無效的 URL 格式'
+        }
+      }
       
       rows.push({ url, name, category, isValid, error })
     }
@@ -110,7 +119,12 @@ export function BulkImportDialog({
   const isValidUrl = (str: string): boolean => {
     try {
       const url = new URL(str)
-      return url.protocol === 'http:' || url.protocol === 'https:'
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') return false
+      // HKTVmall URL 必須包含 /p/H{SKU} 格式（SKU 可帶後綴如 H9423001_S_WNF-003A）
+      if (url.hostname.includes('hktvmall.com') && !/\/p\/H\d{7,}[A-Za-z0-9_-]*/i.test(url.pathname)) {
+        return false
+      }
+      return true
     } catch {
       return false
     }
@@ -198,7 +212,7 @@ export function BulkImportDialog({
 
   // 下載模板
   const downloadTemplate = () => {
-    const template = 'URL,名稱（可選）,分類（可選）\nhttps://example.com/product1,商品名稱,分類\nhttps://example.com/product2,,'
+    const template = 'URL,名稱（可選）,分類（可選）\nhttps://www.hktvmall.com/hktv/zh/main/body-care/hair-care/shampoo/p/H0340001,洗髮水,護髮\nhttps://www.hktvmall.com/hktv/zh/main/health/supplements/p/H9423001_S_WNF-003A,保健品,保健品'
     const blob = new Blob([template], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
@@ -296,7 +310,7 @@ export function BulkImportDialog({
                     <p>每行包含一個商品，使用逗號或 Tab 分隔：</p>
                     <code className="block bg-white p-3 rounded-lg text-xs font-mono">
                       URL,名稱（可選）,分類（可選）<br/>
-                      https://www.hktvmall.com/product1,商品A,飲品<br/>
+                      https://www.hktvmall.com/hktv/zh/main/.../p/H0340001,商品A,飲品<br/>
                       https://www.watsons.com.hk/product2,,保健品
                     </code>
                   </div>

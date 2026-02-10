@@ -2,7 +2,8 @@
 # 競品監測 API
 # =============================================
 
-from typing import Optional
+import logging
+from typing import Optional, List
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
@@ -11,6 +12,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.database import get_db
 from app.models.competitor import Competitor, CompetitorProduct, PriceSnapshot, PriceAlert
+from app.connectors.hktv_scraper import HKTVUrlParser
 from app.schemas.competitor import (
     CompetitorCreate,
     CompetitorUpdate,
@@ -28,8 +30,21 @@ from app.schemas.competitor import (
     ScrapeTaskResponse,
 )
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 alerts_router = APIRouter()
+
+
+def _normalize_if_hktv(url: str) -> str:
+    """HKTVmall URL 標準化：移除追蹤參數，保留完整路徑"""
+    if "hktvmall.com" in url.lower():
+        try:
+            return HKTVUrlParser.normalize_url(url)
+        except Exception as e:
+            logger.warning(f"URL 標準化失敗 {url}: {e}")
+            return url
+    return url
 
 
 # =============================================
@@ -301,18 +316,25 @@ async def add_competitor_product(
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="競爭對手不存在")
 
+    # 標準化 URL
+    normalized_url = _normalize_if_hktv(product_in.url)
+
     # 檢查 URL 是否已存在
     existing = await db.execute(
-        select(CompetitorProduct).where(CompetitorProduct.url == product_in.url)
+        select(CompetitorProduct).where(CompetitorProduct.url == normalized_url)
     )
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="此 URL 已被監測")
 
+    # 自動提取 SKU
+    sku = HKTVUrlParser.extract_sku(normalized_url)
+
     # 創建商品
     product = CompetitorProduct(
         competitor_id=competitor_id,
-        url=product_in.url,
+        url=normalized_url,
         name=product_in.name or "待爬取",
+        sku=sku,
         category=product_in.category,
     )
     db.add(product)
@@ -345,19 +367,26 @@ async def bulk_add_products(
     skipped_count = 0
 
     for product_in in bulk_data.products:
+        # 標準化 URL
+        normalized_url = _normalize_if_hktv(product_in.url)
+
         # 檢查 URL 是否已存在
         existing = await db.execute(
-            select(CompetitorProduct).where(CompetitorProduct.url == product_in.url)
+            select(CompetitorProduct).where(CompetitorProduct.url == normalized_url)
         )
         if existing.scalar_one_or_none():
             skipped_count += 1
             continue
 
+        # 自動提取 SKU
+        sku = HKTVUrlParser.extract_sku(normalized_url)
+
         # 創建商品
         product = CompetitorProduct(
             competitor_id=competitor_id,
-            url=product_in.url,
+            url=normalized_url,
             name=product_in.name or "待爬取",
+            sku=sku,
             category=product_in.category,
         )
         db.add(product)
@@ -431,18 +460,23 @@ async def update_product(
     if not product:
         raise HTTPException(status_code=404, detail="商品不存在")
 
-    # 如果更新 URL，檢查是否重複
+    # 如果更新 URL，標準化並檢查是否重複
     if product_in.url and product_in.url != product.url:
+        normalized_url = _normalize_if_hktv(product_in.url)
         existing = await db.execute(
             select(CompetitorProduct).where(
-                CompetitorProduct.url == product_in.url,
+                CompetitorProduct.url == normalized_url,
                 CompetitorProduct.id != product_id
             )
         )
         if existing.scalar_one_or_none():
             raise HTTPException(status_code=400, detail="此 URL 已被其他商品使用")
+        product_in.url = normalized_url
 
     update_data = product_in.model_dump(exclude_unset=True)
+    # 更新 URL 時同步提取 SKU
+    if "url" in update_data:
+        update_data["sku"] = HKTVUrlParser.extract_sku(update_data["url"])
     for field, value in update_data.items():
         setattr(product, field, value)
 
@@ -563,6 +597,108 @@ async def trigger_scrape(
         task_id="pending",
         message="爬取任務已啟動"
     )
+
+
+# =============================================
+# URL 修復
+# =============================================
+
+@router.post("/fix-urls")
+async def fix_product_urls(
+    db: AsyncSession = Depends(get_db),
+    confirm: bool = Query(default=False, description="確認執行修復"),
+):
+    """
+    掃描並修復不符合 HKTVmall 格式的商品 URL
+
+    - confirm=false：預覽需修復的記錄
+    - confirm=true：執行修復
+    """
+    # 找出所有 HKTVmall 商品
+    result = await db.execute(
+        select(CompetitorProduct).where(
+            CompetitorProduct.url.ilike("%hktvmall.com%")
+        )
+    )
+    products = result.scalars().all()
+
+    issues: List[dict] = []
+    for product in products:
+        url = product.url
+        problems = []
+
+        # 檢查 URL 是否包含 /p/H{SKU}
+        if not HKTVUrlParser.is_product_url(url):
+            problems.append("缺少 /p/H{SKU} 路徑")
+
+        # 檢查是否有追蹤參數可清理
+        normalized = HKTVUrlParser.normalize_url(url)
+        if normalized != url and HKTVUrlParser.is_product_url(url):
+            problems.append("含追蹤參數")
+
+        # 檢查 SKU 是否已提取
+        sku = HKTVUrlParser.extract_sku(url)
+        if sku and product.sku != sku:
+            problems.append(f"SKU 未同步（應為 {sku}）")
+
+        if problems:
+            issues.append({
+                "id": str(product.id),
+                "name": product.name,
+                "current_url": url,
+                "normalized_url": normalized if HKTVUrlParser.is_product_url(url) else None,
+                "extracted_sku": sku,
+                "problems": problems,
+                "fixable": HKTVUrlParser.is_product_url(url),
+            })
+
+    if not confirm:
+        fixable = [i for i in issues if i["fixable"]]
+        unfixable = [i for i in issues if not i["fixable"]]
+        return {
+            "preview": True,
+            "total_scanned": len(products),
+            "total_issues": len(issues),
+            "fixable": len(fixable),
+            "unfixable": len(unfixable),
+            "issues": issues,
+            "message": "加上 ?confirm=true 執行修復（僅修復 fixable 記錄）",
+        }
+
+    # 執行修復
+    fixed_count = 0
+    for issue in issues:
+        if not issue["fixable"]:
+            continue
+
+        result = await db.execute(
+            select(CompetitorProduct).where(
+                CompetitorProduct.id == issue["id"]
+            )
+        )
+        product = result.scalar_one_or_none()
+        if not product:
+            continue
+
+        if issue["normalized_url"]:
+            product.url = issue["normalized_url"]
+        if issue["extracted_sku"]:
+            product.sku = issue["extracted_sku"]
+        fixed_count += 1
+
+    await db.flush()
+
+    unfixable = [i for i in issues if not i["fixable"]]
+    return {
+        "preview": False,
+        "fixed": fixed_count,
+        "unfixable_count": len(unfixable),
+        "unfixable": unfixable,
+        "message": f"已修復 {fixed_count} 條記錄" + (
+            f"，{len(unfixable)} 條無法自動修復（缺少有效 /p/H{{SKU}} 路徑）"
+            if unfixable else ""
+        ),
+    }
 
 
 # =============================================

@@ -6,7 +6,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional, List
 from uuid import UUID
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 
 # =============================================
@@ -57,11 +57,28 @@ class CompetitorListResponse(BaseModel):
 # 競品商品 Schemas
 # =============================================
 
+def _validate_hktv_url(url: str) -> str:
+    """驗證 HKTVmall URL 格式：必須包含 /p/H{SKU} 路徑"""
+    if "hktvmall.com" in url.lower():
+        from app.connectors.hktv_scraper import HKTVUrlParser
+        if not HKTVUrlParser.is_product_url(url):
+            raise ValueError(
+                "HKTVmall URL 格式錯誤，正確格式如："
+                "https://www.hktvmall.com/hktv/zh/main/.../p/H0340001"
+            )
+    return url
+
+
 class CompetitorProductBase(BaseModel):
     """競品商品基礎 Schema"""
     url: str = Field(..., max_length=1000)
     name: Optional[str] = Field(None, max_length=500)
     category: Optional[str] = Field(None, max_length=255)
+
+    @field_validator("url")
+    @classmethod
+    def validate_url_format(cls, v: str) -> str:
+        return _validate_hktv_url(v)
 
 
 class CompetitorProductCreate(CompetitorProductBase):
@@ -75,6 +92,13 @@ class CompetitorProductUpdate(BaseModel):
     url: Optional[str] = Field(None, max_length=1000)
     category: Optional[str] = Field(None, max_length=255)
     is_active: Optional[bool] = None
+
+    @field_validator("url")
+    @classmethod
+    def validate_url_format(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            return _validate_hktv_url(v)
+        return v
 
 
 class CompetitorProductBulkCreate(BaseModel):

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api, CompetitorProduct, CompetitorProductCreate } from '@/lib/api'
+import { api, CompetitorProduct, CompetitorProductCreate, CompetitorProductUpdate } from '@/lib/api'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -30,6 +30,7 @@ import {
   CheckSquare,
   Square,
   Trash2,
+  Pencil,
   MoreHorizontal,
   SortAsc,
   SortDesc,
@@ -101,6 +102,7 @@ export default function CompetitorDetailPage() {
   const [sortField, setSortField] = useState<SortField>('name')
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc')
   const [stockFilter, setStockFilter] = useState<string | undefined>(undefined)
+  const [editingProduct, setEditingProduct] = useState<CompetitorProduct | null>(null)
 
   // ========== 數據查詢 ==========
 
@@ -163,6 +165,23 @@ export default function CompetitorDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['competitor-products', competitorId] })
       queryClient.invalidateQueries({ queryKey: ['competitor', competitorId] })
       setShowAddForm(false)
+    },
+  })
+
+  const updateProductMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: CompetitorProductUpdate }) =>
+      api.updateCompetitorProduct(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['competitor-products', competitorId] })
+      setEditingProduct(null)
+    },
+  })
+
+  const deleteProductMutation = useMutation({
+    mutationFn: (id: string) => api.deleteCompetitorProduct(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['competitor-products', competitorId] })
+      queryClient.invalidateQueries({ queryKey: ['competitor', competitorId] })
     },
   })
 
@@ -533,6 +552,8 @@ export default function CompetitorDetailPage() {
                       isChecked={selectedProducts.has(product.id)}
                       onSelect={() => setSelectedProductId(product.id)}
                       onToggleCheck={() => toggleProductSelection(product.id)}
+                      onEdit={() => setEditingProduct(product)}
+                      onDelete={() => deleteProductMutation.mutate(product.id)}
                     />
                   </motion.div>
                 ))}
@@ -731,6 +752,16 @@ export default function CompetitorDetailPage() {
         isLoading={addProductMutation.isPending}
       />
 
+      {/* ========== 編輯商品彈窗 ========== */}
+      <EditProductDialog
+        product={editingProduct}
+        onOpenChange={(open) => { if (!open) setEditingProduct(null) }}
+        onSubmit={(data) => {
+          if (editingProduct) updateProductMutation.mutate({ id: editingProduct.id, data })
+        }}
+        isLoading={updateProductMutation.isPending}
+      />
+
       {/* ========== 批量導入彈窗 ========== */}
       <BulkImportDialog
         open={showBulkImport}
@@ -752,12 +783,16 @@ function ProductRow({
   isChecked,
   onSelect,
   onToggleCheck,
+  onEdit,
+  onDelete,
 }: {
   product: CompetitorProduct
   isSelected: boolean
   isChecked: boolean
   onSelect: () => void
   onToggleCheck: () => void
+  onEdit: () => void
+  onDelete: () => void
 }) {
   const priceChangeIcon = product.price_change
     ? product.price_change > 0
@@ -867,16 +902,19 @@ function ProductRow({
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="bg-white/95 backdrop-blur-xl border-slate-200/80">
-            <DropdownMenuItem className="flex items-center">
-              <Zap className="w-4 h-4 mr-2 text-amber-500" />
-              重新抓取
+            <DropdownMenuItem className="flex items-center" onClick={onEdit}>
+              <Pencil className="w-4 h-4 mr-2 text-blue-500" />
+              編輯商品
             </DropdownMenuItem>
-            <DropdownMenuItem className="flex items-center">
+            <DropdownMenuItem className="flex items-center" onClick={() => window.open(product.url, '_blank')}>
               <ExternalLink className="w-4 h-4 mr-2 text-cyan-500" />
               訪問頁面
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600 flex items-center">
+            <DropdownMenuItem
+              className="text-red-600 flex items-center"
+              onClick={() => { if (confirm(`確定刪除「${product.name}」？`)) onDelete() }}
+            >
               <Trash2 className="w-4 h-4 mr-2" />
               刪除
             </DropdownMenuItem>
@@ -979,6 +1017,138 @@ function AddProductDialog({
               icon={!isLoading ? <Check className="w-4 h-4" /> : undefined}
             >
               開始監測
+            </HoloButton>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+
+// =============================================
+// 編輯商品對話框
+// =============================================
+
+function EditProductDialog({
+  product,
+  onOpenChange,
+  onSubmit,
+  isLoading,
+}: {
+  product: CompetitorProduct | null
+  onOpenChange: (open: boolean) => void
+  onSubmit: (data: CompetitorProductUpdate) => void
+  isLoading: boolean
+}) {
+  const [formData, setFormData] = useState({ url: '', name: '', category: '' })
+  const [error, setError] = useState('')
+  const open = !!product
+
+  // 當 product 變更時同步表單
+  useEffect(() => {
+    if (product) {
+      setFormData({
+        url: product.url,
+        name: product.name || '',
+        category: product.category || '',
+      })
+      setError('')
+    }
+  }, [product])
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    // HKTVmall URL 格式驗證
+    if (formData.url.includes('hktvmall.com') && !/\/p\/H\d{7,}[A-Za-z0-9_-]*/i.test(formData.url)) {
+      setError('HKTVmall URL 必須包含 /p/H{SKU} 格式，例如：https://www.hktvmall.com/hktv/zh/main/.../p/H0340001')
+      return
+    }
+
+    const data: CompetitorProductUpdate = {}
+    if (product && formData.url !== product.url) data.url = formData.url
+    if (product && formData.name !== (product.name || '')) data.name = formData.name
+    if (product && formData.category !== (product.category || '')) data.category = formData.category
+
+    if (Object.keys(data).length === 0) {
+      onOpenChange(false)
+      return
+    }
+    onSubmit(data)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px] bg-white/95 backdrop-blur-xl border-slate-200/80 shadow-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+            編輯商品
+          </DialogTitle>
+          <DialogDescription>
+            {"修改商品 URL、名稱或分類。HKTVmall URL 必須包含 /p/H{SKU} 格式。"}
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-6 mt-4">
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-url" className="text-slate-700">
+                商品 URL <span className="text-red-500">*</span>
+              </Label>
+              <div className="relative">
+                <ShoppingCart className="absolute left-3 top-3 h-4 w-4 text-cyan-500" />
+                <Input
+                  id="edit-url"
+                  type="url"
+                  required
+                  value={formData.url}
+                  onChange={(e) => { setFormData({ ...formData, url: e.target.value }); setError('') }}
+                  className="pl-9 bg-white/70 backdrop-blur-sm border-slate-200/80 focus:border-cyan-300 focus:ring-cyan-200/50"
+                  placeholder="https://www.hktvmall.com/hktv/zh/main/.../p/H0340001"
+                />
+              </div>
+              {error && <p className="text-sm text-red-500">{error}</p>}
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="edit-name" className="text-slate-700">商品名稱</Label>
+              <Input
+                id="edit-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="bg-white/70 backdrop-blur-sm border-slate-200/80 focus:border-cyan-300 focus:ring-cyan-200/50"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="edit-category" className="text-slate-700">分類標籤</Label>
+              <Input
+                id="edit-category"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                placeholder="例如：飲品 / 保健品"
+                className="bg-white/70 backdrop-blur-sm border-slate-200/80 focus:border-cyan-300 focus:ring-cyan-200/50"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-3">
+            <HoloButton
+              type="button"
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+            >
+              取消
+            </HoloButton>
+            <HoloButton
+              type="submit"
+              variant="primary"
+              loading={isLoading}
+              icon={!isLoading ? <Check className="w-4 h-4" /> : undefined}
+            >
+              儲存
             </HoloButton>
           </div>
         </form>

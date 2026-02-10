@@ -118,8 +118,9 @@ class HKTVUrlParser:
     """HKTVmall URL 解析器"""
 
     # HKTVmall URL 模式
+    # SKU 格式：H0340001 或帶後綴如 H9423001_S_WNF-003A
     PRODUCT_URL_PATTERN = re.compile(
-        r"hktvmall\.com.*?/p/(H\d{7,})",  # 商品頁: /p/H0340001
+        r"hktvmall\.com.*?/p/(H\d{7,}[A-Za-z0-9_-]*)",
         re.IGNORECASE
     )
     STORE_URL_PATTERN = re.compile(
@@ -130,7 +131,7 @@ class HKTVUrlParser:
         r"hktvmall\.com.*?/c/([A-Z0-9_]+)",  # 分類頁: /c/AA123
         re.IGNORECASE
     )
-    SKU_PATTERN = re.compile(r"H\d{7,}")  # SKU 格式
+    SKU_PATTERN = re.compile(r"H\d{7,}[A-Za-z0-9_-]*")  # SKU 格式（含後綴）
 
     @classmethod
     def is_product_url(cls, url: str) -> bool:
@@ -453,25 +454,26 @@ class HKTVScraper:
         """
         product_urls = set()
 
-        # HKTVmall 商品連結模式
+        # HKTVmall 商品連結模式（支持帶後綴 SKU 如 H9423001_S_WNF-003A）
+        _sku = r'H\d{7,}[A-Za-z0-9_-]*'
         patterns = [
             # 標準商品頁連結
-            r'href="([^"]*?/p/H\d{7,}[^"]*)"',
-            r"href='([^']*?/p/H\d{7,}[^']*)'",
+            rf'href="([^"]*?/p/{_sku}[^"]*)"',
+            rf"href='([^']*?/p/{_sku}[^']*)'",
 
             # data 屬性中的連結
-            r'data-href="([^"]*?/p/H\d{7,}[^"]*)"',
-            r'data-url="([^"]*?/p/H\d{7,}[^"]*)"',
+            rf'data-href="([^"]*?/p/{_sku}[^"]*)"',
+            rf'data-url="([^"]*?/p/{_sku}[^"]*)"',
 
             # JavaScript 中的連結
-            r'"url":\s*"([^"]*?/p/H\d{7,}[^"]*)"',
-            r"'url':\s*'([^']*?/p/H\d{7,}[^']*)'",
+            rf'"url":\s*"([^"]*?/p/{_sku}[^"]*)"',
+            rf"'url':\s*'([^']*?/p/{_sku}[^']*)'",
 
             # onclick 中的連結
-            r'onclick="[^"]*(/p/H\d{7,})[^"]*"',
+            rf'onclick="[^"]*(/p/{_sku})[^"]*"',
 
             # 直接的完整 URL
-            r'(https?://[^"\s]*hktvmall\.com[^"\s]*/p/H\d{7,}[^"\s]*)',
+            rf'(https?://[^"\s]*hktvmall\.com[^"\s]*/p/{_sku}[^"\s]*)',
         ]
 
         for pattern in patterns:

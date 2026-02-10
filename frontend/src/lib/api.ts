@@ -401,6 +401,15 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  updateCompetitorProduct: (productId: string, data: CompetitorProductUpdate) =>
+    fetchAPI<CompetitorProduct>(`/competitors/products/${productId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  deleteCompetitorProduct: (productId: string) =>
+    fetch(`${API_BASE}/competitors/products/${productId}`, { method: 'DELETE' }),
+
   getCompetitorProductHistory: (productId: string, days = 30) =>
     fetchAPI<CompetitorPriceHistoryResponse>(`/competitors/products/${productId}/history?days=${days}`),
 
@@ -722,6 +731,13 @@ export interface CompetitorProductCreate {
   url: string
   name?: string
   category?: string
+}
+
+export interface CompetitorProductUpdate {
+  url?: string
+  name?: string
+  category?: string
+  is_active?: boolean
 }
 
 export interface PriceSnapshot {
