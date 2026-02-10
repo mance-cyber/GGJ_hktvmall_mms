@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.models.database import get_db
 from app.models.product import Product as OwnProduct
-from app.services.hktvmall import HKTVMallClient, HKTVMallMockClient
+from app.services.hktvmall import HKTVMallClient
 
 logger = logging.getLogger(__name__)
 
@@ -40,15 +40,11 @@ class SyncResult(BaseModel):
 # ==========================================
 
 def get_hktv_client():
-    """Dependency to get the correct HKTVmall Client based on config"""
-    if settings.hktv_connector_type == "mock":
-        return HKTVMallMockClient()
-    
-    # Real client checks
+    """Dependency: 獲取 HKTVmall API 客戶端，未配置則返回 503"""
     if not settings.hktv_access_token or not settings.hktv_store_code:
         raise HTTPException(
-            status_code=503, 
-            detail="HKTVmall configuration missing (Token or Store Code not set)"
+            status_code=503,
+            detail="HKTVmall API 尚未配置，請在 .env 設定 HKTVMALL_ACCESS_TOKEN 和 HKTVMALL_STORE_CODE"
         )
     return HKTVMallClient()
 
@@ -61,10 +57,9 @@ async def check_connection(client = Depends(get_hktv_client)):
     """測試與 HKTVmall 的連接狀態"""
     try:
         return {
-            "status": "configured", 
+            "status": "configured",
             "store_code": client.store_code,
             "base_url": client.base_url,
-            "mode": "mock" if isinstance(client, HKTVMallMockClient) else "real"
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -150,7 +145,7 @@ async def sync_products_from_remote(
     
     background_tasks.add_task(run_sync_task, skus, client, db)
     
-    return {"message": f"Sync started for {len(skus)} products", "mode": "mock" if isinstance(client, HKTVMallMockClient) else "real"}
+    return {"message": f"已開始同步 {len(skus)} 個商品"}
 
 async def run_sync_task(skus: List[str], client, db: AsyncSession):
     """後台執行同步邏輯"""

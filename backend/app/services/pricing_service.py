@@ -14,7 +14,7 @@ from sqlalchemy import select, update, desc
 from app.models.pricing import PriceProposal, ProposalStatus, AuditLog, ProposalType
 from app.models.product import Product, ProductCompetitorMapping
 from app.models.competitor import CompetitorProduct
-from app.services.hktvmall import HKTVMallClient, HKTVMallMockClient
+from app.services.hktvmall import HKTVMallClient
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -232,13 +232,10 @@ class PricingService:
             raise ValueError(f"Product {product_id} has no SKU")
             
         # Decide which client to use
-        # Use Mock if no token or in dev mode (optional, but sticking to token check for now)
-        if settings.hktv_access_token and settings.hktv_access_token != "mock_token":
-            logger.info(f"Using Real HKTVmall API for {sku}")
-            client = HKTVMallClient()
-        else:
-            logger.info(f"Using Mock HKTVmall API for {sku}")
-            client = HKTVMallMockClient()
+        if not settings.hktv_access_token or not settings.hktv_store_code:
+            logger.warning(f"HKTVmall API 尚未配置，跳過價格同步 {sku}")
+            return False
+        client = HKTVMallClient()
             
         # Call API
         try:

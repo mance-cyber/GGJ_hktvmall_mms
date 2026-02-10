@@ -90,7 +90,7 @@ class Settings(BaseSettings):
     r2_public_url: str = Field(default="", alias="R2_PUBLIC_URL")
 
     # HKTVmall Connector
-    hktv_connector_type: str = Field(default="mock", alias="HKTV_CONNECTOR_TYPE")
+    hktv_connector_type: str = Field(default="real", alias="HKTV_CONNECTOR_TYPE")
     
     # HKTVmall MMS API (New)
     hktv_api_base_url: str = Field(default="https://merchant-oapi.shoalter.com/oapi/api", alias="HKTVMALL_API_BASE_URL")

@@ -10,13 +10,6 @@ from app.schemas.finance import SettlementResponse, ProfitSummary
 
 router = APIRouter()
 
-@router.post("/sync-mock")
-async def sync_mock_data(db: AsyncSession = Depends(get_db)):
-    """生成測試用的財務數據"""
-    service = FinanceService(db)
-    result = await service.sync_mock_data()
-    return {"status": "success", "message": result}
-
 @router.get("/settlements", response_model=List[SettlementResponse])
 async def get_settlements(limit: int = 10, db: AsyncSession = Depends(get_db)):
     """獲取最新的結算單"""

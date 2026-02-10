@@ -647,8 +647,8 @@ export const api = {
   // HKTVmall 集成 API
   // =============================================
 
-  hktvSyncProducts: () => 
-    fetchAPI<{ message: string; mode: string }>('/hktvmall/sync/products', { method: 'POST' }),
+  hktvSyncProducts: () =>
+    fetchAPI<{ message: string }>('/hktvmall/sync/products', { method: 'POST' }),
     
   hktvUpdatePrice: (sku: string, price: number, promotionPrice?: number) =>
     fetchAPI<{ success: boolean; remote_response: any }>(`/hktvmall/products/${sku}/price`, {
@@ -1295,9 +1295,6 @@ export interface ProfitSummary {
 }
 
 export const financeApi = {
-  syncMockData: () => 
-    fetchAPI<{status: string, message: string}>('/finance/sync-mock', { method: 'POST' }),
-
   getSettlements: (limit: number = 10) =>
     fetchAPI<Settlement[]>(`/finance/settlements?limit=${limit}`),
 

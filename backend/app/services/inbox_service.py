@@ -3,13 +3,13 @@
 # =============================================
 
 from datetime import datetime
-from typing import List, Optional, Union
+from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from sqlalchemy.orm import selectinload
 
 from app.models.inbox import Conversation, Message
-from app.services.hktvmall import HKTVMallClient, HKTVMallMockClient
+from app.services.hktvmall import HKTVMallClient
 from app.config import settings
 import logging
 
@@ -19,11 +19,11 @@ class InboxService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    def _get_client(self) -> Union[HKTVMallClient, HKTVMallMockClient]:
-        """獲取 HKTVmall API 客戶端（真實或 Mock）"""
-        if settings.hktv_access_token and settings.hktv_access_token != "mock_token":
-            return HKTVMallClient()
-        return HKTVMallMockClient()
+    def _get_client(self) -> HKTVMallClient:
+        """獲取 HKTVmall API 客戶端"""
+        if not settings.hktv_access_token or not settings.hktv_store_code:
+            raise RuntimeError("HKTVmall API 尚未配置")
+        return HKTVMallClient()
 
     async def sync_conversations(self):
         """同步對話列表"""

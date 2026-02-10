@@ -83,10 +83,11 @@ export default function ProductsPage() {
     mutationFn: () => api.hktvSyncProducts(),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
-      alert('同步已開始！模式: ' + data.mode + '\n' + data.message)
+      alert(data.message)
     },
-    onError: (err) => {
-      alert('同步失敗: ' + err)
+    onError: (err: any) => {
+      const msg = err?.message || err?.detail || String(err)
+      alert('同步失敗: ' + msg)
     }
   })
 
