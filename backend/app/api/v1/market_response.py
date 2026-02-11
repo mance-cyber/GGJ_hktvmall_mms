@@ -175,21 +175,46 @@ async def get_mrc_dashboard(
         for row in category_result
     }
     
-    # 5. 組裝響應
+    # 5. 機會雷達：競品缺貨機會
+    opportunities = await _get_stockout_opportunities(db, limit=10)
+
+    # 6. 最近價格告警（未讀）
+    price_alerts_query = (
+        select(PriceAlert)
+        .join(CompetitorProduct)
+        .where(PriceAlert.is_read == False)
+        .order_by(PriceAlert.created_at.desc())
+        .limit(10)
+    )
+    price_alerts_result = await db.execute(price_alerts_query)
+    price_alerts_data = [
+        {
+            "id": alert.id,
+            "competitor_product_id": alert.competitor_product_id,
+            "alert_type": alert.alert_type,
+            "old_value": alert.old_value,
+            "new_value": alert.new_value,
+            "change_percent": float(alert.change_percent) if alert.change_percent else None,
+            "created_at": alert.created_at.isoformat() if alert.created_at else None,
+        }
+        for alert in price_alerts_result.scalars().all()
+    ]
+
+    # 7. 組裝響應
     stats = MRCDashboardStats(
         total_products=total_products,
         products_with_competitors=products_with_competitors,
         seasonal_products_this_month=len(seasonal_products),
         price_alerts_unread=price_alerts_unread,
-        opportunities_count=0,  # TODO: 實現機會計算
+        opportunities_count=len(opportunities),
         categories_breakdown=categories_breakdown
     )
-    
+
     return MRCDashboardResponse(
         stats=stats,
         seasonal_products=seasonal_products,
-        price_alerts=[],  # TODO: 實現警報列表
-        opportunities=[]  # TODO: 實現機會列表
+        price_alerts=price_alerts_data,
+        opportunities=opportunities
     )
 
 
@@ -444,3 +469,101 @@ async def batch_find_competitors(
         "processed": len(batch_results),
         "results": batch_results
     }
+
+# =============================================
+# Helper Functions
+# =============================================
+
+async def _get_stockout_opportunities(db: AsyncSession, limit: int = 10) -> List[dict]:
+    """
+    查詢競品缺貨機會
+
+    邏輯：
+    1. 找出所有有競品映射的商品
+    2. 檢查每個商品的競品是否「都」缺貨
+    3. 返回機會清單（我們是唯一有貨的賣家）
+    """
+    from sqlalchemy import select, func
+    from app.models.product import Product, ProductCompetitorMapping
+    from app.models.competitor import PriceSnapshot
+
+    opportunities = []
+
+    # 獲取所有有競品映射的商品
+    stmt = (
+        select(Product.id, Product.sku, Product.name_zh, Product.price)
+        .join(ProductCompetitorMapping)
+        .distinct()
+        .limit(limit * 3)  # 查詢更多候選，因為不是所有商品都符合條件
+    )
+    result = await db.execute(stmt)
+    products = result.all()
+
+    for product_row in products:
+        product_id = product_row.id
+        sku = product_row.sku
+        name_zh = product_row.name_zh
+        price = product_row.price
+
+        # 檢查此商品的所有競品是否都缺貨
+        all_stockout = await _check_all_competitors_stockout(db, product_id)
+
+        if all_stockout:
+            # 計算有多少個競品
+            competitor_count_stmt = (
+                select(func.count(ProductCompetitorMapping.id))
+                .where(ProductCompetitorMapping.product_id == product_id)
+            )
+            competitor_count = await db.scalar(competitor_count_stmt) or 0
+
+            opportunities.append({
+                "product_id": str(product_id),
+                "sku": sku,
+                "name": name_zh or sku,
+                "current_price": float(price) if price else None,
+                "opportunity_type": "all_competitors_stockout",
+                "competitor_count": competitor_count,
+                "description": f"{competitor_count} 個競品都缺貨，搶市機會！",
+            })
+
+            if len(opportunities) >= limit:
+                break
+
+    return opportunities
+
+
+async def _check_all_competitors_stockout(db: AsyncSession, product_id: UUID) -> bool:
+    """檢查商品的所有競品是否都缺貨"""
+    from sqlalchemy import select
+    from app.models.product import ProductCompetitorMapping
+    from app.models.competitor import PriceSnapshot
+
+    # 找到所有競品映射
+    stmt = (
+        select(ProductCompetitorMapping.competitor_product_id)
+        .where(ProductCompetitorMapping.product_id == product_id)
+    )
+    result = await db.execute(stmt)
+    competitor_product_ids = result.scalars().all()
+
+    if not competitor_product_ids:
+        return False  # 沒有競品映射
+
+    # 檢查每個競品的最新庫存狀態
+    for cp_id in competitor_product_ids:
+        # 最新的價格快照
+        stmt = (
+            select(PriceSnapshot.stock_status)
+            .where(PriceSnapshot.competitor_product_id == cp_id)
+            .order_by(PriceSnapshot.scraped_at.desc())
+            .limit(1)
+        )
+        result = await db.execute(stmt)
+        latest_stock = result.scalar_one_or_none()
+
+        # 如果有任何一個競品有貨，就不是機會窗口
+        if latest_stock and latest_stock != "out_of_stock":
+            return False
+
+    # 所有競品都缺貨！
+    return True

@@ -45,6 +45,7 @@ class PricerAgent(AgentBase):
         return {
             Events.PRICE_ALERT_CREATED: self._on_price_alert,
             Events.COMPETITOR_PRICE_DROP: self._on_competitor_drop,
+            Events.COMPETITOR_STOCKOUT: self._on_competitor_stockout,
             Events.SCHEDULE_PRICER_BATCH: self._on_schedule_batch,
         }
 
@@ -174,6 +175,165 @@ class PricerAgent(AgentBase):
             "competitor_product_id": str(cp_id),
             "proposals_created": proposals_created,
         })
+
+    async def _on_competitor_stockout(self, event: Event) -> None:
+        """
+        競品缺貨 → 黃金機會窗口
+
+        策略：
+        1. 找到對應的我方商品
+        2. 檢查「所有」競品是否都缺貨
+        3. 如果是唯一有貨的賣家 → 生成「維持原價」或「提價 5-10%」提案
+        4. Telegram 推送「機會窗口」通知
+        """
+        cp_id = event.payload.get("competitor_product_id")
+        if not cp_id:
+            return
+
+        self._logger.info(f"競品缺貨: cp={cp_id} → 分析機會窗口")
+
+        from sqlalchemy import select, func
+        from app.models.product import Product, ProductCompetitorMapping
+        from app.models.competitor import CompetitorProduct, PriceSnapshot
+        from app.services.pricing_service import PricingService
+
+        opportunities_found = 0
+        async with self.get_db_session() as session:
+            # 找到對應的我方商品
+            stmt = (
+                select(Product)
+                .join(ProductCompetitorMapping)
+                .where(
+                    ProductCompetitorMapping.competitor_product_id == UUID(str(cp_id))
+                )
+            )
+            result = await session.execute(stmt)
+            our_products = result.scalars().all()
+
+            if not our_products:
+                self._logger.info(f"競品 {cp_id} 未映射到任何我方商品")
+                return
+
+            pricing = PricingService(session)
+
+            for product in our_products:
+                # 檢查此商品的「所有」競品是否都缺貨
+                all_competitors_out = await self._check_all_competitors_stockout(
+                    session, product.id
+                )
+
+                if not all_competitors_out:
+                    self._logger.info(
+                        f"商品 {product.sku}: 仍有其他競品有貨，無機會窗口"
+                    )
+                    continue
+
+                # 黃金機會：我們是唯一有貨的賣家！
+                self._logger.info(
+                    f"🎯 機會窗口: {product.sku} - 所有競品都缺貨！"
+                )
+
+                # 策略：小幅提價 5-10%（或維持原價）
+                if not product.price:
+                    self._logger.warning(f"商品 {product.sku} 無價格設置")
+                    continue
+
+                # 提價 7%（取中間值）
+                price_increase_percent = Decimal("0.07")
+                suggested_price = product.price * (Decimal("1") + price_increase_percent)
+
+                # 檢查是否有價格上限
+                if product.max_price and suggested_price > product.max_price:
+                    suggested_price = product.max_price
+                    self._logger.info(
+                        f"提價受限於 max_price: {product.max_price}"
+                    )
+
+                # 創建提案
+                await pricing.create_proposal(
+                    product_id=product.id,
+                    proposed_price=suggested_price,
+                    reason=(
+                        f"🎯 機會窗口：所有競品都缺貨，建議提價 {float(price_increase_percent * 100):.1f}% "
+                        f"至 ${suggested_price}（搶市場份額 + 利潤最大化）"
+                    ),
+                    model="agent_pricer_stockout_opportunity",
+                )
+                opportunities_found += 1
+
+                # Telegram 推送機會通知
+                await self.escalate_to_human(
+                    "🎯 缺貨機會窗口",
+                    f"商品 <strong>{product.name_zh or product.sku}</strong> "
+                    f"的所有競品都缺貨！\n\n"
+                    f"<strong>當前價格</strong>: ${product.price}\n"
+                    f"<strong>建議提價</strong>: ${suggested_price} (+{float(price_increase_percent * 100):.1f}%)\n\n"
+                    f"這是搶佔市場份額的黃金機會 💰",
+                    {
+                        "product_id": str(product.id),
+                        "sku": product.sku,
+                        "current_price": str(product.price),
+                        "suggested_price": str(suggested_price),
+                        "opportunity_type": "all_competitors_stockout",
+                    },
+                )
+
+                self._logger.info(
+                    f"已創建缺貨機會提案: {product.sku} "
+                    f"${product.price} -> ${suggested_price}"
+                )
+
+        await self.emit(Events.AGENT_TASK_COMPLETED, {
+            "agent": self.name,
+            "task": "stockout_opportunity",
+            "competitor_product_id": str(cp_id),
+            "opportunities_found": opportunities_found,
+        })
+
+    async def _check_all_competitors_stockout(
+        self, session, product_id: UUID
+    ) -> bool:
+        """
+        檢查商品的「所有」競品是否都缺貨
+
+        邏輯：
+        1. 找到此商品映射的所有競品
+        2. 查詢每個競品的最新價格快照
+        3. 如果所有快照都顯示 out_of_stock → 返回 True
+        """
+        from sqlalchemy import select
+        from app.models.product import ProductCompetitorMapping
+        from app.models.competitor import PriceSnapshot
+
+        # 找到所有競品映射
+        stmt = (
+            select(ProductCompetitorMapping.competitor_product_id)
+            .where(ProductCompetitorMapping.product_id == product_id)
+        )
+        result = await session.execute(stmt)
+        competitor_product_ids = result.scalars().all()
+
+        if not competitor_product_ids:
+            return False  # 沒有競品映射
+
+        # 檢查每個競品的最新庫存狀態
+        for cp_id in competitor_product_ids:
+            # 最新的價格快照
+            stmt = (
+                select(PriceSnapshot.stock_status)
+                .where(PriceSnapshot.competitor_product_id == cp_id)
+                .order_by(PriceSnapshot.scraped_at.desc())
+                .limit(1)
+            )
+            result = await session.execute(stmt)
+            latest_stock = result.scalar_one_or_none()
+
+            # 如果有任何一個競品有貨，就不是機會窗口
+            if latest_stock and latest_stock != "out_of_stock":
+                return False
+
+        # 所有競品都缺貨！
+        return True
 
     async def _on_schedule_batch(self, event: Event) -> None:
         """Commander 排程：批量分析所有商品定價"""
