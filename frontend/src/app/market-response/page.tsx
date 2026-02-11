@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
@@ -24,7 +24,9 @@ import {
   Bell,
   FileBarChart,
   Target,
-  Download
+  Download,
+  Bot,
+  Play
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -39,6 +41,22 @@ import {
   DataMetric,
   StaggerContainer
 } from '@/components/ui/future-tech'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 // =============================================
 // Interfaces
@@ -56,8 +74,12 @@ interface CategoryData {
 
 export default function MarketResponsePage() {
   const { toast } = useToast()
+  const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [batchDialogOpen, setBatchDialogOpen] = useState(false)
+  const [batchLimit, setBatchLimit] = useState('10')
+  const [batchCategory, setBatchCategory] = useState('')
 
   // Handle search debounce
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,6 +95,38 @@ export default function MarketResponsePage() {
     toast({
       title: '功能開發中',
       description: '報告匯出功能即將推出，敬請期待！',
+    })
+  }
+
+  // 批量競品匹配 mutation
+  const batchMatchMutation = useMutation({
+    mutationFn: ({ limit, categoryMain }: { limit: number; categoryMain?: string }) =>
+      api.batchFindCompetitors(limit, categoryMain),
+    onSuccess: (data) => {
+      toast({
+        title: '✅ 批量匹配完成！',
+        description: `處理了 ${data.processed} 個商品，找到 ${data.results.filter(r => r.matches && r.matches > 0).length} 個競品`,
+      })
+      // 刷新競品數據
+      queryClient.invalidateQueries({ queryKey: ['competitors-for-mrc'] })
+      queryClient.invalidateQueries({ queryKey: ['products-for-mrc'] })
+      setBatchDialogOpen(false)
+    },
+    onError: (error: Error) => {
+      toast({
+        title: '❌ 批量匹配失敗',
+        description: error.message,
+        variant: 'destructive',
+      })
+    },
+  })
+
+  // 執行批量匹配
+  const handleBatchMatch = () => {
+    const limit = parseInt(batchLimit)
+    batchMatchMutation.mutate({
+      limit,
+      categoryMain: batchCategory || undefined,
     })
   }
 
@@ -138,6 +192,90 @@ export default function MarketResponsePage() {
             <Badge variant="outline" className="px-2 py-0.5 sm:px-3 sm:py-1 bg-blue-50 text-blue-700 border-blue-200 text-[10px] sm:text-xs">
               <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1 fill-blue-700" /> 即時
             </Badge>
+            <Dialog open={batchDialogOpen} onOpenChange={setBatchDialogOpen}>
+              <DialogTrigger asChild>
+                <HoloButton variant="default" size="sm" icon={<Bot className="w-3.5 h-3.5" />}>
+                  <span className="hidden sm:inline">批量匹配</span>
+                  <span className="sm:hidden">匹配</span>
+                </HoloButton>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>🤖 批量競品匹配</DialogTitle>
+                  <DialogDescription>
+                    自動搜索 HKTVmall 上的競爭商品，並使用 AI 智能判斷是否為同級商品
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">處理數量</label>
+                    <Select value={batchLimit} onValueChange={setBatchLimit}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10 個商品（測試）</SelectItem>
+                        <SelectItem value="20">20 個商品</SelectItem>
+                        <SelectItem value="30">30 個商品</SelectItem>
+                        <SelectItem value="50">50 個商品</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">分類篩選（可選）</label>
+                    <Select value={batchCategory} onValueChange={setBatchCategory}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="全部分類" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">全部分類</SelectItem>
+                        <SelectItem value="鮮魚">鮮魚</SelectItem>
+                        <SelectItem value="貝類">貝類</SelectItem>
+                        <SelectItem value="蟹類">蟹類</SelectItem>
+                        <SelectItem value="其他海鮮">其他海鮮</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="rounded-lg bg-blue-50 p-3 text-sm text-blue-700">
+                    <p className="font-medium mb-1">💰 預估成本</p>
+                    <p className="text-xs">
+                      {parseInt(batchLimit)} 個商品 ≈ ¥{(parseInt(batchLimit) * 0.04).toFixed(2)} (Claude API)
+                      <br />
+                      + Firecrawl API 額度
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-yellow-50 p-3 text-sm text-yellow-700">
+                    <p className="font-medium mb-1">⚠️ 注意事項</p>
+                    <p className="text-xs">
+                      • 只會處理尚未匹配競品的商品<br />
+                      • 執行時間約 {Math.ceil(parseInt(batchLimit) / 5)} 分鐘<br />
+                      • 建議先執行 10 個商品測試
+                    </p>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setBatchDialogOpen(false)}>
+                    取消
+                  </Button>
+                  <Button
+                    onClick={handleBatchMatch}
+                    disabled={batchMatchMutation.isPending}
+                  >
+                    {batchMatchMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        處理中...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="mr-2 h-4 w-4" />
+                        開始匹配
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
             <HoloButton variant="secondary" size="sm" icon={<Download className="w-3.5 h-3.5" />} onClick={handleExportReport}>
               <span className="hidden sm:inline">匯出</span>
             </HoloButton>

@@ -537,6 +537,23 @@ export const api = {
   getMrcStatsOverview: () =>
     fetchAPI<any>('/mrc/stats/overview'),
 
+  // 批量競品匹配
+  batchFindCompetitors: (limit: number = 50, categoryMain?: string, categorySub?: string) => {
+    const params = new URLSearchParams({ limit: limit.toString() })
+    if (categoryMain) params.append('category_main', categoryMain)
+    if (categorySub) params.append('category_sub', categorySub)
+    return fetchAPI<{
+      processed: number
+      results: Array<{
+        product_id: string
+        product_name: string
+        candidates?: number
+        matches?: number
+        error?: string
+      }>
+    }>(`/mrc/batch/find-competitors?${params.toString()}`, { method: 'POST' })
+  },
+
   // =============================================
   // AI 設定與分析 API
   // =============================================
