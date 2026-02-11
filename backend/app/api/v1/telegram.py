@@ -462,6 +462,7 @@ async def _handle_approve_proposal(
 ) -> Dict[str, Any]:
     """處理批准提案按鈕"""
     from app.models.pricing import PriceProposal, ProposalStatus
+    from app.services.pricing_service import PricingService
     from datetime import datetime
 
     try:
@@ -473,32 +474,61 @@ async def _handle_approve_proposal(
                 "show_alert": True
             }
 
-        if proposal.status != ProposalStatus.PENDING.value:
+        if proposal.status != ProposalStatus.PENDING:
             return {
                 "action": "approve_proposal",
-                "toast_message": f"提案已處理 ({proposal.status})",
+                "toast_message": f"提案已處理 ({proposal.status.value})",
                 "show_alert": True
             }
 
-        # 批准提案
-        proposal.status = ProposalStatus.APPROVED.value
-        proposal.approved_at = datetime.utcnow()
-        proposal.approved_by_source = "telegram"
-
-        await db.commit()
+        # 調用 PricingService 批准提案（自動執行改價）
+        pricing_service = PricingService(db)
+        try:
+            approved_proposal = await pricing_service.approve_proposal(
+                proposal_id=UUID(proposal_id),
+                user_id="telegram_bot"
+            )
+        except Exception as e:
+            logger.error(f"PricingService 批准提案失敗: {e}")
+            return {
+                "action": "approve_proposal",
+                "toast_message": f"批准失敗: {str(e)[:30]}",
+                "show_alert": True
+            }
 
         # 移除按鈕
         await notifier.edit_message_reply_markup(chat_id, message_id, None)
 
-        # 發送確認消息
+        # 發送確認消息（根據執行結果）
+        if approved_proposal.status == ProposalStatus.EXECUTED:
+            message = (
+                f"✅ <b>提案已批准並執行</b>\n\n"
+                f"提案編號: {proposal_id[:8]}...\n"
+                f"新價格: HK${float(approved_proposal.final_price):.2f}\n\n"
+                f"價格已更新至 HKTVmall 🎉"
+            )
+        elif approved_proposal.status == ProposalStatus.FAILED:
+            message = (
+                f"⚠️ <b>提案已批准但執行失敗</b>\n\n"
+                f"提案編號: {proposal_id[:8]}...\n"
+                f"錯誤: {approved_proposal.error_message or '未知錯誤'}\n\n"
+                f"請手動檢查並執行"
+            )
+        else:
+            message = (
+                f"✅ <b>提案已批准</b>\n\n"
+                f"提案編號: {proposal_id[:8]}...\n\n"
+                f"狀態: {approved_proposal.status.value}"
+            )
+
         await notifier.send_message(
-            text=f"✅ <b>提案已批准</b>\n\n提案編號: {proposal_id[:8]}...\n\n下一步：請在系統中執行改價操作",
+            text=message,
             chat_id=chat_id
         )
 
         return {
             "action": "approve_proposal",
-            "toast_message": "✅ 提案已批准",
+            "toast_message": "✅ 提案已批准並執行",
             "show_alert": False
         }
 
@@ -520,6 +550,7 @@ async def _handle_reject_proposal(
 ) -> Dict[str, Any]:
     """處理拒絕提案按鈕"""
     from app.models.pricing import PriceProposal, ProposalStatus
+    from app.services.pricing_service import PricingService
     from datetime import datetime
 
     try:
@@ -531,22 +562,36 @@ async def _handle_reject_proposal(
                 "show_alert": True
             }
 
-        if proposal.status != ProposalStatus.PENDING.value:
+        if proposal.status != ProposalStatus.PENDING:
             return {
                 "action": "reject_proposal",
-                "toast_message": f"提案已處理 ({proposal.status})",
+                "toast_message": f"提案已處理 ({proposal.status.value})",
                 "show_alert": True
             }
 
-        # 拒絕提案
-        proposal.status = ProposalStatus.REJECTED.value
-        proposal.rejected_at = datetime.utcnow()
-        proposal.rejected_by_source = "telegram"
-
-        await db.commit()
+        # 調用 PricingService 拒絕提案
+        pricing_service = PricingService(db)
+        try:
+            await pricing_service.reject_proposal(
+                proposal_id=UUID(proposal_id),
+                user_id="telegram_bot"
+            )
+        except Exception as e:
+            logger.error(f"PricingService 拒絕提案失敗: {e}")
+            return {
+                "action": "reject_proposal",
+                "toast_message": f"拒絕失敗: {str(e)[:30]}",
+                "show_alert": True
+            }
 
         # 移除按鈕
         await notifier.edit_message_reply_markup(chat_id, message_id, None)
+
+        # 發送確認消息
+        await notifier.send_message(
+            text=f"❌ <b>提案已拒絕</b>\n\n提案編號: {proposal_id[:8]}...",
+            chat_id=chat_id
+        )
 
         return {
             "action": "reject_proposal",
