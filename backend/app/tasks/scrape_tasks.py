@@ -283,3 +283,123 @@ def scrape_single_product(self, product_id: str):
                 return {"error": str(e)}
 
     return run_async(_scrape())
+
+# =============================================
+# 分級監測策略
+# =============================================
+
+@celery_app.task(name="app.tasks.scrape_tasks.scrape_by_priority")
+def scrape_by_priority(priorities: list[str] = None):
+    """
+    按優先級爬取競品商品（分級監測策略）
+    
+    Args:
+        priorities: 優先級列表，例如 ["A", "B", "C"]
+                   - A級：核心商品（高利潤率 >50%）
+                   - B級：一般商品（中等利潤率 20-50%）
+                   - C級：低優先商品（低利潤率 <20%）
+    
+    排程：
+        - 08:00: A + B + C（所有商品）
+        - 14:00: A（僅核心商品）
+        - 20:00: A + B（核心 + 一般）
+    """
+    if priorities is None:
+        priorities = ["A", "B", "C"]
+    
+    from app.models.database import async_session_maker
+    from app.models.product import Product, ProductCompetitorMapping
+    from app.models.competitor import Competitor, CompetitorProduct
+    from sqlalchemy import select, distinct
+    
+    async def _scrape_by_priority():
+        async with async_session_maker() as db:
+            # 查詢符合優先級的商品映射的競品
+            stmt = (
+                select(distinct(CompetitorProduct.competitor_id))
+                .join(ProductCompetitorMapping, ProductCompetitorMapping.competitor_product_id == CompetitorProduct.id)
+                .join(Product, Product.id == ProductCompetitorMapping.product_id)
+                .where(
+                    Product.monitoring_priority.in_(priorities),
+                    CompetitorProduct.is_active == True
+                )
+            )
+            
+            result = await db.execute(stmt)
+            competitor_ids = result.scalars().all()
+            
+            # 為每個競爭對手創建爬取任務
+            for competitor_id in competitor_ids:
+                scrape_competitor.delay(str(competitor_id))
+            
+            return {
+                "priorities": priorities,
+                "competitors_queued": len(competitor_ids),
+                "message": f"已為 {len(competitor_ids)} 個競爭對手創建爬取任務（優先級: {', '.join(priorities)}）"
+            }
+    
+    return run_async(_scrape_by_priority())
+
+
+@celery_app.task(name="app.tasks.scrape_tasks.auto_classify_monitoring_priority")
+def auto_classify_monitoring_priority():
+    """
+    自動分類商品監測優先級（基於利潤率）
+    
+    分類標準：
+    - A級：利潤率 > 50% 且有競品映射
+    - B級：利潤率 20-50%
+    - C級：利潤率 < 20% 或無競品映射
+    
+    建議：每天執行一次（例如凌晨 02:00），確保優先級始終最新
+    """
+    from app.models.database import async_session_maker
+    from app.models.product import Product, ProductCompetitorMapping
+    from sqlalchemy import select, func
+    
+    async def _auto_classify():
+        async with async_session_maker() as db:
+            # 查詢所有商品
+            result = await db.execute(select(Product))
+            products = result.scalars().all()
+            
+            classified_count = {"A": 0, "B": 0, "C": 0}
+            
+            for product in products:
+                # 跳過無價格或成本的商品
+                if not product.price or not product.cost or product.cost == 0:
+                    product.monitoring_priority = "C"
+                    classified_count["C"] += 1
+                    continue
+                
+                # 計算利潤率
+                profit_margin = float((product.price - product.cost) / product.cost * 100)
+                
+                # 檢查是否有競品映射
+                mapping_result = await db.execute(
+                    select(func.count())
+                    .select_from(ProductCompetitorMapping)
+                    .where(ProductCompetitorMapping.product_id == product.id)
+                )
+                has_competitors = (mapping_result.scalar() or 0) > 0
+                
+                # 分類邏輯
+                if profit_margin > 50 and has_competitors:
+                    product.monitoring_priority = "A"
+                    classified_count["A"] += 1
+                elif profit_margin >= 20:
+                    product.monitoring_priority = "B"
+                    classified_count["B"] += 1
+                else:
+                    product.monitoring_priority = "C"
+                    classified_count["C"] += 1
+            
+            await db.commit()
+            
+            return {
+                "total_products": len(products),
+                "classified": classified_count,
+                "message": f"已分類 {len(products)} 個商品：A級 {classified_count['A']} 個，B級 {classified_count['B']} 個，C級 {classified_count['C']} 個"
+            }
+    
+    return run_async(_auto_classify())

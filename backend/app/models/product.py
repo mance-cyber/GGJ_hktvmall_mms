@@ -32,6 +32,13 @@ class Product(Base):
     max_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), comment="最高售價")
     auto_pricing_enabled: Mapped[bool] = mapped_column(Boolean, default=False, comment="是否啟用 AI 自動定價")
 
+    # 監測優先級（分級監測策略）
+    monitoring_priority: Mapped[str] = mapped_column(
+        String(10),
+        default="B",
+        comment="監測優先級: A=核心商品(3次/天), B=一般商品(2次/天), C=低優先(1次/天)"
+    )
+
     stock_quantity: Mapped[int] = mapped_column(Integer, default=0)
     status: Mapped[str] = mapped_column(String(50), default="active", comment="active, inactive, pending")
     images: Mapped[Optional[list]] = mapped_column(JSONB, default=[])

@@ -267,3 +267,130 @@ async def get_profitability_ranking(
         sort_by=sort_by,
         avg_profit_margin=avg_profit_margin,
     )
+
+
+# =============================================
+# 監測優先級管理 - 分級監測策略
+# =============================================
+
+from typing import Literal as LiteralType
+
+
+class MonitoringPriorityUpdate(BaseModel):
+    """更新監測優先級請求"""
+    priority: LiteralType["A", "B", "C"] = Field(
+        ...,
+        description="監測優先級：A=核心商品(3次/天), B=一般商品(2次/天), C=低優先(1次/天)"
+    )
+
+
+class MonitoringPriorityStats(BaseModel):
+    """監測優先級統計"""
+    a_count: int = Field(description="A級商品數量")
+    b_count: int = Field(description="B級商品數量")
+    c_count: int = Field(description="C級商品數量")
+    total: int = Field(description="總商品數量")
+    daily_scrapes_estimate: int = Field(description="預估每日爬取次數")
+
+
+@router.patch("/{product_id}/monitoring-priority", response_model=ProductResponse)
+async def update_monitoring_priority(
+    product_id: UUID,
+    priority_update: MonitoringPriorityUpdate,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    更新商品的監測優先級
+    
+    **優先級說明**：
+    - **A級（核心商品）**: 每天爬取 3 次（08:00, 14:00, 20:00）
+      - 適用於：高利潤率商品（>50%）、競爭激烈的商品
+    - **B級（一般商品）**: 每天爬取 2 次（08:00, 20:00）
+      - 適用於：中等利潤率商品（20-50%）
+    - **C級（低優先）**: 每天爬取 1 次（08:00）
+      - 適用於：低利潤率商品（<20%）、無競品的商品
+    """
+    result = await db.execute(
+        select(Product).where(Product.id == product_id)
+    )
+    product = result.scalar_one_or_none()
+    if not product:
+        raise NotFoundError(resource="商品")
+    
+    product.monitoring_priority = priority_update.priority
+    await db.flush()
+    await db.refresh(product)
+    
+    return ProductResponse.model_validate(product)
+
+
+@router.get("/monitoring-priority/stats", response_model=MonitoringPriorityStats)
+async def get_monitoring_priority_stats(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    獲取監測優先級統計
+    
+    返回各優先級的商品數量和預估每日爬取次數
+    """
+    # 統計各優先級的商品數量
+    a_count_result = await db.execute(
+        select(func.count())
+        .select_from(Product)
+        .where(Product.monitoring_priority == "A")
+    )
+    a_count = a_count_result.scalar() or 0
+    
+    b_count_result = await db.execute(
+        select(func.count())
+        .select_from(Product)
+        .where(Product.monitoring_priority == "B")
+    )
+    b_count = b_count_result.scalar() or 0
+    
+    c_count_result = await db.execute(
+        select(func.count())
+        .select_from(Product)
+        .where(Product.monitoring_priority == "C")
+    )
+    c_count = c_count_result.scalar() or 0
+    
+    total = a_count + b_count + c_count
+    
+    # 估算每日爬取次數
+    # A級：3次，B級：2次，C級：1次
+    daily_scrapes = (a_count * 3) + (b_count * 2) + (c_count * 1)
+    
+    return MonitoringPriorityStats(
+        a_count=a_count,
+        b_count=b_count,
+        c_count=c_count,
+        total=total,
+        daily_scrapes_estimate=daily_scrapes,
+    )
+
+
+@router.post("/monitoring-priority/auto-classify")
+async def trigger_auto_classify(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    手動觸發自動分類監測優先級
+    
+    分類標準：
+    - **A級**: 利潤率 > 50% 且有競品映射
+    - **B級**: 利潤率 20-50%
+    - **C級**: 利潤率 < 20% 或無競品映射
+    
+    **建議**: 在批量導入商品或修改成本價格後執行
+    """
+    from app.tasks.scrape_tasks import auto_classify_monitoring_priority
+    
+    # 觸發 Celery 任務
+    task = auto_classify_monitoring_priority.delay()
+    
+    return {
+        "success": True,
+        "task_id": task.id,
+        "message": "自動分類任務已啟動，請稍後查看結果"
+    }

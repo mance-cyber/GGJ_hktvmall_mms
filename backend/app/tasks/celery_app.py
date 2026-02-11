@@ -51,17 +51,30 @@ celery_app.conf.update(
 # 定時任務
 celery_app.conf.beat_schedule = {
     # =============================================
-    # 競品價格監測 - 每天 2 次（08:00 + 20:00）
+    # 競品價格監測 - 分級監測策略
     # =============================================
-    # 早上 08:00 - 開市前監測，為當日定價決策提供數據
-    "scrape-all-competitors-morning": {
-        "task": "app.tasks.scrape_tasks.scrape_all_competitors",
+    # 早上 08:00 - 所有商品（A/B/C 級）
+    "scrape-competitors-morning-all": {
+        "task": "app.tasks.scrape_tasks.scrape_by_priority",
         "schedule": crontab(hour=8, minute=0),  # 每天 08:00 HKT
+        "kwargs": {"priorities": ["A", "B", "C"]},
     },
-    # 晚上 20:00 - 晚間監測，捕捉全天價格變動
-    "scrape-all-competitors-evening": {
-        "task": "app.tasks.scrape_tasks.scrape_all_competitors",
+    # 下午 14:00 - 僅 A 級核心商品
+    "scrape-competitors-afternoon-priority": {
+        "task": "app.tasks.scrape_tasks.scrape_by_priority",
+        "schedule": crontab(hour=14, minute=0),  # 每天 14:00 HKT
+        "kwargs": {"priorities": ["A"]},
+    },
+    # 晚上 20:00 - A 級 + B 級商品
+    "scrape-competitors-evening-ab": {
+        "task": "app.tasks.scrape_tasks.scrape_by_priority",
         "schedule": crontab(hour=20, minute=0),  # 每天 20:00 HKT
+        "kwargs": {"priorities": ["A", "B"]},
+    },
+    # 凌晨 02:00 - 自動分類商品監測優先級
+    "auto-classify-monitoring-priority": {
+        "task": "app.tasks.scrape_tasks.auto_classify_monitoring_priority",
+        "schedule": crontab(hour=2, minute=0),  # 每天 02:00 HKT
     },
     # 每日清理過期的圖片生成任務（7 天前）
     "cleanup-old-image-tasks-daily": {
