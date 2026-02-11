@@ -400,7 +400,8 @@ class FirecrawlConnector:
             商品連結列表
         """
         try:
-            raw_data = self.scrape_url(url, use_json_mode=False, wait_for=5000)
+            # 增加等待時間讓 JS 完全渲染（HKTVmall 商品列表是動態加載）
+            raw_data = self.scrape_url(url, use_json_mode=False, wait_for=15000)
             html = raw_data.get("html", "")
 
             product_urls = set()
