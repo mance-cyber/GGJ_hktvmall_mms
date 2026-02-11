@@ -66,6 +66,15 @@ class Settings(BaseSettings):
     claude_session_key: str = Field(default="", alias="CLAUDE_SESSION_KEY")
     claude_org_id: str = Field(default="", alias="CLAUDE_ORG_ID")
 
+    # 模型分級策略（多模型配置）
+    ai_model_simple: str = Field(default="claude-haiku-4-5-20251001-thinking", alias="AI_MODEL_SIMPLE")  # 簡單任務
+    ai_model_medium: str = Field(default="claude-opus-4-6-thinking", alias="AI_MODEL_MEDIUM")  # 中等任務
+    ai_model_complex: str = Field(default="claude-opus-4-6-thinking", alias="AI_MODEL_COMPLEX")  # 複雜任務
+
+    # 中轉 API 配置
+    ai_base_url: str = Field(default="https://api.anthropic.com", alias="AI_BASE_URL")  # API 端點
+    ai_api_key: str = Field(default="", alias="AI_API_KEY")  # 中轉 API Key（如果與 ANTHROPIC_API_KEY 不同）
+
     @field_validator('anthropic_api_key')
     @classmethod
     def validate_anthropic_key(cls, v, info):

@@ -4,6 +4,7 @@
 
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, field
+from enum import Enum
 import httpx
 import json
 from datetime import datetime
@@ -15,13 +16,27 @@ from app.models.system import SystemSetting
 from app.config import get_settings
 
 
+# =============================================
+# 任務複雜度枚舉
+# =============================================
+
+class TaskComplexity(str, Enum):
+    """任務複雜度等級"""
+    SIMPLE = "simple"      # 簡單任務：競品映射、SEO 關鍵詞、基礎分析
+    MEDIUM = "medium"      # 中等任務：文案生成、定價分析、內容優化
+    COMPLEX = "complex"    # 複雜任務：市場簡報、戰略建議、深度分析
+
+
 # 常用模型列表
 AVAILABLE_MODELS = [
-    # Claude 系列
+    # Claude 4.x 系列（最新）
+    {"id": "claude-opus-4-6-thinking", "name": "Claude Opus 4.6 Thinking", "description": "最強思考模型（中轉 API）"},
+    {"id": "claude-haiku-4-5-20251001-thinking", "name": "Claude Haiku 4.5 Thinking", "description": "經濟思考模型（中轉 API）"},
     {"id": "claude-opus-4-6-20250229", "name": "Claude Opus 4.6", "description": "最新最強大模型"},
     {"id": "claude-sonnet-4-5-20250929", "name": "Claude Sonnet 4.5", "description": "最新平衡模型"},
     {"id": "claude-sonnet-4-20250514", "name": "Claude Sonnet 4", "description": "平衡模型"},
     {"id": "claude-opus-4-20250514", "name": "Claude Opus 4", "description": "強大模型"},
+    # Claude 3.x 系列
     {"id": "claude-3-5-sonnet-20241022", "name": "Claude 3.5 Sonnet", "description": "高性價比"},
     {"id": "claude-3-5-haiku-20241022", "name": "Claude 3.5 Haiku", "description": "快速經濟"},
     {"id": "claude-3-opus-20240229", "name": "Claude 3 Opus", "description": "舊版最強"},
@@ -53,11 +68,27 @@ def _get_default_model() -> str:
 
 @dataclass
 class AIConfig:
-    """AI 配置"""
+    """AI 配置（支持多模型分級）"""
     api_key: str = ""
-    base_url: str = field(default_factory=_get_default_base_url)  # 從配置讀取預設值
-    insights_model: str = field(default_factory=_get_default_model)  # 數據摘要用的模型
-    strategy_model: str = field(default_factory=_get_default_model)  # Marketing 策略用的模型
+    base_url: str = field(default_factory=_get_default_base_url)  # API 端點
+
+    # 單模型配置（向後兼容）
+    insights_model: str = field(default_factory=_get_default_model)  # 數據摘要
+    strategy_model: str = field(default_factory=_get_default_model)  # 策略建議
+
+    # 多模型分級配置（新增）
+    simple_model: str = "claude-haiku-4-5-20251001-thinking"    # 簡單任務
+    medium_model: str = "claude-opus-4-6-thinking"               # 中等任務
+    complex_model: str = "claude-opus-4-6-thinking"              # 複雜任務
+
+    def get_model_by_complexity(self, complexity: TaskComplexity) -> str:
+        """根據任務複雜度返回對應模型"""
+        if complexity == TaskComplexity.SIMPLE:
+            return self.simple_model
+        elif complexity == TaskComplexity.MEDIUM:
+            return self.medium_model
+        else:  # COMPLEX
+            return self.complex_model
 
 
 @dataclass
@@ -71,7 +102,7 @@ class AIResponse:
 
 
 class AISettingsService:
-    """AI 設定服務 - 管理 API Key、Base URL 和模型選擇"""
+    """AI 設定服務 - 管理 API Key、Base URL 和模型選擇（支持多模型分級）"""
 
     # 設定鍵名
     KEY_API_KEY = "ai_api_key"
@@ -79,12 +110,29 @@ class AISettingsService:
     KEY_INSIGHTS_MODEL = "ai_insights_model"
     KEY_STRATEGY_MODEL = "ai_strategy_model"
 
+    # 多模型分級設定（新增）
+    KEY_SIMPLE_MODEL = "ai_simple_model"
+    KEY_MEDIUM_MODEL = "ai_medium_model"
+    KEY_COMPLEX_MODEL = "ai_complex_model"
+
     @classmethod
     async def get_config(cls, db: AsyncSession) -> AIConfig:
-        """獲取 AI 配置"""
+        """獲取 AI 配置（支持多模型分級）"""
+        settings_obj = get_settings()
         config = AIConfig()
 
-        # 讀取所有設定
+        # 優先從環境變數讀取
+        if settings_obj.ai_api_key or settings_obj.anthropic_api_key:
+            config.api_key = settings_obj.ai_api_key or settings_obj.anthropic_api_key
+        if settings_obj.ai_base_url:
+            config.base_url = settings_obj.ai_base_url
+
+        # 多模型分級配置（優先從環境變數）
+        config.simple_model = settings_obj.ai_model_simple
+        config.medium_model = settings_obj.ai_model_medium
+        config.complex_model = settings_obj.ai_model_complex
+
+        # 讀取數據庫設定（可覆蓋環境變數）
         result = await db.execute(
             select(SystemSetting).where(
                 SystemSetting.key.in_([
@@ -92,6 +140,9 @@ class AISettingsService:
                     cls.KEY_BASE_URL,
                     cls.KEY_INSIGHTS_MODEL,
                     cls.KEY_STRATEGY_MODEL,
+                    cls.KEY_SIMPLE_MODEL,
+                    cls.KEY_MEDIUM_MODEL,
+                    cls.KEY_COMPLEX_MODEL,
                 ])
             )
         )
@@ -106,6 +157,14 @@ class AISettingsService:
         if cls.KEY_STRATEGY_MODEL in settings:
             config.strategy_model = settings[cls.KEY_STRATEGY_MODEL]
 
+        # 多模型配置（數據庫優先）
+        if cls.KEY_SIMPLE_MODEL in settings:
+            config.simple_model = settings[cls.KEY_SIMPLE_MODEL]
+        if cls.KEY_MEDIUM_MODEL in settings:
+            config.medium_model = settings[cls.KEY_MEDIUM_MODEL]
+        if cls.KEY_COMPLEX_MODEL in settings:
+            config.complex_model = settings[cls.KEY_COMPLEX_MODEL]
+
         return config
 
     @classmethod
@@ -116,8 +175,11 @@ class AISettingsService:
         base_url: Optional[str] = None,
         insights_model: Optional[str] = None,
         strategy_model: Optional[str] = None,
+        simple_model: Optional[str] = None,
+        medium_model: Optional[str] = None,
+        complex_model: Optional[str] = None,
     ) -> AIConfig:
-        """保存 AI 配置"""
+        """保存 AI 配置（支持多模型分級）"""
         updates = {}
         if api_key is not None:
             updates[cls.KEY_API_KEY] = api_key
@@ -129,6 +191,14 @@ class AISettingsService:
             updates[cls.KEY_INSIGHTS_MODEL] = insights_model
         if strategy_model is not None:
             updates[cls.KEY_STRATEGY_MODEL] = strategy_model
+
+        # 多模型配置
+        if simple_model is not None:
+            updates[cls.KEY_SIMPLE_MODEL] = simple_model
+        if medium_model is not None:
+            updates[cls.KEY_MEDIUM_MODEL] = medium_model
+        if complex_model is not None:
+            updates[cls.KEY_COMPLEX_MODEL] = complex_model
 
         for key, value in updates.items():
             existing = await db.execute(

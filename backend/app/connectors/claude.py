@@ -21,12 +21,19 @@ class GeneratedContent:
 
 
 class ClaudeConnector:
-    """Claude AI 連接器 - 支持 API Key 和 Session Token"""
+    """Claude AI 連接器 - 支持 API Key、Session Token 和中轉 API"""
 
-    def __init__(self):
+    def __init__(self, model: Optional[str] = None, base_url: Optional[str] = None):
         settings = get_settings()
-        self.api_key = settings.anthropic_api_key
-        self.model = settings.ai_model
+
+        # API Key（中轉 API 優先，回退到官方 API Key）
+        self.api_key = settings.ai_api_key or settings.anthropic_api_key
+
+        # 模型（參數優先，回退到配置）
+        self.model = model or settings.ai_model
+
+        # Base URL（支持中轉 API）
+        self.base_url = base_url or settings.ai_base_url
 
         # 優先使用 Session Token（如果設定）
         session_key = getattr(settings, 'claude_session_key', None)
@@ -35,8 +42,11 @@ class ClaudeConnector:
             # 使用 Session Token (Claude.ai 訂閱)
             self.client = self._create_session_client(session_key)
         elif self.api_key and self.api_key.startswith("sk-ant-"):
-            # 使用 API Key (官方 API)
-            self.client = anthropic.Anthropic(api_key=self.api_key)
+            # 使用 API Key（支持自定義 Base URL）
+            self.client = anthropic.Anthropic(
+                api_key=self.api_key,
+                base_url=self.base_url if self.base_url != "https://api.anthropic.com" else None
+            )
         else:
             self.client = None
 
