@@ -405,13 +405,14 @@ class FirecrawlConnector:
 
             product_urls = set()
 
-            # HKTVmall 商品連結模式
-            # 標準產品頁: /hktv/zh/p/H12345678
+            # HKTVmall 商品連結模式（放寬版：支持所有字母開頭）
+            # 標準產品頁: /hktv/zh/p/H12345678, /p/B12345678 等
             patterns = [
-                r'href="([^"]*?/p/H\d+[^"]*)"',           # /p/H12345
-                r'href="([^"]*hktvmall\.com[^"]*H\d{6,}[^"]*)"',  # 完整 URL
-                r'data-href="([^"]*?/p/H\d+[^"]*)"',      # data-href 屬性
-                r'onclick="[^"]*(/p/H\d+)[^"]*"',         # onclick 中的連結
+                r'href="([^"]*?/p/[A-Z]\d+[^"]*)"',           # /p/H12345, /p/B12345 等
+                r'href="([^"]*hktvmall\.com[^"]*[A-Z]\d{6,}[^"]*)"',  # 完整 URL
+                r'data-href="([^"]*?/p/[A-Z]\d+[^"]*)"',      # data-href 屬性
+                r'onclick="[^"]*(/p/[A-Z]\d+)[^"]*"',         # onclick 中的連結
+                r'href="([^"]*?/product/[^"]*)"',             # /product/ 格式（備用）
             ]
 
             for pattern in patterns:
