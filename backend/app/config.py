@@ -60,7 +60,11 @@ class Settings(BaseSettings):
 
     # Claude AI
     anthropic_api_key: str = Field(default="", alias="ANTHROPIC_API_KEY")
-    ai_model: str = Field(default="claude-sonnet-4-20250514", alias="AI_MODEL")
+    ai_model: str = Field(default="claude-sonnet-4-5-20250929", alias="AI_MODEL")  # 預設使用 Claude Sonnet 4.5
+
+    # Claude Session Token（支持 Claude.ai Pro/Max 訂閱）
+    claude_session_key: str = Field(default="", alias="CLAUDE_SESSION_KEY")
+    claude_org_id: str = Field(default="", alias="CLAUDE_ORG_ID")
 
     @field_validator('anthropic_api_key')
     @classmethod

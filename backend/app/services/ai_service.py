@@ -18,8 +18,10 @@ from app.config import get_settings
 # 常用模型列表
 AVAILABLE_MODELS = [
     # Claude 系列
-    {"id": "claude-sonnet-4-20250514", "name": "Claude Sonnet 4", "description": "最新平衡模型"},
-    {"id": "claude-opus-4-20250514", "name": "Claude Opus 4", "description": "最強大模型"},
+    {"id": "claude-opus-4-6-20250229", "name": "Claude Opus 4.6", "description": "最新最強大模型"},
+    {"id": "claude-sonnet-4-5-20250929", "name": "Claude Sonnet 4.5", "description": "最新平衡模型"},
+    {"id": "claude-sonnet-4-20250514", "name": "Claude Sonnet 4", "description": "平衡模型"},
+    {"id": "claude-opus-4-20250514", "name": "Claude Opus 4", "description": "強大模型"},
     {"id": "claude-3-5-sonnet-20241022", "name": "Claude 3.5 Sonnet", "description": "高性價比"},
     {"id": "claude-3-5-haiku-20241022", "name": "Claude 3.5 Haiku", "description": "快速經濟"},
     {"id": "claude-3-opus-20240229", "name": "Claude 3 Opus", "description": "舊版最強"},

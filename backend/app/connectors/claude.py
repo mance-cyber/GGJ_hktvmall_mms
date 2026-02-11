@@ -21,13 +21,34 @@ class GeneratedContent:
 
 
 class ClaudeConnector:
-    """Claude AI 連接器"""
+    """Claude AI 連接器 - 支持 API Key 和 Session Token"""
 
     def __init__(self):
         settings = get_settings()
         self.api_key = settings.anthropic_api_key
         self.model = settings.ai_model
-        self.client = anthropic.Anthropic(api_key=self.api_key) if self.api_key and self.api_key.startswith("sk-ant-") else None
+
+        # 優先使用 Session Token（如果設定）
+        session_key = getattr(settings, 'claude_session_key', None)
+
+        if session_key and session_key.startswith("sk-ant-sid"):
+            # 使用 Session Token (Claude.ai 訂閱)
+            self.client = self._create_session_client(session_key)
+        elif self.api_key and self.api_key.startswith("sk-ant-"):
+            # 使用 API Key (官方 API)
+            self.client = anthropic.Anthropic(api_key=self.api_key)
+        else:
+            self.client = None
+
+    def _create_session_client(self, session_key: str):
+        """創建 Session Token 客戶端（使用 claude.ai 內部 API）"""
+        # 注意：這需要額外的 claude-api 套件
+        try:
+            from claude_api import ClaudeClient
+            return ClaudeClient(session_key=session_key)
+        except ImportError:
+            # 如果沒有安裝 claude-api，回退到標準 API
+            return anthropic.Anthropic(api_key=self.api_key) if self.api_key else None
 
     def generate_content(
         self,
