@@ -203,6 +203,17 @@ def create_app() -> FastAPI:
     # 生產環境和開發環境的 CORS 來源可通過環境變數配置
     allowed_origins = settings.get_cors_origins()
 
+    # 確保前端域名始終被允許（Zeabur 部署）
+    required_origins = [
+        "https://ggj-front.zeabur.app",
+        "https://ggj-back.zeabur.app",
+    ]
+    for origin in required_origins:
+        if origin not in allowed_origins:
+            allowed_origins.append(origin)
+
+    logger.info(f"CORS allowed origins: {allowed_origins}")
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,
