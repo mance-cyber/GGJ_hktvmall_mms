@@ -16,7 +16,7 @@ GPT-Best (https://gpt-best.apifox.cn/) 是一個中轉 API 服務，支持 Claud
 4. 生成新的 API Key
 
 你會得到：
-- **Base URL**：`https://api.gpt-best.com/v1`（或類似地址）
+- **Base URL**：`https://api.bltcy.ai/v1`（實際地址請在平台確認）
 - **API Key**：`sk-xxxxxxxxxxxxxxxx`
 
 ### 2. 確認支持的模型
@@ -40,7 +40,7 @@ GPT-Best (https://gpt-best.apifox.cn/) 是一個中轉 API 服務，支持 Claud
 ```bash
 # ==================== API 端點配置 ====================
 # 替換為你從 GPT-Best 平台獲取的實際 Base URL
-AI_BASE_URL=https://api.gpt-best.com/v1
+AI_BASE_URL=https://api.bltcy.ai/v1
 
 # 替換為你從 GPT-Best 管理後台生成的 API Key
 AI_API_KEY=sk-xxxxxxxxxxxxxxxx
@@ -134,7 +134,7 @@ Zeabur 會自動觸發重新部署（約 2-3 分鐘）。
 
 在 Zeabur Dashboard → Logs，應該看到：
 ```
-[INFO] Using AI Base URL: https://api.gpt-best.com/v1
+[INFO] Using AI Base URL: https://api.bltcy.ai/v1
 [INFO] AI API Key: sk-****（前幾個字符）
 [INFO] Model Strategy Loaded:
   - Simple: claude-haiku-4-5-20251001-thinking
@@ -204,14 +204,14 @@ Error: Model 'claude-haiku-4-5-20251001-thinking' not found
 
 **症狀**：
 ```
-Error: Connection refused to https://api.gpt-best.com/v1
+Error: Connection refused to https://api.bltcy.ai/v1
 ```
 
 **解決**：
 1. 登入 GPT-Best 管理後台
 2. 查找「Base URL」或「API 端點」設定
 3. 確認正確的 Base URL（可能是）：
-   - `https://api.gpt-best.com/v1`
+   - `https://api.bltcy.ai/v1`
    - `https://gpt-best.apifox.cn/v1`
    - `https://api.gptbest.com/v1`
 4. 更新 `AI_BASE_URL` 環境變數
@@ -265,7 +265,7 @@ logger.info(f"AI Call: model={model}, input_tokens={input_tokens}, "
 
 ```bash
 # 主 API
-AI_BASE_URL=https://api.gpt-best.com/v1
+AI_BASE_URL=https://api.bltcy.ai/v1
 AI_API_KEY=sk-primary-xxxxxxxx
 
 # 備用 API（可選）

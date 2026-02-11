@@ -25,7 +25,7 @@ curl https://ggj-back.zeabur.app/api/v1/ai/test-env-config
   "has_api_key": true,
   "config": {
     "ai_base_url": {
-      "value": "https://api.gpt-best.com/v1",
+      "value": "https://api.bltcy.ai/v1",
       "set": true,
       "source": "環境變數 AI_BASE_URL"
     },
@@ -62,7 +62,7 @@ curl -X POST https://ggj-back.zeabur.app/api/v1/ai/test-claude-connection \
   -H "Content-Type: application/json" \
   -d '{
     "api_key": "sk-xxxxxxxxxxxxxxxx",
-    "base_url": "https://api.gpt-best.com/v1",
+    "base_url": "https://api.bltcy.ai/v1",
     "model": "claude-haiku-4-5-20251001-thinking"
   }'
 ```
@@ -88,7 +88,7 @@ curl -X POST https://ggj-back.zeabur.app/api/v1/ai/test-claude-connection \
   -H "Content-Type: application/json" \
   -d '{
     "api_key": "sk-xxxxxxxxxxxxxxxx",
-    "base_url": "https://api.gpt-best.com/v1",
+    "base_url": "https://api.bltcy.ai/v1",
     "model": "claude-opus-4-6-thinking"
   }'
 ```
@@ -124,7 +124,7 @@ curl -X POST https://ggj-back.zeabur.app/api/v1/ai/test-claude-connection \
 [INFO] Starting GoGoJap Backend...
 [INFO] Environment: production
 [INFO] AI Configuration:
-  - Base URL: https://api.gpt-best.com/v1
+  - Base URL: https://api.bltcy.ai/v1
   - API Key: sk-****...****
   - Simple Model: claude-haiku-4-5-20251001-thinking
   - Medium Model: claude-opus-4-6-thinking
@@ -178,14 +178,14 @@ curl -X POST https://ggj-back.zeabur.app/api/v1/ai/test-claude-connection \
   "valid": false,
   "error": "❌ 端點不存在",
   "status_code": 404,
-  "hint": "正確格式例如：https://api.gpt-best.com/v1"
+  "hint": "正確格式例如：https://api.bltcy.ai/v1"
 }
 ```
 
 **解決**：
 1. 檢查 `AI_BASE_URL` 是否包含 `/v1`
 2. 確認 Base URL 格式：
-   - ✅ `https://api.gpt-best.com/v1`
+   - ✅ `https://api.bltcy.ai/v1`
    - ❌ `https://api.gpt-best.com`
    - ❌ `https://gpt-best.apifox.cn`
 
@@ -250,7 +250,7 @@ curl -X POST https://ggj-back.zeabur.app/api/v1/ai/test-claude-connection \
   -H "Content-Type: application/json" \
   -d '{
     "api_key": "<your-api-key>",
-    "base_url": "https://api.gpt-best.com/v1",
+    "base_url": "https://api.bltcy.ai/v1",
     "model": "claude-haiku-4-5-20251001-thinking"
   }'
 ```
@@ -262,7 +262,7 @@ curl -X POST https://ggj-back.zeabur.app/api/v1/ai/test-claude-connection \
   -H "Content-Type: application/json" \
   -d '{
     "api_key": "<your-api-key>",
-    "base_url": "https://api.gpt-best.com/v1",
+    "base_url": "https://api.bltcy.ai/v1",
     "model": "claude-opus-4-6-thinking"
   }'
 ```
@@ -318,7 +318,7 @@ curl -X POST https://ggj-back.zeabur.app/api/v1/ai/test-claude-connection \
 #!/bin/bash
 
 API_KEY="sk-xxxxxxxxxxxxxxxx"
-BASE_URL="https://api.gpt-best.com/v1"
+BASE_URL="https://api.bltcy.ai/v1"
 BACKEND="https://ggj-back.zeabur.app"
 
 echo "🔍 Step 1: 檢查環境變數..."

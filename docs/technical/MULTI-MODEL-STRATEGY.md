@@ -61,7 +61,7 @@ GoGoJap 系統支持**多模型分級策略**，根據任務複雜度自動選�
 # ==================== 中轉 API 配置 ====================
 
 # API 端點（替換為你的中轉 API 地址）
-AI_BASE_URL=https://your-relay-api.com/v1
+AI_BASE_URL=https://api.bltcy.ai/v1
 
 # API Key（中轉 API 的 Key）
 AI_API_KEY=sk-xxxxxxxxxxxxxxxx
@@ -225,7 +225,7 @@ git pull origin main
 4. 添加以下變數：
 
 ```bash
-AI_BASE_URL=https://your-relay-api.com/v1
+AI_BASE_URL=https://api.bltcy.ai/v1
 AI_API_KEY=sk-xxxxxxxxxxxxxxxx
 AI_MODEL_SIMPLE=claude-haiku-4-5-20251001-thinking
 AI_MODEL_MEDIUM=claude-opus-4-6-thinking
@@ -299,7 +299,7 @@ Error: Model 'claude-haiku-4-5-20251001-thinking' not found
 
 **症狀**：
 ```
-Error: Connection refused to https://your-relay-api.com/v1
+Error: Connection refused to https://api.bltcy.ai/v1
 ```
 
 **解決**：
