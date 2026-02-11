@@ -2,9 +2,11 @@
 # 商品管理 API
 # =============================================
 
-from typing import Optional
+from typing import Optional, Literal
 from uuid import UUID
+from decimal import Decimal
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel, Field
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -273,12 +275,10 @@ async def get_profitability_ranking(
 # 監測優先級管理 - 分級監測策略
 # =============================================
 
-from typing import Literal as LiteralType
-
 
 class MonitoringPriorityUpdate(BaseModel):
     """更新監測優先級請求"""
-    priority: LiteralType["A", "B", "C"] = Field(
+    priority: Literal["A", "B", "C"] = Field(
         ...,
         description="監測優先級：A=核心商品(3次/天), B=一般商品(2次/天), C=低優先(1次/天)"
     )
