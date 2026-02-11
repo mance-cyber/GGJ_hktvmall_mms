@@ -79,7 +79,7 @@ export default function MarketResponsePage() {
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [batchDialogOpen, setBatchDialogOpen] = useState(false)
   const [batchLimit, setBatchLimit] = useState('10')
-  const [batchCategory, setBatchCategory] = useState('')
+  const [batchCategory, setBatchCategory] = useState('all')
 
   // Handle search debounce
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,7 +126,7 @@ export default function MarketResponsePage() {
     const limit = parseInt(batchLimit)
     batchMatchMutation.mutate({
       limit,
-      categoryMain: batchCategory || undefined,
+      categoryMain: batchCategory === 'all' ? undefined : batchCategory,
     })
   }
 
@@ -225,10 +225,10 @@ export default function MarketResponsePage() {
                     <label className="text-sm font-medium">分類篩選（可選）</label>
                     <Select value={batchCategory} onValueChange={setBatchCategory}>
                       <SelectTrigger>
-                        <SelectValue placeholder="全部分類" />
+                        <SelectValue placeholder="選擇分類" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">全部分類</SelectItem>
+                        <SelectItem value="all">全部分類</SelectItem>
                         <SelectItem value="鮮魚">鮮魚</SelectItem>
                         <SelectItem value="貝類">貝類</SelectItem>
                         <SelectItem value="蟹類">蟹類</SelectItem>
