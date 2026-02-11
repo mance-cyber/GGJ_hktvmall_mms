@@ -103,9 +103,14 @@ export default function MarketResponsePage() {
     mutationFn: ({ limit, categoryMain }: { limit: number; categoryMain?: string }) =>
       api.batchFindCompetitors(limit, categoryMain),
     onSuccess: (data) => {
+      const totalCandidates = data.results.reduce((sum, r) => sum + (r.candidates || 0), 0)
+      const totalMatches = data.results.reduce((sum, r) => sum + (r.matches || 0), 0)
+      const noResults = data.results.filter(r => r.candidates === 0).length
+      const errors = data.results.filter(r => r.error).length
+
       toast({
         title: '✅ 批量匹配完成！',
-        description: `處理了 ${data.processed} 個商品，找到 ${data.results.filter(r => r.matches && r.matches > 0).length} 個競品`,
+        description: `處理 ${data.processed} 個 | 🔍 候選 ${totalCandidates} 個 | ✅ 匹配 ${totalMatches} 個 | ⚠️ 無結果 ${noResults} 個${errors > 0 ? ` | ❌ 錯誤 ${errors} 個` : ''}`,
       })
       // 刷新競品數據
       queryClient.invalidateQueries({ queryKey: ['competitors-for-mrc'] })
