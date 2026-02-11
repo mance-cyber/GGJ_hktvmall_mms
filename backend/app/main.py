@@ -11,12 +11,15 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from pathlib import Path
 import time
+import logging
 
 from app.config import get_settings
 from app.models.database import init_db
 from app.api.v1.router import api_router
 from app.core.logging import setup_logging
 from app.core.exceptions import register_exception_handlers
+
+logger = logging.getLogger(__name__)
 
 
 # =============================================
