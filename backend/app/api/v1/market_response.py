@@ -3,6 +3,7 @@
 # 市場應對中心 - 核心 API 端點
 # =============================================
 
+import logging
 from typing import List, Optional
 from datetime import datetime, date
 from uuid import UUID
@@ -18,6 +19,7 @@ from app.models.product import Product, ProductCompetitorMapping
 from app.models.competitor import CompetitorProduct, PriceSnapshot, PriceAlert
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 # =============================================
@@ -406,66 +408,85 @@ async def batch_find_competitors(
 ):
     """
     批量為商品搜索競品
-    
+
     注意：此操作會消耗 API 配額，請謹慎使用
     """
-    from app.services.competitor_matcher import get_competitor_matcher_service
-    
-    # 查詢尚未有競品關聯的商品（所有來源）
-    subquery = select(ProductCompetitorMapping.product_id)
+    try:
+        from app.services.competitor_matcher import CompetitorMatcherService
 
-    query = select(Product).where(
-        ~Product.id.in_(subquery)
-    )
-    
-    if category_main:
-        query = query.where(Product.category_main == category_main)
-    if category_sub:
-        query = query.where(Product.category_sub == category_sub)
-    
-    query = query.limit(limit)
-    
-    result = await db.execute(query)
-    products = result.scalars().all()
-    
-    service = get_competitor_matcher_service()
-    
-    batch_results = []
-    for product in products:
-        try:
-            results = await service.find_competitors_for_product(
-                db=db,
-                product=product,
-                max_candidates=3
-            )
-            
-            matches = [r for r in results if r.is_match and r.match_confidence >= 0.6]
-            
-            for match in matches[:1]:  # 每個商品最多保存一個最佳匹配
-                await service.save_match_to_db(
+        # 查詢尚未有競品關聯的商品（所有來源）
+        subquery = select(ProductCompetitorMapping.product_id)
+
+        query = select(Product).where(
+            ~Product.id.in_(subquery)
+        )
+
+        if category_main:
+            query = query.where(Product.category_main == category_main)
+        if category_sub:
+            query = query.where(Product.category_sub == category_sub)
+
+        query = query.limit(limit)
+
+        result = await db.execute(query)
+        products = result.scalars().all()
+
+        if not products:
+            return {
+                "processed": 0,
+                "results": [],
+                "message": "沒有待處理的商品（所有商品都已有競品映射）"
+            }
+
+        # 直接實例化服務
+        service = CompetitorMatcherService()
+
+        batch_results = []
+        for product in products:
+            try:
+                results = await service.find_competitors_for_product(
                     db=db,
-                    product_id=str(product.id),
-                    match_result=match
+                    product=product,
+                    max_candidates=3
                 )
-            
-            batch_results.append({
-                "product_id": str(product.id),
-                "product_name": product.name_zh,
-                "candidates": len(results),
-                "matches": len(matches)
-            })
-            
-        except Exception as e:
-            batch_results.append({
-                "product_id": str(product.id),
-                "product_name": product.name_zh,
-                "error": str(e)
-            })
-    
-    return {
-        "processed": len(batch_results),
-        "results": batch_results
-    }
+
+                matches = [r for r in results if r.is_match and r.match_confidence >= 0.6]
+
+                for match in matches[:1]:  # 每個商品最多保存一個最佳匹配
+                    await service.save_match_to_db(
+                        db=db,
+                        product_id=str(product.id),
+                        match_result=match
+                    )
+
+                batch_results.append({
+                    "product_id": str(product.id),
+                    "product_name": product.name_zh,
+                    "candidates": len(results),
+                    "matches": len(matches)
+                })
+
+            except Exception as e:
+                logger.error(f"處理商品失敗: {product.name_zh} - {str(e)}", exc_info=True)
+                batch_results.append({
+                    "product_id": str(product.id),
+                    "product_name": product.name_zh,
+                    "error": str(e)
+                })
+
+        await db.commit()
+
+        return {
+            "processed": len(batch_results),
+            "results": batch_results
+        }
+
+    except Exception as e:
+        logger.error(f"批量競品匹配失敗: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"批量匹配失敗: {str(e)}"
+        )
 
 # =============================================
 # Helper Functions
