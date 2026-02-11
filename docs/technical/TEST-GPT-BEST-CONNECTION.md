@@ -14,7 +14,7 @@
 
 ```bash
 # 使用 curl 或瀏覽器訪問
-curl https://ggj-back.zeabur.app/api/v1/ai-settings/test-env-config
+curl https://ggj-back.zeabur.app/api/v1/ai/test-env-config
 ```
 
 **預期響應**：
@@ -58,7 +58,7 @@ curl https://ggj-back.zeabur.app/api/v1/ai-settings/test-env-config
 
 ```bash
 # 測試 Haiku 模型（簡單任務）
-curl -X POST https://ggj-back.zeabur.app/api/v1/ai-settings/test-claude-connection \
+curl -X POST https://ggj-back.zeabur.app/api/v1/ai/test-claude-connection \
   -H "Content-Type: application/json" \
   -d '{
     "api_key": "sk-xxxxxxxxxxxxxxxx",
@@ -84,7 +84,7 @@ curl -X POST https://ggj-back.zeabur.app/api/v1/ai-settings/test-claude-connecti
 
 **測試 Opus 模型**（中高階任務）：
 ```bash
-curl -X POST https://ggj-back.zeabur.app/api/v1/ai-settings/test-claude-connection \
+curl -X POST https://ggj-back.zeabur.app/api/v1/ai/test-claude-connection \
   -H "Content-Type: application/json" \
   -d '{
     "api_key": "sk-xxxxxxxxxxxxxxxx",
@@ -240,13 +240,13 @@ AI_MODEL_COMPLEX=claude-opus-4
 
 ### Step 1：環境變數檢查
 ```bash
-curl https://ggj-back.zeabur.app/api/v1/ai-settings/test-env-config
+curl https://ggj-back.zeabur.app/api/v1/ai/test-env-config
 ```
 ✅ 確認 `status: "ready"` 且 `using_relay_api: true`
 
 ### Step 2：測試 Haiku 模型
 ```bash
-curl -X POST https://ggj-back.zeabur.app/api/v1/ai-settings/test-claude-connection \
+curl -X POST https://ggj-back.zeabur.app/api/v1/ai/test-claude-connection \
   -H "Content-Type: application/json" \
   -d '{
     "api_key": "<your-api-key>",
@@ -258,7 +258,7 @@ curl -X POST https://ggj-back.zeabur.app/api/v1/ai-settings/test-claude-connecti
 
 ### Step 3：測試 Opus 模型
 ```bash
-curl -X POST https://ggj-back.zeabur.app/api/v1/ai-settings/test-claude-connection \
+curl -X POST https://ggj-back.zeabur.app/api/v1/ai/test-claude-connection \
   -H "Content-Type: application/json" \
   -d '{
     "api_key": "<your-api-key>",
