@@ -30,6 +30,7 @@ import {
   Clock,
   DollarSign,
   ClipboardCheck,
+  Bot,
   LucideIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -243,6 +244,13 @@ const navigationGroups: NavGroup[] = [
     color: categoryColors.pink,
     roles: ['admin'],
     items: [
+      {
+        name: 'Agent Team',
+        href: '/agent-team',
+        icon: Bot,
+        description: 'Agent 團隊狀態與控制',
+        permissions: [PERMISSIONS.SYSTEM_SETTINGS_READ]
+      },
       {
         name: 'AI 設定',
         href: '/ai-settings',

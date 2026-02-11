@@ -6,7 +6,7 @@ from fastapi import APIRouter
 
 from app.api.v1 import (
     competitors, products, content, analytics, scrape, categories,
-    telegram, market_response, ai_settings, agent, hktvmall,
+    telegram, market_response, ai_settings, agent, agent_team, hktvmall,
     pricing, orders, inbox, finance, promotions, auth, image_generation,
     price_trends, seo, geo, content_pipeline, seo_ranking, roi, workflow
 )
@@ -94,6 +94,13 @@ api_router.include_router(
     agent.router,
     prefix="/agent",
     tags=["AI Agent 對話"]
+)
+
+# Agent Team Dashboard
+api_router.include_router(
+    agent_team.router,
+    prefix="/agent-team",
+    tags=["Agent Team"]
 )
 
 # HKTVmall 集成

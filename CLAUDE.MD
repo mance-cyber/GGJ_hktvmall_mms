@@ -86,6 +86,32 @@ cd frontend && npm run dev
 cd backend && alembic upgrade head
 ```
 
+## Agent Team 開發工作流
+
+本項目使用 Claude Code Agent Team 進行協作開發。完整設計見 `docs/technical/CLAUDE-CODE-AGENT-TEAM.md`。
+
+### 快速命令
+
+| 命令 | 用途 |
+|------|------|
+| `/dev:new-feature` | 新功能開發（brainstorm → architect → TDD → implement → review） |
+| `/dev:fix-bug` | Bug 修復（debug → explore → repro test → fix → review） |
+| `/dev:refactor` | 安全重構（explore → architect → protection tests → refactor → review） |
+| `/dev:review` | 快速代碼審查 |
+| `/dev:security` | 安全審查 |
+
+### 質量閘門（不可跳過）
+
+1. **Code Review** — 修改 ≥3 個文件時，必須使用 `Task(subagent_type="code-reviewer")`
+2. **Security Review** — 涉及 API 端點/用戶輸入/Token 時，必須使用 `Task(subagent_type="security-reviewer")`
+3. **Doc Sync** — 新增/刪除/移動文件時，必須使用 `Task(subagent_type="doc-updater")`
+
+### Agent 調度原則
+
+- **可並行**：後端探索 + 前端探索、Code Review + Security Review
+- **必須串行**：Architect → TDD → 實現 → Review
+- **model 選擇**：架構/審查用 opus，探索/測試用 sonnet，構建修復/文檔用 haiku
+
 ---
 
 <identity>

@@ -20,6 +20,7 @@ celery_app = Celery(
         "app.tasks.image_generation_tasks",
         "app.tasks.seo_ranking_tasks",
         "app.tasks.workflow_tasks",
+        "app.tasks.agent_tasks",
     ]
 )
 
@@ -79,5 +80,28 @@ celery_app.conf.beat_schedule = {
     "check-due-scheduled-reports": {
         "task": "app.tasks.workflow_tasks.check_and_execute_due_schedules",
         "schedule": crontab(minute="*"),  # 每分鐘執行
+    },
+    # =============================================
+    # Agent Team 排程任務
+    # =============================================
+    # 每日 08:00 — 運營官數據同步
+    "agent-ops-daily-sync": {
+        "task": "app.tasks.agent_tasks.trigger_ops_daily_sync",
+        "schedule": crontab(hour=8, minute=0),
+    },
+    # 每日 09:30 — 偵察兵批量分析
+    "agent-scout-analyze": {
+        "task": "app.tasks.agent_tasks.trigger_scout_analyze",
+        "schedule": crontab(hour=9, minute=30),
+    },
+    # 每日 10:00 — 定價師批量定價
+    "agent-pricer-batch": {
+        "task": "app.tasks.agent_tasks.trigger_pricer_batch",
+        "schedule": crontab(hour=10, minute=0),
+    },
+    # 每日 11:00 — 軍師市場簡報
+    "agent-strategist-briefing": {
+        "task": "app.tasks.agent_tasks.trigger_strategist_briefing",
+        "schedule": crontab(hour=11, minute=0),
     },
 }
