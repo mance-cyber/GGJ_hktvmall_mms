@@ -249,7 +249,7 @@ export default function AgentTeamPage() {
 
   const { data, isLoading, error } = useQuery<TeamStatus>({
     queryKey: ['agent-team-status'],
-    queryFn: () => apiClient.get('/api/v1/agent-team/status'),
+    queryFn: () => apiClient.get('/agent-team/status'),
     refetchInterval: 10000,
   })
 
@@ -257,7 +257,7 @@ export default function AgentTeamPage() {
     mutationFn: async ({ name, enable }: { name: string; enable: boolean }) => {
       setTogglingAgent(name)
       const action = enable ? 'enable' : 'disable'
-      return apiClient.post(`/api/v1/agent-team/${name}/${action}`)
+      return apiClient.post(`/agent-team/${name}/${action}`)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['agent-team-status'] })
