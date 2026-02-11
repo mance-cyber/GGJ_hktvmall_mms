@@ -151,7 +151,7 @@ async def update_ai_config(
 @router.post("/test-connection")
 async def test_connection(request: TestConnectionRequest):
     """
-    測試 API 連接是否有效
+    測試 API 連接是否有效（OpenAI 格式）
 
     會實際調用 API 進行測試
     """
@@ -160,6 +160,41 @@ async def test_connection(request: TestConnectionRequest):
         base_url=request.base_url,
         model=request.model
     )
+    return result
+
+
+@router.post("/test-claude-connection")
+async def test_claude_connection(
+    api_key: str = Body(..., description="API Key"),
+    base_url: str = Body(..., description="Base URL"),
+    model: str = Body(default="claude-haiku-4-5-20251001-thinking", description="模型名稱")
+):
+    """
+    測試 Claude API 連接（GPT-Best 中轉 API）
+
+    會實際調用 Claude API 進行測試，返回：
+    - 連接狀態
+    - 模型可用性
+    - Token 使用量
+    - 錯誤信息（如果有）
+    """
+    result = await AISettingsService.test_claude_connection(
+        api_key=api_key,
+        base_url=base_url,
+        model=model
+    )
+    return result
+
+
+@router.get("/test-env-config")
+async def test_environment_config():
+    """
+    測試環境變數配置
+
+    檢查 Zeabur 環境變數是否正確載入
+    不會調用 API，只檢查配置
+    """
+    result = await AISettingsService.test_environment_config()
     return result
 
 

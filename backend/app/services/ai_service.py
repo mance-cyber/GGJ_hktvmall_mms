@@ -222,9 +222,9 @@ class AISettingsService:
 
     @classmethod
     async def test_connection(cls, api_key: str, base_url: str, model: str = "gpt-3.5-turbo") -> Dict[str, Any]:
-        """測試 API 連接是否有效"""
+        """測試 API 連接是否有效（OpenAI 格式）"""
         base_url = base_url.rstrip('/')
-        
+
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
@@ -239,7 +239,7 @@ class AISettingsService:
                         "max_tokens": 10,
                     }
                 )
-                
+
                 if response.status_code == 200:
                     return {"valid": True, "message": "連接成功！"}
                 elif response.status_code == 401:
@@ -249,13 +249,180 @@ class AISettingsService:
                 else:
                     error_text = response.text[:200] if response.text else "Unknown error"
                     return {"valid": False, "error": f"API 錯誤 ({response.status_code}): {error_text}"}
-                    
+
         except httpx.ConnectError:
             return {"valid": False, "error": "無法連接到服務器，請檢查 Base URL"}
         except httpx.TimeoutException:
             return {"valid": False, "error": "連接超時，請檢查網絡或服務器狀態"}
         except Exception as e:
             return {"valid": False, "error": f"測試失敗: {str(e)}"}
+
+    @classmethod
+    async def test_claude_connection(
+        cls,
+        api_key: str,
+        base_url: str,
+        model: str = "claude-haiku-4-5-20251001-thinking"
+    ) -> Dict[str, Any]:
+        """
+        測試 Claude API 連接（Anthropic 格式）
+
+        用於測試 GPT-Best 等中轉 API 是否能正常調用 Claude 模型
+        """
+        base_url = base_url.rstrip('/')
+
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    f"{base_url}/messages",
+                    headers={
+                        "x-api-key": api_key,
+                        "anthropic-version": "2023-06-01",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": model,
+                        "max_tokens": 50,
+                        "messages": [
+                            {"role": "user", "content": "請用一句話回覆：你好"}
+                        ]
+                    }
+                )
+
+                if response.status_code == 200:
+                    data = response.json()
+                    content = data.get("content", [{}])[0].get("text", "")
+                    usage = data.get("usage", {})
+                    input_tokens = usage.get("input_tokens", 0)
+                    output_tokens = usage.get("output_tokens", 0)
+
+                    return {
+                        "valid": True,
+                        "message": "✅ Claude API 連接成功！",
+                        "model": model,
+                        "response": content,
+                        "tokens": {
+                            "input": input_tokens,
+                            "output": output_tokens,
+                            "total": input_tokens + output_tokens
+                        }
+                    }
+                elif response.status_code == 401:
+                    return {
+                        "valid": False,
+                        "error": "❌ API Key 無效或已過期",
+                        "status_code": 401
+                    }
+                elif response.status_code == 404:
+                    return {
+                        "valid": False,
+                        "error": f"❌ 端點不存在: {base_url}/messages\n請確認 Base URL 是否正確",
+                        "status_code": 404,
+                        "hint": "正確格式例如：https://api.gpt-best.com/v1"
+                    }
+                elif response.status_code == 400:
+                    error_data = response.json() if response.text else {}
+                    error_msg = error_data.get("error", {}).get("message", response.text[:200])
+                    return {
+                        "valid": False,
+                        "error": f"❌ 請求錯誤: {error_msg}",
+                        "status_code": 400,
+                        "hint": f"可能原因：模型 '{model}' 不存在或不可用"
+                    }
+                else:
+                    error_text = response.text[:300] if response.text else "Unknown error"
+                    return {
+                        "valid": False,
+                        "error": f"❌ API 錯誤 ({response.status_code}): {error_text}",
+                        "status_code": response.status_code
+                    }
+
+        except httpx.ConnectError:
+            return {
+                "valid": False,
+                "error": "❌ 無法連接到服務器",
+                "hint": f"請檢查 Base URL: {base_url}"
+            }
+        except httpx.TimeoutException:
+            return {
+                "valid": False,
+                "error": "❌ 連接超時（60秒）",
+                "hint": "請檢查網絡連接或服務器狀態"
+            }
+        except Exception as e:
+            return {
+                "valid": False,
+                "error": f"❌ 測試失敗: {str(e)}"
+            }
+
+    @classmethod
+    async def test_environment_config(cls) -> Dict[str, Any]:
+        """
+        測試環境變數配置
+
+        不調用 API，只檢查 Zeabur 環境變數是否正確載入
+        """
+        settings_obj = get_settings()
+
+        # 檢查各項配置
+        config_status = {
+            "ai_base_url": {
+                "value": settings_obj.ai_base_url,
+                "set": bool(settings_obj.ai_base_url and settings_obj.ai_base_url != "https://api.anthropic.com"),
+                "source": "環境變數 AI_BASE_URL"
+            },
+            "ai_api_key": {
+                "value": f"{settings_obj.ai_api_key[:8]}...{settings_obj.ai_api_key[-4:]}" if settings_obj.ai_api_key and len(settings_obj.ai_api_key) > 12 else "***",
+                "set": bool(settings_obj.ai_api_key),
+                "source": "環境變數 AI_API_KEY"
+            },
+            "anthropic_api_key": {
+                "value": f"{settings_obj.anthropic_api_key[:8]}...{settings_obj.anthropic_api_key[-4:]}" if settings_obj.anthropic_api_key and len(settings_obj.anthropic_api_key) > 12 else "***",
+                "set": bool(settings_obj.anthropic_api_key),
+                "source": "環境變數 ANTHROPIC_API_KEY（官方 API）"
+            },
+            "ai_model_simple": {
+                "value": settings_obj.ai_model_simple,
+                "set": True,
+                "source": "環境變數 AI_MODEL_SIMPLE"
+            },
+            "ai_model_medium": {
+                "value": settings_obj.ai_model_medium,
+                "set": True,
+                "source": "環境變數 AI_MODEL_MEDIUM"
+            },
+            "ai_model_complex": {
+                "value": settings_obj.ai_model_complex,
+                "set": True,
+                "source": "環境變數 AI_MODEL_COMPLEX"
+            }
+        }
+
+        # 判斷整體狀態
+        using_relay_api = config_status["ai_base_url"]["set"]
+        has_api_key = config_status["ai_api_key"]["set"] or config_status["anthropic_api_key"]["set"]
+
+        # 生成建議
+        recommendations = []
+        if not using_relay_api:
+            recommendations.append("⚠️ AI_BASE_URL 未設置或使用預設值，目前使用 Anthropic 官方 API")
+            recommendations.append("💡 若要使用 GPT-Best 中轉 API，請設置：AI_BASE_URL=https://api.gpt-best.com/v1")
+
+        if not config_status["ai_api_key"]["set"] and using_relay_api:
+            recommendations.append("⚠️ 使用中轉 API 但 AI_API_KEY 未設置")
+            recommendations.append("💡 請在 Zeabur 添加環境變數：AI_API_KEY=<你的 GPT-Best API Key>")
+
+        if not has_api_key:
+            recommendations.append("❌ 未設置任何 API Key，AI 功能將無法使用")
+
+        return {
+            "status": "ready" if (using_relay_api and config_status["ai_api_key"]["set"]) or (not using_relay_api and config_status["anthropic_api_key"]["set"]) else "incomplete",
+            "using_relay_api": using_relay_api,
+            "has_api_key": has_api_key,
+            "config": config_status,
+            "recommendations": recommendations,
+            "summary": f"{'✅ 配置完整' if has_api_key else '❌ 配置不完整'} | {'使用中轉 API' if using_relay_api else '使用官方 API'}"
+        }
 
     @classmethod
     def get_available_models(cls) -> List[Dict[str, str]]:
