@@ -194,7 +194,7 @@ export default function MarketResponsePage() {
             </Badge>
             <Dialog open={batchDialogOpen} onOpenChange={setBatchDialogOpen}>
               <DialogTrigger asChild>
-                <HoloButton variant="default" size="sm" icon={<Bot className="w-3.5 h-3.5" />}>
+                <HoloButton variant="primary" size="sm" icon={<Bot className="w-3.5 h-3.5" />}>
                   <span className="hidden sm:inline">批量匹配</span>
                   <span className="sm:hidden">匹配</span>
                 </HoloButton>
