@@ -123,14 +123,11 @@ async def _batch_find_competitors_async(
     await init_db()
 
     async with async_session_maker() as session:
-        # 查詢尚未有競品關聯的商品
+        # 查詢尚未有競品關聯的商品（所有來源）
         subquery = select(ProductCompetitorMapping.product_id)
 
         query = select(Product).where(
-            and_(
-                Product.source == 'gogojap_csv',
-                ~Product.id.in_(subquery)
-            )
+            ~Product.id.in_(subquery)
         )
 
         if category_main:
