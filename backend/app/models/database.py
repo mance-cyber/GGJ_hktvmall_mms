@@ -99,15 +99,17 @@ async def run_migrations(conn):
             "ALTER TABLE products ADD COLUMN IF NOT EXISTS min_price NUMERIC(10, 2);",
             "ALTER TABLE products ADD COLUMN IF NOT EXISTS max_price NUMERIC(10, 2);",
             "ALTER TABLE products ADD COLUMN IF NOT EXISTS auto_pricing_enabled BOOLEAN DEFAULT FALSE;",
-            "ALTER TABLE products ADD COLUMN IF NOT EXISTS cost NUMERIC(10, 2);"
+            "ALTER TABLE products ADD COLUMN IF NOT EXISTS cost NUMERIC(10, 2);",
+            # P0-分級監測 - 添加監測優先級欄位
+            "ALTER TABLE products ADD COLUMN IF NOT EXISTS monitoring_priority VARCHAR(10) DEFAULT 'B';",
         ]
-        
+
         for stmt in alter_statements:
             try:
                 await conn.execute(text(stmt))
             except Exception as e:
                 logger.warning(f"Migration warning: {e}")
-                
+
     except Exception as e:
         logger.error(f"Migration failed: {e}", exc_info=True)
 
