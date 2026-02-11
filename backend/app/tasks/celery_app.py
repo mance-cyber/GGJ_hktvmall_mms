@@ -50,10 +50,18 @@ celery_app.conf.update(
 
 # 定時任務
 celery_app.conf.beat_schedule = {
-    # 每日爬取所有競品
-    "scrape-all-competitors-daily": {
+    # =============================================
+    # 競品價格監測 - 每天 2 次（08:00 + 20:00）
+    # =============================================
+    # 早上 08:00 - 開市前監測，為當日定價決策提供數據
+    "scrape-all-competitors-morning": {
         "task": "app.tasks.scrape_tasks.scrape_all_competitors",
-        "schedule": crontab(hour=9, minute=0),  # 每天 09:00
+        "schedule": crontab(hour=8, minute=0),  # 每天 08:00 HKT
+    },
+    # 晚上 20:00 - 晚間監測，捕捉全天價格變動
+    "scrape-all-competitors-evening": {
+        "task": "app.tasks.scrape_tasks.scrape_all_competitors",
+        "schedule": crontab(hour=20, minute=0),  # 每天 20:00 HKT
     },
     # 每日清理過期的圖片生成任務（7 天前）
     "cleanup-old-image-tasks-daily": {

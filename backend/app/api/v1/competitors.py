@@ -339,12 +339,14 @@ async def add_competitor_product(
     )
     db.add(product)
     await db.flush()
+    await db.commit()
 
-    # TODO: 觸發 Celery 爬取任務
-    # task = scrape_single_product.delay(str(product.id))
+    # 觸發 Celery 爬取任務
+    from app.tasks.scrape_tasks import scrape_single_product
+    task = scrape_single_product.delay(str(product.id))
 
     return ScrapeTaskResponse(
-        task_id="pending",
+        task_id=task.id,
         message="已加入監測，正在爬取數據..."
     )
 
@@ -590,12 +592,13 @@ async def trigger_scrape(
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="競爭對手不存在")
 
-    # TODO: 觸發 Celery 爬取任務
-    # task = scrape_competitor.delay(str(competitor_id))
+    # 觸發 Celery 爬取任務
+    from app.tasks.scrape_tasks import scrape_competitor
+    task = scrape_competitor.delay(str(competitor_id))
 
     return ScrapeTaskResponse(
-        task_id="pending",
-        message="爬取任務已啟動"
+        task_id=task.id,
+        message=f"爬取任務已啟動（Task ID: {task.id}）"
     )
 
 
