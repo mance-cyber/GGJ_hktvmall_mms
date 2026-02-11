@@ -585,15 +585,25 @@ async def _debug_test_product(product: Product, db: AsyncSession):
             first_query = search_queries[0]
             logger.info(f"Testing Firecrawl search with query: {first_query}")
 
-            # 使用 HKTVMallSearchStrategy 的搜索方法
+            # 直接調用 Firecrawl 抓取頁面，獲取 HTML 信息
             search_url = service.hktv_strategy.build_search_url(first_query)
+
+            # 獲取原始 HTML
+            raw_data = service.firecrawl.scrape_url(search_url, use_json_mode=False)
+            html = raw_data.get("html", "")
+
+            # 嘗試提取 URL
             urls = service.hktv_strategy.extract_product_urls_from_search(search_url, limit=5)
 
             extracted_urls = urls
             firecrawl_result = {
                 "search_url": search_url,
                 "urls_found": len(urls),
-                "urls": urls[:5]  # 最多返回 5 個
+                "urls": urls[:5],  # 最多返回 5 個
+                "html_length": len(html),
+                "html_contains_href": 'href=' in html,
+                "html_contains_p_slash": '/p/' in html,
+                "html_sample": html[:1000] if html else "No HTML"  # 前 1000 字符
             }
         except Exception as e:
             firecrawl_error = str(e)
