@@ -268,25 +268,108 @@ class CompetitorMatcherService:
         self.hktv_scraper = get_hktv_scraper()
 
     def generate_search_queries(self, product: Product) -> List[str]:
-        """為商品生成搜索關鍵字"""
+        """
+        為商品生成搜索關鍵字（改進版：提取核心詞彙）
+
+        策略：
+        1. 提取核心詞彙（去掉產地、規格、品牌等修飾詞）
+        2. 使用分類信息
+        3. 生成多語言變體
+        """
         queries = []
 
-        # 優先使用日文名（最精準）
-        if product.name_ja:
-            queries.append(product.name_ja)
+        # ==================== 核心詞彙提取 ====================
 
-        # 次要使用英文名的主要部分
-        if product.name_en:
-            main_words = re.sub(r'\([^)]*\)', '', product.name_en)
-            main_words = re.sub(r'\d+.*$', '', main_words).strip()
-            if main_words:
-                queries.append(main_words)
+        # 常見的產地/地區詞（需要去除）
+        location_patterns = [
+            r'北海道', r'日本', r'挪威', r'智利', r'加拿大', r'澳洲',
+            r'法國', r'意大利', r'美國', r'冰島', r'蘇格蘭',
+            r'Hokkaido', r'Japan', r'Norway', r'Chile', r'Canada',
+            r'Scottish', r'Icelandic', r'French', r'Italian',
+        ]
 
-        # 最後使用中文名
+        # 常見的規格詞（需要去除）
+        spec_patterns = [
+            r'\d+g\b', r'\d+kg\b', r'\d+ml\b', r'\d+l\b',  # 重量/容量
+            r'\d+片', r'\d+條', r'\d+包', r'\d+盒',          # 數量
+            r'[大中小]號?', r'特大', r'迷你',                # 尺寸
+            r'\(.*?\)', r'\[.*?\]',                        # 括號內容
+        ]
+
+        # 常見的品牌/來源詞（需要去除）
+        brand_patterns = [
+            r'直送', r'空運', r'急凍', r'新鮮',
+            r'有機', r'野生', r'養殖',
+            r'premium', r'organic', r'fresh', r'frozen',
+        ]
+
+        def extract_core_keywords(text: str) -> str:
+            """從文本中提取核心關鍵詞"""
+            if not text:
+                return ""
+
+            # 去除產地
+            for pattern in location_patterns:
+                text = re.sub(pattern, '', text, flags=re.IGNORECASE)
+
+            # 去除規格
+            for pattern in spec_patterns:
+                text = re.sub(pattern, '', text, flags=re.IGNORECASE)
+
+            # 去除品牌/來源
+            for pattern in brand_patterns:
+                text = re.sub(pattern, '', text, flags=re.IGNORECASE)
+
+            # 清理多餘空格
+            text = re.sub(r'\s+', ' ', text).strip()
+
+            return text
+
+        # ==================== 生成搜索關鍵詞 ====================
+
+        # 策略 1: 使用分類信息（最通用，最可能找到結果）
+        category_sub = getattr(product, 'category_sub', None)
+        if category_sub:
+            queries.append(category_sub)  # 例如："刺身"、"豬肉"
+
+        # 策略 2: 中文名核心詞彙
         if product.name_zh:
-            queries.append(product.name_zh)
+            core_zh = extract_core_keywords(product.name_zh)
+            if core_zh and len(core_zh) >= 2:  # 至少 2 個字
+                queries.append(core_zh)
 
-        return queries
+        # 策略 3: 英文名核心詞彙
+        if product.name_en:
+            core_en = extract_core_keywords(product.name_en)
+            # 只取前 1-2 個主要單詞
+            words = core_en.split()[:2]
+            if words:
+                queries.append(' '.join(words))
+
+        # 策略 4: 日文名核心詞彙
+        if product.name_ja:
+            core_ja = extract_core_keywords(product.name_ja)
+            if core_ja:
+                queries.append(core_ja)
+
+        # 策略 5: 完整名稱作為備用（如果上述都失敗）
+        if not queries:
+            if product.name_zh:
+                queries.append(product.name_zh)
+            elif product.name_en:
+                queries.append(product.name_en)
+            elif product.name_ja:
+                queries.append(product.name_ja)
+
+        # 去重並保留順序
+        seen = set()
+        unique_queries = []
+        for q in queries:
+            if q and q not in seen:
+                seen.add(q)
+                unique_queries.append(q)
+
+        return unique_queries
 
     async def _check_price_freshness(
         self,
