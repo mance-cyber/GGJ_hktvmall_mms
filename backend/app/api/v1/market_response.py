@@ -489,6 +489,39 @@ async def batch_find_competitors(
         )
 
 
+@router.get("/debug/test-by-sku/{sku}")
+async def debug_test_by_sku(
+    sku: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Debug 端點：用 SKU 測試單個商品的完整搜索流程
+
+    返回詳細的中間步驟信息，用於診斷為何搜索失敗
+    """
+    try:
+        from app.services.competitor_matcher import CompetitorMatcherService
+        import urllib.parse
+
+        # 用 SKU 查詢商品
+        result = await db.execute(select(Product).where(Product.sku == sku))
+        product = result.scalar_one_or_none()
+
+        if not product:
+            raise HTTPException(status_code=404, detail=f"找不到 SKU: {sku} 的商品")
+
+        return await _debug_test_product(product, db)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Debug test failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"測試失敗: {str(e)}"
+        )
+
+
 @router.get("/debug/test-single-product/{product_id}")
 async def debug_test_single_product(
     product_id: UUID,
@@ -510,63 +543,7 @@ async def debug_test_single_product(
         if not product:
             raise HTTPException(status_code=404, detail="商品不存在")
 
-        service = CompetitorMatcherService()
-
-        # Step 1: 生成搜索關鍵詞
-        search_queries = service.generate_search_queries(product)
-
-        # Step 2: 構造搜索 URL
-        search_urls = []
-        for query in search_queries[:2]:  # 只測試前兩個
-            encoded_query = urllib.parse.quote(query)
-            search_url = f"https://www.hktvmall.com/hktv/zh/search?q={encoded_query}"
-            search_urls.append({
-                "query": query,
-                "url": search_url
-            })
-
-        # Step 3: 測試 Firecrawl 搜索（只測試第一個關鍵詞）
-        firecrawl_result = None
-        firecrawl_error = None
-        extracted_urls = []
-
-        if search_queries:
-            try:
-                first_query = search_queries[0]
-                logger.info(f"Testing Firecrawl search with query: {first_query}")
-
-                # 使用 HKTVMallSearchStrategy 的搜索方法
-                search_url = service.hktv_strategy.build_search_url(first_query)
-                urls = service.hktv_strategy.extract_product_urls_from_search(search_url, limit=5)
-
-                extracted_urls = urls
-                firecrawl_result = {
-                    "search_url": search_url,
-                    "urls_found": len(urls),
-                    "urls": urls[:5]  # 最多返回 5 個
-                }
-            except Exception as e:
-                firecrawl_error = str(e)
-                logger.error(f"Firecrawl test failed: {e}", exc_info=True)
-
-        return {
-            "product": {
-                "id": str(product.id),
-                "sku": product.sku,
-                "name_zh": product.name_zh,
-                "name_ja": getattr(product, 'name_ja', None),
-                "name_en": getattr(product, 'name_en', None),
-                "category_main": getattr(product, 'category_main', None),
-                "category_sub": getattr(product, 'category_sub', None),
-            },
-            "step1_search_queries": search_queries,
-            "step2_search_urls": search_urls,
-            "step3_firecrawl_test": {
-                "success": firecrawl_result is not None,
-                "result": firecrawl_result,
-                "error": firecrawl_error
-            }
-        }
+        return await _debug_test_product(product, db)
 
     except HTTPException:
         raise
@@ -576,6 +553,70 @@ async def debug_test_single_product(
             status_code=500,
             detail=f"測試失敗: {str(e)}"
         )
+
+
+async def _debug_test_product(product: Product, db: AsyncSession):
+    """共用的 debug 測試邏輯"""
+    from app.services.competitor_matcher import CompetitorMatcherService
+    import urllib.parse
+
+    service = CompetitorMatcherService()
+
+    # Step 1: 生成搜索關鍵詞
+    search_queries = service.generate_search_queries(product)
+
+    # Step 2: 構造搜索 URL
+    search_urls = []
+    for query in search_queries[:2]:  # 只測試前兩個
+        encoded_query = urllib.parse.quote(query)
+        search_url = f"https://www.hktvmall.com/hktv/zh/search?q={encoded_query}"
+        search_urls.append({
+            "query": query,
+            "url": search_url
+        })
+
+    # Step 3: 測試 Firecrawl 搜索（只測試第一個關鍵詞）
+    firecrawl_result = None
+    firecrawl_error = None
+    extracted_urls = []
+
+    if search_queries:
+        try:
+            first_query = search_queries[0]
+            logger.info(f"Testing Firecrawl search with query: {first_query}")
+
+            # 使用 HKTVMallSearchStrategy 的搜索方法
+            search_url = service.hktv_strategy.build_search_url(first_query)
+            urls = service.hktv_strategy.extract_product_urls_from_search(search_url, limit=5)
+
+            extracted_urls = urls
+            firecrawl_result = {
+                "search_url": search_url,
+                "urls_found": len(urls),
+                "urls": urls[:5]  # 最多返回 5 個
+            }
+        except Exception as e:
+            firecrawl_error = str(e)
+            logger.error(f"Firecrawl test failed: {e}", exc_info=True)
+
+    return {
+        "product": {
+            "id": str(product.id),
+            "sku": product.sku,
+            "name_zh": product.name_zh,
+            "name_ja": getattr(product, 'name_ja', None),
+            "name_en": getattr(product, 'name_en', None),
+            "category_main": getattr(product, 'category_main', None),
+            "category_sub": getattr(product, 'category_sub', None),
+        },
+        "step1_search_queries": search_queries,
+        "step2_search_urls": search_urls,
+        "step3_firecrawl_test": {
+            "success": firecrawl_result is not None,
+            "result": firecrawl_result,
+            "error": firecrawl_error
+        }
+    }
 
 
 # =============================================
