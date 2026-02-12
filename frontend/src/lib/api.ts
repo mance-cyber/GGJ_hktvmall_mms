@@ -554,6 +554,14 @@ export const api = {
     }>(`/mrc/batch/find-competitors?${params.toString()}`, { method: 'POST' })
   },
 
+  // 批量競品匹配（SSE 串流版）— 返回完整 URL，由呼叫方處理 stream
+  batchFindCompetitorsStreamUrl: (limit: number, categoryMain?: string) => {
+    const base = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
+    const params = new URLSearchParams({ limit: limit.toString() })
+    if (categoryMain) params.append('category_main', categoryMain)
+    return `${base}/mrc/batch/find-competitors/stream?${params.toString()}`
+  },
+
   // =============================================
   // AI 設定與分析 API
   // =============================================

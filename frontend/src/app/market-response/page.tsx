@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState, useRef, useCallback } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
@@ -26,11 +26,15 @@ import {
   Target,
   Download,
   Bot,
-  Play
+  Play,
+  CheckCircle2,
+  XCircle,
+  AlertCircle
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/components/ui/use-toast'
 import {
@@ -81,6 +85,36 @@ export default function MarketResponsePage() {
   const [batchLimit, setBatchLimit] = useState('10')
   const [batchCategory, setBatchCategory] = useState('all')
 
+  // =============================================
+  // SSE 批量匹配狀態
+  // =============================================
+  type BatchPhase = 'idle' | 'processing' | 'done'
+
+  interface BatchResultItem {
+    product_id: string
+    product_name: string
+    candidates: number
+    matches: number
+    match_details: { name: string; confidence: number; url: string }[]
+    error?: string
+    status: 'searching' | 'done' | 'error'
+  }
+
+  interface BatchSummary {
+    processed: number
+    total_matches: number
+    total_candidates: number
+  }
+
+  const [batchPhase, setBatchPhase] = useState<BatchPhase>('idle')
+  const [batchCurrent, setBatchCurrent] = useState(0)
+  const [batchTotal, setBatchTotal] = useState(0)
+  const [batchCurrentName, setBatchCurrentName] = useState('')
+  const [batchResults, setBatchResults] = useState<BatchResultItem[]>([])
+  const [batchSummary, setBatchSummary] = useState<BatchSummary | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
+  const resultsEndRef = useRef<HTMLDivElement>(null)
+
   // Handle search debounce
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
@@ -98,42 +132,118 @@ export default function MarketResponsePage() {
     })
   }
 
-  // 批量競品匹配 mutation
-  const batchMatchMutation = useMutation({
-    mutationFn: ({ limit, categoryMain }: { limit: number; categoryMain?: string }) =>
-      api.batchFindCompetitors(limit, categoryMain),
-    onSuccess: (data) => {
-      const totalCandidates = data.results.reduce((sum, r) => sum + (r.candidates || 0), 0)
-      const totalMatches = data.results.reduce((sum, r) => sum + (r.matches || 0), 0)
-      const noResults = data.results.filter(r => r.candidates === 0).length
-      const errors = data.results.filter(r => r.error).length
+  // 重置批量匹配狀態
+  const resetBatchState = useCallback(() => {
+    setBatchPhase('idle')
+    setBatchCurrent(0)
+    setBatchTotal(0)
+    setBatchCurrentName('')
+    setBatchResults([])
+    setBatchSummary(null)
+  }, [])
 
-      toast({
-        title: '✅ 批量匹配完成！',
-        description: `處理 ${data.processed} 個 | 🔍 候選 ${totalCandidates} 個 | ✅ 匹配 ${totalMatches} 個 | ⚠️ 無結果 ${noResults} 個${errors > 0 ? ` | ❌ 錯誤 ${errors} 個` : ''}`,
+  // SSE 批量匹配
+  const handleBatchMatch = useCallback(async () => {
+    const limit = parseInt(batchLimit)
+    const categoryMain = batchCategory === 'all' ? undefined : batchCategory
+
+    // 重置狀態
+    setBatchPhase('processing')
+    setBatchCurrent(0)
+    setBatchTotal(limit)
+    setBatchCurrentName('')
+    setBatchResults([])
+    setBatchSummary(null)
+
+    const controller = new AbortController()
+    abortRef.current = controller
+
+    try {
+      const url = api.batchFindCompetitorsStreamUrl(limit, categoryMain)
+      const response = await fetch(url, {
+        method: 'POST',
+        signal: controller.signal,
       })
-      // 刷新競品數據
-      queryClient.invalidateQueries({ queryKey: ['competitors-for-mrc'] })
-      queryClient.invalidateQueries({ queryKey: ['products-for-mrc'] })
-      setBatchDialogOpen(false)
-    },
-    onError: (error: Error) => {
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      const reader = response.body?.getReader()
+      if (!reader) throw new Error('無法讀取串流')
+
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        // 保留最後一行（可能不完整）
+        buffer = lines.pop() || ''
+
+        let currentEvent = ''
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            currentEvent = line.slice(7).trim()
+          } else if (line.startsWith('data: ') && currentEvent) {
+            try {
+              const data = JSON.parse(line.slice(6))
+
+              if (currentEvent === 'progress') {
+                setBatchCurrent(data.current)
+                setBatchTotal(data.total)
+                setBatchCurrentName(data.product_name)
+              } else if (currentEvent === 'result') {
+                setBatchResults(prev => [...prev, {
+                  product_id: data.product_id,
+                  product_name: data.product_name,
+                  candidates: data.candidates,
+                  matches: data.matches,
+                  match_details: data.match_details || [],
+                  error: data.error,
+                  status: data.error ? 'error' : 'done',
+                }])
+                // 自動捲動到最新結果
+                setTimeout(() => resultsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+              } else if (currentEvent === 'done') {
+                setBatchSummary(data)
+                setBatchPhase('done')
+                // 刷新相關數據
+                queryClient.invalidateQueries({ queryKey: ['competitors-for-mrc'] })
+                queryClient.invalidateQueries({ queryKey: ['products-for-mrc'] })
+              }
+            } catch {
+              // 忽略 JSON 解析失敗
+            }
+            currentEvent = ''
+          }
+        }
+      }
+    } catch (err: any) {
+      if (err.name === 'AbortError') return
       toast({
-        title: '❌ 批量匹配失敗',
-        description: error.message,
+        title: '批量匹配失敗',
+        description: err.message,
         variant: 'destructive',
       })
-    },
-  })
+      setBatchPhase('idle')
+    }
+  }, [batchLimit, batchCategory, queryClient, toast])
 
-  // 執行批量匹配
-  const handleBatchMatch = () => {
-    const limit = parseInt(batchLimit)
-    batchMatchMutation.mutate({
-      limit,
-      categoryMain: batchCategory === 'all' ? undefined : batchCategory,
-    })
-  }
+  // Dialog 關閉時清理
+  const handleBatchDialogClose = useCallback((open: boolean) => {
+    if (!open) {
+      // 如果正在處理中，中斷連接
+      if (batchPhase === 'processing') {
+        abortRef.current?.abort()
+      }
+      resetBatchState()
+    }
+    setBatchDialogOpen(open)
+  }, [batchPhase, resetBatchState])
 
   // 使用現有 API 獲取數據
   const { data: products } = useQuery({
@@ -197,87 +307,181 @@ export default function MarketResponsePage() {
             <Badge variant="outline" className="px-2 py-0.5 sm:px-3 sm:py-1 bg-blue-50 text-blue-700 border-blue-200 text-[10px] sm:text-xs">
               <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1 fill-blue-700" /> 即時
             </Badge>
-            <Dialog open={batchDialogOpen} onOpenChange={setBatchDialogOpen}>
+            <Dialog open={batchDialogOpen} onOpenChange={handleBatchDialogClose}>
               <DialogTrigger asChild>
                 <HoloButton variant="primary" size="sm" icon={<Bot className="w-3.5 h-3.5" />}>
                   <span className="hidden sm:inline">批量匹配</span>
                   <span className="sm:hidden">匹配</span>
                 </HoloButton>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                  <DialogTitle>🤖 批量競品匹配</DialogTitle>
+                  <DialogTitle>批量競品匹配</DialogTitle>
                   <DialogDescription>
                     自動搜索 HKTVmall 上的競爭商品，並使用 AI 智能判斷是否為同級商品
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">處理數量</label>
-                    <Select value={batchLimit} onValueChange={setBatchLimit}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">10 個商品（測試）</SelectItem>
-                        <SelectItem value="20">20 個商品</SelectItem>
-                        <SelectItem value="30">30 個商品</SelectItem>
-                        <SelectItem value="50">50 個商品</SelectItem>
-                      </SelectContent>
-                    </Select>
+
+                {/* 設定區：idle 時顯示 */}
+                {batchPhase === 'idle' && (
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">處理數量</label>
+                      <Select value={batchLimit} onValueChange={setBatchLimit}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="10">10 個商品（測試）</SelectItem>
+                          <SelectItem value="20">20 個商品</SelectItem>
+                          <SelectItem value="30">30 個商品</SelectItem>
+                          <SelectItem value="50">50 個商品</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">分類篩選（可選）</label>
+                      <Select value={batchCategory} onValueChange={setBatchCategory}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="選擇分類" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">全部分類</SelectItem>
+                          <SelectItem value="鮮魚">鮮魚</SelectItem>
+                          <SelectItem value="貝類">貝類</SelectItem>
+                          <SelectItem value="蟹類">蟹類</SelectItem>
+                          <SelectItem value="其他海鮮">其他海鮮</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="rounded-lg bg-blue-50 p-3 text-sm text-blue-700">
+                      <p className="font-medium mb-1">預估成本</p>
+                      <p className="text-xs">
+                        {parseInt(batchLimit)} 個商品 ≈ ¥{(parseInt(batchLimit) * 0.04).toFixed(2)} (Claude API)
+                        <br />
+                        + Firecrawl API 額度
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-yellow-50 p-3 text-sm text-yellow-700">
+                      <p className="font-medium mb-1">注意事項</p>
+                      <p className="text-xs">
+                        • 只會處理尚未匹配競品的商品<br />
+                        • 執行時間約 {Math.ceil(parseInt(batchLimit) / 5)} 分鐘<br />
+                        • 建議先執行 10 個商品測試
+                      </p>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">分類篩選（可選）</label>
-                    <Select value={batchCategory} onValueChange={setBatchCategory}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="選擇分類" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">全部分類</SelectItem>
-                        <SelectItem value="鮮魚">鮮魚</SelectItem>
-                        <SelectItem value="貝類">貝類</SelectItem>
-                        <SelectItem value="蟹類">蟹類</SelectItem>
-                        <SelectItem value="其他海鮮">其他海鮮</SelectItem>
-                      </SelectContent>
-                    </Select>
+                )}
+
+                {/* 進度區：processing / done 時顯示 */}
+                {(batchPhase === 'processing' || batchPhase === 'done') && (
+                  <div className="space-y-4 py-4">
+                    {/* 進度條 */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          {batchPhase === 'processing' ? (
+                            <span className="flex items-center gap-1.5">
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              正在搜索: {batchCurrentName}
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1.5 text-green-600">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              匹配完成
+                            </span>
+                          )}
+                        </span>
+                        <span className="font-medium tabular-nums">
+                          {batchPhase === 'done' ? batchSummary?.processed : batchCurrent}/{batchTotal}
+                        </span>
+                      </div>
+                      <Progress
+                        value={batchPhase === 'done' ? 100 : (batchTotal > 0 ? (batchCurrent / batchTotal) * 100 : 0)}
+                      />
+                    </div>
+
+                    {/* 結果列表 */}
+                    <div className="max-h-[240px] overflow-y-auto rounded-lg border bg-slate-50/50 divide-y divide-slate-100">
+                      {batchResults.length === 0 && batchPhase === 'processing' && (
+                        <div className="p-4 text-center text-sm text-muted-foreground">
+                          等待第一個結果...
+                        </div>
+                      )}
+                      {batchResults.map((item, idx) => (
+                        <div key={idx} className="px-3 py-2 text-sm flex items-start gap-2">
+                          {/* 狀態 icon */}
+                          {item.error ? (
+                            <XCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                          ) : item.matches > 0 ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          ) : (
+                            <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                          )}
+                          {/* 內容 */}
+                          <div className="flex-1 min-w-0">
+                            <span className="font-medium text-slate-700 truncate block">
+                              {item.product_name}
+                            </span>
+                            {item.error ? (
+                              <span className="text-xs text-red-500">錯誤: {item.error}</span>
+                            ) : item.matches > 0 && item.match_details[0] ? (
+                              <span className="text-xs text-green-600">
+                                → {item.match_details[0].name}{' '}
+                                <span className="font-medium">
+                                  {Math.round(item.match_details[0].confidence * 100)}%
+                                </span>
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                {item.candidates > 0 ? `找到 ${item.candidates} 個候選，但無匹配` : '未找到匹配'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      <div ref={resultsEndRef} />
+                    </div>
+
+                    {/* 完成摘要 */}
+                    {batchPhase === 'done' && batchSummary && (
+                      <div className="rounded-lg bg-green-50 border border-green-200 p-3 text-sm text-green-700">
+                        <p className="font-medium mb-1">匹配完成</p>
+                        <div className="flex gap-4 text-xs">
+                          <span>處理 {batchSummary.processed} 個</span>
+                          <span>候選 {batchSummary.total_candidates} 個</span>
+                          <span className="font-medium">匹配 {batchSummary.total_matches} 個</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="rounded-lg bg-blue-50 p-3 text-sm text-blue-700">
-                    <p className="font-medium mb-1">💰 預估成本</p>
-                    <p className="text-xs">
-                      {parseInt(batchLimit)} 個商品 ≈ ¥{(parseInt(batchLimit) * 0.04).toFixed(2)} (Claude API)
-                      <br />
-                      + Firecrawl API 額度
-                    </p>
-                  </div>
-                  <div className="rounded-lg bg-yellow-50 p-3 text-sm text-yellow-700">
-                    <p className="font-medium mb-1">⚠️ 注意事項</p>
-                    <p className="text-xs">
-                      • 只會處理尚未匹配競品的商品<br />
-                      • 執行時間約 {Math.ceil(parseInt(batchLimit) / 5)} 分鐘<br />
-                      • 建議先執行 10 個商品測試
-                    </p>
-                  </div>
-                </div>
+                )}
+
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setBatchDialogOpen(false)}>
-                    取消
-                  </Button>
-                  <Button
-                    onClick={handleBatchMatch}
-                    disabled={batchMatchMutation.isPending}
-                  >
-                    {batchMatchMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        處理中...
-                      </>
-                    ) : (
-                      <>
+                  {batchPhase === 'idle' && (
+                    <>
+                      <Button variant="outline" onClick={() => handleBatchDialogClose(false)}>
+                        取消
+                      </Button>
+                      <Button onClick={handleBatchMatch}>
                         <Play className="mr-2 h-4 w-4" />
                         開始匹配
-                      </>
-                    )}
-                  </Button>
+                      </Button>
+                    </>
+                  )}
+                  {batchPhase === 'processing' && (
+                    <Button variant="outline" onClick={() => {
+                      abortRef.current?.abort()
+                      setBatchPhase('done')
+                    }}>
+                      停止
+                    </Button>
+                  )}
+                  {batchPhase === 'done' && (
+                    <Button onClick={() => handleBatchDialogClose(false)}>
+                      關閉
+                    </Button>
+                  )}
                 </DialogFooter>
               </DialogContent>
             </Dialog>

@@ -3,13 +3,15 @@
 # 市場應對中心 - 核心 API 端點
 # =============================================
 
+import json
 import logging
-from typing import List, Optional
+from typing import List, Optional, AsyncGenerator
 from datetime import datetime, date
 from uuid import UUID
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select, func, case, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, Field
@@ -487,6 +489,128 @@ async def batch_find_competitors(
             status_code=500,
             detail=f"批量匹配失敗: {str(e)}"
         )
+
+
+@router.post("/batch/find-competitors/stream")
+async def batch_find_competitors_stream(
+    category_main: Optional[str] = Query(None, description="篩選大分類"),
+    category_sub: Optional[str] = Query(None, description="篩選小分類"),
+    limit: int = Query(10, le=50, description="處理商品數量"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    批量競品匹配（SSE 串流版）
+
+    逐個商品推送進度與結果，前端即時渲染。
+    事件類型：progress / result / done
+    """
+
+    async def event_stream() -> AsyncGenerator[str, None]:
+        from app.services.competitor_matcher import CompetitorMatcherService
+
+        # 查詢尚未有競品關聯的商品
+        subquery = select(ProductCompetitorMapping.product_id)
+        query = select(Product).where(~Product.id.in_(subquery))
+
+        if category_main:
+            query = query.where(Product.category_main == category_main)
+        if category_sub:
+            query = query.where(Product.category_sub == category_sub)
+
+        query = query.limit(limit)
+        result = await db.execute(query)
+        products = result.scalars().all()
+
+        total = len(products)
+        if total == 0:
+            yield _sse("done", {"processed": 0, "total_matches": 0, "total_candidates": 0, "message": "沒有待處理的商品"})
+            return
+
+        service = CompetitorMatcherService()
+        total_matches = 0
+        total_candidates = 0
+
+        for idx, product in enumerate(products, 1):
+            product_name = product.name_zh or product.sku or "未知商品"
+
+            # 推送進度：搜索中
+            yield _sse("progress", {
+                "current": idx,
+                "total": total,
+                "product_name": product_name,
+                "status": "searching",
+            })
+
+            try:
+                results = await service.find_competitors_for_product(
+                    db=db,
+                    product=product,
+                    max_candidates=3,
+                )
+
+                matches = [r for r in results if r.is_match and r.match_confidence >= 0.6]
+
+                # 每個商品最多保存一個最佳匹配
+                for match in matches[:1]:
+                    await service.save_match_to_db(
+                        db=db,
+                        product_id=str(product.id),
+                        match_result=match,
+                    )
+
+                total_candidates += len(results)
+                total_matches += len(matches)
+
+                # 推送單個商品結果
+                yield _sse("result", {
+                    "product_id": str(product.id),
+                    "product_name": product_name,
+                    "candidates": len(results),
+                    "matches": len(matches),
+                    "match_details": [
+                        {
+                            "name": r.candidate_name,
+                            "confidence": r.match_confidence,
+                            "url": r.candidate_url,
+                        }
+                        for r in matches[:1]
+                    ],
+                })
+
+            except Exception as e:
+                logger.error(f"SSE 處理商品失敗: {product_name} - {str(e)}", exc_info=True)
+                yield _sse("result", {
+                    "product_id": str(product.id),
+                    "product_name": product_name,
+                    "candidates": 0,
+                    "matches": 0,
+                    "match_details": [],
+                    "error": str(e),
+                })
+
+        await db.commit()
+
+        # 推送完成事件
+        yield _sse("done", {
+            "processed": total,
+            "total_matches": total_matches,
+            "total_candidates": total_candidates,
+        })
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+def _sse(event: str, data: dict) -> str:
+    """格式化 SSE 事件"""
+    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
 @router.get("/debug/test-by-sku/{sku}")
