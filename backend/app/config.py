@@ -130,6 +130,9 @@ class Settings(BaseSettings):
     # AI Agent 模擬模式（用於測試，設為 true 啟用模擬數據）
     agent_mock_mode: bool = Field(default=False, alias="AGENT_MOCK_MODE")
 
+    # Agent Browser（用於 HKTVmall SPA 搜索頁面的商品 URL 發現）
+    agent_browser_enabled: bool = Field(default=True, alias="AGENT_BROWSER_ENABLED")
+
     # Celery
     celery_broker_url: str = Field(default="redis://localhost:6379/0", alias="CELERY_BROKER_URL")
     celery_result_backend: str = Field(default="redis://localhost:6379/0", alias="CELERY_RESULT_BACKEND")

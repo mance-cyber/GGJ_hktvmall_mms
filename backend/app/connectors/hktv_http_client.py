@@ -267,12 +267,14 @@ class HKTVHttpClient:
             url: 待驗證的 URL
 
         Returns:
-            True 表示 URL 有效（200 OK）
+            True 表示 URL 有效
+            405 (Method Not Allowed) 也視為有效 — HKTVmall 不支持 HEAD 但 URL 存在
         """
         try:
             client = await self._get_client()
             resp = await client.head(url)
-            return resp.status_code == 200
+            # 200 = OK, 405 = URL 存在但不支持 HEAD（HKTVmall 常見）
+            return resp.status_code in (200, 405)
         except Exception:
             return False
 

@@ -569,7 +569,7 @@ async def _debug_test_product(product: Product, db: AsyncSession):
     search_urls = []
     for query in search_queries[:2]:  # 只測試前兩個
         encoded_query = urllib.parse.quote(query)
-        search_url = f"https://www.hktvmall.com/hktv/zh/search?q={encoded_query}"
+        search_url = f"https://www.hktvmall.com/hktv/zh/search_a?keyword={encoded_query}"
         search_urls.append({
             "query": query,
             "url": search_url
@@ -593,7 +593,7 @@ async def _debug_test_product(product: Product, db: AsyncSession):
             html = raw_data.get("html", "")
 
             # 嘗試提取 URL
-            urls = service.hktv_strategy.extract_product_urls_from_search(search_url, limit=5)
+            urls = await service.hktv_strategy.extract_product_urls_from_search(search_url, limit=5)
 
             extracted_urls = urls
             firecrawl_result = {
