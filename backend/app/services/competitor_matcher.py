@@ -225,15 +225,22 @@ class ClaudeMatcher:
                 # 無 API Key，使用啟發式匹配
                 return self._heuristic_match(our_product, candidate)
             
+            max_tok = 4000 if "thinking" in self.claude.model else 500
             message = self.claude.client.messages.create(
                 model=self.claude.model,
-                max_tokens=500,
+                max_tokens=max_tok,
                 messages=[
                     {"role": "user", "content": prompt}
                 ]
             )
-            
-            response_text = message.content[0].text if message.content else "{}"
+
+            # thinking 模型返回多個 block，取最後一個 text block
+            response_text = ""
+            for block in message.content:
+                if getattr(block, "type", None) == "text":
+                    response_text = block.text
+            if not response_text:
+                response_text = message.content[0].text if message.content else "{}"
             
             # 解析 JSON 響應
             # 嘗試提取 JSON 部分
@@ -293,13 +300,21 @@ class ClaudeMatcher:
         prompt = self._build_batch_prompt(our_product, candidates)
 
         try:
+            # thinking 模型需要更大的 max_tokens（thinking 本身消耗 token）
+            max_tok = 8000 if "thinking" in self.claude.model else 2000
             message = self.claude.client.messages.create(
                 model=self.claude.model,
-                max_tokens=2000,
+                max_tokens=max_tok,
                 messages=[{"role": "user", "content": prompt}]
             )
 
-            response_text = message.content[0].text if message.content else "[]"
+            # thinking 模型返回 [thinking_block, text_block]，取最後一個 text
+            response_text = ""
+            for block in message.content:
+                if getattr(block, "type", None) == "text":
+                    response_text = block.text
+            if not response_text:
+                response_text = message.content[0].text if message.content else "[]"
 
             # 解析 JSON 數組
             json_match = re.search(r'\[[\s\S]*\]', response_text)
@@ -838,7 +853,7 @@ class CompetitorMatcherService:
             normalized_url = HKTVUrlParser.normalize_url(match_result.candidate_url)
 
             # ==================== 3. Competitor（get-or-create）====================
-            stmt = select(Competitor).where(Competitor.platform == "hktvmall")
+            stmt = select(Competitor).where(Competitor.platform == "hktvmall").limit(1)
             result = await db.execute(stmt)
             competitor = result.scalar_one_or_none()
 

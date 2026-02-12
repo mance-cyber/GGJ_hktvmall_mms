@@ -33,7 +33,9 @@ class ClaudeConnector:
         self.model = model or settings.ai_model
 
         # Base URL（支持中轉 API）
-        self.base_url = base_url or settings.ai_base_url
+        # Anthropic SDK 會自動拼接 /v1/messages，所以去掉尾部的 /v1
+        raw_base = base_url or settings.ai_base_url
+        self.base_url = raw_base.rstrip('/').removesuffix('/v1') if raw_base else raw_base
 
         # 優先使用 Session Token（如果設定）
         session_key = getattr(settings, 'claude_session_key', None)
@@ -41,11 +43,12 @@ class ClaudeConnector:
         if session_key and session_key.startswith("sk-ant-sid"):
             # 使用 Session Token (Claude.ai 訂閱)
             self.client = self._create_session_client(session_key)
-        elif self.api_key and self.api_key.startswith("sk-ant-"):
-            # 使用 API Key（支持自定義 Base URL）
+        elif self.api_key:
+            # 使用 API Key（支持中轉 API 的任意 key 格式）
+            custom_base = self.base_url if self.base_url != "https://api.anthropic.com" else None
             self.client = anthropic.Anthropic(
                 api_key=self.api_key,
-                base_url=self.base_url if self.base_url != "https://api.anthropic.com" else None
+                base_url=custom_base,
             )
         else:
             self.client = None
