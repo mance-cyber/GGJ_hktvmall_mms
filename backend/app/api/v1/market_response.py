@@ -373,7 +373,7 @@ async def find_competitors_for_product(
     # 保存匹配結果
     saved_count = 0
     for result in results:
-        if result.is_match and result.match_confidence >= 0.6:
+        if result.is_match and result.match_confidence >= 0.4:
             mapping = await service.save_match_to_db(
                 db=db,
                 product_id=str(product_id),
@@ -452,7 +452,7 @@ async def batch_find_competitors(
                     max_candidates=3
                 )
 
-                matches = [r for r in results if r.is_match and r.match_confidence >= 0.6]
+                matches = [r for r in results if r.is_match and r.match_confidence >= 0.4]
 
                 for match in matches[:1]:  # 每個商品最多保存一個最佳匹配
                     await service.save_match_to_db(
@@ -548,7 +548,7 @@ async def batch_find_competitors_stream(
                     max_candidates=3,
                 )
 
-                matches = [r for r in results if r.is_match and r.match_confidence >= 0.6]
+                matches = [r for r in results if r.is_match and r.match_confidence >= 0.4]
 
                 # 每個商品最多保存一個最佳匹配
                 for match in matches[:1]:

@@ -76,7 +76,8 @@ class HKTVMallSearchStrategy:
     """
 
     # API 結果信任閾值：低於此數量降級到瀏覽器搜索
-    API_MIN_RESULTS = 3
+    # 改為 1：即使只有 1 個結果也進入 Claude 判斷，避免無謂降級
+    API_MIN_RESULTS = 1
 
     BASE_URL = "https://www.hktvmall.com"
     SEARCH_URL = "https://www.hktvmall.com/hktv/zh/search_a?keyword={query}"
@@ -424,45 +425,35 @@ class ClaudeMatcher:
         candidate: Dict[str, Any]
     ) -> MatchResult:
         """啟發式匹配（無 API Key 時使用）"""
-        our_name = ' '.join(filter(None, [
-            our_product.get('name_zh'),
-            our_product.get('name_ja'),
-            our_product.get('name_en'),
-        ])).lower()
-
         candidate_name = (candidate.get('name') or '').lower()
-        
-        # 關鍵字匹配（中文名 → 日文名 → 英文名，按優先級收集）
+
+        # 關鍵字收集：保留產地和等級等核心特徵詞
         keywords = []
 
-        # 從中文名提取核心詞（去掉產地、規格等修飾詞）
+        # 從中文名提取關鍵字（只去括號和數量，保留產地/等級）
         zh_name = our_product.get('name_zh') or ''
         if zh_name:
-            # 去掉常見修飾詞，保留核心商品名
-            core = re.sub(
-                r'(北海道|日本|宮崎|急凍|新鮮|直送|頂級|A\d|特大|珍寶|\d+\w*|\(.*?\))',
-                '', zh_name
-            ).strip()
+            core = re.sub(r'(\(.*?\)|（.*?）|\d+\w*)', '', zh_name).strip()
             if core and len(core) >= 2:
                 keywords.append(core.lower())
 
-        # 從日文名提取關鍵字
+        # 日文名
         ja_name = our_product.get('name_ja') or ''
         if ja_name:
             keywords.append(ja_name.lower())
 
-        # 從英文名提取關鍵字
+        # 英文名
         en_name = our_product.get('name_en') or ''
         if en_name:
-            en_words = re.findall(r'\b[a-zA-Z]{4,}\b', en_name.lower())
+            en_words = re.findall(r'\b[a-zA-Z]{3,}\b', en_name.lower())
             keywords.extend(en_words[:3])
 
         # 計算匹配分數
         matches = sum(1 for kw in keywords if kw in candidate_name)
         confidence = matches / max(len(keywords), 1)
 
-        is_match = confidence >= 0.5
-        
+        is_match = confidence >= 0.4
+
         return MatchResult(
             product_id=str(our_product.get('id', '')),
             product_name=our_product.get('name_zh', ''),
@@ -490,90 +481,61 @@ class CompetitorMatcherService:
 
     def generate_search_queries(self, product: Product) -> List[str]:
         """
-        為商品生成搜索關鍵字（改進版：提取核心詞彙）
+        為商品生成搜索關鍵字（v3：保留產品特徵詞）
 
-        策略：
-        1. 提取核心詞彙（去掉產地、規格、品牌等修飾詞）
-        2. 使用分類信息
-        3. 生成多語言變體
+        核心原則：
+        - 產地名（宮崎、北海道、挪威）對食品來說是核心特徵，不刪除
+        - 只移除純噪音（括號備註、物流描述）
+        - 完整中文名優先（搜索引擎自帶模糊匹配）
+        - 輕度清潔版本作為備用
         """
         queries = []
 
-        # ==================== 核心詞彙提取 ====================
+        # ==================== 輕度清潔（只去噪音，保留特徵）====================
 
-        # 常見的產地/地區詞（需要去除）
-        location_patterns = [
-            r'北海道', r'日本', r'挪威', r'智利', r'加拿大', r'澳洲',
-            r'法國', r'意大利', r'美國', r'冰島', r'蘇格蘭',
-            r'Hokkaido', r'Japan', r'Norway', r'Chile', r'Canada',
-            r'Scottish', r'Icelandic', r'French', r'Italian',
+        # 需要移除的純噪音（不影響搜索精度的修飾詞）
+        noise_patterns = [
+            r'\(.*?\)', r'\[.*?\]', r'（.*?）',    # 括號內容
+            r'\d+g\b', r'\d+kg\b', r'\d+ml\b',     # 重量/容量
+            r'\d+片', r'\d+條', r'\d+包', r'\d+盒', # 數量
+            r'直送', r'空運',                        # 物流描述
         ]
 
-        # 常見的規格詞（需要去除）
-        spec_patterns = [
-            r'\d+g\b', r'\d+kg\b', r'\d+ml\b', r'\d+l\b',  # 重量/容量
-            r'\d+片', r'\d+條', r'\d+包', r'\d+盒',          # 數量
-            r'[大中小]號?', r'特大', r'迷你',                # 尺寸
-            r'\(.*?\)', r'\[.*?\]',                        # 括號內容
-        ]
-
-        # 常見的品牌/來源詞（需要去除）
-        brand_patterns = [
-            r'直送', r'空運', r'急凍', r'新鮮',
-            r'有機', r'野生', r'養殖',
-            r'premium', r'organic', r'fresh', r'frozen',
-        ]
-
-        def extract_core_keywords(text: str) -> str:
-            """從文本中提取核心關鍵詞"""
+        def light_clean(text: str) -> str:
+            """輕度清潔：只去噪音，保留產地、等級、核心特徵"""
             if not text:
                 return ""
-
-            # 去除產地
-            for pattern in location_patterns:
+            for pattern in noise_patterns:
                 text = re.sub(pattern, '', text, flags=re.IGNORECASE)
-
-            # 去除規格
-            for pattern in spec_patterns:
-                text = re.sub(pattern, '', text, flags=re.IGNORECASE)
-
-            # 去除品牌/來源
-            for pattern in brand_patterns:
-                text = re.sub(pattern, '', text, flags=re.IGNORECASE)
-
-            # 清理多餘空格
-            text = re.sub(r'\s+', ' ', text).strip()
-
-            return text
+            return re.sub(r'\s+', ' ', text).strip()
 
         # ==================== 生成搜索關鍵詞 ====================
 
-        # 策略 1: 使用分類信息（最通用，最可能找到結果）
+        # 策略 1: 完整中文名（最精確，搜索引擎自帶模糊匹配）
+        if product.name_zh:
+            cleaned_zh = light_clean(product.name_zh)
+            if cleaned_zh and len(cleaned_zh) >= 2:
+                queries.append(cleaned_zh)
+
+        # 策略 2: 分類子類（覆蓋面廣的備用查詢）
         category_sub = getattr(product, 'category_sub', None)
         if category_sub:
-            queries.append(category_sub)  # 例如："刺身"、"豬肉"
-
-        # 策略 2: 中文名核心詞彙
-        if product.name_zh:
-            core_zh = extract_core_keywords(product.name_zh)
-            if core_zh and len(core_zh) >= 2:  # 至少 2 個字
-                queries.append(core_zh)
+            queries.append(category_sub)
 
         # 策略 3: 英文名核心詞彙
         if product.name_en:
-            core_en = extract_core_keywords(product.name_en)
-            # 只取前 1-2 個主要單詞
-            words = core_en.split()[:2]
+            cleaned_en = light_clean(product.name_en)
+            words = cleaned_en.split()[:3]
             if words:
                 queries.append(' '.join(words))
 
-        # 策略 4: 日文名核心詞彙
+        # 策略 4: 日文名
         if product.name_ja:
-            core_ja = extract_core_keywords(product.name_ja)
-            if core_ja:
-                queries.append(core_ja)
+            cleaned_ja = light_clean(product.name_ja)
+            if cleaned_ja:
+                queries.append(cleaned_ja)
 
-        # 策略 5: 完整名稱作為備用（如果上述都失敗）
+        # 策略 5: 完整原始名稱兜底
         if not queries:
             if product.name_zh:
                 queries.append(product.name_zh)
@@ -723,14 +685,18 @@ class CompetitorMatcherService:
         ]
 
         all_matches = self.matcher.batch_judge_match(our_product_dict, candidate_dicts)
+
+        # 動態閾值：候選少時降低門檻（精確搜索往往只返回 1-2 個結果）
+        n = len(candidate_dicts)
+        threshold = 0.3 if n <= 2 else 0.4 if n <= 5 else 0.5
         results = [
             r for r in all_matches
-            if r.is_match and r.match_confidence >= 0.5
+            if r.is_match and r.match_confidence >= threshold
         ]
 
         if results:
             logger.info(
-                f"API 快速路徑成功: {len(results)} 匹配 "
+                f"API 快速路徑成功: {len(results)} 匹配 (threshold={threshold}) "
                 f"(product={our_product_dict.get('name_zh', '')})"
             )
 
@@ -786,9 +752,12 @@ class CompetitorMatcherService:
             all_matches = self.matcher.batch_judge_match(
                 our_product_dict, candidate_dicts
             )
+            # 動態閾值：同 _find_via_api 一致
+            n = len(candidate_dicts)
+            threshold = 0.3 if n <= 2 else 0.4 if n <= 5 else 0.5
             results = [
                 r for r in all_matches
-                if r.is_match and r.match_confidence >= 0.5
+                if r.is_match and r.match_confidence >= threshold
             ]
 
         # 對匹配商品取價格（按需 1 credit）
