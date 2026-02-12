@@ -409,31 +409,43 @@ class ClaudeMatcher:
         candidate: Dict[str, Any]
     ) -> MatchResult:
         """啟發式匹配（無 API Key 時使用）"""
-        our_name = (our_product.get('name_zh', '') + ' ' + 
-                   our_product.get('name_ja', '') + ' ' + 
-                   our_product.get('name_en', '')).lower()
+        our_name = ' '.join(filter(None, [
+            our_product.get('name_zh'),
+            our_product.get('name_ja'),
+            our_product.get('name_en'),
+        ])).lower()
+
+        candidate_name = (candidate.get('name') or '').lower()
         
-        candidate_name = candidate.get('name', '').lower()
-        
-        # 簡單關鍵字匹配
+        # 關鍵字匹配（中文名 → 日文名 → 英文名，按優先級收集）
         keywords = []
-        
+
+        # 從中文名提取核心詞（去掉產地、規格等修飾詞）
+        zh_name = our_product.get('name_zh') or ''
+        if zh_name:
+            # 去掉常見修飾詞，保留核心商品名
+            core = re.sub(
+                r'(北海道|日本|宮崎|急凍|新鮮|直送|頂級|A\d|特大|珍寶|\d+\w*|\(.*?\))',
+                '', zh_name
+            ).strip()
+            if core and len(core) >= 2:
+                keywords.append(core.lower())
+
         # 從日文名提取關鍵字
-        ja_name = our_product.get('name_ja', '')
+        ja_name = our_product.get('name_ja') or ''
         if ja_name:
             keywords.append(ja_name.lower())
-        
+
         # 從英文名提取關鍵字
-        en_name = our_product.get('name_en', '')
+        en_name = our_product.get('name_en') or ''
         if en_name:
-            # 提取主要詞彙
             en_words = re.findall(r'\b[a-zA-Z]{4,}\b', en_name.lower())
             keywords.extend(en_words[:3])
-        
+
         # 計算匹配分數
         matches = sum(1 for kw in keywords if kw in candidate_name)
         confidence = matches / max(len(keywords), 1)
-        
+
         is_match = confidence >= 0.5
         
         return MatchResult(
