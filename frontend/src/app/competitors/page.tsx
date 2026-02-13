@@ -24,6 +24,7 @@ import { ScrapeTerminal, LogEntry, ScrapeStats, createLogEntry } from '@/compone
 import { ScrapeTaskQueue, ScrapeTask, ScrapeTaskIndicator } from '@/components/scrape-task-queue'
 import { CompetitorCard } from '@/components/competitors/competitor-card'
 import { CompetitorFormDialog } from '@/components/competitors/competitor-form-dialog'
+import { BatchMatchDialog } from '@/components/competitors/batch-match-dialog'
 import {
   PageTransition,
   HoloCard,
@@ -351,6 +352,7 @@ export default function CompetitorsPage() {
               )}
             </AnimatePresence>
 
+            <BatchMatchDialog invalidateKeys={[['competitors']]} />
             <HoloButton
               variant="primary"
               onClick={handleScrapeAll}

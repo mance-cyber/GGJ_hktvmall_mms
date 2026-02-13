@@ -123,13 +123,19 @@ async def _batch_find_competitors_async(
     from sqlalchemy import select, and_
     from app.models.database import async_session_maker, init_db
     from app.models.product import Product, ProductCompetitorMapping
+    from app.models.competitor import Competitor, CompetitorProduct
     from app.services.competitor_matcher import CompetitorMatcherService
 
     await init_db()
 
     async with async_session_maker() as session:
-        # 查詢尚未有競品關聯的商品（所有來源）
-        subquery = select(ProductCompetitorMapping.product_id)
+        # 查詢尚未在該平台有競品關聯的商品
+        subquery = (
+            select(ProductCompetitorMapping.product_id)
+            .join(CompetitorProduct, ProductCompetitorMapping.competitor_product_id == CompetitorProduct.id)
+            .join(Competitor, CompetitorProduct.competitor_id == Competitor.id)
+            .where(Competitor.platform == platform)
+        )
 
         query = select(Product).where(
             ~Product.id.in_(subquery)

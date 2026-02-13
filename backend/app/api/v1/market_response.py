@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 
 from app.models.database import get_db
 from app.models.product import Product, ProductCompetitorMapping
-from app.models.competitor import CompetitorProduct, PriceSnapshot, PriceAlert
+from app.models.competitor import Competitor, CompetitorProduct, PriceSnapshot, PriceAlert
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -418,8 +418,13 @@ async def batch_find_competitors(
     try:
         from app.services.competitor_matcher import CompetitorMatcherService
 
-        # 查詢尚未有競品關聯的商品（所有來源）
-        subquery = select(ProductCompetitorMapping.product_id)
+        # 查詢尚未在該平台有競品關聯的商品
+        subquery = (
+            select(ProductCompetitorMapping.product_id)
+            .join(CompetitorProduct, ProductCompetitorMapping.competitor_product_id == CompetitorProduct.id)
+            .join(Competitor, CompetitorProduct.competitor_id == Competitor.id)
+            .where(Competitor.platform == platform)
+        )
 
         query = select(Product).where(
             ~Product.id.in_(subquery)
@@ -513,8 +518,13 @@ async def batch_find_competitors_stream(
     async def event_stream() -> AsyncGenerator[str, None]:
         from app.services.competitor_matcher import CompetitorMatcherService
 
-        # 查詢尚未有競品關聯的商品
-        subquery = select(ProductCompetitorMapping.product_id)
+        # 查詢尚未在該平台有競品關聯的商品
+        subquery = (
+            select(ProductCompetitorMapping.product_id)
+            .join(CompetitorProduct, ProductCompetitorMapping.competitor_product_id == CompetitorProduct.id)
+            .join(Competitor, CompetitorProduct.competitor_id == Competitor.id)
+            .where(Competitor.platform == platform)
+        )
         query = select(Product).where(~Product.id.in_(subquery))
 
         if category_main:

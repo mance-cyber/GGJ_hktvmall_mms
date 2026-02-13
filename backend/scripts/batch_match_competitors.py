@@ -18,6 +18,7 @@ sys.path.insert(0, str(project_root))
 from sqlalchemy import select, and_
 from app.models.database import async_session_maker, init_db
 from app.models.product import Product, ProductCompetitorMapping
+from app.models.competitor import Competitor, CompetitorProduct
 from app.services.competitor_matcher import CompetitorMatcherService
 
 
@@ -53,8 +54,13 @@ async def batch_find_competitors(
     await init_db()
 
     async with async_session_maker() as session:
-        # 查詢尚未有競品關聯的商品
-        subquery = select(ProductCompetitorMapping.product_id)
+        # 查詢尚未在該平台有競品關聯的商品
+        subquery = (
+            select(ProductCompetitorMapping.product_id)
+            .join(CompetitorProduct, ProductCompetitorMapping.competitor_product_id == CompetitorProduct.id)
+            .join(Competitor, CompetitorProduct.competitor_id == Competitor.id)
+            .where(Competitor.platform == platform)
+        )
 
         # 支援多種 source：gogojap_csv / xlsx_import
         query = select(Product).where(
