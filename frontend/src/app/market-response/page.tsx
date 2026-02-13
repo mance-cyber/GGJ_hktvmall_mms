@@ -84,6 +84,7 @@ export default function MarketResponsePage() {
   const [batchDialogOpen, setBatchDialogOpen] = useState(false)
   const [batchLimit, setBatchLimit] = useState('10')
   const [batchCategory, setBatchCategory] = useState('all')
+  const [batchPlatform, setBatchPlatform] = useState('hktvmall')
 
   // =============================================
   // SSE 批量匹配狀態
@@ -159,7 +160,7 @@ export default function MarketResponsePage() {
     abortRef.current = controller
 
     try {
-      const url = api.batchFindCompetitorsStreamUrl(limit, categoryMain)
+      const url = api.batchFindCompetitorsStreamUrl(limit, categoryMain, batchPlatform)
       const response = await fetch(url, {
         method: 'POST',
         signal: controller.signal,
@@ -231,7 +232,7 @@ export default function MarketResponsePage() {
       })
       setBatchPhase('idle')
     }
-  }, [batchLimit, batchCategory, queryClient, toast])
+  }, [batchLimit, batchCategory, batchPlatform, queryClient, toast])
 
   // Dialog 關閉時清理
   const handleBatchDialogClose = useCallback((open: boolean) => {
@@ -318,7 +319,7 @@ export default function MarketResponsePage() {
                 <DialogHeader>
                   <DialogTitle>批量競品匹配</DialogTitle>
                   <DialogDescription>
-                    自動搜索 HKTVmall 上的競爭商品，並使用 AI 智能判斷是否為同級商品
+                    自動搜索競品平台上的競爭商品，並使用 AI 智能判斷是否為同級商品
                   </DialogDescription>
                 </DialogHeader>
 
@@ -336,6 +337,18 @@ export default function MarketResponsePage() {
                           <SelectItem value="20">20 個商品</SelectItem>
                           <SelectItem value="30">30 個商品</SelectItem>
                           <SelectItem value="50">50 個商品</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">目標平台</label>
+                      <Select value={batchPlatform} onValueChange={setBatchPlatform}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="hktvmall">HKTVmall</SelectItem>
+                          <SelectItem value="wellcome">惠康 Wellcome</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -358,8 +371,8 @@ export default function MarketResponsePage() {
                       <p className="font-medium mb-1">預估成本</p>
                       <p className="text-xs">
                         {parseInt(batchLimit)} 個商品 ≈ ¥{(parseInt(batchLimit) * 0.04).toFixed(2)} (Claude API)
-                        <br />
-                        + Firecrawl API 額度
+                        {batchPlatform === 'hktvmall' && <><br />+ Firecrawl API 額度</>}
+                        {batchPlatform === 'wellcome' && <><br />惠康使用 JSON-LD 提取，零額外成本</>}
                       </p>
                     </div>
                     <div className="rounded-lg bg-yellow-50 p-3 text-sm text-yellow-700">

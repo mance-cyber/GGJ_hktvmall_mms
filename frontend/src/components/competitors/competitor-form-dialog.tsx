@@ -24,6 +24,7 @@ import {
 // 平台選項
 const PLATFORMS = [
   { value: 'hktvmall', label: 'HKTVmall' },
+  { value: 'wellcome', label: '惠康 Wellcome' },
   { value: 'watsons', label: 'Watsons' },
   { value: 'mannings', label: 'Mannings' },
   { value: 'parknshop', label: "PARKnSHOP" },

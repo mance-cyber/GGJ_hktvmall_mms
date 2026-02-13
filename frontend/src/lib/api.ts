@@ -555,10 +555,11 @@ export const api = {
   },
 
   // 批量競品匹配（SSE 串流版）— 返回完整 URL，由呼叫方處理 stream
-  batchFindCompetitorsStreamUrl: (limit: number, categoryMain?: string) => {
+  batchFindCompetitorsStreamUrl: (limit: number, categoryMain?: string, platform?: string) => {
     const base = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
     const params = new URLSearchParams({ limit: limit.toString() })
     if (categoryMain) params.append('category_main', categoryMain)
+    if (platform) params.append('platform', platform)
     return `${base}/mrc/batch/find-competitors/stream?${params.toString()}`
   },
 
