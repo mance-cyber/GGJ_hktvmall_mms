@@ -25,21 +25,24 @@ async def batch_find_competitors(
     limit: int = 50,
     category_main: str = None,
     category_sub: str = None,
-    dry_run: bool = False
+    dry_run: bool = False,
+    platform: str = "hktvmall",
 ):
     """
-    批量為商品搜索競品
+    批量為商品搜索競品（多平台）
 
     Args:
         limit: 一次處理多少個商品（最多 100）
         category_main: 篩選大分類（可選）
         category_sub: 篩選小分類（可選）
         dry_run: 測試模式（不實際保存）
+        platform: 搜索平台 ("hktvmall" | "wellcome")
     """
     print("=" * 60)
-    print("🚀 批量競品匹配工具")
+    print("批量競品匹配工具")
     print("=" * 60)
-    print(f"📊 配置:")
+    print(f"配置:")
+    print(f"  - 平台: {platform}")
     print(f"  - 處理數量: {limit}")
     print(f"  - 大分類: {category_main or '全部'}")
     print(f"  - 小分類: {category_sub or '全部'}")
@@ -53,9 +56,10 @@ async def batch_find_competitors(
         # 查詢尚未有競品關聯的商品
         subquery = select(ProductCompetitorMapping.product_id)
 
+        # 支援多種 source：gogojap_csv / xlsx_import
         query = select(Product).where(
             and_(
-                Product.source == 'gogojap_csv',
+                Product.source.in_(['gogojap_csv', 'xlsx_import']),
                 ~Product.id.in_(subquery)
             )
         )
@@ -86,13 +90,18 @@ async def batch_find_competitors(
             print("\n⚠️ 測試模式：不會實際搜索競品")
             return
 
-        # 確認執行
-        confirm = input(f"\n⚠️ 將處理 {len(products)} 個商品，可能消耗 API 額度。繼續？(y/N): ")
-        if confirm.lower() != 'y':
-            print("❌ 已取消")
-            return
+        # 非交互模式：自動執行
+        auto_confirm = os.environ.get("BATCH_AUTO_CONFIRM", "0") == "1"
+        if not auto_confirm:
+            try:
+                confirm = input(f"\n將處理 {len(products)} 個商品，可能消耗 API 額度。繼續？(y/N): ")
+                if confirm.lower() != 'y':
+                    print("已取消")
+                    return
+            except EOFError:
+                pass  # 非交互模式，直接執行
 
-        print("\n🔍 開始處理...\n")
+        print("\n開始處理...\n")
 
         service = CompetitorMatcherService()
 
@@ -101,23 +110,26 @@ async def batch_find_competitors(
         total_matches = 0
 
         for idx, product in enumerate(products, 1):
-            print(f"[{idx}/{len(products)}] 處理: {product.name_zh}")
+            display_name = product.name_zh or product.name or product.sku
+            print(f"[{idx}/{len(products)}] 處理: {display_name}")
 
             try:
                 results = await service.find_competitors_for_product(
                     db=session,
                     product=product,
-                    max_candidates=3
+                    platform=platform,
+                    max_candidates=3,
                 )
 
-                matches = [r for r in results if r.is_match and r.match_confidence >= 0.6]
+                matches = [r for r in results if r.is_match and r.match_confidence >= 0.4]
 
                 if matches:
                     for match in matches[:1]:  # 每個商品最多保存一個最佳匹配
                         await service.save_match_to_db(
                             db=session,
                             product_id=str(product.id),
-                            match_result=match
+                            match_result=match,
+                            platform=platform,
                         )
                         total_matches += 1
                         print(f"  ✓ 找到競品: {match.candidate_name} (信心度: {match.match_confidence:.2f})")
@@ -148,7 +160,7 @@ async def show_stats():
     async with async_session_maker() as session:
         # 總商品數
         total_result = await session.execute(
-            select(Product).where(Product.source == 'gogojap_csv')
+            select(Product).where(Product.source.in_(['gogojap_csv', 'xlsx_import']))
         )
         total_products = len(total_result.scalars().all())
 
@@ -165,8 +177,11 @@ async def show_stats():
         print("📊 競品匹配統計")
         print("=" * 60)
         print(f"總商品數: {total_products}")
-        print(f"已匹配: {mapped_count} ({mapped_count/total_products*100:.1f}%)")
-        print(f"待處理: {pending} ({pending/total_products*100:.1f}%)")
+        if total_products > 0:
+            print(f"已匹配: {mapped_count} ({mapped_count/total_products*100:.1f}%)")
+            print(f"待處理: {pending} ({pending/total_products*100:.1f}%)")
+        else:
+            print("沒有商品")
         print("=" * 60)
 
 
@@ -174,10 +189,13 @@ def main():
     """主程序"""
     import argparse
 
-    parser = argparse.ArgumentParser(description="批量競品匹配工具")
+    parser = argparse.ArgumentParser(description="批量競品匹配工具（多平台）")
     parser.add_argument("--limit", type=int, default=50, help="處理數量（預設: 50）")
     parser.add_argument("--category-main", type=str, help="篩選大分類")
     parser.add_argument("--category-sub", type=str, help="篩選小分類")
+    parser.add_argument("--platform", type=str, default="hktvmall",
+                        choices=["hktvmall", "wellcome"],
+                        help="搜索平台（預設: hktvmall）")
     parser.add_argument("--dry-run", action="store_true", help="測試模式（不實際執行）")
     parser.add_argument("--stats", action="store_true", help="顯示統計信息")
 
@@ -190,7 +208,8 @@ def main():
             limit=args.limit,
             category_main=args.category_main,
             category_sub=args.category_sub,
-            dry_run=args.dry_run
+            dry_run=args.dry_run,
+            platform=args.platform,
         ))
 
 

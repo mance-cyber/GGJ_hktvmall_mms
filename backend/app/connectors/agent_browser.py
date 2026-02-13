@@ -1,7 +1,7 @@
 # =============================================
 # Agent Browser Connector
 # 使用 Playwright 進行瀏覽器自動化（含瀏覽器池）
-# 專門用於 HKTVmall 搜索頁面的商品 URL 發現
+# 用於 HKTVmall / Wellcome 搜索頁面的商品 URL 發現
 # =============================================
 """
 為什麼用 Playwright 而非 agent-browser CLI：
@@ -41,12 +41,17 @@ _JS_EXTRACT_PRODUCT_URLS = """() => {
 
 class AgentBrowserConnector:
     """
-    Playwright 瀏覽器自動化 — HKTVmall 搜索頁專用（含瀏覽器池）
+    Playwright 瀏覽器自動化 — 多平台搜索頁 URL 發現（含瀏覽器池）
 
-    scroll_2x 策略（已驗證穩定）：
+    HKTVmall scroll_2x 策略（已驗證穩定）：
     1. 打開搜索頁，等 JS 渲染 (15s)
     2. 滾動兩次觸發 lazy load
     3. 在瀏覽器端用 JS 直接提取商品 URL
+
+    Wellcome 策略：
+    1. 導航到搜索/分類頁
+    2. 等待 Nuxt.js hydration（10s）
+    3. 提取 /en/p/.../i/{id}.html 格式的產品 URL
     """
 
     # 滾動策略參數
@@ -172,6 +177,83 @@ class AgentBrowserConnector:
             urls = await page.evaluate(_JS_EXTRACT_PRODUCT_URLS)
 
             logger.info(f"playwright: 發現 {len(urls)} 個商品 URL")
+            return urls[:max_products]
+
+        finally:
+            if page is not None:
+                await page.close()
+            await context.close()
+
+
+    # =============================================
+    # Wellcome URL 發現
+    # =============================================
+
+    # 惠康產品連結提取 JS（匹配 /en/p/.../i/{id}.html 或 /zh-hant/p/...）
+    _JS_EXTRACT_WELLCOME_URLS = """() => {
+        return Array.from(
+            new Set(
+                Array.from(document.querySelectorAll('a[href*="/p/"]'))
+                    .map(a => a.href.split('?')[0])
+                    .filter(href => /\\/i\\/\\d+\\.html/.test(href))
+            )
+        );
+    }"""
+
+    async def discover_wellcome_products(
+        self, search_url: str, max_products: int = 10
+    ) -> List[str]:
+        """
+        從惠康搜索/分類頁面提取產品 URL
+
+        惠康是 Nuxt.js SSR，需等待 JS hydration 完成
+        """
+        if "wellcome.com.hk" not in search_url:
+            raise ValueError(f"非惠康 URL: {search_url}")
+
+        logger.info(f"playwright-wellcome: 開始搜索 {search_url}")
+
+        try:
+            return await asyncio.wait_for(
+                self._do_discover_wellcome(search_url, max_products),
+                timeout=self.TOTAL_TIMEOUT_S,
+            )
+        except asyncio.TimeoutError:
+            logger.error(
+                f"playwright-wellcome: 搜索超時 ({self.TOTAL_TIMEOUT_S}s): {search_url}"
+            )
+            raise
+
+    async def _do_discover_wellcome(
+        self, search_url: str, max_products: int
+    ) -> List[str]:
+        """惠康瀏覽器搜索核心邏輯"""
+        browser = await self._ensure_browser()
+
+        context = await browser.new_context()
+        page = None
+        try:
+            page = await context.new_page()
+
+            # 步驟 1: 導航到搜索/分類頁
+            await page.goto(
+                search_url, wait_until="domcontentloaded", timeout=30000
+            )
+
+            # 步驟 2: 等待 Nuxt.js hydration（10s，惠康比 HKTVmall 快）
+            await page.wait_for_timeout(10000)
+
+            # 步驟 3: 滾動觸發 lazy load
+            await page.evaluate(f"window.scrollBy(0, {self.SCROLL_DISTANCE_PX})")
+            await page.wait_for_timeout(self.SCROLL_PAUSE_MS)
+
+            await page.evaluate(f"window.scrollBy(0, {self.SCROLL_DISTANCE_PX})")
+            await page.wait_for_timeout(self.FINAL_WAIT_MS)
+
+            # 步驟 4: 提取產品 URL
+            urls = await page.evaluate(self._JS_EXTRACT_WELLCOME_URLS)
+
+            logger.info(f"playwright-wellcome: 發現 {len(urls)} 個產品 URL")
             return urls[:max_products]
 
         finally:

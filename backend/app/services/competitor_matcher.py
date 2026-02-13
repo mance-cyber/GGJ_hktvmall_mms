@@ -33,6 +33,7 @@ from app.connectors.hktv_http_client import get_hktv_http_client
 from app.connectors.hktv_api import get_hktv_api_client, HKTVProduct
 from app.connectors.hktv_scraper import get_hktv_scraper, HKTVUrlParser
 from app.connectors.agent_browser import get_agent_browser_connector
+from app.connectors.wellcome_client import get_wellcome_http_client
 from app.config import get_settings
 
 
@@ -470,7 +471,7 @@ class ClaudeMatcher:
 # =============================================
 
 class CompetitorMatcherService:
-    """對手匹配服務（優化版：三層抓取架構）"""
+    """對手匹配服務（多平台：HKTVmall + Wellcome）"""
 
     def __init__(self):
         self.firecrawl = get_firecrawl_connector()
@@ -478,6 +479,10 @@ class CompetitorMatcherService:
         self.matcher = ClaudeMatcher()
         self.http_client = get_hktv_http_client()
         self.hktv_scraper = get_hktv_scraper()
+
+        # 惠康搜索策略（延遲導入，避免循環依賴）
+        from app.services.wellcome_strategy import WellcomeSearchStrategy
+        self.wellcome_strategy = WellcomeSearchStrategy()
 
     def generate_search_queries(self, product: Product) -> List[str]:
         """
@@ -509,40 +514,47 @@ class CompetitorMatcherService:
                 text = re.sub(pattern, '', text, flags=re.IGNORECASE)
             return re.sub(r'\s+', ' ', text).strip()
 
-        # ==================== 生成搜索關鍵詞 ====================
+        # ==================== 生成搜索關鍵詞（精確 → 寬泛）====================
 
-        # 策略 1: 完整中文名（最精確，搜索引擎自帶模糊匹配）
+        # 策略 1: 完整中文名（最精確）
         if product.name_zh:
             cleaned_zh = light_clean(product.name_zh)
             if cleaned_zh and len(cleaned_zh) >= 2:
                 queries.append(cleaned_zh)
 
-        # 策略 2: 分類子類（覆蓋面廣的備用查詢）
+        # 策略 2: product.name（去品牌前綴後）— 補充精確搜索
+        if product.name:
+            cleaned_name = light_clean(product.name)
+            cleaned_name = re.sub(r'^GOGOJAP[-\s]*', '', cleaned_name, flags=re.IGNORECASE)
+            if cleaned_name and len(cleaned_name) >= 2:
+                queries.append(cleaned_name)
+
+        # 策略 3: 日文名
+        if product.name_ja:
+            cleaned_ja = light_clean(product.name_ja)
+            if cleaned_ja:
+                queries.append(cleaned_ja)
+
+        # 策略 4: 分類子類（寬泛備用）
         category_sub = getattr(product, 'category_sub', None)
         if category_sub:
             queries.append(category_sub)
 
-        # 策略 3: 英文名核心詞彙
+        # 策略 5: 英文名核心詞彙
         if product.name_en:
             cleaned_en = light_clean(product.name_en)
             words = cleaned_en.split()[:3]
             if words:
                 queries.append(' '.join(words))
 
-        # 策略 4: 日文名
-        if product.name_ja:
-            cleaned_ja = light_clean(product.name_ja)
-            if cleaned_ja:
-                queries.append(cleaned_ja)
-
-        # 策略 5: 完整原始名稱兜底
+        # 策略 6: 兜底
         if not queries:
             if product.name_zh:
                 queries.append(product.name_zh)
+            elif product.name:
+                queries.append(product.name)
             elif product.name_en:
                 queries.append(product.name_en)
-            elif product.name_ja:
-                queries.append(product.name_ja)
 
         # 去重並保留順序
         seen = set()
@@ -602,23 +614,29 @@ class CompetitorMatcherService:
         max_candidates: int = 5
     ) -> List[MatchResult]:
         """
-        為單個商品尋找競品（三層搜索架構）
+        為單個商品尋找競品（多平台路由）
 
-        搜索策略（按優先級）：
+        HKTVmall 搜索策略（按優先級）：
         1. HKTVmall Product API — ~200ms，零成本，直接帶價格
         2. Playwright 瀏覽器搜索 — ~25s，零成本，只有 URL
         3. Firecrawl — 1 credit/次，最後手段
 
-        當 API 返回足夠結果時，可直接跳過 URL 驗證、metadata 取得、價格抓取，
-        大幅降低延遲和成本。
+        Wellcome 搜索策略（兩層降級）：
+        1. 本地索引搜索 — ~50ms，零成本
+        2. Playwright 瀏覽器搜索 — ~30s，零成本
         """
         queries = self.generate_search_queries(product)
         if not queries:
             return []
 
+        # name_zh 為空時用 name 兜底（去 GOGOJAP 前綴）
+        effective_name_zh = product.name_zh
+        if not effective_name_zh and product.name:
+            effective_name_zh = re.sub(r'^GOGOJAP[-\s]*', '', product.name, flags=re.IGNORECASE)
+
         our_product_dict = {
             "id": str(product.id),
-            "name_zh": product.name_zh,
+            "name_zh": effective_name_zh,
             "name_ja": getattr(product, 'name_ja', ''),
             "name_en": getattr(product, 'name_en', ''),
             "category_main": getattr(product, 'category_main', ''),
@@ -626,14 +644,25 @@ class CompetitorMatcherService:
             "unit": getattr(product, 'unit', ''),
         }
 
-        # ==================== 嘗試 API 快速路徑 ====================
+        # ==================== 平台路由 ====================
+        SUPPORTED_PLATFORMS = {"hktvmall", "wellcome"}
+        if platform not in SUPPORTED_PLATFORMS:
+            logger.warning(f"不支持的平台: {platform}，回退到 hktvmall")
+            platform = "hktvmall"
+
+        if platform == "wellcome":
+            return await self._find_via_wellcome(
+                queries, our_product_dict, db, max_candidates
+            )
+
+        # ==================== HKTVmall: API 快速路徑 ====================
         api_results = await self._find_via_api(
             queries, our_product_dict, db, max_candidates
         )
         if api_results:
             return api_results
 
-        # ==================== 降級到瀏覽器搜索路徑 ====================
+        # ==================== HKTVmall: 降級到瀏覽器搜索 ====================
         return await self._find_via_browser(
             queries, our_product_dict, db, platform, max_candidates
         )
@@ -658,9 +687,16 @@ class CompetitorMatcherService:
             for query in queries[:2]
         ]
         api_results_lists = await asyncio.gather(*api_tasks)
-        api_products: List[HKTVProduct] = [
-            p for sublist in api_results_lists for p in sublist
-        ]
+
+        # 交錯合併：精確查詢（後面的）結果優先，避免被通用查詢淹沒
+        # 反轉列表順序，讓精確查詢結果排在前面
+        reversed_lists = list(reversed(api_results_lists))
+        api_products: List[HKTVProduct] = []
+        max_len = max((len(lst) for lst in reversed_lists), default=0)
+        for i in range(max_len):
+            for lst in reversed_lists:
+                if i < len(lst):
+                    api_products.append(lst[i])
 
         if not api_products:
             return []
@@ -681,7 +717,7 @@ class CompetitorMatcherService:
                 "description": "",
                 "price": str(p.price) if p.price else "未知",
             }
-            for p in unique_products[:max_candidates * 2]
+            for p in unique_products[:max_candidates * 3]
         ]
 
         all_matches = self.matcher.batch_judge_match(our_product_dict, candidate_dicts)
@@ -697,6 +733,86 @@ class CompetitorMatcherService:
         if results:
             logger.info(
                 f"API 快速路徑成功: {len(results)} 匹配 (threshold={threshold}) "
+                f"(product={our_product_dict.get('name_zh', '')})"
+            )
+
+        return results
+
+    async def _find_via_wellcome(
+        self,
+        queries: List[str],
+        our_product_dict: Dict[str, Any],
+        db: AsyncSession,
+        max_candidates: int,
+    ) -> List[MatchResult]:
+        """
+        惠康搜索路徑：本地索引 → Playwright 瀏覽器 → Claude 匹配
+
+        惠康沒有公開搜索 API，用「先爬後配」策略：
+        1. 先搜本地索引（已爬取的 competitor_products）
+        2. 不足時降級到 Playwright 瀏覽器搜索
+        3. Claude 批量匹配（複用現有 ClaudeMatcher）
+        """
+        from app.connectors.wellcome_client import WellcomeProduct
+
+        all_candidates: List[WellcomeProduct] = []
+        seen_urls = set()
+
+        keyword = queries[0] if queries else ""
+        if not keyword:
+            return []
+
+        # Layer 1: 本地索引搜索
+        local_results = await self.wellcome_strategy.search_local_index(
+            db, keyword, limit=max_candidates * 3
+        )
+        for p in local_results:
+            if p.url not in seen_urls:
+                seen_urls.add(p.url)
+                all_candidates.append(p)
+
+        # Layer 2: 本地索引不足時，Playwright 瀏覽器搜索
+        if len(all_candidates) < self.wellcome_strategy.LOCAL_MIN_RESULTS:
+            browser_results = await self.wellcome_strategy.search_via_browser(
+                keyword, limit=max_candidates * 2
+            )
+            for p in browser_results:
+                if p.url not in seen_urls:
+                    seen_urls.add(p.url)
+                    all_candidates.append(p)
+
+        if not all_candidates:
+            logger.info(f"wellcome 搜索無結果: keyword='{keyword}'")
+            return []
+
+        # Claude 批量匹配（複用現有 ClaudeMatcher，平台無關）
+        candidate_dicts = [
+            {
+                "url": p.url,
+                "name": p.name or "",
+                "description": f"品牌: {p.brand}" if p.brand else "",
+                "price": str(p.price) if p.price else "未知",
+            }
+            for p in all_candidates
+            if p.name
+        ]
+
+        if not candidate_dicts:
+            return []
+
+        all_matches = self.matcher.batch_judge_match(our_product_dict, candidate_dicts)
+
+        # 動態閾值篩選（同 HKTVmall 邏輯）
+        n = len(candidate_dicts)
+        threshold = 0.3 if n <= 2 else 0.4 if n <= 5 else 0.5
+        results = [
+            r for r in all_matches
+            if r.is_match and r.match_confidence >= threshold
+        ]
+
+        if results:
+            logger.info(
+                f"wellcome 匹配成功: {len(results)} 匹配 (threshold={threshold}) "
                 f"(product={our_product_dict.get('name_zh', '')})"
             )
 
@@ -790,14 +906,15 @@ class CompetitorMatcherService:
         db: AsyncSession,
         product_id: str,
         match_result: MatchResult,
+        platform: str = "hktvmall",
     ) -> Optional[ProductCompetitorMapping]:
         """
-        將匹配結果持久化到數據庫（get-or-create 模式）
+        將匹配結果持久化到數據庫（get-or-create 模式，多平台）
 
         流程：
         1. 驗證參數（product_id → UUID，candidate_url 非空）
-        2. URL 標準化
-        3. 取得或創建 Competitor（platform='hktvmall'）
+        2. URL 標準化（按平台選擇解析器）
+        3. 取得或創建 Competitor（按 platform 參數）
         4. 取得或創建 CompetitorProduct（按 normalized URL）
         5. 取得或創建 ProductCompetitorMapping（按 product_id + competitor_product_id）
 
@@ -805,6 +922,18 @@ class CompetitorMatcherService:
         異常時 rollback() + return None，不中斷 caller 的循環。
         """
         import uuid as _uuid
+
+        # 平台配置表
+        PLATFORM_CONFIG = {
+            "hktvmall": {
+                "name": "HKTVmall",
+                "base_url": "https://www.hktvmall.com",
+            },
+            "wellcome": {
+                "name": "Wellcome 惠康",
+                "base_url": "https://www.wellcome.com.hk",
+            },
+        }
 
         try:
             # ==================== 1. 驗證 ====================
@@ -818,24 +947,32 @@ class CompetitorMatcherService:
                 logger.warning("save_match_to_db: candidate_url 為空")
                 return None
 
-            # ==================== 2. URL 標準化 ====================
-            normalized_url = HKTVUrlParser.normalize_url(match_result.candidate_url)
+            # ==================== 2. URL 標準化（按平台）====================
+            if platform == "wellcome":
+                from app.connectors.wellcome_client import normalize_url as wellcome_normalize
+                normalized_url = wellcome_normalize(match_result.candidate_url)
+            else:
+                normalized_url = HKTVUrlParser.normalize_url(match_result.candidate_url)
 
-            # ==================== 3. Competitor（get-or-create）====================
-            stmt = select(Competitor).where(Competitor.platform == "hktvmall").limit(1)
+            # ==================== 3. Competitor（get-or-create，按 platform）====================
+            stmt = select(Competitor).where(Competitor.platform == platform).limit(1)
             result = await db.execute(stmt)
             competitor = result.scalar_one_or_none()
 
             if not competitor:
+                config = PLATFORM_CONFIG.get(platform, {
+                    "name": platform,
+                    "base_url": "",
+                })
                 competitor = Competitor(
-                    name="HKTVmall",
-                    platform="hktvmall",
-                    base_url="https://www.hktvmall.com",
+                    name=config["name"],
+                    platform=platform,
+                    base_url=config["base_url"],
                     is_active=True,
                 )
                 db.add(competitor)
                 await db.flush()
-                logger.info(f"創建 Competitor: platform=hktvmall id={competitor.id}")
+                logger.info(f"創建 Competitor: platform={platform} id={competitor.id}")
 
             # ==================== 4. CompetitorProduct（get-or-create）====================
             stmt = select(CompetitorProduct).where(
@@ -845,7 +982,13 @@ class CompetitorMatcherService:
             comp_product = result.scalar_one_or_none()
 
             if not comp_product:
-                sku = HKTVUrlParser.extract_sku(normalized_url)
+                # SKU 提取：按平台選擇解析器
+                if platform == "wellcome":
+                    from app.connectors.wellcome_client import extract_product_id
+                    sku = extract_product_id(normalized_url)
+                else:
+                    sku = HKTVUrlParser.extract_sku(normalized_url)
+
                 comp_product = CompetitorProduct(
                     competitor_id=competitor.id,
                     name=match_result.candidate_name or "Unknown",
@@ -944,3 +1087,18 @@ class CompetitorMatcherService:
             except Exception:
                 pass
             return None
+
+
+# =============================================
+# 單例工廠
+# =============================================
+
+_matcher_service: Optional[CompetitorMatcherService] = None
+
+
+def get_competitor_matcher_service() -> CompetitorMatcherService:
+    """獲取 CompetitorMatcherService 單例"""
+    global _matcher_service
+    if _matcher_service is None:
+        _matcher_service = CompetitorMatcherService()
+    return _matcher_service

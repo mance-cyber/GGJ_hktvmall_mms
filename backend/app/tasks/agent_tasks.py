@@ -92,27 +92,32 @@ def trigger_strategist_briefing():
 def batch_find_competitors(
     limit: int = 50,
     category_main: str = None,
-    category_sub: str = None
+    category_sub: str = None,
+    platform: str = "hktvmall",
 ):
     """
-    批量為商品搜索競品
+    批量為商品搜索競品（多平台）
 
     Args:
         limit: 一次處理多少個商品（最多 50）
         category_main: 篩選大分類（可選）
         category_sub: 篩選小分類（可選）
+        platform: 搜索平台 ("hktvmall" | "wellcome")
 
     Returns:
         處理結果統計
     """
-    logger.info(f"Celery: 開始批量競品匹配 (limit={limit})")
-    return _run_async(_batch_find_competitors_async(limit, category_main, category_sub))
+    logger.info(f"Celery: 開始批量競品匹配 (limit={limit}, platform={platform})")
+    return _run_async(
+        _batch_find_competitors_async(limit, category_main, category_sub, platform)
+    )
 
 
 async def _batch_find_competitors_async(
     limit: int,
     category_main: str = None,
-    category_sub: str = None
+    category_sub: str = None,
+    platform: str = "hktvmall",
 ) -> dict:
     """批量競品匹配的異步實現"""
     from sqlalchemy import select, and_
@@ -161,40 +166,103 @@ async def _batch_find_competitors_async(
                 results = await service.find_competitors_for_product(
                     db=session,
                     product=product,
-                    max_candidates=3
+                    platform=platform,
+                    max_candidates=3,
                 )
 
-                matches = [r for r in results if r.is_match and r.match_confidence >= 0.6]
+                matches = [r for r in results if r.is_match and r.match_confidence >= 0.4]
 
                 for match in matches[:1]:  # 每個商品最多保存一個最佳匹配
                     await service.save_match_to_db(
                         db=session,
                         product_id=str(product.id),
-                        match_result=match
+                        match_result=match,
+                        platform=platform,
                     )
                     total_matches += 1
 
                 success_count += 1
-                logger.info(f"✓ {product.name_zh}: 找到 {len(matches)} 個匹配")
+                logger.info(f"[{platform}] {product.name_zh}: 找到 {len(matches)} 個匹配")
 
             except Exception as e:
                 error_count += 1
-                logger.error(f"✗ {product.name_zh}: {str(e)}")
+                logger.error(f"[{platform}] {product.name_zh}: {str(e)}")
 
         await session.commit()
 
         result = {
             "status": "completed",
+            "platform": platform,
             "processed": len(products),
             "success": success_count,
             "errors": error_count,
-            "total_matches": total_matches
+            "total_matches": total_matches,
         }
 
         logger.info(
-            f"批量競品匹配完成: 處理 {len(products)} 個商品, "
+            f"批量競品匹配完成 [{platform}]: 處理 {len(products)} 個商品, "
             f"成功 {success_count}, 失敗 {error_count}, "
             f"找到 {total_matches} 個競品"
         )
 
         return result
+
+
+@celery_app.task(name="app.tasks.agent_tasks.crawl_wellcome_categories")
+def crawl_wellcome_categories():
+    """
+    定期爬取惠康重點分類，填充本地索引
+
+    用於支撐 WellcomeSearchStrategy 的 Layer 1 本地索引搜索。
+    建議 Celery Beat 排程：每日凌晨執行。
+    """
+    logger.info("Celery: 開始惠康分類爬取")
+    return _run_async(_crawl_wellcome_categories_async())
+
+
+async def _crawl_wellcome_categories_async() -> dict:
+    """惠康分類爬取的異步實現"""
+    from app.models.database import async_session_maker, init_db
+    from app.services.wellcome_strategy import WellcomeSearchStrategy
+
+    await init_db()
+
+    # 惠康重點分類（與 GoGoJap 商品線重疊的品類）
+    CATEGORIES = {
+        "100015-100182-101093": "豬肉",
+        "100015-100182-101092": "牛肉",
+        "100015-100186-101115": "其他急凍肉",
+        "100015-100183": "海鮮",
+    }
+
+    strategy = WellcomeSearchStrategy()
+    total_new = 0
+
+    async with async_session_maker() as session:
+        try:
+            for cat_id, cat_name in CATEGORIES.items():
+                try:
+                    count = await strategy.crawl_category(
+                        db=session,
+                        category_id=cat_id,
+                        category_name=cat_name,
+                        max_pages=5,
+                    )
+                    total_new += count
+                    logger.info(f"惠康分類 [{cat_name}]: 新增 {count} 商品")
+                except Exception as e:
+                    logger.error(f"惠康分類 [{cat_name}] 爬取失敗: {e}")
+
+            await session.commit()
+        except Exception as e:
+            logger.error(f"惠康分類爬取事務失敗: {e}")
+            await session.rollback()
+            raise
+
+    result = {
+        "status": "completed",
+        "categories_crawled": len(CATEGORIES),
+        "total_new_products": total_new,
+    }
+    logger.info(f"惠康分類爬取完成: {total_new} 個新商品")
+    return result

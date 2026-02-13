@@ -124,7 +124,7 @@ async def get_mrc_dashboard(
     """
     # 1. 基礎統計
     total_products = await db.scalar(
-        select(func.count(Product.id)).where(Product.source == 'gogojap_csv')
+        select(func.count(Product.id)).where(Product.source.in_(['gogojap_csv', 'xlsx_import']))
     ) or 0
     
     products_with_competitors = await db.scalar(
@@ -135,7 +135,7 @@ async def get_mrc_dashboard(
     current_seasons = get_current_season()
     seasonal_query = select(Product).where(
         and_(
-            Product.source == 'gogojap_csv',
+            Product.source.in_(['gogojap_csv', 'xlsx_import']),
             Product.season_tag.in_(current_seasons)
         )
     ).limit(20)
@@ -170,7 +170,7 @@ async def get_mrc_dashboard(
         Product.category_main,
         func.count(Product.id).label('count')
     ).where(
-        Product.source == 'gogojap_csv'
+        Product.source.in_(['gogojap_csv', 'xlsx_import'])
     ).group_by(Product.category_main)
     
     category_result = await db.execute(category_query)
@@ -237,7 +237,7 @@ async def get_seasonal_products(
     
     query = select(Product).where(
         and_(
-            Product.source == 'gogojap_csv',
+            Product.source.in_(['gogojap_csv', 'xlsx_import']),
             Product.season_tag.in_(seasons)
         )
     )
@@ -284,7 +284,7 @@ async def search_products(
     
     query = select(Product).where(
         and_(
-            Product.source == 'gogojap_csv',
+            Product.source.in_(['gogojap_csv', 'xlsx_import']),
             or_(
                 Product.name_zh.ilike(search_pattern),
                 Product.name_ja.ilike(search_pattern),
@@ -377,7 +377,8 @@ async def find_competitors_for_product(
             mapping = await service.save_match_to_db(
                 db=db,
                 product_id=str(product_id),
-                match_result=result
+                match_result=result,
+                platform=platform,
             )
             if mapping:
                 saved_count += 1
@@ -406,10 +407,11 @@ async def batch_find_competitors(
     category_main: Optional[str] = Query(None, description="篩選大分類"),
     category_sub: Optional[str] = Query(None, description="篩選小分類"),
     limit: int = Query(10, le=50, description="處理商品數量"),
+    platform: str = Query("hktvmall", description="搜索平台 (hktvmall | wellcome)"),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    批量為商品搜索競品
+    批量為商品搜索競品（多平台）
 
     注意：此操作會消耗 API 配額，請謹慎使用
     """
@@ -449,7 +451,8 @@ async def batch_find_competitors(
                 results = await service.find_competitors_for_product(
                     db=db,
                     product=product,
-                    max_candidates=3
+                    platform=platform,
+                    max_candidates=3,
                 )
 
                 matches = [r for r in results if r.is_match and r.match_confidence >= 0.4]
@@ -458,7 +461,8 @@ async def batch_find_competitors(
                     await service.save_match_to_db(
                         db=db,
                         product_id=str(product.id),
-                        match_result=match
+                        match_result=match,
+                        platform=platform,
                     )
 
                 batch_results.append({
@@ -496,10 +500,11 @@ async def batch_find_competitors_stream(
     category_main: Optional[str] = Query(None, description="篩選大分類"),
     category_sub: Optional[str] = Query(None, description="篩選小分類"),
     limit: int = Query(10, le=50, description="處理商品數量"),
+    platform: str = Query("hktvmall", description="搜索平台 (hktvmall | wellcome)"),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    批量競品匹配（SSE 串流版）
+    批量競品匹配（SSE 串流版，多平台）
 
     逐個商品推送進度與結果，前端即時渲染。
     事件類型：progress / result / done
@@ -538,6 +543,7 @@ async def batch_find_competitors_stream(
                 "current": idx,
                 "total": total,
                 "product_name": product_name,
+                "platform": platform,
                 "status": "searching",
             })
 
@@ -545,6 +551,7 @@ async def batch_find_competitors_stream(
                 results = await service.find_competitors_for_product(
                     db=db,
                     product=product,
+                    platform=platform,
                     max_candidates=3,
                 )
 
@@ -556,6 +563,7 @@ async def batch_find_competitors_stream(
                         db=db,
                         product_id=str(product.id),
                         match_result=match,
+                        platform=platform,
                     )
 
                 total_candidates += len(results)
@@ -578,7 +586,7 @@ async def batch_find_competitors_stream(
                 })
 
             except Exception as e:
-                logger.error(f"SSE 處理商品失敗: {product_name} - {str(e)}", exc_info=True)
+                logger.error(f"SSE [{platform}] 處理商品失敗: {product_name} - {str(e)}", exc_info=True)
                 yield _sse("result", {
                     "product_id": str(product.id),
                     "product_name": product_name,
@@ -595,6 +603,7 @@ async def batch_find_competitors_stream(
             "processed": total,
             "total_matches": total_matches,
             "total_candidates": total_candidates,
+            "platform": platform,
         })
 
     return StreamingResponse(
