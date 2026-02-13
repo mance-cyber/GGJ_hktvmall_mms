@@ -746,43 +746,45 @@ class CompetitorMatcherService:
         max_candidates: int,
     ) -> List[MatchResult]:
         """
-        惠康搜索路徑：本地索引 → Playwright 瀏覽器 → Claude 匹配
+        惠康搜索路徑：本地索引 → 自動爬取分類 → Claude 匹配
 
-        惠康沒有公開搜索 API，用「先爬後配」策略：
-        1. 先搜本地索引（已爬取的 competitor_products）
-        2. 不足時降級到 Playwright 瀏覽器搜索
+        惠康搜索頁返回 HTTP 500，無法使用。
+        改用「分類瀏覽 + 本地索引」策略：
+        1. 確保本地索引有數據（沒有就自動爬取對應分類頁）
+        2. 用多個簡化關鍵詞搜本地索引
         3. Claude 批量匹配（複用現有 ClaudeMatcher）
         """
         from app.connectors.wellcome_client import WellcomeProduct
-
-        all_candidates: List[WellcomeProduct] = []
-        seen_urls = set()
 
         keyword = queries[0] if queries else ""
         if not keyword:
             return []
 
-        # Layer 1: 本地索引搜索
-        local_results = await self.wellcome_strategy.search_local_index(
-            db, keyword, limit=max_candidates * 3
+        # 確保本地索引有惠康數據（首次自動爬取）
+        category_main = our_product_dict.get("category_main", "")
+        category_sub = our_product_dict.get("category_sub", "")
+        await self.wellcome_strategy.ensure_local_index(
+            db, category_main, category_sub
         )
-        for p in local_results:
-            if p.url not in seen_urls:
-                seen_urls.add(p.url)
-                all_candidates.append(p)
 
-        # Layer 2: 本地索引不足時，Playwright 瀏覽器搜索
-        if len(all_candidates) < self.wellcome_strategy.LOCAL_MIN_RESULTS:
-            browser_results = await self.wellcome_strategy.search_via_browser(
-                keyword, limit=max_candidates * 2
+        # 用多個關鍵詞搜索本地索引（精確 → 寬泛）
+        all_candidates: List[WellcomeProduct] = []
+        seen_urls: set = set()
+
+        for q in queries:
+            local_results = await self.wellcome_strategy.search_local_index(
+                db, q, limit=max_candidates * 3
             )
-            for p in browser_results:
+            for p in local_results:
                 if p.url not in seen_urls:
                     seen_urls.add(p.url)
                     all_candidates.append(p)
 
+            if len(all_candidates) >= max_candidates:
+                break
+
         if not all_candidates:
-            logger.info(f"wellcome 搜索無結果: keyword='{keyword}'")
+            logger.info(f"wellcome 搜索無結果: queries={queries[:3]}")
             return []
 
         # Claude 批量匹配（複用現有 ClaudeMatcher，平台無關）

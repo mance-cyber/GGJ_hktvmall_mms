@@ -66,6 +66,10 @@ class Product(Base):
     # 數據來源追蹤
     source: Mapped[Optional[str]] = mapped_column(String(50), default="manual", comment="數據來源: gogojap_csv, hktv_api, manual")
 
+    # 競品建庫重設計：自家商品標籤
+    category_tag: Mapped[Optional[str]] = mapped_column(String(50), comment="大類標籤：牛/豬/羊/雞鴨/魚/蝦/蟹/貝")
+    sub_tag: Mapped[Optional[str]] = mapped_column(String(50), comment="細分標籤：西冷/肉眼/牛柳/牛仔骨/三文魚/刺身...")
+
     # 關聯
     history: Mapped[List["ProductHistory"]] = relationship(back_populates="product", cascade="all, delete-orphan")
     competitor_mappings: Mapped[List["ProductCompetitorMapping"]] = relationship(back_populates="product", cascade="all, delete-orphan")
@@ -85,6 +89,7 @@ class Product(Base):
         Index("idx_products_season_tag", "season_tag"),
         Index("idx_products_category_main", "category_main"),
         Index("idx_products_source", "source"),
+        Index("idx_products_category_tag", "category_tag"),
     )
 
 
@@ -111,6 +116,8 @@ class ProductCompetitorMapping(Base):
     product_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"))
     competitor_product_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("competitor_products.id", ondelete="CASCADE"))
     match_confidence: Mapped[Optional[Decimal]] = mapped_column(Numeric(3, 2), comment="0.00 - 1.00 匹配信心度")
+    match_level: Mapped[Optional[int]] = mapped_column(Integer, comment="匹配層級：1=直接替代 2=近似競品 3=品類競品")
+    match_reason: Mapped[Optional[str]] = mapped_column(Text, comment="AI 匹配理由")
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, comment="人工確認")
     notes: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
@@ -121,6 +128,7 @@ class ProductCompetitorMapping(Base):
 
     __table_args__ = (
         UniqueConstraint("product_id", "competitor_product_id", name="uq_product_competitor"),
+        Index("idx_pcm_match_level", "match_level"),
     )
 
 

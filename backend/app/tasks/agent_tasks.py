@@ -214,6 +214,59 @@ async def _batch_find_competitors_async(
         return result
 
 
+@celery_app.task(
+    name="app.tasks.agent_tasks.daily_catalog_sync",
+    time_limit=600,  # 建庫 + 打標可能需要較長時間
+)
+def daily_catalog_sync():
+    """
+    每日凌晨：建庫更新 → 打標新品
+
+    流程：
+    1. CatalogService.update_catalog — 增量更新競品庫
+    2. tag_all_untagged — 為新品打標（規則 + AI 兜底）
+    3. Matcher（待接入）
+    """
+    logger.info("Celery Beat: 開始每日競品庫同步")
+    return _run_async(_daily_catalog_sync_async())
+
+
+async def _daily_catalog_sync_async() -> dict:
+    """每日競品庫同步的異步實現"""
+    from app.models.database import async_session_maker, init_db
+    from app.services.cataloger import CatalogService
+    from app.services.tagger import tag_all_untagged
+    from app.services.matcher import match_all_pending
+    from app.services.monitor import MonitorService
+
+    await init_db()
+
+    async with async_session_maker() as session:
+        # Step 1: 更新競品庫
+        catalog_result = await CatalogService.update_catalog(session)
+
+        # Step 2: 為新品打標
+        tag_result = await tag_all_untagged(session)
+
+        # Step 3: 匹配 needs_matching 的商品
+        match_result = await match_all_pending(session)
+
+        # Step 4: 監測檢查（下架判定 + 價格異動）
+        monitor_result = await MonitorService.run_daily_check(session)
+
+        await session.commit()
+
+        result = {
+            "status": "completed",
+            "catalog": catalog_result,
+            "tagging": tag_result,
+            "matching": match_result,
+            "monitoring": monitor_result,
+        }
+        logger.info(f"每日競品庫同步完成: {result}")
+        return result
+
+
 @celery_app.task(name="app.tasks.agent_tasks.crawl_wellcome_categories")
 def crawl_wellcome_categories():
     """
@@ -229,24 +282,16 @@ def crawl_wellcome_categories():
 async def _crawl_wellcome_categories_async() -> dict:
     """惠康分類爬取的異步實現"""
     from app.models.database import async_session_maker, init_db
-    from app.services.wellcome_strategy import WellcomeSearchStrategy
+    from app.services.wellcome_strategy import WellcomeSearchStrategy, ALL_CATEGORIES
 
     await init_db()
-
-    # 惠康重點分類（與 GoGoJap 商品線重疊的品類）
-    CATEGORIES = {
-        "100015-100182-101093": "豬肉",
-        "100015-100182-101092": "牛肉",
-        "100015-100186-101115": "其他急凍肉",
-        "100015-100183": "海鮮",
-    }
 
     strategy = WellcomeSearchStrategy()
     total_new = 0
 
     async with async_session_maker() as session:
         try:
-            for cat_id, cat_name in CATEGORIES.items():
+            for cat_id, cat_name in ALL_CATEGORIES.items():
                 try:
                     count = await strategy.crawl_category(
                         db=session,

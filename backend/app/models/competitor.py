@@ -64,6 +64,13 @@ class CompetitorProduct(Base):
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
 
+    # 競品建庫重設計：標籤 + 監測狀態
+    category_tag: Mapped[Optional[str]] = mapped_column(String(50), comment="大類標籤：牛/豬/羊/雞鴨/魚/蝦/蟹/貝")
+    sub_tag: Mapped[Optional[str]] = mapped_column(String(50), comment="細分標籤：西冷/肉眼/牛柳/牛仔骨/三文魚/刺身...")
+    needs_matching: Mapped[bool] = mapped_column(Boolean, default=True, comment="是否需要重新匹配")
+    last_seen_at: Mapped[Optional[datetime]] = mapped_column(comment="最後一次在分類頁出現的時間")
+    tag_source: Mapped[Optional[str]] = mapped_column(String(20), comment="標籤來源：rule/ai")
+
     # 關聯
     competitor: Mapped["Competitor"] = relationship(back_populates="products")
     price_snapshots: Mapped[List["PriceSnapshot"]] = relationship(back_populates="product", cascade="all, delete-orphan")
@@ -73,6 +80,9 @@ class CompetitorProduct(Base):
         Index("idx_competitor_products_competitor_id", "competitor_id"),
         Index("idx_competitor_products_url", "url"),
         Index("idx_competitor_products_is_active", "is_active"),
+        Index("idx_cp_category_tag", "category_tag"),
+        Index("idx_cp_sub_tag", "sub_tag"),
+        Index("idx_cp_needs_matching", "needs_matching"),
     )
 
 

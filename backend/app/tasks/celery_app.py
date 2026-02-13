@@ -125,4 +125,12 @@ celery_app.conf.beat_schedule = {
         "task": "app.tasks.agent_tasks.trigger_strategist_briefing",
         "schedule": crontab(hour=11, minute=0),
     },
+    # =============================================
+    # 競品建庫每日同步
+    # =============================================
+    # 每日凌晨 02:30 — 建庫更新 + 打標新品
+    "daily-catalog-sync": {
+        "task": "app.tasks.agent_tasks.daily_catalog_sync",
+        "schedule": crontab(hour=2, minute=30),
+    },
 }

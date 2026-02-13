@@ -8,7 +8,8 @@ from app.api.v1 import (
     competitors, products, content, analytics, scrape, categories,
     telegram, market_response, ai_settings, agent, agent_team, hktvmall,
     pricing, orders, inbox, finance, promotions, auth, image_generation,
-    price_trends, seo, geo, content_pipeline, seo_ranking, roi, workflow
+    price_trends, seo, geo, content_pipeline, seo_ranking, roi, workflow,
+    catalog,
 )
 
 api_router = APIRouter()
@@ -198,4 +199,11 @@ api_router.include_router(
 api_router.include_router(
     workflow.router,
     tags=["工作流自動化"]
+)
+
+# 競品建庫
+api_router.include_router(
+    catalog.router,
+    prefix="/catalog",
+    tags=["競品建庫"]
 )
