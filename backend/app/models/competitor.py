@@ -46,7 +46,7 @@ class CompetitorProduct(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     competitor_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("competitors.id", ondelete="CASCADE"))
     name: Mapped[str] = mapped_column(String(500), nullable=False)
-    url: Mapped[str] = mapped_column(String(1000), nullable=False, unique=True)
+    url: Mapped[str] = mapped_column(String(2000), nullable=False, unique=True)
     sku: Mapped[Optional[str]] = mapped_column(String(100))
     category: Mapped[Optional[str]] = mapped_column(String(255))
     image_url: Mapped[Optional[str]] = mapped_column(String(1000))

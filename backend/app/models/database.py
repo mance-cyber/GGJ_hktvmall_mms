@@ -60,7 +60,12 @@ def _prepare_async_url(url: str) -> tuple[str, dict]:
 
     clean_url = urlunparse(parsed._replace(query=urlencode(params, doseq=True)))
 
-    connect_args = {}
+    connect_args = {
+        # Neon 用 pgbouncer 連接池，不支援 prepared statements；
+        # 禁用 asyncpg 客戶端快取避免 schema 變更後 InvalidCachedStatementError
+        "statement_cache_size": 0,
+        "prepared_statement_cache_size": 0,
+    }
     if needs_ssl:
         ssl_ctx = ssl.create_default_context()
         ssl_ctx.check_hostname = False
