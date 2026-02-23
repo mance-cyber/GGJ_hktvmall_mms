@@ -28,7 +28,8 @@ from app.connectors.wellcome_client import (
 )
 from app.connectors.agent_browser import get_agent_browser_connector
 from app.config import get_settings
-from app.models.competitor import Competitor, CompetitorProduct
+from app.models.database import utcnow
+from app.models.competitor import Competitor, CompetitorProduct, PriceSnapshot
 
 logger = logging.getLogger(__name__)
 
@@ -293,7 +294,7 @@ class CatalogService:
         - 已有 URL → 更新價格 + last_seen_at，名稱變更則清空標籤
         - 返回 "new" / "updated" / "unchanged"
         """
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = utcnow()
 
         stmt = select(CompetitorProduct).where(CompetitorProduct.url == url)
         result = await db.execute(stmt)
@@ -312,16 +313,32 @@ class CatalogService:
             )
             db.add(cp)
             await db.flush()
+
+            # 順帶建立初始價格快照（Algolia/HTTP 免費取得的價格）
+            # flush 省略：build_catalog() 末尾統一 commit，
+            # 本輪不會重查此新品快照（seen_urls 保證 URL 唯一性）
+            if price is not None:
+                db.add(PriceSnapshot(
+                    competitor_product_id=cp.id,
+                    price=price,
+                    currency="HKD",
+                ))
+
             return "new"
 
         # 已存在：檢查是否有變更
         changed = False
 
-        # 價格更新
-        if price is not None and existing.price != price:
-            # price 不是 CompetitorProduct 的直接欄位，
-            # 價格追蹤由 PriceSnapshot 處理，這裡不直接更新
-            pass
+        # 價格更新 → 與最新快照比較，有變則建新快照
+        if price is not None:
+            latest = await CatalogService._latest_snapshot_price(db, existing.id)
+            if latest is None or latest != price:
+                db.add(PriceSnapshot(
+                    competitor_product_id=existing.id,
+                    price=price,
+                    currency="HKD",
+                ))
+                changed = True
 
         # 名稱變更 → 清空標籤（觸發重新打標）
         if name and existing.name != name:
@@ -344,6 +361,20 @@ class CatalogService:
         return "updated" if changed else "unchanged"
 
     # ==================== 輔助方法 ====================
+
+    @staticmethod
+    async def _latest_snapshot_price(
+        db: AsyncSession, competitor_product_id,
+    ) -> Optional[Decimal]:
+        """獲取最新快照價格（用於增量更新去重）"""
+        stmt = (
+            select(PriceSnapshot.price)
+            .where(PriceSnapshot.competitor_product_id == competitor_product_id)
+            .order_by(PriceSnapshot.scraped_at.desc())
+            .limit(1)
+        )
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
 
     @staticmethod
     async def _ensure_competitor(
