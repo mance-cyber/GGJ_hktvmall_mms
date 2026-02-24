@@ -426,7 +426,7 @@ class HKTVApiClient:
         for entry in price_list:
             if not isinstance(entry, dict):
                 continue
-            ptype = str(entry.get("type", "")).upper()
+            ptype = str(entry.get("priceType") or entry.get("type") or "").upper()
             key = type_map.get(ptype)
             if not key:
                 continue
