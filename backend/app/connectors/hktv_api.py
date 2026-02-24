@@ -35,14 +35,10 @@ class HKTVProduct:
     price: Optional[Decimal] = None
     image_url: Optional[str] = None
     store_name: Optional[str] = None
-    # 擴展字段：Algolia 完整競品情報
-    original_price: Optional[Decimal] = None    # priceList 中 type=BUY（原價）
-    plus_price: Optional[Decimal] = None        # priceList 中 type=PLUS（會員價）
-    rating: Optional[Decimal] = None            # ratingValue
+    # 擴展字段：Algolia 實際可用的競品情報
+    original_price: Optional[Decimal] = None    # priceList 中 priceType=BUY（原價）
+    plus_price: Optional[Decimal] = None        # priceList 中 priceType=PLUS（會員價）
     review_count: Optional[int] = None          # numberOfReviews
-    sold_quantity: Optional[str] = None         # soldQuantity（"100+" 格式）
-    origin_country: Optional[str] = None        # originCountry
-    stock_status: Optional[str] = None          # inventoryStatus → in_stock/out_of_stock
 
     def to_dict(self) -> Dict[str, Any]:
         result = {
@@ -58,16 +54,8 @@ class HKTVProduct:
             result["original_price"] = str(self.original_price)
         if self.plus_price is not None:
             result["plus_price"] = str(self.plus_price)
-        if self.rating is not None:
-            result["rating"] = str(self.rating)
         if self.review_count is not None:
             result["review_count"] = self.review_count
-        if self.sold_quantity is not None:
-            result["sold_quantity"] = self.sold_quantity
-        if self.origin_country is not None:
-            result["origin_country"] = self.origin_country
-        if self.stock_status is not None:
-            result["stock_status"] = self.stock_status
         return result
 
 
@@ -93,21 +81,13 @@ class HKTVApiClient:
         "x-algolia-application-id": "8RN1Y79F02",
         "x-algolia-api-key": "a4a336abc62ab842842a81de642b484a",
     }
-    # 只請求實際需要的字段（126 → 14），減少傳輸量
+    # 只請求實際需要的字段（126 → 10），減少傳輸量
+    # 注：ratingValue, soldQuantity, originCountry, inventoryStatus 不在 Algolia index 中
     ALGOLIA_FIELDS = [
         "nameZh", "code", "urlZh", "sellingPrice", "priceList",
         "images", "storeNameZh", "hasStock", "catNameZh",
-        "ratingValue", "numberOfReviews", "soldQuantity",
-        "originCountry", "inventoryStatus",
+        "numberOfReviews",
     ]
-
-    # inventoryStatus → stock_status 映射
-    _INVENTORY_STATUS_MAP = {
-        "INSTOCK": "in_stock",
-        "IN_STOCK": "in_stock",
-        "LOWSTOCK": "low_stock",
-        "LOW_STOCK": "low_stock",
-    }
 
     # 寵物食品分類黑名單（GoGoJap 是人類食品賣家）
     PET_CATEGORY_KEYWORDS = frozenset(["貓", "狗", "寵物"])
@@ -323,15 +303,7 @@ class HKTVApiClient:
             # 圖片
             image_url = self._extract_algolia_image(hit)
 
-            # 評分 / 評論數
-            rating = None
-            raw_rating = hit.get("ratingValue")
-            if raw_rating is not None:
-                try:
-                    rating = Decimal(str(raw_rating))
-                except (ValueError, TypeError, InvalidOperation):
-                    pass
-
+            # 評論數
             review_count = None
             raw_reviews = hit.get("numberOfReviews")
             if raw_reviews is not None:
@@ -339,14 +311,6 @@ class HKTVApiClient:
                     review_count = int(raw_reviews)
                 except (ValueError, TypeError):
                     pass
-
-            # 庫存狀態映射（保留 low_stock 三態區分）
-            inv_status = hit.get("inventoryStatus")
-            stock_status = None
-            if inv_status is not None:
-                stock_status = self._INVENTORY_STATUS_MAP.get(
-                    str(inv_status).upper(), "out_of_stock",
-                )
 
             products.append(HKTVProduct(
                 name=name,
@@ -357,11 +321,7 @@ class HKTVApiClient:
                 store_name=hit.get("storeNameZh") or None,
                 original_price=price_map.get("buy"),
                 plus_price=price_map.get("plus"),
-                rating=rating,
                 review_count=review_count,
-                sold_quantity=str(hit["soldQuantity"]).strip() if hit.get("soldQuantity") is not None else None,
-                origin_country=hit.get("originCountry") or None,
-                stock_status=stock_status,
             ))
 
         if filtered:
