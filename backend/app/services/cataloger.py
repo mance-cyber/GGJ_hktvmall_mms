@@ -147,6 +147,14 @@ class CatalogService:
                         seen_urls.add(product.url)
                         stats["total_fetched"] += 1
 
+                        # 組裝擴展數據（plus_price, sold_quantity, origin_country）
+                        extra_raw = {
+                            "plus_price": str(product.plus_price) if product.plus_price is not None else None,
+                            "sold_quantity": product.sold_quantity,
+                            "origin_country": product.origin_country,
+                        }
+                        extra_data = {k: v for k, v in extra_raw.items() if v is not None} or None
+
                         action = await CatalogService._upsert_competitor_product(
                             db=db,
                             competitor_id=competitor.id,
@@ -155,6 +163,11 @@ class CatalogService:
                             price=product.price,
                             sku=product.sku,
                             platform="hktvmall",
+                            original_price=product.original_price,
+                            rating=product.rating,
+                            review_count=product.review_count,
+                            stock_status=product.stock_status,
+                            extra_data=extra_data,
                         )
                         stats[action] += 1
 
@@ -285,6 +298,11 @@ class CatalogService:
         price: Optional[Decimal],
         sku: Optional[str],
         platform: str,
+        original_price: Optional[Decimal] = None,
+        rating: Optional[Decimal] = None,
+        review_count: Optional[int] = None,
+        stock_status: Optional[str] = None,
+        extra_data: Optional[dict] = None,
     ) -> str:
         """
         插入或更新單個競品商品
@@ -321,6 +339,11 @@ class CatalogService:
                 db.add(PriceSnapshot(
                     competitor_product_id=cp.id,
                     price=price,
+                    original_price=original_price,
+                    stock_status=stock_status,
+                    rating=rating,
+                    review_count=review_count,
+                    raw_data=extra_data,
                     currency="HKD",
                 ))
 
@@ -336,6 +359,11 @@ class CatalogService:
                 db.add(PriceSnapshot(
                     competitor_product_id=existing.id,
                     price=price,
+                    original_price=original_price,
+                    stock_status=stock_status,
+                    rating=rating,
+                    review_count=review_count,
+                    raw_data=extra_data,
                     currency="HKD",
                 ))
                 changed = True
