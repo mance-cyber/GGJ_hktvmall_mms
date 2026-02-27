@@ -170,10 +170,14 @@ async def lifespan(app: FastAPI):
     # 啟動時初始化數據庫
     await init_db()
     # 啟動 Agent Team（依賴 DB 已初始化）
-    from app.agents import startup_agents, shutdown_agents
+    from app.agents import startup_agents, shutdown_agents, get_event_bus
+    from app.agents.scheduler import start_scheduler, stop_scheduler
     await startup_agents()
+    # 啟動排程器（按 Commander 排程表定時 emit 事件）
+    await start_scheduler(get_event_bus())
     yield
     # 關閉時清理資源
+    await stop_scheduler()
     await shutdown_agents()
 
 

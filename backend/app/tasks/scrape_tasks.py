@@ -122,6 +122,18 @@ def scrape_competitor(self, competitor_id: str):
 
                 await db.commit()
 
+                # 觸發 Agent 事件：Scout 分析價格變動
+                try:
+                    from app.agents.hooks import on_scrape_completed
+                    await on_scrape_completed(
+                        competitor_id=competitor_id,
+                        alerts_created=log.products_scraped,  # 近似值
+                        products_scraped=log.products_scraped,
+                    )
+                except Exception as hook_err:
+                    import logging
+                    logging.getLogger(__name__).warning(f"Agent hook 失敗: {hook_err}")
+
             except Exception as e:
                 log.status = "failed"
                 log.completed_at = datetime.utcnow()

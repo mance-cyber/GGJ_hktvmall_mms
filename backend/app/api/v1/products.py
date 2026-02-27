@@ -19,6 +19,7 @@ from app.schemas.product import (
     ProductListResponse,
 )
 from app.core.exceptions import NotFoundError, DuplicateError
+from app.agents.hooks import on_product_created, on_product_updated, on_product_deleted
 
 router = APIRouter()
 
@@ -82,6 +83,13 @@ async def create_product(
     await db.flush()
     await db.refresh(product)
 
+    # 觸發 Agent 事件：Scout 搜索競品 + Writer 生成內容
+    await on_product_created(
+        product_id=str(product.id),
+        sku=product.sku or "",
+        name=product.name or "",
+    )
+
     return ProductResponse.model_validate(product)
 
 
@@ -116,11 +124,19 @@ async def update_product(
         raise NotFoundError(resource="商品")
 
     update_data = product_in.model_dump(exclude_unset=True)
+    changed_fields = list(update_data.keys())
     for field, value in update_data.items():
         setattr(product, field, value)
 
     await db.flush()
     await db.refresh(product)
+
+    # 觸發 Agent 事件：Writer 判斷是否需刷新內容
+    if changed_fields:
+        await on_product_updated(
+            product_id=str(product.id),
+            changed_fields=changed_fields,
+        )
 
     return ProductResponse.model_validate(product)
 
