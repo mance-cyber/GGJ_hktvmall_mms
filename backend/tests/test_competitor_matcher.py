@@ -56,6 +56,11 @@ class TestExtractCoreCategory:
         from app.services.competitor_matcher import extract_core_category
         assert extract_core_category("北海道毛蟹") == "蟹"
 
+    def test_lobster_not_shrimp(self):
+        """龍蝦 should match before 蝦（更具體的詞優先）"""
+        from app.services.competitor_matcher import extract_core_category
+        assert extract_core_category("波士頓龍蝦") == "龍蝦"
+
     def test_sea_urchin(self):
         from app.services.competitor_matcher import extract_core_category
         assert extract_core_category("馬糞海膽") == "海膽"
