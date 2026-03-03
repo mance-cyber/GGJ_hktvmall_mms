@@ -2,14 +2,19 @@
 # 競品建庫 API
 # =============================================
 # 手動觸發建庫、打標、匹配，以及競品庫統計
+# /pipeline/stream — SSE 串流版完整流程
 
+import asyncio
+import json
 import logging
+import time
 
 from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.database import get_db
+from app.models.database import get_db, async_session_maker
 from app.models.competitor import Competitor, CompetitorProduct
 from app.models.product import ProductCompetitorMapping
 
@@ -82,6 +87,127 @@ async def match_products(
         result = await match_all_pending(db)
     await db.commit()
     return {"status": "ok", "result": result}
+
+
+# =============================================
+# SSE 串流版完整建庫流程
+# =============================================
+# 解決反向代理超時問題：每步操作以 asyncio.Task 執行，
+# 主 generator 每 10 秒送 heartbeat 保活連線。
+
+PIPELINE_STEPS = [
+    ("build", "建庫"),
+    ("tag", "打標"),
+    ("match", "匹配"),
+]
+
+
+def _sse(event: str, data: dict) -> str:
+    """格式化 SSE 事件"""
+    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+@router.post("/pipeline/stream")
+async def pipeline_stream(
+    platform: str = Query("all", description="平台：all / hktvmall / wellcome"),
+):
+    """
+    SSE 串流版建庫流程：建庫 → 打標 → 匹配
+
+    事件類型：
+    - step_start: 步驟開始 {step, step_number, total_steps}
+    - heartbeat:  保活心跳 {step, elapsed}
+    - step_done:  步驟完成 {step, result}
+    - step_error: 步驟失敗 {step, error}
+    - done:       流程結束 {build, tag, match}
+    """
+    if platform not in ("all", "hktvmall", "wellcome"):
+        raise HTTPException(status_code=400, detail=f"不支援的平台: {platform}")
+
+    async def event_stream():
+        from app.services.cataloger import CatalogService
+        from app.services.tagger import tag_all_untagged
+        from app.services.matcher import match_all_pending
+
+        results = {}
+
+        for step_idx, (step_key, step_name) in enumerate(PIPELINE_STEPS):
+            yield _sse("step_start", {
+                "step": step_key,
+                "step_number": step_idx + 1,
+                "total_steps": len(PIPELINE_STEPS),
+            })
+
+            step_result = None
+            step_error = None
+
+            async def run_step():
+                nonlocal step_result, step_error
+                async with async_session_maker() as session:
+                    try:
+                        if step_key == "build":
+                            step_result = await CatalogService.build_catalog(
+                                session, platform=platform,
+                            )
+                        elif step_key == "tag":
+                            step_result = await tag_all_untagged(session)
+                            await session.commit()
+                        elif step_key == "match":
+                            step_result = await match_all_pending(session)
+                            await session.commit()
+                    except Exception as e:
+                        logger.error(
+                            f"pipeline_stream {step_key} 失敗: {e}",
+                            exc_info=True,
+                        )
+                        step_error = str(e)
+
+            task = asyncio.create_task(run_step())
+            start = time.time()
+
+            while not task.done():
+                yield _sse("heartbeat", {
+                    "step": step_key,
+                    "elapsed": round(time.time() - start, 1),
+                })
+                # 等待 task 完成，最多 10 秒後送下一個 heartbeat
+                try:
+                    await asyncio.wait_for(asyncio.shield(task), timeout=10)
+                except asyncio.TimeoutError:
+                    pass
+
+            # 確保異常被收集
+            if task.exception() and not step_error:
+                step_error = str(task.exception())
+
+            elapsed_total = round(time.time() - start, 1)
+
+            if step_error:
+                yield _sse("step_error", {
+                    "step": step_key,
+                    "error": step_error,
+                    "elapsed": elapsed_total,
+                })
+                return
+
+            results[step_key] = step_result
+            yield _sse("step_done", {
+                "step": step_key,
+                "result": step_result,
+                "elapsed": elapsed_total,
+            })
+
+        yield _sse("done", results)
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 # =============================================

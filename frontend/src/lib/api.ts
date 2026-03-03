@@ -567,6 +567,12 @@ export const api = {
   // 競品建庫 API
   // =============================================
 
+  // SSE 串流版建庫流程 — 返回完整 URL，由呼叫方處理 stream
+  catalogPipelineStreamUrl: (platform: string = 'all') => {
+    const base = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
+    return `${base}/catalog/pipeline/stream?platform=${platform}`
+  },
+
   // 建庫：抓取競品平台商品（長時間操作，5 分鐘超時）
   buildCatalog: (platform: string = 'all') =>
     fetchAPI<{ status: string; result: any }>(`/catalog/build?platform=${platform}`, {

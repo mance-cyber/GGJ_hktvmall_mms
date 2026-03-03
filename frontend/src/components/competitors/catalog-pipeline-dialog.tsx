@@ -36,10 +36,10 @@ import { HoloButton } from '@/components/ui/future-tech'
 import { useLocale } from '@/components/providers/locale-provider'
 
 // =============================================
-// 競品建庫流程 Dialog（建庫 → 打標 → 匹配）
+// 競品建庫流程 Dialog（SSE 串流版）
 // =============================================
 
-type PipelinePhase = 'idle' | 'building' | 'tagging' | 'matching' | 'done' | 'error'
+type PipelinePhase = 'idle' | 'running' | 'done' | 'error'
 
 interface StepResult {
   status: 'pending' | 'running' | 'done' | 'error'
@@ -93,24 +93,6 @@ const STEP_ACTIVITY_MESSAGES: Record<StepKey, string[]> = {
 // Hooks
 // =============================================
 
-function useElapsed(active: boolean): number {
-  const [elapsed, setElapsed] = useState(0)
-  const startRef = useRef(Date.now())
-
-  useEffect(() => {
-    if (!active) {
-      setElapsed(0)
-      return
-    }
-    startRef.current = Date.now()
-    const id = setInterval(() => setElapsed(Date.now() - startRef.current), 200)
-    return () => clearInterval(id)
-  }, [active])
-
-  return elapsed
-}
-
-// 活動訊息輪播 Hook
 function useActivityMessages(step: StepKey | null): string {
   const [index, setIndex] = useState(0)
 
@@ -160,13 +142,15 @@ export function CatalogPipelineDialog() {
     tag: { status: 'pending' },
     match: { status: 'pending' },
   })
+  // 從 SSE heartbeat 取得的即時耗時（秒）
+  const [heartbeatElapsed, setHeartbeatElapsed] = useState(0)
 
   const logsEndRef = useRef<HTMLDivElement>(null)
+  const abortRef = useRef<AbortController | null>(null)
   const runningStep = STEPS.find(s => steps[s].status === 'running') ?? null
-  const elapsed = useElapsed(runningStep !== null)
   const activityMessage = useActivityMessages(runningStep)
 
-  const isRunning = phase === 'building' || phase === 'tagging' || phase === 'matching'
+  const isRunning = phase === 'running'
 
   // 寫日誌（不可變）
   const addLog = useCallback((message: string, type: LogEntry['type'] = 'info') => {
@@ -179,6 +163,7 @@ export function CatalogPipelineDialog() {
     setFailedStep(null)
     setExpandedStep(null)
     setLogs([])
+    setHeartbeatElapsed(0)
     setSteps({
       build: { status: 'pending' },
       tag: { status: 'pending' },
@@ -196,71 +181,129 @@ export function CatalogPipelineDialog() {
     match: '匹配',
   }
 
-  const runPipeline = useCallback(async (startFrom: StepKey = 'build') => {
-    const startIndex = STEPS.indexOf(startFrom)
+  // =============================================
+  // SSE 串流執行
+  // =============================================
+
+  const runPipeline = useCallback(async () => {
+    setPhase('running')
     setFailedStep(null)
     setExpandedStep(null)
+    setLogs([])
+    setHeartbeatElapsed(0)
+    setSteps({
+      build: { status: 'pending' },
+      tag: { status: 'pending' },
+      match: { status: 'pending' },
+    })
 
-    if (startIndex === 0) {
-      setLogs([])
-    }
-
-    for (let i = startIndex; i < STEPS.length; i++) {
-      updateStep(STEPS[i], { status: 'pending', error: undefined, data: undefined, duration: undefined })
-    }
+    const controller = new AbortController()
+    abortRef.current = controller
 
     addLog('═══ 開始競品建庫流程 ═══', 'step')
     addLog(`目標平台: ${platform === 'all' ? '全部' : platform}`, 'info')
 
-    const phaseMap: Record<StepKey, PipelinePhase> = {
-      build: 'building',
-      tag: 'tagging',
-      match: 'matching',
+    try {
+      const url = api.catalogPipelineStreamUrl(platform)
+      const response = await fetch(url, {
+        method: 'POST',
+        signal: controller.signal,
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      const reader = response.body?.getReader()
+      if (!reader) throw new Error('無法讀取串流')
+
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        let currentEvent = ''
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            currentEvent = line.slice(7).trim()
+          } else if (line.startsWith('data: ') && currentEvent) {
+            try {
+              const data = JSON.parse(line.slice(6))
+              handleSSEEvent(currentEvent, data)
+            } catch {
+              // 忽略 JSON 解析失敗
+            }
+            currentEvent = ''
+          }
+        }
+      }
+    } catch (err: any) {
+      if (err.name === 'AbortError') return
+      addLog(`✗ 連線失敗: ${humanizeError(err)}`, 'error')
+      setPhase('error')
+      // 找到第一個未完成的步驟作為失敗步驟
+      setFailedStep(prev => {
+        // 用 ref 不行因為 setSteps 是 async，直接用 running 判斷
+        return STEPS.find(s => {
+          const el = document.querySelector(`[data-step="${s}"][data-status="running"]`)
+          return !!el
+        }) ?? 'build'
+      })
     }
 
-    const apiCalls: Record<StepKey, () => Promise<any>> = {
-      build: () => api.buildCatalog(platform),
-      tag: () => api.tagCatalog(),
-      match: () => api.matchCatalog(),
-    }
+    function handleSSEEvent(event: string, data: any) {
+      const step = data.step as StepKey | undefined
 
-    for (let i = startIndex; i < STEPS.length; i++) {
-      const step = STEPS[i]
-      const stepStart = Date.now()
-      setPhase(phaseMap[step])
-      updateStep(step, { status: 'running' })
-      addLog(`▶ 開始步驟 ${i + 1}/3: ${stepNames[step]}`, 'step')
+      if (event === 'step_start' && step) {
+        updateStep(step, { status: 'running', error: undefined, data: undefined, duration: undefined })
+        setHeartbeatElapsed(0)
+        addLog(`▶ 開始步驟 ${data.step_number}/3: ${stepNames[step]}`, 'step')
+      }
 
-      try {
-        const result = await apiCalls[step]()
-        const duration = Date.now() - stepStart
-        updateStep(step, { status: 'done', data: result, duration })
+      if (event === 'heartbeat') {
+        // 更新即時耗時（從後端取得，秒為單位）
+        setHeartbeatElapsed((data.elapsed ?? 0) * 1000)
+      }
+
+      if (event === 'step_done' && step) {
+        const duration = (data.elapsed ?? 0) * 1000
+        updateStep(step, { status: 'done', data: { result: data.result }, duration })
         addLog(`✓ ${stepNames[step]}完成 (${formatDuration(duration)})`, 'success')
-
-        // 記錄結果摘要到日誌
-        logStepResult(step, result?.result, addLog)
+        logStepResult(step, data.result, addLog)
         setExpandedStep(step)
-      } catch (err) {
-        const duration = Date.now() - stepStart
-        const errorMsg = humanizeError(err)
-        updateStep(step, { status: 'error', error: errorMsg, duration })
-        addLog(`✗ ${stepNames[step]}失敗: ${errorMsg}`, 'error')
+      }
+
+      if (event === 'step_error' && step) {
+        const duration = (data.elapsed ?? 0) * 1000
+        updateStep(step, { status: 'error', error: data.error, duration })
+        addLog(`✗ ${stepNames[step]}失敗: ${data.error}`, 'error')
         setPhase('error')
         setFailedStep(step)
         setExpandedStep(step)
-        return
+      }
+
+      if (event === 'done') {
+        addLog('═══ 流程全部完成 ═══', 'success')
+        setPhase('done')
+        queryClient.invalidateQueries({ queryKey: ['competitors'] })
       }
     }
-
-    addLog('═══ 流程全部完成 ═══', 'success')
-    setPhase('done')
-    queryClient.invalidateQueries({ queryKey: ['competitors'] })
-  }, [platform, updateStep, queryClient, addLog, stepNames])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [platform, updateStep, queryClient, addLog])
 
   // 處理 Dialog 關閉：執行中禁止關閉
   const handleDialogClose = useCallback((nextOpen: boolean) => {
-    if (!nextOpen && isRunning) return // 執行中不允許關閉
-    if (!nextOpen) resetState()
+    if (!nextOpen && isRunning) return
+    if (!nextOpen) {
+      abortRef.current?.abort()
+      resetState()
+    }
     setOpen(nextOpen)
   }, [resetState, isRunning])
 
@@ -268,12 +311,6 @@ export function CatalogPipelineDialog() {
     build: t['competitors.catalog_step_build'],
     tag: t['competitors.catalog_step_tag'],
     match: t['competitors.catalog_step_match'],
-  }
-
-  const phaseLabels: Record<string, string> = {
-    building: t['competitors.catalog_building'],
-    tagging: t['competitors.catalog_tagging'],
-    matching: t['competitors.catalog_matching'],
   }
 
   return (
@@ -285,10 +322,8 @@ export function CatalogPipelineDialog() {
       </DialogTrigger>
       <DialogContent
         className="sm:max-w-lg"
-        // 處理中禁止點擊外部關閉
         onInteractOutside={(e) => { if (isRunning) e.preventDefault() }}
         onEscapeKeyDown={(e) => { if (isRunning) e.preventDefault() }}
-        // 處理中隱藏 X 按鈕
         {...(isRunning ? { 'data-lock': true } : {})}
       >
         <DialogHeader>
@@ -334,7 +369,11 @@ export function CatalogPipelineDialog() {
                 const canExpand = s.status === 'done' || s.status === 'error'
 
                 return (
-                  <div key={step} className="rounded-lg border overflow-hidden transition-all"
+                  <div
+                    key={step}
+                    data-step={step}
+                    data-status={s.status}
+                    className="rounded-lg border overflow-hidden transition-all"
                     style={{
                       borderColor: s.status === 'running' ? 'rgb(59 130 246 / 0.5)' :
                                    s.status === 'error' ? 'rgb(239 68 68 / 0.5)' :
@@ -370,11 +409,11 @@ export function CatalogPipelineDialog() {
 
                       <span className="text-sm font-medium flex-1">{stepLabels[step]}</span>
 
-                      {/* 耗時 */}
+                      {/* 耗時：running 時用 heartbeat 即時值 */}
                       {s.status === 'running' && (
                         <span className="text-xs text-blue-500 tabular-nums flex items-center gap-1">
                           <Clock className="w-3 h-3" />
-                          {formatDuration(elapsed)}
+                          {formatDuration(heartbeatElapsed)}
                         </span>
                       )}
                       {(s.status === 'done' || s.status === 'error') && s.duration != null && (
@@ -464,7 +503,7 @@ export function CatalogPipelineDialog() {
               <Button variant="outline" onClick={() => handleDialogClose(false)}>
                 {t['common.cancel']}
               </Button>
-              <Button onClick={() => runPipeline('build')}>
+              <Button onClick={() => runPipeline()}>
                 <Play className="mr-2 h-4 w-4" />
                 {t['competitors.catalog_start']}
               </Button>
@@ -480,7 +519,7 @@ export function CatalogPipelineDialog() {
               <Button variant="outline" onClick={() => handleDialogClose(false)}>
                 {t['common.cancel']}
               </Button>
-              <Button onClick={() => runPipeline(failedStep)}>
+              <Button onClick={() => runPipeline()}>
                 <RotateCcw className="mr-2 h-4 w-4" />
                 {t['competitors.catalog_retry']}
               </Button>
