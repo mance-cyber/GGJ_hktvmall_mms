@@ -567,18 +567,27 @@ export const api = {
   // 競品建庫 API
   // =============================================
 
-  // 建庫：抓取競品平台商品
+  // 建庫：抓取競品平台商品（長時間操作，5 分鐘超時）
   buildCatalog: (platform: string = 'all') =>
-    fetchAPI<{ status: string; result: any }>(`/catalog/build?platform=${platform}`, { method: 'POST' }),
+    fetchAPI<{ status: string; result: any }>(`/catalog/build?platform=${platform}`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(300_000),
+    }),
 
-  // 打標：自動分類標籤
+  // 打標：自動分類標籤（3 分鐘超時）
   tagCatalog: () =>
-    fetchAPI<{ status: string; result: any }>('/catalog/tag', { method: 'POST' }),
+    fetchAPI<{ status: string; result: any }>('/catalog/tag', {
+      method: 'POST',
+      signal: AbortSignal.timeout(180_000),
+    }),
 
-  // 匹配：AI 配對自家商品與競品
+  // 匹配：AI 配對自家商品與競品（5 分鐘超時）
   matchCatalog: (productId?: string) => {
     const params = productId ? `?product_id=${productId}` : ''
-    return fetchAPI<{ status: string; result: any }>(`/catalog/match${params}`, { method: 'POST' })
+    return fetchAPI<{ status: string; result: any }>(`/catalog/match${params}`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(300_000),
+    })
   },
 
   // =============================================

@@ -295,8 +295,8 @@ export function BatchMatchDialog({
               />
             </div>
 
-            <div className="max-h-[240px] overflow-y-auto rounded-lg border bg-slate-50/50 divide-y divide-slate-100">
-              {batchResults.length === 0 && batchPhase === 'processing' && (
+            <div className="max-h-[280px] overflow-y-auto rounded-lg border bg-slate-50/50 divide-y divide-slate-100">
+              {batchResults.length === 0 && batchPhase === 'processing' && !batchCurrentName && (
                 <div className="p-4 text-center text-sm text-muted-foreground">
                   等待第一個結果...
                 </div>
@@ -331,6 +331,18 @@ export function BatchMatchDialog({
                   </div>
                 </div>
               ))}
+              {/* 當前正在處理的項目（脈衝動畫） */}
+              {batchPhase === 'processing' && batchCurrentName && (
+                <div className="px-3 py-2 text-sm flex items-start gap-2 animate-pulse bg-blue-50/60">
+                  <Loader2 className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0 animate-spin" />
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium text-blue-700 truncate block">
+                      {batchCurrentName}
+                    </span>
+                    <span className="text-xs text-blue-500">搜索競品中...</span>
+                  </div>
+                </div>
+              )}
               <div ref={resultsEndRef} />
             </div>
 
