@@ -761,7 +761,7 @@ class CompetitorMatcherService:
 
         # 動態閾值：候選少時降低門檻（精確搜索往往只返回 1-2 個結果）
         n = len(candidate_dicts)
-        threshold = 0.3 if n <= 2 else 0.4 if n <= 5 else 0.5
+        threshold = 0.3 if n <= 3 else 0.4 if n <= 8 else 0.5
         results = [
             r for r in all_matches
             if r.is_match and r.match_confidence >= threshold
@@ -843,7 +843,7 @@ class CompetitorMatcherService:
 
         # 動態閾值篩選（同 HKTVmall 邏輯）
         n = len(candidate_dicts)
-        threshold = 0.3 if n <= 2 else 0.4 if n <= 5 else 0.5
+        threshold = 0.3 if n <= 3 else 0.4 if n <= 8 else 0.5
         results = [
             r for r in all_matches
             if r.is_match and r.match_confidence >= threshold
@@ -909,7 +909,7 @@ class CompetitorMatcherService:
             )
             # 動態閾值：同 _find_via_api 一致
             n = len(candidate_dicts)
-            threshold = 0.3 if n <= 2 else 0.4 if n <= 5 else 0.5
+            threshold = 0.3 if n <= 3 else 0.4 if n <= 8 else 0.5
             results = [
                 r for r in all_matches
                 if r.is_match and r.match_confidence >= threshold
