@@ -141,44 +141,45 @@ async def pipeline_stream(
             step_result = None
             step_error = None
 
-            async def run_step():
+            # 用閉包捕獲當前迭代的 step_key，避免 late-binding 問題
+            async def run_step(_key=step_key):
                 nonlocal step_result, step_error
-                async with async_session_maker() as session:
-                    try:
-                        if step_key == "build":
+                try:
+                    async with async_session_maker() as session:
+                        if _key == "build":
                             step_result = await CatalogService.build_catalog(
                                 session, platform=platform,
                             )
-                        elif step_key == "tag":
+                        elif _key == "tag":
                             step_result = await tag_all_untagged(session)
                             await session.commit()
-                        elif step_key == "match":
+                        elif _key == "match":
                             step_result = await match_all_pending(session)
                             await session.commit()
-                    except Exception as e:
-                        logger.error(
-                            f"pipeline_stream {step_key} 失敗: {e}",
-                            exc_info=True,
-                        )
-                        step_error = str(e)
+                except Exception as e:
+                    logger.error(
+                        f"pipeline_stream {_key} 失敗: {e}",
+                        exc_info=True,
+                    )
+                    step_error = str(e)
 
             task = asyncio.create_task(run_step())
             start = time.time()
 
+            # 用 asyncio.sleep 取代 wait_for(shield(task))
+            # 避免 shield + wait_for 的已知交互問題（task 異常洩漏）
             while not task.done():
                 yield _sse("heartbeat", {
                     "step": step_key,
                     "elapsed": round(time.time() - start, 1),
                 })
-                # 等待 task 完成，最多 10 秒後送下一個 heartbeat
-                try:
-                    await asyncio.wait_for(asyncio.shield(task), timeout=10)
-                except asyncio.TimeoutError:
-                    pass
+                await asyncio.sleep(5)
 
-            # 確保異常被收集
-            if task.exception() and not step_error:
-                step_error = str(task.exception())
+            # 收集 task 本身的未預期異常（理論上已被 run_step 捕獲）
+            if not step_error and task.done() and not task.cancelled():
+                exc = task.exception()
+                if exc:
+                    step_error = str(exc)
 
             elapsed_total = round(time.time() - start, 1)
 
