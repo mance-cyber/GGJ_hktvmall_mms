@@ -61,6 +61,8 @@ HKTV_HITS_PER_PAGE = 50
 HKTV_MAX_PAGES = 3
 # 惠康每個分類最多拉取頁數
 WELLCOME_MAX_PAGES = 5
+# 每個店鋪最多入庫商品數（防止單一店鋪灌水）
+HKTV_MAX_PRODUCTS_PER_STORE = 200
 
 
 # =============================================
@@ -127,7 +129,9 @@ class CatalogService:
 
         client = HKTVApiClient()
         seen_urls: Set[str] = set()
-        stats = {"new": 0, "updated": 0, "unchanged": 0, "total_fetched": 0}
+        store_counts: dict[str, int] = {}  # store_name → 已入庫數量
+        stats = {"new": 0, "updated": 0, "unchanged": 0, "total_fetched": 0,
+                 "skipped_store_limit": 0}
 
         try:
             for keyword in HKTV_KEYWORDS:
@@ -144,8 +148,16 @@ class CatalogService:
                     for product in products:
                         if not product.url or product.url in seen_urls:
                             continue
+
+                        # per-store 上限檢查
+                        store = product.store_name or "unknown"
+                        if store_counts.get(store, 0) >= HKTV_MAX_PRODUCTS_PER_STORE:
+                            stats["skipped_store_limit"] += 1
+                            continue
+
                         seen_urls.add(product.url)
                         stats["total_fetched"] += 1
+                        store_counts[store] = store_counts.get(store, 0) + 1
 
                         # 組裝擴展數據（plus_price）
                         extra_data = (
@@ -182,7 +194,8 @@ class CatalogService:
         logger.info(
             f"hktvmall 建庫完成: 去重後 {stats['total_fetched']} 商品, "
             f"新增 {stats['new']}, 更新 {stats['updated']}, "
-            f"無變化 {stats['unchanged']}"
+            f"無變化 {stats['unchanged']}, "
+            f"店鋪上限跳過 {stats['skipped_store_limit']}"
         )
         return stats
 
