@@ -13,6 +13,7 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
+  Terminal,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -44,14 +45,54 @@ interface StepResult {
   status: 'pending' | 'running' | 'done' | 'error'
   data?: any
   error?: string
-  startedAt?: number
   duration?: number
+}
+
+interface LogEntry {
+  time: string
+  message: string
+  type: 'info' | 'success' | 'error' | 'step'
 }
 
 const STEPS = ['build', 'tag', 'match'] as const
 type StepKey = typeof STEPS[number]
 
-// 計時器 Hook
+// =============================================
+// 每步驟的活動訊息（輪播顯示）
+// =============================================
+
+const STEP_ACTIVITY_MESSAGES: Record<StepKey, string[]> = {
+  build: [
+    '連接競品平台 API...',
+    '抓取商品列表頁...',
+    '解析商品數據...',
+    '比對現有數據庫記錄...',
+    '寫入新商品 / 更新已有商品...',
+    '處理商品圖片與規格...',
+    '清理重複數據...',
+  ],
+  tag: [
+    '載入未打標商品...',
+    '執行關鍵詞規則引擎...',
+    '分類：鮮魚 / 貝類 / 蟹類...',
+    '無法匹配規則的商品送 AI 分類...',
+    'Claude Haiku 分析商品名稱中...',
+    '寫入分類標籤...',
+  ],
+  match: [
+    '載入自家商品列表...',
+    '載入已打標競品...',
+    '計算 Level 1 直接匹配...',
+    '計算 Level 2 相似匹配...',
+    '計算 Level 3 同類匹配...',
+    '寫入匹配關係...',
+  ],
+}
+
+// =============================================
+// Hooks
+// =============================================
+
 function useElapsed(active: boolean): number {
   const [elapsed, setElapsed] = useState(0)
   const startRef = useRef(Date.now())
@@ -69,11 +110,40 @@ function useElapsed(active: boolean): number {
   return elapsed
 }
 
+// 活動訊息輪播 Hook
+function useActivityMessages(step: StepKey | null): string {
+  const [index, setIndex] = useState(0)
+
+  useEffect(() => {
+    if (!step) {
+      setIndex(0)
+      return
+    }
+    setIndex(0)
+    const messages = STEP_ACTIVITY_MESSAGES[step]
+    const id = setInterval(() => {
+      setIndex(prev => (prev + 1) % messages.length)
+    }, 3000)
+    return () => clearInterval(id)
+  }, [step])
+
+  if (!step) return ''
+  return STEP_ACTIVITY_MESSAGES[step][index]
+}
+
 function formatDuration(ms: number): string {
   const s = Math.floor(ms / 1000)
   if (s < 60) return `${s}s`
   return `${Math.floor(s / 60)}m ${s % 60}s`
 }
+
+function timeStamp(): string {
+  return new Date().toLocaleTimeString('en-GB', { hour12: false })
+}
+
+// =============================================
+// 主組件
+// =============================================
 
 export function CatalogPipelineDialog() {
   const { t } = useLocale()
@@ -84,20 +154,31 @@ export function CatalogPipelineDialog() {
   const [phase, setPhase] = useState<PipelinePhase>('idle')
   const [failedStep, setFailedStep] = useState<StepKey | null>(null)
   const [expandedStep, setExpandedStep] = useState<StepKey | null>(null)
+  const [logs, setLogs] = useState<LogEntry[]>([])
   const [steps, setSteps] = useState<Record<StepKey, StepResult>>({
     build: { status: 'pending' },
     tag: { status: 'pending' },
     match: { status: 'pending' },
   })
 
-  // 追蹤當前運行中的步驟名稱（用於計時器）
+  const logsEndRef = useRef<HTMLDivElement>(null)
   const runningStep = STEPS.find(s => steps[s].status === 'running') ?? null
   const elapsed = useElapsed(runningStep !== null)
+  const activityMessage = useActivityMessages(runningStep)
+
+  const isRunning = phase === 'building' || phase === 'tagging' || phase === 'matching'
+
+  // 寫日誌（不可變）
+  const addLog = useCallback((message: string, type: LogEntry['type'] = 'info') => {
+    setLogs(prev => [...prev, { time: timeStamp(), message, type }])
+    setTimeout(() => logsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+  }, [])
 
   const resetState = useCallback(() => {
     setPhase('idle')
     setFailedStep(null)
     setExpandedStep(null)
+    setLogs([])
     setSteps({
       build: { status: 'pending' },
       tag: { status: 'pending' },
@@ -109,14 +190,27 @@ export function CatalogPipelineDialog() {
     setSteps(prev => ({ ...prev, [key]: { ...prev[key], ...patch } }))
   }, [])
 
+  const stepNames: Record<StepKey, string> = {
+    build: '建庫',
+    tag: '打標',
+    match: '匹配',
+  }
+
   const runPipeline = useCallback(async (startFrom: StepKey = 'build') => {
     const startIndex = STEPS.indexOf(startFrom)
     setFailedStep(null)
     setExpandedStep(null)
 
+    if (startIndex === 0) {
+      setLogs([])
+    }
+
     for (let i = startIndex; i < STEPS.length; i++) {
       updateStep(STEPS[i], { status: 'pending', error: undefined, data: undefined, duration: undefined })
     }
+
+    addLog('═══ 開始競品建庫流程 ═══', 'step')
+    addLog(`目標平台: ${platform === 'all' ? '全部' : platform}`, 'info')
 
     const phaseMap: Record<StepKey, PipelinePhase> = {
       build: 'building',
@@ -134,18 +228,23 @@ export function CatalogPipelineDialog() {
       const step = STEPS[i]
       const stepStart = Date.now()
       setPhase(phaseMap[step])
-      updateStep(step, { status: 'running', startedAt: stepStart })
+      updateStep(step, { status: 'running' })
+      addLog(`▶ 開始步驟 ${i + 1}/3: ${stepNames[step]}`, 'step')
 
       try {
         const result = await apiCalls[step]()
         const duration = Date.now() - stepStart
         updateStep(step, { status: 'done', data: result, duration })
-        // 完成後自動展開該步驟的詳情
+        addLog(`✓ ${stepNames[step]}完成 (${formatDuration(duration)})`, 'success')
+
+        // 記錄結果摘要到日誌
+        logStepResult(step, result?.result, addLog)
         setExpandedStep(step)
       } catch (err) {
         const duration = Date.now() - stepStart
         const errorMsg = humanizeError(err)
         updateStep(step, { status: 'error', error: errorMsg, duration })
+        addLog(`✗ ${stepNames[step]}失敗: ${errorMsg}`, 'error')
         setPhase('error')
         setFailedStep(step)
         setExpandedStep(step)
@@ -153,27 +252,22 @@ export function CatalogPipelineDialog() {
       }
     }
 
+    addLog('═══ 流程全部完成 ═══', 'success')
     setPhase('done')
     queryClient.invalidateQueries({ queryKey: ['competitors'] })
-  }, [platform, updateStep, queryClient])
+  }, [platform, updateStep, queryClient, addLog, stepNames])
 
+  // 處理 Dialog 關閉：執行中禁止關閉
   const handleDialogClose = useCallback((nextOpen: boolean) => {
+    if (!nextOpen && isRunning) return // 執行中不允許關閉
     if (!nextOpen) resetState()
     setOpen(nextOpen)
-  }, [resetState])
+  }, [resetState, isRunning])
 
   const stepLabels: Record<StepKey, string> = {
     build: t['competitors.catalog_step_build'],
     tag: t['competitors.catalog_step_tag'],
     match: t['competitors.catalog_step_match'],
-  }
-
-  const stepDescriptions: Record<StepKey, string> = {
-    build: platform === 'all'
-      ? 'HKTVmall + Wellcome'
-      : platform === 'hktvmall' ? 'HKTVmall' : 'Wellcome',
-    tag: 'Rule-based + AI fallback',
-    match: 'Level 1/2/3 matching',
   }
 
   const phaseLabels: Record<string, string> = {
@@ -182,8 +276,6 @@ export function CatalogPipelineDialog() {
     matching: t['competitors.catalog_matching'],
   }
 
-  const isRunning = phase === 'building' || phase === 'tagging' || phase === 'matching'
-
   return (
     <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogTrigger asChild>
@@ -191,13 +283,20 @@ export function CatalogPipelineDialog() {
           <span className="hidden sm:inline">{t['competitors.catalog_build']}</span>
         </HoloButton>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-lg"
+        // 處理中禁止點擊外部關閉
+        onInteractOutside={(e) => { if (isRunning) e.preventDefault() }}
+        onEscapeKeyDown={(e) => { if (isRunning) e.preventDefault() }}
+        // 處理中隱藏 X 按鈕
+        {...(isRunning ? { 'data-lock': true } : {})}
+      >
         <DialogHeader>
           <DialogTitle>{t['competitors.catalog_title']}</DialogTitle>
           <DialogDescription>{t['competitors.catalog_desc']}</DialogDescription>
         </DialogHeader>
 
-        {/* idle：平台選擇 */}
+        {/* ========== idle：平台選擇 ========== */}
         {phase === 'idle' && (
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -213,7 +312,6 @@ export function CatalogPipelineDialog() {
                 </SelectContent>
               </Select>
             </div>
-            {/* 流程說明 */}
             <div className="rounded-lg bg-blue-50 p-3 text-sm text-blue-700 space-y-1.5">
               <p className="font-medium">流程步驟</p>
               <ol className="text-xs space-y-1 list-decimal list-inside">
@@ -225,101 +323,128 @@ export function CatalogPipelineDialog() {
           </div>
         )}
 
-        {/* 執行中 / 完成 / 錯誤 */}
+        {/* ========== 執行中 / 完成 / 錯誤 ========== */}
         {phase !== 'idle' && (
-          <div className="space-y-3 py-4 max-h-[400px] overflow-y-auto">
-            {STEPS.map((step, idx) => {
-              const s = steps[step]
-              const isExpanded = expandedStep === step
-              const canExpand = s.status === 'done' || s.status === 'error'
+          <div className="space-y-3 py-3">
+            {/* 步驟指示器 */}
+            <div className="space-y-2">
+              {STEPS.map((step, idx) => {
+                const s = steps[step]
+                const isExpanded = expandedStep === step
+                const canExpand = s.status === 'done' || s.status === 'error'
 
-              return (
-                <div key={step} className="rounded-lg border overflow-hidden transition-all"
-                  style={{
-                    borderColor: s.status === 'running' ? 'rgb(59 130 246 / 0.5)' :
-                                 s.status === 'error' ? 'rgb(239 68 68 / 0.5)' :
-                                 s.status === 'done' ? 'rgb(34 197 94 / 0.5)' :
-                                 'rgb(226 232 240)',
-                  }}
-                >
-                  {/* 步驟主行 */}
-                  <div
-                    className="flex items-center gap-3 px-3 py-2.5 cursor-pointer select-none"
-                    onClick={() => canExpand && setExpandedStep(isExpanded ? null : step)}
+                return (
+                  <div key={step} className="rounded-lg border overflow-hidden transition-all"
                     style={{
-                      backgroundColor: s.status === 'running' ? 'rgb(239 246 255)' :
-                                       s.status === 'error' ? 'rgb(254 242 242)' :
-                                       s.status === 'done' ? 'rgb(240 253 244)' :
-                                       'transparent',
+                      borderColor: s.status === 'running' ? 'rgb(59 130 246 / 0.5)' :
+                                   s.status === 'error' ? 'rgb(239 68 68 / 0.5)' :
+                                   s.status === 'done' ? 'rgb(34 197 94 / 0.5)' :
+                                   'rgb(226 232 240)',
                     }}
                   >
-                    {/* 步驟號碼 + 狀態圖標 */}
-                    {s.status === 'running' && (
-                      <Loader2 className="w-4 h-4 text-blue-500 animate-spin flex-shrink-0" />
-                    )}
-                    {s.status === 'done' && (
-                      <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
-                    )}
-                    {s.status === 'error' && (
-                      <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                    )}
-                    {s.status === 'pending' && (
-                      <div className="w-4 h-4 rounded-full border-2 border-slate-300 flex-shrink-0 flex items-center justify-center text-[9px] text-slate-400 font-bold">
-                        {idx + 1}
-                      </div>
-                    )}
-
-                    {/* 步驟名稱 + 描述 */}
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium">{stepLabels[step]}</span>
-                      {s.status === 'pending' && (
-                        <span className="text-xs text-muted-foreground ml-2">{stepDescriptions[step]}</span>
-                      )}
+                    {/* 步驟主行 */}
+                    <div
+                      className={`flex items-center gap-3 px-3 py-2 ${canExpand ? 'cursor-pointer' : ''} select-none`}
+                      onClick={() => canExpand && setExpandedStep(isExpanded ? null : step)}
+                      style={{
+                        backgroundColor: s.status === 'running' ? 'rgb(239 246 255)' :
+                                         s.status === 'error' ? 'rgb(254 242 242)' :
+                                         s.status === 'done' ? 'rgb(240 253 244)' :
+                                         'transparent',
+                      }}
+                    >
                       {s.status === 'running' && (
-                        <span className="text-xs text-blue-500 ml-2">{stepDescriptions[step]}</span>
+                        <Loader2 className="w-4 h-4 text-blue-500 animate-spin flex-shrink-0" />
+                      )}
+                      {s.status === 'done' && (
+                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      )}
+                      {s.status === 'error' && (
+                        <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                      )}
+                      {s.status === 'pending' && (
+                        <div className="w-4 h-4 rounded-full border-2 border-slate-300 flex-shrink-0 flex items-center justify-center text-[9px] text-slate-400 font-bold">
+                          {idx + 1}
+                        </div>
+                      )}
+
+                      <span className="text-sm font-medium flex-1">{stepLabels[step]}</span>
+
+                      {/* 耗時 */}
+                      {s.status === 'running' && (
+                        <span className="text-xs text-blue-500 tabular-nums flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {formatDuration(elapsed)}
+                        </span>
+                      )}
+                      {(s.status === 'done' || s.status === 'error') && s.duration != null && (
+                        <span className="text-xs text-muted-foreground tabular-nums flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {formatDuration(s.duration)}
+                        </span>
+                      )}
+
+                      {canExpand && (
+                        isExpanded
+                          ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                          : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                       )}
                     </div>
 
-                    {/* 耗時 */}
-                    {s.status === 'running' && (
-                      <span className="text-xs text-blue-500 tabular-nums flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {formatDuration(elapsed)}
-                      </span>
+                    {/* 展開詳情 */}
+                    {isExpanded && s.status === 'done' && s.data && (
+                      <div className="px-3 pb-2.5 pt-0">
+                        <StepDetail step={step} data={s.data} platform={platform} />
+                      </div>
                     )}
-                    {(s.status === 'done' || s.status === 'error') && s.duration != null && (
-                      <span className="text-xs text-muted-foreground tabular-nums flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {formatDuration(s.duration)}
-                      </span>
-                    )}
-
-                    {/* 展開/收起 */}
-                    {canExpand && (
-                      isExpanded
-                        ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                        : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                    {isExpanded && s.status === 'error' && (
+                      <div className="px-3 pb-2.5 pt-0">
+                        <div className="rounded bg-red-50 p-2 text-xs text-red-600 break-all">
+                          {s.error}
+                        </div>
+                      </div>
                     )}
                   </div>
+                )
+              })}
+            </div>
 
-                  {/* 展開詳情 */}
-                  {isExpanded && s.status === 'done' && s.data && (
-                    <div className="px-3 pb-3 pt-0">
-                      <StepDetail step={step} data={s.data} t={t} platform={platform} />
-                    </div>
-                  )}
-                  {isExpanded && s.status === 'error' && (
-                    <div className="px-3 pb-3 pt-0">
-                      <div className="rounded bg-red-50 p-2 text-xs text-red-600 break-all">
-                        {s.error}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+            {/* ========== 活動日誌面板 ========== */}
+            <div className="rounded-lg border border-slate-700 bg-slate-900 overflow-hidden">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 border-b border-slate-700">
+                <Terminal className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-xs text-slate-400 font-mono">Pipeline Log</span>
+                {isRunning && (
+                  <span className="ml-auto text-xs text-blue-400 font-mono animate-pulse">
+                    {activityMessage}
+                  </span>
+                )}
+              </div>
+              <div className="max-h-[160px] overflow-y-auto p-2 font-mono text-[11px] leading-relaxed">
+                {logs.map((entry, i) => (
+                  <div key={i} className="flex gap-2">
+                    <span className="text-slate-500 flex-shrink-0">{entry.time}</span>
+                    <span className={
+                      entry.type === 'success' ? 'text-green-400' :
+                      entry.type === 'error' ? 'text-red-400' :
+                      entry.type === 'step' ? 'text-cyan-400 font-semibold' :
+                      'text-slate-300'
+                    }>
+                      {entry.message}
+                    </span>
+                  </div>
+                ))}
+                {isRunning && (
+                  <div className="flex gap-2 animate-pulse">
+                    <span className="text-slate-500 flex-shrink-0">{timeStamp()}</span>
+                    <span className="text-blue-400">{activityMessage}</span>
+                  </div>
+                )}
+                <div ref={logsEndRef} />
+              </div>
+            </div>
 
-            {/* 總結 */}
+            {/* 完成摘要 */}
             {phase === 'done' && (
               <div className="rounded-lg bg-green-50 border border-green-200 p-3 text-sm text-green-700">
                 <p className="font-medium">{t['competitors.catalog_done']}</p>
@@ -346,10 +471,9 @@ export function CatalogPipelineDialog() {
             </>
           )}
           {isRunning && (
-            <Button variant="outline" disabled>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {phaseLabels[phase]}
-            </Button>
+            <p className="text-xs text-muted-foreground text-center w-full">
+              處理中，請勿關閉此視窗...
+            </p>
           )}
           {phase === 'error' && failedStep && (
             <>
@@ -374,39 +498,54 @@ export function CatalogPipelineDialog() {
 }
 
 // =============================================
-// 每步驟的詳情面板
+// 日誌：步驟結果摘要
 // =============================================
 
-function StepDetail({
-  step,
-  data,
-  t,
-  platform,
-}: {
-  step: StepKey
-  data: any
-  t: Record<string, string>
-  platform: string
-}) {
+function logStepResult(
+  step: StepKey,
+  result: any,
+  addLog: (msg: string, type: LogEntry['type']) => void,
+) {
+  if (!result) return
+
+  if (step === 'build') {
+    const entries = typeof result === 'object' && ('hktvmall' in result || 'wellcome' in result)
+      ? Object.entries(result)
+      : [['platform', result]]
+    for (const [name, stats] of entries) {
+      const s = stats as any
+      if (s?.skipped) {
+        addLog(`  ${name}: 已跳過 (${s.reason})`, 'info')
+      } else if (s) {
+        addLog(`  ${name}: 新增 ${s.new ?? 0} / 更新 ${s.updated ?? 0} / 未變 ${s.unchanged ?? 0}`, 'info')
+      }
+    }
+  } else if (step === 'tag') {
+    addLog(`  規則打標 ${result.rule_tagged ?? 0} / AI 打標 ${result.ai_tagged ?? 0} / 跳過 ${result.skipped ?? 0}`, 'info')
+  } else if (step === 'match') {
+    if ('products_matched' in result) {
+      addLog(`  匹配商品 ${result.products_matched ?? 0} / L1 ${result.total_level_1 ?? 0} / L2 ${result.total_level_2 ?? 0} / L3 ${result.total_level_3 ?? 0}`, 'info')
+    } else {
+      addLog(`  匹配 ${result.matched ?? 0} / L1 ${result.level_1 ?? 0} / L2 ${result.level_2 ?? 0} / L3 ${result.level_3 ?? 0}`, 'info')
+    }
+  }
+}
+
+// =============================================
+// 步驟詳情面板
+// =============================================
+
+function StepDetail({ step, data, platform }: { step: StepKey; data: any; platform: string }) {
   const result = data?.result
   if (!result) return null
 
-  if (step === 'build') {
-    return <BuildDetail result={result} platform={platform} />
-  }
-  if (step === 'tag') {
-    return <TagDetail result={result} />
-  }
-  if (step === 'match') {
-    return <MatchDetail result={result} />
-  }
+  if (step === 'build') return <BuildDetail result={result} platform={platform} />
+  if (step === 'tag') return <TagDetail result={result} />
+  if (step === 'match') return <MatchDetail result={result} />
   return null
 }
 
-// 建庫詳情：按平台拆分顯示
 function BuildDetail({ result, platform }: { result: any; platform: string }) {
-  // platform=all 時 result 是 { hktvmall: {...}, wellcome: {...} }
-  // platform=hktvmall/wellcome 時 result 就是單個 stats dict
   const platforms = (platform === 'all' && typeof result === 'object' && ('hktvmall' in result || 'wellcome' in result))
     ? Object.entries(result) as [string, any][]
     : [[platform, result] as [string, any]]
@@ -431,7 +570,7 @@ function BuildDetail({ result, platform }: { result: any; platform: string }) {
               <StatRow label="更新" value={stats.updated ?? 0} color="text-blue-600" />
               <StatRow label="未變" value={stats.unchanged ?? 0} color="text-slate-500" />
               <StatRow label="總抓取" value={stats.total_fetched ?? 0} color="text-slate-700" />
-              {stats.skipped_store_limit != null && stats.skipped_store_limit > 0 && (
+              {(stats.skipped_store_limit ?? 0) > 0 && (
                 <StatRow label="達上限跳過" value={stats.skipped_store_limit} color="text-yellow-600" />
               )}
             </div>
@@ -442,7 +581,6 @@ function BuildDetail({ result, platform }: { result: any; platform: string }) {
   )
 }
 
-// 打標詳情
 function TagDetail({ result }: { result: any }) {
   return (
     <div className="rounded bg-slate-50 p-2">
@@ -458,9 +596,7 @@ function TagDetail({ result }: { result: any }) {
   )
 }
 
-// 匹配詳情
 function MatchDetail({ result }: { result: any }) {
-  // 全量匹配時的欄位
   const isAll = 'products_matched' in result
   return (
     <div className="rounded bg-slate-50 p-2">
@@ -487,7 +623,6 @@ function MatchDetail({ result }: { result: any }) {
   )
 }
 
-// 統計行
 function StatRow({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <div className="flex items-center justify-between">
