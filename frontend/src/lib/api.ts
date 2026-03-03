@@ -564,6 +564,24 @@ export const api = {
   },
 
   // =============================================
+  // 競品建庫 API
+  // =============================================
+
+  // 建庫：抓取競品平台商品
+  buildCatalog: (platform: string = 'all') =>
+    fetchAPI<{ status: string; result: any }>(`/catalog/build?platform=${platform}`, { method: 'POST' }),
+
+  // 打標：自動分類標籤
+  tagCatalog: () =>
+    fetchAPI<{ status: string; result: any }>('/catalog/tag', { method: 'POST' }),
+
+  // 匹配：AI 配對自家商品與競品
+  matchCatalog: (productId?: string) => {
+    const params = productId ? `?product_id=${productId}` : ''
+    return fetchAPI<{ status: string; result: any }>(`/catalog/match${params}`, { method: 'POST' })
+  },
+
+  // =============================================
   // AI 設定與分析 API
   // =============================================
   

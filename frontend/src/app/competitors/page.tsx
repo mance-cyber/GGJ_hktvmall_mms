@@ -25,6 +25,7 @@ import { ScrapeTaskQueue, ScrapeTask, ScrapeTaskIndicator } from '@/components/s
 import { CompetitorCard } from '@/components/competitors/competitor-card'
 import { CompetitorFormDialog } from '@/components/competitors/competitor-form-dialog'
 import { BatchMatchDialog } from '@/components/competitors/batch-match-dialog'
+import { CatalogPipelineDialog } from '@/components/competitors/catalog-pipeline-dialog'
 import {
   PageTransition,
   HoloCard,
@@ -36,6 +37,7 @@ import {
   HoloSkeleton,
   StaggerContainer
 } from '@/components/ui/future-tech'
+import { useLocale } from '@/components/providers/locale-provider'
 
 // =============================================
 // 主頁面組件
@@ -43,6 +45,7 @@ import {
 
 export default function CompetitorsPage() {
   const queryClient = useQueryClient()
+  const { t } = useLocale()
 
   // UI 狀態
   const [showAddForm, setShowAddForm] = useState(false)
@@ -317,7 +320,7 @@ export default function CompetitorsPage() {
         <HoloCard glowColor="purple" className="max-w-7xl mx-auto border-red-200/60 bg-red-50/50 p-6">
           <div className="flex items-center text-red-600">
             <AlertCircle className="w-5 h-5 mr-3" />
-            <span className="font-medium">無法載入競爭對手列表，請稍後再試。</span>
+            <span className="font-medium">{t['competitors.load_error']}</span>
           </div>
         </HoloCard>
       </PageTransition>
@@ -331,13 +334,13 @@ export default function CompetitorsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              競品監測
+              {t['competitors.title']}
               <HoloBadge variant="info" pulse>
                 <PulseStatus status="online" label="Live" size="sm" />
               </HoloBadge>
             </h1>
             <p className="text-sm text-muted-foreground mt-1 hidden sm:block">
-              即時追蹤競爭對手動態
+              {t['competitors.subtitle']}
             </p>
           </div>
 
@@ -352,6 +355,7 @@ export default function CompetitorsPage() {
               )}
             </AnimatePresence>
 
+            <CatalogPipelineDialog />
             <BatchMatchDialog invalidateKeys={[['competitors']]} />
             <HoloButton
               variant="primary"
@@ -361,8 +365,8 @@ export default function CompetitorsPage() {
               loading={batchScraping}
               icon={!batchScraping ? <Zap className="w-4 h-4" /> : undefined}
             >
-              <span className="hidden sm:inline">全網抓取</span>
-              <span className="sm:hidden">抓取</span>
+              <span className="hidden sm:inline">{t['competitors.scrape_all']}</span>
+              <span className="sm:hidden">{t['competitors.scrape']}</span>
             </HoloButton>
             <HoloButton
               variant="secondary"
@@ -370,7 +374,7 @@ export default function CompetitorsPage() {
               size="sm"
               icon={<RefreshCw className="w-4 h-4" />}
             >
-              <span className="hidden sm:inline">刷新</span>
+              <span className="hidden sm:inline">{t['competitors.refresh']}</span>
             </HoloButton>
             <HoloButton
               variant="primary"
@@ -378,7 +382,7 @@ export default function CompetitorsPage() {
               size="sm"
               icon={<Plus className="w-4 h-4" />}
             >
-              <span className="hidden sm:inline">新增</span>
+              <span className="hidden sm:inline">{t['competitors.add']}</span>
             </HoloButton>
           </div>
         </div>
@@ -391,7 +395,7 @@ export default function CompetitorsPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 type="text"
-                placeholder="搜索競爭對手..."
+                placeholder={t['competitors.search_placeholder']}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 bg-white/50 border-slate-200"
@@ -410,7 +414,7 @@ export default function CompetitorsPage() {
                     filterActive === undefined && "bg-white shadow-sm"
                   )}
                 >
-                  全部
+                  {t['competitors.all']}
                 </Button>
                 <Button
                   variant="ghost"
@@ -421,7 +425,7 @@ export default function CompetitorsPage() {
                     filterActive === true && "bg-white shadow-sm"
                   )}
                 >
-                  監測中
+                  {t['competitors.monitoring']}
                 </Button>
                 <Button
                   variant="ghost"
@@ -432,7 +436,7 @@ export default function CompetitorsPage() {
                     filterActive === false && "bg-white shadow-sm"
                   )}
                 >
-                  已暫停
+                  {t['competitors.paused']}
                 </Button>
               </div>
 
@@ -506,7 +510,7 @@ export default function CompetitorsPage() {
                   competitor={competitor}
                   onEdit={() => setEditingCompetitor(competitor)}
                   onDelete={() => {
-                    if (confirm(`確定要刪除「${competitor.name}」？所有相關商品數據也會被刪除。`)) {
+                    if (confirm(t['competitors.confirm_delete'].replace('{name}', competitor.name))) {
                       deleteMutation.mutate(competitor.id)
                     }
                   }}
@@ -525,12 +529,12 @@ export default function CompetitorsPage() {
             <table className="w-full">
               <thead className="bg-slate-50/80">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">競爭對手</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">平台</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase">商品數</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase">狀態</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase">最後更新</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">操作</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t['competitors.th_competitor']}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t['competitors.th_platform']}</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase">{t['competitors.th_products']}</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase">{t['competitors.th_status']}</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase">{t['competitors.th_last_update']}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">{t['competitors.th_actions']}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -540,7 +544,7 @@ export default function CompetitorsPage() {
                     competitor={competitor}
                     onEdit={() => setEditingCompetitor(competitor)}
                     onDelete={() => {
-                      if (confirm(`確定要刪除「${competitor.name}」？`)) {
+                      if (confirm(t['competitors.confirm_delete_short'].replace('{name}', competitor.name))) {
                         deleteMutation.mutate(competitor.id)
                       }
                     }}
@@ -567,12 +571,12 @@ export default function CompetitorsPage() {
                 <Building2 className="w-10 h-10 text-cyan-500" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900">
-                {searchQuery ? '未找到匹配的競爭對手' : '尚無競爭對手'}
+                {searchQuery ? t['competitors.no_search_results'] : t['competitors.no_competitors']}
               </h3>
               <p className="text-gray-500 mt-2 max-w-md mx-auto">
                 {searchQuery
-                  ? '請嘗試其他搜索關鍵詞'
-                  : '開始監測您的第一個競爭對手，AI 將自動為您收集價格情報。'
+                  ? t['competitors.try_other_keywords']
+                  : t['competitors.empty_hint']
                 }
               </p>
               {!searchQuery && (
@@ -582,7 +586,7 @@ export default function CompetitorsPage() {
                   size="lg"
                   icon={<Plus className="w-5 h-5" />}
                 >
-                  立即新增
+                  {t['competitors.add_now']}
                 </HoloButton>
               )}
             </motion.div>
@@ -595,7 +599,7 @@ export default function CompetitorsPage() {
           onOpenChange={setShowAddForm}
           onSubmit={(data) => createMutation.mutate(data)}
           isLoading={createMutation.isPending}
-          title="新增競爭對手"
+          title={t['competitors.add_title']}
         />
 
         <CompetitorFormDialog
@@ -604,7 +608,7 @@ export default function CompetitorsPage() {
           initialData={editingCompetitor || undefined}
           onSubmit={(data) => editingCompetitor && updateMutation.mutate({ id: editingCompetitor.id, data })}
           isLoading={updateMutation.isPending}
-          title="編輯競爭對手"
+          title={t['competitors.edit_title']}
         />
 
         {/* ========== 抓取終端 ========== */}
@@ -640,6 +644,7 @@ function CompetitorListRow({
   onScrape: () => void
   isScraping: boolean
 }) {
+  const { t } = useLocale()
   return (
     <tr className={cn(
       "hover:bg-slate-50/50 transition-colors",
@@ -664,7 +669,7 @@ function CompetitorListRow({
       </td>
       <td className="px-4 py-3 text-center">
         <HoloBadge variant={competitor.is_active ? "success" : "default"}>
-          {competitor.is_active ? '監測中' : '已暫停'}
+          {competitor.is_active ? t['competitors.monitoring'] : t['competitors.paused']}
         </HoloBadge>
       </td>
       <td className="px-4 py-3 text-center text-sm text-slate-500">
@@ -682,10 +687,10 @@ function CompetitorListRow({
             disabled={isScraping}
             icon={isScraping ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
           >
-            <span className="sr-only">抓取</span>
+            <span className="sr-only">{t['competitors.scrape']}</span>
           </HoloButton>
           <HoloButton size="sm" variant="ghost" onClick={onEdit}>
-            編輯
+            {t['competitors.edit']}
           </HoloButton>
           <HoloButton
             size="sm"
@@ -693,11 +698,11 @@ function CompetitorListRow({
             onClick={onDelete}
             className="text-red-600 hover:text-red-700 hover:bg-red-50"
           >
-            刪除
+            {t['common.delete']}
           </HoloButton>
           <a href={`/competitors/${competitor.id}`}>
             <HoloButton size="sm" variant="ghost" icon={<ChevronRight className="w-4 h-4" />}>
-              <span className="sr-only">查看詳情</span>
+              <span className="sr-only">{t['competitors.view_details']}</span>
             </HoloButton>
           </a>
         </div>
