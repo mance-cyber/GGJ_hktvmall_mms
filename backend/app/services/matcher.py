@@ -3,6 +3,7 @@
 # 根據標籤預篩候選，AI 判定 Level 1/2/3，寫入 DB
 # =============================================
 
+import asyncio
 import re
 import json
 import logging
@@ -133,7 +134,10 @@ async def _ai_judge(
 
     try:
         max_tokens = 8000 if "thinking" in model else 3000
-        message = connector.client.messages.create(
+        # 同步 Anthropic SDK → 卸載到線程池，避免阻塞事件循環
+        # （SSE 心跳依賴事件循環響應，阻塞會導致反向代理超時斷連）
+        message = await asyncio.to_thread(
+            connector.client.messages.create,
             model=connector.model,
             max_tokens=max_tokens,
             messages=[{"role": "user", "content": prompt}],

@@ -3,6 +3,7 @@
 # 為競品商品和自家商品打分類標籤
 # =============================================
 
+import asyncio
 import re
 import json
 import logging
@@ -240,7 +241,10 @@ async def tag_by_ai(
 
     try:
         max_tokens = 4000 if "thinking" in model else 1500
-        message = connector.client.messages.create(
+        # 同步 Anthropic SDK → 卸載到線程池，避免阻塞事件循環
+        # （SSE 心跳依賴事件循環響應，阻塞會導致反向代理超時斷連）
+        message = await asyncio.to_thread(
+            connector.client.messages.create,
             model=connector.model,
             max_tokens=max_tokens,
             messages=[{"role": "user", "content": prompt}],
