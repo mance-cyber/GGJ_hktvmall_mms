@@ -29,6 +29,15 @@ class TestExtractCoreCategory:
         from app.services.competitor_matcher import extract_core_category
         assert extract_core_category("") is None
 
+    def test_none_input(self):
+        from app.services.competitor_matcher import extract_core_category
+        assert extract_core_category(None) is None
+
+    def test_fish_fillet_without_salmon(self):
+        """魚柳 without 三文魚 prefix should match 魚柳"""
+        from app.services.competitor_matcher import extract_core_category
+        assert extract_core_category("日式魚柳") == "魚柳"
+
     def test_pork_chop(self):
         from app.services.competitor_matcher import extract_core_category
         assert extract_core_category("鹿兒島黑豚豬扒") == "豬扒"
@@ -50,6 +59,33 @@ class TestExtractCoreCategory:
     def test_sea_urchin(self):
         from app.services.competitor_matcher import extract_core_category
         assert extract_core_category("馬糞海膽") == "海膽"
+
+
+# =============================================
+# _dynamic_threshold 測試
+# =============================================
+
+class TestDynamicThreshold:
+    """動態匹配閾值"""
+
+    def test_few_candidates(self):
+        from app.services.competitor_matcher import _dynamic_threshold
+        assert _dynamic_threshold(1) == 0.3
+        assert _dynamic_threshold(3) == 0.3
+
+    def test_moderate_candidates(self):
+        from app.services.competitor_matcher import _dynamic_threshold
+        assert _dynamic_threshold(4) == 0.4
+        assert _dynamic_threshold(8) == 0.4
+
+    def test_many_candidates(self):
+        from app.services.competitor_matcher import _dynamic_threshold
+        assert _dynamic_threshold(9) == 0.5
+        assert _dynamic_threshold(50) == 0.5
+
+    def test_zero_candidates(self):
+        from app.services.competitor_matcher import _dynamic_threshold
+        assert _dynamic_threshold(0) == 0.3
 
 
 # =============================================

@@ -487,7 +487,7 @@ CORE_CATEGORIES = [
 ]
 
 
-def extract_core_category(name: str) -> str | None:
+def extract_core_category(name: str | None) -> str | None:
     """從商品名提取核心品類詞（用於寬泛搜索 keyword）"""
     if not name:
         return None
@@ -495,6 +495,21 @@ def extract_core_category(name: str) -> str | None:
         if cat in name:
             return cat
     return None
+
+
+def _dynamic_threshold(n: int) -> float:
+    """
+    動態匹配閾值：候選少時降低門檻
+
+    n <= 3:  0.3（精確搜索往往只返回少量結果）
+    n <= 8:  0.4
+    n > 8:   0.5（候選多時提高標準）
+    """
+    if n <= 3:
+        return 0.3
+    if n <= 8:
+        return 0.4
+    return 0.5
 
 
 # =============================================
@@ -759,9 +774,7 @@ class CompetitorMatcherService:
 
         all_matches = self.matcher.batch_judge_match(our_product_dict, candidate_dicts)
 
-        # 動態閾值：候選少時降低門檻（精確搜索往往只返回 1-2 個結果）
-        n = len(candidate_dicts)
-        threshold = 0.3 if n <= 3 else 0.4 if n <= 8 else 0.5
+        threshold = _dynamic_threshold(len(candidate_dicts))
         results = [
             r for r in all_matches
             if r.is_match and r.match_confidence >= threshold
@@ -841,9 +854,7 @@ class CompetitorMatcherService:
 
         all_matches = self.matcher.batch_judge_match(our_product_dict, candidate_dicts)
 
-        # 動態閾值篩選（同 HKTVmall 邏輯）
-        n = len(candidate_dicts)
-        threshold = 0.3 if n <= 3 else 0.4 if n <= 8 else 0.5
+        threshold = _dynamic_threshold(len(candidate_dicts))
         results = [
             r for r in all_matches
             if r.is_match and r.match_confidence >= threshold
@@ -907,9 +918,7 @@ class CompetitorMatcherService:
             all_matches = self.matcher.batch_judge_match(
                 our_product_dict, candidate_dicts
             )
-            # 動態閾值：同 _find_via_api 一致
-            n = len(candidate_dicts)
-            threshold = 0.3 if n <= 3 else 0.4 if n <= 8 else 0.5
+            threshold = _dynamic_threshold(len(candidate_dicts))
             results = [
                 r for r in all_matches
                 if r.is_match and r.match_confidence >= threshold

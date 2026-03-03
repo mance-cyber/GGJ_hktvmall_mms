@@ -148,6 +148,7 @@ class CatalogService:
                     for product in products:
                         if not product.url or product.url in seen_urls:
                             continue
+                        seen_urls.add(product.url)
 
                         # per-store 上限檢查
                         store = product.store_name or "unknown"
@@ -155,7 +156,6 @@ class CatalogService:
                             stats["skipped_store_limit"] += 1
                             continue
 
-                        seen_urls.add(product.url)
                         stats["total_fetched"] += 1
                         store_counts[store] = store_counts.get(store, 0) + 1
 
