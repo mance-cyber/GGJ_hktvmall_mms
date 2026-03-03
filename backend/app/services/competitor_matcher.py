@@ -467,6 +467,33 @@ class ClaudeMatcher:
 
 
 # =============================================
+# 核心品類詞表（用於寬泛搜索）
+# =============================================
+# 順序重要：更具體的詞排在前面（如「和牛」在「牛肉」之前）
+
+CORE_CATEGORIES = [
+    # 牛（具體 → 通用）
+    "和牛", "牛柳", "牛仔骨", "西冷", "肉眼", "牛肉",
+    # 豬
+    "豬扒", "豬腩", "排骨", "豬肉",
+    # 海鮮（具體食材在前，料理方式在後）
+    "三文魚", "吞拿魚", "鰻魚", "魚柳",
+    "帶子", "蝦", "蟹", "鮑魚", "龍蝦", "海膽",
+    "刺身",  # 刺身是料理方式，放最後作為兜底
+]
+
+
+def extract_core_category(name: str) -> str | None:
+    """從商品名提取核心品類詞（用於寬泛搜索 keyword）"""
+    if not name:
+        return None
+    for cat in CORE_CATEGORIES:
+        if cat in name:
+            return cat
+    return None
+
+
+# =============================================
 # Main Service
 # =============================================
 
@@ -539,6 +566,12 @@ class CompetitorMatcherService:
         category_sub = getattr(product, 'category_sub', None)
         if category_sub:
             queries.append(category_sub)
+
+        # 策略 4.5: 核心品類詞（寬泛搜索，擴大候選池）
+        if product.name_zh:
+            core_cat = extract_core_category(product.name_zh)
+            if core_cat and core_cat not in queries:
+                queries.append(core_cat)
 
         # 策略 5: 英文名核心詞彙
         if product.name_en:
