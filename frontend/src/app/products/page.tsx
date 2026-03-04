@@ -5,7 +5,7 @@
 // =============================================
 
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { api, OwnProduct } from '@/lib/api'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -63,7 +63,7 @@ export default function ProductsPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
 
-  const { data: productsData, isLoading, error } = useQuery({
+  const { data: productsData, isLoading, isFetching, error } = useQuery({
     queryKey: ['products', page, search, statusFilter, categoryFilter],
     queryFn: () => api.getProducts(
       page,
@@ -72,6 +72,7 @@ export default function ProductsPage() {
       statusFilter === 'all' ? undefined : statusFilter,
       categoryFilter === 'all' ? undefined : categoryFilter
     ),
+    placeholderData: keepPreviousData,
   })
 
   const deleteMutation = useMutation({
@@ -400,24 +401,27 @@ export default function ProductsPage() {
             <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
               <div className="text-sm text-slate-500">
                 {t['products.pagination']
-                  .replace('{from}', String((page - 1) * 20 + 1))
+                  .replace('{from}', String(productsData?.total ? (page - 1) * 20 + 1 : 0))
                   .replace('{to}', String(Math.min(page * 20, productsData?.total || 0)))
                   .replace('{total}', String(productsData?.total || 0))}
               </div>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="icon"
-                  disabled={page <= 1}
+                  disabled={page <= 1 || isFetching}
                   onClick={() => setPage(p => p - 1)}
                   className="h-8 w-8"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
+                <span className={cn("text-sm tabular-nums min-w-[60px] text-center", isFetching && "text-slate-400")}>
+                  {page} / {totalPages || 1}
+                </span>
                 <Button
                   variant="outline"
                   size="icon"
-                  disabled={page >= totalPages}
+                  disabled={page >= totalPages || isFetching}
                   onClick={() => setPage(p => p + 1)}
                   className="h-8 w-8"
                 >
@@ -431,13 +435,16 @@ export default function ProductsPage() {
         {/* 手機版分頁 */}
         <div className="sm:hidden flex items-center justify-between">
           <div className="text-xs text-slate-500">
-            {(page - 1) * 20 + 1}-{Math.min(page * 20, productsData?.total || 0)} / {productsData?.total || 0}
+            {productsData?.total ? (page - 1) * 20 + 1 : 0}-{Math.min(page * 20, productsData?.total || 0)} / {productsData?.total || 0}
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="icon" disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="h-8 w-8">
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" disabled={page <= 1 || isFetching} onClick={() => setPage(p => p - 1)} className="h-8 w-8">
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="h-8 w-8">
+            <span className={cn("text-xs tabular-nums", isFetching && "text-slate-400")}>
+              {page}/{totalPages || 1}
+            </span>
+            <Button variant="outline" size="icon" disabled={page >= totalPages || isFetching} onClick={() => setPage(p => p + 1)} className="h-8 w-8">
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
