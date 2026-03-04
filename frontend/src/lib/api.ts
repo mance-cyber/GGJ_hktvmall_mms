@@ -567,14 +567,25 @@ export const api = {
   // 競品建庫 API
   // =============================================
 
-  // SSE 串流版建庫流程 — 返回完整 URL，由呼叫方處理 stream
-  // step 參數：省略則三步全跑，指定則只跑單步（避免長連線超過反代 600s 限制）
-  catalogPipelineStreamUrl: (platform: string = 'all', step?: string) => {
-    const base = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
-    const params = new URLSearchParams({ platform })
-    if (step) params.set('step', step)
-    return `${base}/catalog/pipeline/stream?${params.toString()}`
-  },
+  // 啟動管線後台任務（返回 task_id）
+  startPipeline: (platform: string = 'all') =>
+    fetchAPI<{ task_id: string }>(`/catalog/pipeline/start?platform=${platform}`, {
+      method: 'POST',
+    }),
+
+  // 輪詢管線進度
+  getPipelineProgress: (taskId: string) =>
+    fetchAPI<{
+      task_id: string
+      status: 'running' | 'done' | 'error'
+      current_step: string | null
+      current_step_number: number
+      total_steps: number
+      elapsed: number
+      step_results: Record<string, any>
+      step_errors: Record<string, string>
+      step_durations: Record<string, number>
+    }>(`/catalog/pipeline/progress/${taskId}`),
 
   // 建庫：抓取競品平台商品（長時間操作，5 分鐘超時）
   buildCatalog: (platform: string = 'all') =>

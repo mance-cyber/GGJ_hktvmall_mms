@@ -182,7 +182,7 @@ export function CatalogPipelineDialog() {
   }
 
   // =============================================
-  // SSE 串流執行
+  // 後台任務 + 輪詢（取代 SSE 長連線）
   // =============================================
 
   const runPipeline = useCallback(async () => {
@@ -203,103 +203,77 @@ export function CatalogPipelineDialog() {
     addLog('═══ 開始競品建庫流程 ═══', 'step')
     addLog(`目標平台: ${platform === 'all' ? '全部' : platform}`, 'info')
 
-    // 每步驟獨立 SSE 連線，避免單條長連線超過反代 600s 限制
-    let pipelineFailed = false
+    // 記錄已輸出過的日誌，避免重複
+    const loggedStarts = new Set<StepKey>()
+    const loggedDones = new Set<StepKey>()
 
-    for (const step of STEPS) {
-      if (controller.signal.aborted) break
+    try {
+      // 啟動後台任務
+      const { task_id: taskId } = await api.startPipeline(platform)
 
-      updateStep(step, { status: 'running', error: undefined, data: undefined, duration: undefined })
-      setHeartbeatElapsed(0)
-      addLog(`▶ 開始步驟 ${STEPS.indexOf(step) + 1}/3: ${stepNames[step]}`, 'step')
+      // 輪詢進度（每 2 秒一次短請求，完全不受反代超時限制）
+      while (true) {
+        if (controller.signal.aborted) return
+        await new Promise(r => setTimeout(r, 2000))
+        if (controller.signal.aborted) return
 
-      const stepStartTime = Date.now()
-
-      try {
-        const url = api.catalogPipelineStreamUrl(platform, step)
-        const response = await fetch(url, {
-          method: 'POST',
-          signal: controller.signal,
-        })
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        let p
+        try {
+          p = await api.getPipelineProgress(taskId)
+        } catch {
+          // 單次輪詢失敗可忽略，下次重試
+          continue
         }
 
-        const reader = response.body?.getReader()
-        if (!reader) throw new Error('無法讀取串流')
+        // 更新當前步驟 → running
+        if (p.current_step) {
+          const step = p.current_step as StepKey
+          if (!loggedStarts.has(step)) {
+            updateStep(step, { status: 'running', error: undefined, data: undefined, duration: undefined })
+            addLog(`▶ 開始步驟 ${p.current_step_number}/${p.total_steps}: ${stepNames[step]}`, 'step')
+            loggedStarts.add(step)
+          }
+          setHeartbeatElapsed(p.elapsed * 1000)
+        }
 
-        const decoder = new TextDecoder()
-        let buffer = ''
-
-        while (true) {
-          const { done: readerDone, value } = await reader.read()
-          if (readerDone) break
-
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split('\n')
-          buffer = lines.pop() || ''
-
-          let currentEvent = ''
-          for (const line of lines) {
-            if (line.startsWith('event: ')) {
-              currentEvent = line.slice(7).trim()
-            } else if (line.startsWith('data: ') && currentEvent) {
-              try {
-                const data = JSON.parse(line.slice(6))
-                handleStepEvent(step, currentEvent, data)
-              } catch {
-                // 忽略 JSON 解析失敗
-              }
-              currentEvent = ''
-            }
+        // 更新已完成步驟 → done
+        for (const step of STEPS) {
+          if (p.step_results[step] && !loggedDones.has(step)) {
+            const dur = (p.step_durations[step] ?? 0) * 1000
+            updateStep(step, { status: 'done', data: { result: p.step_results[step] }, duration: dur })
+            addLog(`✓ ${stepNames[step]}完成 (${formatDuration(dur)})`, 'success')
+            logStepResult(step, p.step_results[step], addLog)
+            setExpandedStep(step)
+            loggedDones.add(step)
           }
         }
 
-        // SSE 流正常結束後，檢查步驟是否已被標記為 error
-        // （handleStepEvent 裡已處理 step_error → pipelineFailed）
-      } catch (err: any) {
-        if (err.name === 'AbortError') return
-        const duration = Date.now() - stepStartTime
-        updateStep(step, { status: 'error', error: humanizeError(err), duration })
-        addLog(`✗ 連線失敗: ${humanizeError(err)}`, 'error')
-        setPhase('error')
-        setFailedStep(step)
-        pipelineFailed = true
+        // 全部完成
+        if (p.status === 'done') {
+          addLog('═══ 流程全部完成 ═══', 'success')
+          setPhase('done')
+          queryClient.invalidateQueries({ queryKey: ['competitors'] })
+          break
+        }
+
+        // 出錯
+        if (p.status === 'error') {
+          const errStep = Object.keys(p.step_errors)[0] as StepKey
+          if (!loggedDones.has(errStep)) {
+            const dur = (p.step_durations[errStep] ?? 0) * 1000
+            updateStep(errStep, { status: 'error', error: p.step_errors[errStep], duration: dur })
+            addLog(`✗ ${stepNames[errStep]}失敗: ${p.step_errors[errStep]}`, 'error')
+            setExpandedStep(errStep)
+          }
+          setPhase('error')
+          setFailedStep(errStep)
+          break
+        }
       }
-
-      if (pipelineFailed) break
-    }
-
-    // 全部步驟完成且無失敗
-    if (!controller.signal.aborted && !pipelineFailed) {
-      addLog('═══ 流程全部完成 ═══', 'success')
-      setPhase('done')
-      queryClient.invalidateQueries({ queryKey: ['competitors'] })
-    }
-
-    function handleStepEvent(step: StepKey, event: string, data: any) {
-      if (event === 'heartbeat') {
-        setHeartbeatElapsed((data.elapsed ?? 0) * 1000)
-      }
-
-      if (event === 'step_done') {
-        const duration = (data.elapsed ?? 0) * 1000
-        updateStep(step, { status: 'done', data: { result: data.result }, duration })
-        addLog(`✓ ${stepNames[step]}完成 (${formatDuration(duration)})`, 'success')
-        logStepResult(step, data.result, addLog)
-        setExpandedStep(step)
-      }
-
-      if (event === 'step_error') {
-        const duration = (data.elapsed ?? 0) * 1000
-        updateStep(step, { status: 'error', error: data.error, duration })
-        addLog(`✗ ${stepNames[step]}失敗: ${data.error}`, 'error')
-        setPhase('error')
-        setFailedStep(step)
-        setExpandedStep(step)
-        pipelineFailed = true
-      }
+    } catch (err: any) {
+      if (err.name === 'AbortError') return
+      addLog(`✗ 啟動失敗: ${humanizeError(err)}`, 'error')
+      setPhase('error')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [platform, updateStep, queryClient, addLog])

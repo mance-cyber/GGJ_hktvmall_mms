@@ -2,12 +2,16 @@
 # 競品建庫 API
 # =============================================
 # 手動觸發建庫、打標、匹配，以及競品庫統計
-# /pipeline/stream — SSE 串流版完整流程
+# /pipeline/start  + /pipeline/progress — 後台任務 + 輪詢模式
+# /pipeline/stream — SSE 串流版（保留向後相容）
 
 import asyncio
 import json
 import logging
 import time
+import uuid as _uuid
+from dataclasses import dataclass, field
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query, HTTPException
 from fastapi.responses import StreamingResponse
@@ -90,10 +94,8 @@ async def match_products(
 
 
 # =============================================
-# SSE 串流版完整建庫流程
+# 管線步驟定義
 # =============================================
-# 解決反向代理超時問題：每步操作以 asyncio.Task 執行，
-# 主 generator 每 10 秒送 heartbeat 保活連線。
 
 PIPELINE_STEPS = [
     ("build", "建庫"),
@@ -101,9 +103,138 @@ PIPELINE_STEPS = [
     ("match", "匹配"),
 ]
 
-# 步驟名 → 全局序號（1-based），用於 step_start 事件
 STEP_NUMBERS = {k: i + 1 for i, (k, _) in enumerate(PIPELINE_STEPS)}
 VALID_STEP_KEYS = set(STEP_NUMBERS.keys())
+
+
+# =============================================
+# 後台任務 + 輪詢模式（取代 SSE 長連線）
+# =============================================
+# 徹底解決反向代理超時：不再依賴長連線，
+# 改用短請求輪詢後台任務進度，每次 < 1 秒。
+
+@dataclass
+class PipelineTask:
+    """管線任務狀態（記憶體內，進程重啟後清空）"""
+    id: str
+    platform: str
+    status: str = "running"          # running | done | error
+    current_step: str | None = None
+    current_step_number: int = 0
+    step_results: dict[str, Any] = field(default_factory=dict)
+    step_errors: dict[str, str] = field(default_factory=dict)
+    step_durations: dict[str, float] = field(default_factory=dict)
+    start_time: float = 0.0
+    step_start_time: float = 0.0
+
+
+# 記憶體中的任務表
+_tasks: dict[str, PipelineTask] = {}
+
+
+def _cleanup_old_tasks():
+    """清理 1 小時前的過期任務"""
+    cutoff = time.time() - 3600
+    for tid in list(_tasks.keys()):
+        if _tasks[tid].start_time < cutoff:
+            del _tasks[tid]
+
+
+@router.post("/pipeline/start")
+async def pipeline_start(
+    platform: str = Query("all", description="平台：all / hktvmall / wellcome"),
+):
+    """
+    啟動管線後台任務，立即返回 task_id
+
+    前端用 GET /pipeline/progress/{task_id} 輪詢進度。
+    """
+    if platform not in ("all", "hktvmall", "wellcome"):
+        raise HTTPException(status_code=400, detail=f"不支援的平台: {platform}")
+
+    _cleanup_old_tasks()
+
+    task_id = _uuid.uuid4().hex[:8]
+    task = PipelineTask(id=task_id, platform=platform, start_time=time.time())
+    _tasks[task_id] = task
+
+    asyncio.create_task(_run_pipeline_task(task))
+    logger.info(f"pipeline task {task_id} 已啟動, platform={platform}")
+
+    return {"task_id": task_id}
+
+
+@router.get("/pipeline/progress/{task_id}")
+async def pipeline_progress(task_id: str):
+    """查詢管線任務進度"""
+    task = _tasks.get(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="任務不存在或已過期")
+
+    elapsed = (
+        round(time.time() - task.step_start_time, 1)
+        if task.current_step else 0
+    )
+
+    return {
+        "task_id": task.id,
+        "status": task.status,
+        "current_step": task.current_step,
+        "current_step_number": task.current_step_number,
+        "total_steps": len(PIPELINE_STEPS),
+        "elapsed": elapsed,
+        "step_results": task.step_results,
+        "step_errors": task.step_errors,
+        "step_durations": task.step_durations,
+    }
+
+
+async def _run_pipeline_task(task: PipelineTask):
+    """後台執行管線全流程（asyncio.Task 內跑）"""
+    from app.services.cataloger import CatalogService
+    from app.services.tagger import tag_all_untagged
+    from app.services.matcher import match_all_pending
+
+    for step_key, _step_name in PIPELINE_STEPS:
+        task.current_step = step_key
+        task.current_step_number = STEP_NUMBERS[step_key]
+        task.step_start_time = time.time()
+
+        try:
+            async with async_session_maker() as session:
+                if step_key == "build":
+                    result = await CatalogService.build_catalog(
+                        session, platform=task.platform,
+                    )
+                elif step_key == "tag":
+                    result = await tag_all_untagged(session)
+                    await session.commit()
+                elif step_key == "match":
+                    result = await match_all_pending(session)
+                    await session.commit()
+
+            task.step_results[step_key] = result
+            task.step_durations[step_key] = round(
+                time.time() - task.step_start_time, 1,
+            )
+        except Exception as e:
+            logger.error(f"pipeline task {task.id} {step_key} 失敗: {e}", exc_info=True)
+            task.step_errors[step_key] = str(e)
+            task.step_durations[step_key] = round(
+                time.time() - task.step_start_time, 1,
+            )
+            task.status = "error"
+            task.current_step = None
+            return
+
+    task.status = "done"
+    task.current_step = None
+    logger.info(f"pipeline task {task.id} 全部完成")
+
+
+# =============================================
+# SSE 串流版（保留向後相容，不再推薦使用）
+# =============================================
 
 
 def _sse(event: str, data: dict) -> str:
