@@ -353,21 +353,21 @@ async def get_monitoring_priority_stats(
     a_count_result = await db.execute(
         select(func.count())
         .select_from(Product)
-        .where(Product.monitoring_priority == "A")
+        .where(func.coalesce(Product.monitoring_priority, "B") == "A")
     )
     a_count = a_count_result.scalar() or 0
     
     b_count_result = await db.execute(
         select(func.count())
         .select_from(Product)
-        .where(Product.monitoring_priority == "B")
+        .where(func.coalesce(Product.monitoring_priority, "B") == "B")
     )
     b_count = b_count_result.scalar() or 0
     
     c_count_result = await db.execute(
         select(func.count())
         .select_from(Product)
-        .where(Product.monitoring_priority == "C")
+        .where(func.coalesce(Product.monitoring_priority, "B") == "C")
     )
     c_count = c_count_result.scalar() or 0
     

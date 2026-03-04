@@ -107,6 +107,8 @@ async def run_migrations(conn):
             "ALTER TABLE products ADD COLUMN IF NOT EXISTS cost NUMERIC(10, 2);",
             # P0-分級監測 - 添加監測優先級欄位
             "ALTER TABLE products ADD COLUMN IF NOT EXISTS monitoring_priority VARCHAR(10) DEFAULT 'B';",
+            # 修復：將已存在但 monitoring_priority 為 NULL 的產品設為預設 'B'
+            "UPDATE products SET monitoring_priority = 'B' WHERE monitoring_priority IS NULL;",
             # 管線任務 - progress 即時進度欄位
             "ALTER TABLE pipeline_tasks ADD COLUMN IF NOT EXISTS progress JSONB;",
             "ALTER TABLE pipeline_tasks ADD COLUMN IF NOT EXISTS step_started_at TIMESTAMP;",
