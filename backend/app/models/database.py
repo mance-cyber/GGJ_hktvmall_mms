@@ -107,6 +107,9 @@ async def run_migrations(conn):
             "ALTER TABLE products ADD COLUMN IF NOT EXISTS cost NUMERIC(10, 2);",
             # P0-分級監測 - 添加監測優先級欄位
             "ALTER TABLE products ADD COLUMN IF NOT EXISTS monitoring_priority VARCHAR(10) DEFAULT 'B';",
+            # 管線任務 - progress 即時進度欄位
+            "ALTER TABLE pipeline_tasks ADD COLUMN IF NOT EXISTS progress JSONB;",
+            "ALTER TABLE pipeline_tasks ADD COLUMN IF NOT EXISTS step_started_at TIMESTAMP;",
         ]
 
         for stmt in alter_statements:
