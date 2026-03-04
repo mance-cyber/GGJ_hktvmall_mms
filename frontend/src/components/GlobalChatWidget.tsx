@@ -812,7 +812,7 @@ export function GlobalChatWidget() {
   return (
     <div className={cn(
       "fixed z-50 flex flex-col items-end gap-4",
-      "bottom-24 right-4 sm:bottom-6 sm:right-6"
+      "bottom-24 right-4 sm:bottom-20 sm:right-6"
     )}>
       <AnimatePresence>
         {isOpen && (
