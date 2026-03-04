@@ -53,9 +53,11 @@ import {
   TechDivider,
   StaggerContainer,
 } from '@/components/ui/future-tech'
+import { useLocale } from '@/components/providers/locale-provider'
 
 export default function ProductsPage() {
   const queryClient = useQueryClient()
+  const { t } = useLocale()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -87,7 +89,7 @@ export default function ProductsPage() {
     },
     onError: (err: any) => {
       const msg = err?.message || err?.detail || String(err)
-      alert('同步失敗: ' + msg)
+      alert(t['products.sync_failed'] + msg)
     }
   })
 
@@ -125,7 +127,7 @@ export default function ProductsPage() {
         <HoloCard className="p-6 border-red-200 bg-red-50/50">
           <div className="flex items-center text-red-600">
             <AlertCircle className="w-5 h-5 mr-3" />
-            <span className="font-medium">無法載入商品數據，請稍後再試。</span>
+            <span className="font-medium">{t['products.load_error']}</span>
           </div>
         </HoloCard>
       </PageTransition>
@@ -137,7 +139,7 @@ export default function ProductsPage() {
       <div className="space-y-3 sm:space-y-6">
         {/* ========== 頁面標題 ========== */}
         <div className="flex items-center justify-between gap-2">
-          <h1 className="page-title">商品管理</h1>
+          <h1 className="page-title">{t['products.title']}</h1>
           <div className="flex gap-1.5 sm:gap-2">
             <HoloButton
               variant="secondary"
@@ -147,10 +149,10 @@ export default function ProductsPage() {
               loading={syncMutation.isPending}
               icon={<RefreshCw className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", syncMutation.isPending && "animate-spin")} />}
             >
-              <span className="hidden sm:inline">同步</span>
+              <span className="hidden sm:inline">{t['products.sync']}</span>
             </HoloButton>
             <HoloButton size="sm" icon={<Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}>
-              <span className="hidden sm:inline">新增</span>
+              <span className="hidden sm:inline">{t['products.add']}</span>
             </HoloButton>
           </div>
         </div>
@@ -158,21 +160,21 @@ export default function ProductsPage() {
         {/* ========== 數據指標 ========== */}
         <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           <DataMetric
-            label="總商品"
+            label={t['products.total']}
             value={stats.total}
             color="blue"
             size="sm"
             icon={<Package className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />}
           />
           <DataMetric
-            label="上架中"
+            label={t['products.active']}
             value={stats.active}
             color="green"
             size="sm"
             icon={<CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" />}
           />
           <DataMetric
-            label="低庫存"
+            label={t['products.low_stock']}
             value={stats.lowStock}
             color="orange"
             size="sm"
@@ -181,9 +183,9 @@ export default function ProductsPage() {
           <HoloCard className="p-2 sm:p-4" glowColor="cyan">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] sm:text-sm text-slate-500">同步</p>
+                <p className="text-[10px] sm:text-sm text-slate-500">{t['products.sync']}</p>
                 <p className="text-sm sm:text-lg font-semibold text-slate-800 mt-0.5 sm:mt-1">
-                  {syncMutation.isPending ? '中...' : '完成'}
+                  {syncMutation.isPending ? t['products.sync_in_progress'] : t['products.sync_done']}
                 </p>
               </div>
               <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-cyan-50">
@@ -199,33 +201,33 @@ export default function ProductsPage() {
             <div className="relative flex-1">
               <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-400" />
               <Input
-                placeholder="搜索商品..."
+                placeholder={t['products.search_placeholder']}
                 className="pl-8 sm:pl-9 h-9 sm:h-10 text-sm bg-white/50 border-slate-200"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => { setSearch(e.target.value); setPage(1) }}
               />
             </div>
             <div className="flex gap-1.5 sm:gap-2">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1) }}>
                 <SelectTrigger className="flex-1 sm:w-[110px] h-9 sm:h-10 text-xs sm:text-sm bg-white/50 border-slate-200">
-                  <SelectValue placeholder="狀態" />
+                  <SelectValue placeholder={t['products.filter_status']} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">全部</SelectItem>
-                  <SelectItem value="active">上架</SelectItem>
-                  <SelectItem value="draft">草稿</SelectItem>
-                  <SelectItem value="archived">歸檔</SelectItem>
+                  <SelectItem value="all">{t['products.filter_all']}</SelectItem>
+                  <SelectItem value="active">{t['products.filter_active']}</SelectItem>
+                  <SelectItem value="draft">{t['products.filter_draft']}</SelectItem>
+                  <SelectItem value="archived">{t['products.filter_archived']}</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setPage(1) }}>
                 <SelectTrigger className="flex-1 sm:w-[110px] h-9 sm:h-10 text-xs sm:text-sm bg-white/50 border-slate-200">
-                  <SelectValue placeholder="分類" />
+                  <SelectValue placeholder={t['products.filter_category']} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">全部</SelectItem>
-                  <SelectItem value="health">保健</SelectItem>
-                  <SelectItem value="beauty">美容</SelectItem>
-                  <SelectItem value="food">食品</SelectItem>
+                  <SelectItem value="all">{t['products.filter_all']}</SelectItem>
+                  <SelectItem value="health">{t['products.category_health']}</SelectItem>
+                  <SelectItem value="beauty">{t['products.category_beauty']}</SelectItem>
+                  <SelectItem value="food">{t['products.category_food']}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -262,16 +264,16 @@ export default function ProductsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem><Edit className="mr-2 h-4 w-4" /> 編輯</DropdownMenuItem>
+                            <DropdownMenuItem><Edit className="mr-2 h-4 w-4" /> {t['products.edit']}</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => syncMutation.mutate()}>
-                              <RefreshCw className="mr-2 h-4 w-4" /> 同步
+                              <RefreshCw className="mr-2 h-4 w-4" /> {t['products.sync']}
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               className="text-red-600"
                               onClick={() => deleteMutation.mutate(product.id)}
                             >
-                              <Trash2 className="mr-2 h-4 w-4" /> 刪除
+                              <Trash2 className="mr-2 h-4 w-4" /> {t['products.delete']}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -282,7 +284,7 @@ export default function ProductsPage() {
                           ${product.price ? Number(product.price).toFixed(0) : '-'}
                         </span>
                         <span className={cn("text-xs", product.stock_quantity < 10 ? "text-red-500" : "text-slate-500")}>
-                          存{product.stock_quantity}
+                          {t['products.stock_prefix']}{product.stock_quantity}
                         </span>
                       </div>
                     </div>
@@ -297,19 +299,19 @@ export default function ProductsPage() {
         <div className="hidden sm:block">
           <HoloCard className="overflow-hidden">
             <HoloPanelHeader
-              title="商品列表"
-              subtitle={`共 ${productsData?.total || 0} 件商品`}
+              title={t['products.table_title']}
+              subtitle={t['products.table_subtitle'].replace('{total}', String(productsData?.total || 0))}
               icon={<Package className="w-5 h-5" />}
             />
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-slate-50/80 text-slate-600 font-medium border-b border-slate-100">
                   <tr>
-                    <th className="px-6 py-4 text-left">商品資訊</th>
-                    <th className="px-6 py-4 text-left">狀態</th>
-                    <th className="px-6 py-4 text-right">售價</th>
-                    <th className="px-6 py-4 text-right">庫存</th>
-                    <th className="px-6 py-4 text-right">操作</th>
+                    <th className="px-6 py-4 text-left">{t['products.col_product_info']}</th>
+                    <th className="px-6 py-4 text-left">{t['products.col_status']}</th>
+                    <th className="px-6 py-4 text-right">{t['products.col_price']}</th>
+                    <th className="px-6 py-4 text-right">{t['products.col_stock']}</th>
+                    <th className="px-6 py-4 text-right">{t['products.col_actions']}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100/50">
@@ -354,7 +356,7 @@ export default function ProductsPage() {
                             {product.stock_quantity}
                           </span>
                           {product.stock_quantity < 10 && (
-                            <span className="ml-2 text-xs text-red-400">低庫存</span>
+                            <span className="ml-2 text-xs text-red-400">{t['products.badge_low_stock']}</span>
                           )}
                         </td>
                         <td className="px-6 py-4 text-right">
@@ -365,17 +367,17 @@ export default function ProductsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>操作</DropdownMenuLabel>
-                              <DropdownMenuItem><Edit className="mr-2 h-4 w-4" /> 編輯</DropdownMenuItem>
+                              <DropdownMenuLabel>{t['products.actions_label']}</DropdownMenuLabel>
+                              <DropdownMenuItem><Edit className="mr-2 h-4 w-4" /> {t['products.edit']}</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => syncMutation.mutate()}>
-                                <RefreshCw className="mr-2 h-4 w-4" /> 更新同步
+                                <RefreshCw className="mr-2 h-4 w-4" /> {t['products.sync_update']}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 className="text-red-600"
                                 onClick={() => deleteMutation.mutate(product.id)}
                               >
-                                <Trash2 className="mr-2 h-4 w-4" /> 刪除
+                                <Trash2 className="mr-2 h-4 w-4" /> {t['products.delete']}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -390,14 +392,17 @@ export default function ProductsPage() {
             {productsData?.data.length === 0 && (
               <div className="py-16 text-center text-slate-500">
                 <Package className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                <p>沒有找到符合條件的商品</p>
+                <p>{t['products.no_results']}</p>
               </div>
             )}
 
             {/* 分頁 */}
             <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
               <div className="text-sm text-slate-500">
-                顯示 {(page - 1) * 20 + 1} 至 {Math.min(page * 20, productsData?.total || 0)} 筆，共 {productsData?.total || 0} 筆
+                {t['products.pagination']
+                  .replace('{from}', String((page - 1) * 20 + 1))
+                  .replace('{to}', String(Math.min(page * 20, productsData?.total || 0)))
+                  .replace('{total}', String(productsData?.total || 0))}
               </div>
               <div className="flex gap-2">
                 <Button
@@ -447,10 +452,12 @@ export default function ProductsPage() {
 // =============================================
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useLocale()
+
   const config: Record<string, { variant: 'success' | 'warning' | 'default'; label: string }> = {
-    active: { variant: 'success', label: '上架中' },
-    draft: { variant: 'default', label: '草稿' },
-    archived: { variant: 'warning', label: '已歸檔' },
+    active: { variant: 'success', label: t['products.status_active'] },
+    draft: { variant: 'default', label: t['products.status_draft'] },
+    archived: { variant: 'warning', label: t['products.status_archived'] },
   }
 
   const { variant, label } = config[status] || config.draft
