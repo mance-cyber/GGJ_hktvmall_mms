@@ -60,6 +60,7 @@ class MatchResult:
     match_confidence: float  # 0.0 - 1.0
     match_reason: str
     is_match: bool
+    match_level: int = 2  # 1=直接替代, 2=同品類, 3=相關品類
 
 
 # =============================================
@@ -180,12 +181,17 @@ class ClaudeMatcher:
         return f"""
 你是一位專業的日本海鮮/食材專家。請判斷以下兩個商品是否為「同類商品」。
 
-「同類商品」定義：
-- 同類型產品（如：都是和牛、都是刺身、都是三文魚）
-- 產地不同（宮崎 vs 鹿兒島）仍算同類 → is_match: true
-- 等級不同（A5 vs A4）仍算同類 → is_match: true
-- 規格差異（重量/包裝）作為參考，不影響是否匹配
-- 只有完全不同類型才判 false（如：和牛 vs 三文魚）
+匹配規則（寬泛匹配 — 同品類都算）：
+
+match_level 定義：
+- 1 = 直接替代（幾乎同一商品，只係唔同店賣）
+- 2 = 同品類競品（都係和牛/都係三文魚/都係刺身，產地等級唔同都算）
+- 3 = 相關品類（同大類但唔同細類，如：和牛 vs 安格斯牛）
+
+判斷原則：
+- match_level 1-3 → is_match: true
+- 完全無關 → is_match: false
+- 寧可多搵，唔好漏搵
 
 ---
 
@@ -208,9 +214,10 @@ class ClaudeMatcher:
 請以 JSON 格式回答：
 {{
   "is_match": true/false,
+  "match_level": 1-3,
   "confidence": 0.0-1.0,
   "reason": "判斷理由（簡短說明）",
-  "key_differences": ["差異1", "差異2"] // 如果不匹配，列出主要差異
+  "key_differences": ["差異1", "差異2"]
 }}
 
 只輸出 JSON，不要其他內容。
@@ -261,7 +268,8 @@ class ClaudeMatcher:
                 candidate_name=candidate.get('name', ''),
                 match_confidence=float(result.get('confidence', 0.0)),
                 match_reason=result.get('reason', ''),
-                is_match=result.get('is_match', False)
+                is_match=result.get('is_match', False),
+                match_level=int(result.get('match_level', 2)),
             )
             
         except Exception as e:
@@ -361,6 +369,7 @@ class ClaudeMatcher:
                     match_confidence=float(item.get('confidence', 0.0)),
                     match_reason=item.get('reason', ''),
                     is_match=item.get('is_match', False),
+                    match_level=int(item.get('match_level', 2)),
                 ))
 
             if len(match_results) < len(candidates):
@@ -392,12 +401,19 @@ class ClaudeMatcher:
 
         return f"""你是一位專業的日本海鮮/食材專家。請判斷以下每個對手商品是否與我方商品為「同類商品」。
 
-「同類商品」定義：
-- 同類型產品（如：都是和牛、都是刺身、都是三文魚）
-- 產地不同（宮崎 vs 鹿兒島）仍算同類 → is_match: true
-- 等級不同（A5 vs A4）仍算同類 → is_match: true
-- 規格差異（重量/包裝）作為參考，不影響是否匹配
-- 只有完全不同類型才判 false（如：和牛 vs 三文魚）
+匹配規則（寬泛匹配 — 同品類都算）：
+
+match_level 定義：
+- 1 = 直接替代（幾乎同一商品，只係唔同店賣）
+- 2 = 同品類競品（都係和牛/都係三文魚/都係刺身，產地等級唔同都算）
+- 3 = 相關品類（同大類但唔同細類，如：和牛 vs 安格斯牛、三文魚 vs 吞拿魚）
+
+判斷原則：
+- 同品類（match_level 1 或 2）→ is_match: true
+- 相關品類（match_level 3）→ is_match: true
+- 完全無關（和牛 vs 三文魚）→ is_match: false
+- 產地不同、等級不同、規格不同 → 仍然 is_match: true
+- 寧可多搵，唔好漏搵
 
 ---
 
@@ -418,8 +434,8 @@ class ClaudeMatcher:
 
 請以 JSON 數組格式回答（每個對手商品一項）：
 [
-  {{"index": 1, "is_match": true, "confidence": 0.85, "reason": "判斷理由"}},
-  {{"index": 2, "is_match": false, "confidence": 0.2, "reason": "判斷理由"}}
+  {{"index": 1, "is_match": true, "match_level": 2, "confidence": 0.85, "reason": "同為和牛產品"}},
+  {{"index": 2, "is_match": false, "match_level": 0, "confidence": 0.1, "reason": "完全不同品類"}}
 ]
 
 只輸出 JSON 數組，不要其他內容。"""
@@ -663,7 +679,7 @@ class CompetitorMatcherService:
         db: AsyncSession,
         product: Product,
         platform: str = "hktvmall",
-        max_candidates: int = 5
+        max_candidates: int = 25
     ) -> List[MatchResult]:
         """
         為單個商品尋找競品（多平台路由）
@@ -735,8 +751,8 @@ class CompetitorMatcherService:
 
         # 並行搜索多個關鍵詞（~200ms 完成，而非串行 400ms）
         api_tasks = [
-            self.hktv_strategy.search_via_api(query, limit=max_candidates * 2)
-            for query in queries[:2]
+            self.hktv_strategy.search_via_api(query, limit=50)
+            for query in queries[:3]
         ]
         api_results_lists = await asyncio.gather(*api_tasks)
 
@@ -769,20 +785,17 @@ class CompetitorMatcherService:
                 "description": "",
                 "price": str(p.price) if p.price else "未知",
             }
-            for p in unique_products[:max_candidates * 3]
+            for p in unique_products[:50]
         ]
 
         all_matches = self.matcher.batch_judge_match(our_product_dict, candidate_dicts)
 
-        threshold = _dynamic_threshold(len(candidate_dicts))
-        results = [
-            r for r in all_matches
-            if r.is_match and r.match_confidence >= threshold
-        ]
+        # 寬泛匹配：保留所有 is_match=true 的結果
+        results = [r for r in all_matches if r.is_match]
 
         if results:
             logger.info(
-                f"API 快速路徑成功: {len(results)} 匹配 (threshold={threshold}) "
+                f"API 快速路徑成功: {len(results)} 匹配 "
                 f"(product={our_product_dict.get('name_zh', '')})"
             )
 
@@ -882,7 +895,7 @@ class CompetitorMatcherService:
         results = []
         candidate_urls = set()
 
-        for query in queries[:2]:
+        for query in queries[:3]:
             if platform == "hktvmall":
                 search_url = self.hktv_strategy.build_search_url(query)
                 urls = await self.hktv_strategy.extract_product_urls_from_search(
@@ -1093,6 +1106,8 @@ class CompetitorMatcherService:
                     product_id=pid,
                     competitor_product_id=comp_product.id,
                     match_confidence=new_confidence,
+                    match_level=match_result.match_level if hasattr(match_result, 'match_level') else 2,
+                    match_reason=match_result.match_reason,
                     is_verified=False,
                     notes=match_result.match_reason,
                 )
