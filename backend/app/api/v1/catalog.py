@@ -101,6 +101,10 @@ PIPELINE_STEPS = [
     ("match", "匹配"),
 ]
 
+# 步驟名 → 全局序號（1-based），用於 step_start 事件
+STEP_NUMBERS = {k: i + 1 for i, (k, _) in enumerate(PIPELINE_STEPS)}
+VALID_STEP_KEYS = set(STEP_NUMBERS.keys())
+
 
 def _sse(event: str, data: dict) -> str:
     """格式化 SSE 事件"""
@@ -110,9 +114,15 @@ def _sse(event: str, data: dict) -> str:
 @router.post("/pipeline/stream")
 async def pipeline_stream(
     platform: str = Query("all", description="平台：all / hktvmall / wellcome"),
+    step: str = Query(None, description="單步模式：build / tag / match（省略則依序全部執行）"),
 ):
     """
     SSE 串流版建庫流程：建庫 → 打標 → 匹配
+
+    支援兩種模式：
+    - 全量模式（step 省略）：依序執行全部步驟，共用一條 SSE 連線
+    - 單步模式（step=build/tag/match）：只執行指定步驟
+      前端可分三次呼叫，避免長連線超過反向代理的總連線時長上限
 
     事件類型：
     - step_start: 步驟開始 {step, step_number, total_steps}
@@ -123,6 +133,15 @@ async def pipeline_stream(
     """
     if platform not in ("all", "hktvmall", "wellcome"):
         raise HTTPException(status_code=400, detail=f"不支援的平台: {platform}")
+    if step and step not in VALID_STEP_KEYS:
+        raise HTTPException(status_code=400, detail=f"不支援的步驟: {step}")
+
+    # 單步模式只跑一個步驟；全量模式跑全部
+    active_steps = (
+        [(k, v) for k, v in PIPELINE_STEPS if k == step]
+        if step
+        else list(PIPELINE_STEPS)
+    )
 
     async def event_stream():
         from app.services.cataloger import CatalogService
@@ -131,10 +150,10 @@ async def pipeline_stream(
 
         results = {}
 
-        for step_idx, (step_key, step_name) in enumerate(PIPELINE_STEPS):
+        for step_key, step_name in active_steps:
             yield _sse("step_start", {
                 "step": step_key,
-                "step_number": step_idx + 1,
+                "step_number": STEP_NUMBERS[step_key],
                 "total_steps": len(PIPELINE_STEPS),
             })
 

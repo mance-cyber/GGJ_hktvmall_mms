@@ -568,9 +568,12 @@ export const api = {
   // =============================================
 
   // SSE 串流版建庫流程 — 返回完整 URL，由呼叫方處理 stream
-  catalogPipelineStreamUrl: (platform: string = 'all') => {
+  // step 參數：省略則三步全跑，指定則只跑單步（避免長連線超過反代 600s 限制）
+  catalogPipelineStreamUrl: (platform: string = 'all', step?: string) => {
     const base = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
-    return `${base}/catalog/pipeline/stream?platform=${platform}`
+    const params = new URLSearchParams({ platform })
+    if (step) params.set('step', step)
+    return `${base}/catalog/pipeline/stream?${params.toString()}`
   },
 
   // 建庫：抓取競品平台商品（長時間操作，5 分鐘超時）

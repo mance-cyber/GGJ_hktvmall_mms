@@ -203,75 +203,87 @@ export function CatalogPipelineDialog() {
     addLog('═══ 開始競品建庫流程 ═══', 'step')
     addLog(`目標平台: ${platform === 'all' ? '全部' : platform}`, 'info')
 
-    try {
-      const url = api.catalogPipelineStreamUrl(platform)
-      const response = await fetch(url, {
-        method: 'POST',
-        signal: controller.signal,
-      })
+    // 每步驟獨立 SSE 連線，避免單條長連線超過反代 600s 限制
+    let pipelineFailed = false
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-      }
+    for (const step of STEPS) {
+      if (controller.signal.aborted) break
 
-      const reader = response.body?.getReader()
-      if (!reader) throw new Error('無法讀取串流')
+      updateStep(step, { status: 'running', error: undefined, data: undefined, duration: undefined })
+      setHeartbeatElapsed(0)
+      addLog(`▶ 開始步驟 ${STEPS.indexOf(step) + 1}/3: ${stepNames[step]}`, 'step')
 
-      const decoder = new TextDecoder()
-      let buffer = ''
+      const stepStartTime = Date.now()
 
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
+      try {
+        const url = api.catalogPipelineStreamUrl(platform, step)
+        const response = await fetch(url, {
+          method: 'POST',
+          signal: controller.signal,
+        })
 
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() || ''
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
 
-        let currentEvent = ''
-        for (const line of lines) {
-          if (line.startsWith('event: ')) {
-            currentEvent = line.slice(7).trim()
-          } else if (line.startsWith('data: ') && currentEvent) {
-            try {
-              const data = JSON.parse(line.slice(6))
-              handleSSEEvent(currentEvent, data)
-            } catch {
-              // 忽略 JSON 解析失敗
+        const reader = response.body?.getReader()
+        if (!reader) throw new Error('無法讀取串流')
+
+        const decoder = new TextDecoder()
+        let buffer = ''
+
+        while (true) {
+          const { done: readerDone, value } = await reader.read()
+          if (readerDone) break
+
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() || ''
+
+          let currentEvent = ''
+          for (const line of lines) {
+            if (line.startsWith('event: ')) {
+              currentEvent = line.slice(7).trim()
+            } else if (line.startsWith('data: ') && currentEvent) {
+              try {
+                const data = JSON.parse(line.slice(6))
+                handleStepEvent(step, currentEvent, data)
+              } catch {
+                // 忽略 JSON 解析失敗
+              }
+              currentEvent = ''
             }
-            currentEvent = ''
           }
         }
+
+        // SSE 流正常結束後，檢查步驟是否已被標記為 error
+        // （handleStepEvent 裡已處理 step_error → pipelineFailed）
+      } catch (err: any) {
+        if (err.name === 'AbortError') return
+        const duration = Date.now() - stepStartTime
+        updateStep(step, { status: 'error', error: humanizeError(err), duration })
+        addLog(`✗ 連線失敗: ${humanizeError(err)}`, 'error')
+        setPhase('error')
+        setFailedStep(step)
+        pipelineFailed = true
       }
-    } catch (err: any) {
-      if (err.name === 'AbortError') return
-      addLog(`✗ 連線失敗: ${humanizeError(err)}`, 'error')
-      setPhase('error')
-      // 找到第一個未完成的步驟作為失敗步驟
-      setFailedStep(prev => {
-        // 用 ref 不行因為 setSteps 是 async，直接用 running 判斷
-        return STEPS.find(s => {
-          const el = document.querySelector(`[data-step="${s}"][data-status="running"]`)
-          return !!el
-        }) ?? 'build'
-      })
+
+      if (pipelineFailed) break
     }
 
-    function handleSSEEvent(event: string, data: any) {
-      const step = data.step as StepKey | undefined
+    // 全部步驟完成且無失敗
+    if (!controller.signal.aborted && !pipelineFailed) {
+      addLog('═══ 流程全部完成 ═══', 'success')
+      setPhase('done')
+      queryClient.invalidateQueries({ queryKey: ['competitors'] })
+    }
 
-      if (event === 'step_start' && step) {
-        updateStep(step, { status: 'running', error: undefined, data: undefined, duration: undefined })
-        setHeartbeatElapsed(0)
-        addLog(`▶ 開始步驟 ${data.step_number}/3: ${stepNames[step]}`, 'step')
-      }
-
+    function handleStepEvent(step: StepKey, event: string, data: any) {
       if (event === 'heartbeat') {
-        // 更新即時耗時（從後端取得，秒為單位）
         setHeartbeatElapsed((data.elapsed ?? 0) * 1000)
       }
 
-      if (event === 'step_done' && step) {
+      if (event === 'step_done') {
         const duration = (data.elapsed ?? 0) * 1000
         updateStep(step, { status: 'done', data: { result: data.result }, duration })
         addLog(`✓ ${stepNames[step]}完成 (${formatDuration(duration)})`, 'success')
@@ -279,19 +291,14 @@ export function CatalogPipelineDialog() {
         setExpandedStep(step)
       }
 
-      if (event === 'step_error' && step) {
+      if (event === 'step_error') {
         const duration = (data.elapsed ?? 0) * 1000
         updateStep(step, { status: 'error', error: data.error, duration })
         addLog(`✗ ${stepNames[step]}失敗: ${data.error}`, 'error')
         setPhase('error')
         setFailedStep(step)
         setExpandedStep(step)
-      }
-
-      if (event === 'done') {
-        addLog('═══ 流程全部完成 ═══', 'success')
-        setPhase('done')
-        queryClient.invalidateQueries({ queryKey: ['competitors'] })
+        pipelineFailed = true
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
