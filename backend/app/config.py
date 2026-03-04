@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     claude_org_id: str = Field(default="", alias="CLAUDE_ORG_ID")
 
     # 模型分級策略（多模型配置）
-    ai_model_simple: str = Field(default="claude-haiku-4-5-20251001-thinking", alias="AI_MODEL_SIMPLE")  # 簡單任務
+    ai_model_simple: str = Field(default="claude-haiku-4-5-20251001", alias="AI_MODEL_SIMPLE")  # 簡單任務（non-thinking，2-4s/call）
     ai_model_medium: str = Field(default="claude-opus-4-6-thinking", alias="AI_MODEL_MEDIUM")  # 中等任務
     ai_model_complex: str = Field(default="claude-opus-4-6-thinking", alias="AI_MODEL_COMPLEX")  # 複雜任務
 

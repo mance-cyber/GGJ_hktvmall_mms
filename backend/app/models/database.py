@@ -110,6 +110,9 @@ async def run_migrations(conn):
             # 管線任務 - progress 即時進度欄位
             "ALTER TABLE pipeline_tasks ADD COLUMN IF NOT EXISTS progress JSONB;",
             "ALTER TABLE pipeline_tasks ADD COLUMN IF NOT EXISTS step_started_at TIMESTAMP;",
+            # pg_trgm 文本相似度索引（競品匹配預篩加速）
+            "CREATE EXTENSION IF NOT EXISTS pg_trgm;",
+            "CREATE INDEX IF NOT EXISTS idx_cp_name_trgm ON competitor_products USING GIN (name gin_trgm_ops);",
         ]
 
         for stmt in alter_statements:

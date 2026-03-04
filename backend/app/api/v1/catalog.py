@@ -82,13 +82,14 @@ async def match_products(
     product_id: str = Query(None, description="指定商品 ID（不填則匹配所有 pending）"),
     db: AsyncSession = Depends(get_db),
 ):
-    """手動觸發匹配（預篩 + AI 精判三層匹配）"""
+    """手動觸發匹配（pg_trgm 預篩 + AI 精判三層匹配）"""
     from app.services.matcher import match_product, match_all_pending
     if product_id:
         result = await match_product(db, product_id)
+        await db.commit()
     else:
-        result = await match_all_pending(db)
-    await db.commit()
+        # match_all_pending 自行管理 session（並行匹配）
+        result = await match_all_pending()
     return {"status": "ok", "result": result}
 
 
@@ -293,130 +294,23 @@ async def _run_pipeline_task(task_id: str, platform: str) -> None:
 
 async def _match_with_fresh_sessions(task_id: str) -> dict:
     """
-    匹配步驟：每個商品使用獨立 DB session，逐商品回報進度
+    匹配步驟：委託給 matcher 的並行匹配引擎，透過回調回報進度
 
-    Neon PostgreSQL 的 idle_in_transaction_session_timeout 預設 5 分鐘，
-    match_product 每個商品需 30-60 秒（含 AI 調用），多個商品串行處理
-    總時間容易超過 5 分鐘 → 連線被殺。
-
-    解法：每個商品用完即關 session，下個商品拿新連線。
-    每完成一個商品即更新 DB progress，前端可即時看到。
+    matcher v2 內部管理獨立 session + Semaphore(4) 並行，
+    不再需要此處手動逐商品建 session。
     """
-    from app.services.matcher import match_product
+    from app.services.matcher import match_all_pending
 
-    stats = {
-        "products_matched": 0,
-        "competitors_processed": 0,
-        "products_failed": 0,
-        "total_level_1": 0,
-        "total_level_2": 0,
-        "total_level_3": 0,
-    }
-
-    # Phase 1: 查詢待匹配數據（短暫 session，用完即關）
-    async with async_session_maker() as session:
-        stmt = select(CompetitorProduct).where(
-            CompetitorProduct.needs_matching == True,
-            CompetitorProduct.is_active == True,
-            CompetitorProduct.category_tag.isnot(None),
-        )
-        result = await session.execute(stmt)
-        pending_cps = list(result.scalars().all())
-
-        if not pending_cps:
-            logger.info("match_resilient: 無待匹配的競品")
-            await _save_task(task_id, progress={
-                "current": 0, "total": 0, "message": "無待匹配競品",
-            })
-            return stats
-
-        affected_tags = {cp.category_tag for cp in pending_cps if cp.category_tag}
-        pending_cp_ids = [cp.id for cp in pending_cps]
-
-        stmt = select(Product.id, Product.name).where(
-            Product.category_tag.in_(affected_tags),
-        )
-        result = await session.execute(stmt)
-        products = [(str(row[0]), row[1]) for row in result]
-
-    if not products:
-        # 無相關自家商品，僅清除 needs_matching 標記
-        async with async_session_maker() as session:
-            stmt = select(CompetitorProduct).where(
-                CompetitorProduct.id.in_(pending_cp_ids),
-            )
-            result = await session.execute(stmt)
-            for cp in result.scalars().all():
-                cp.needs_matching = False
-            await session.commit()
-        stats["competitors_processed"] = len(pending_cp_ids)
-        return stats
-
-    total = len(products)
-    logger.info(
-        f"match_resilient: {total} 個商品, "
-        f"{len(pending_cp_ids)} 個待匹配競品, 品類: {affected_tags}",
-    )
-
-    # 初始進度
-    await _save_task(task_id, progress={
-        "current": 0,
-        "total": total,
-        "failed": 0,
-        "message": f"準備匹配 {total} 個商品...",
-    })
-
-    # Phase 2: 逐個匹配（每個商品獨立 session）
-    for idx, (pid, pname) in enumerate(products):
-        # 截斷商品名稱，避免過長
-        short_name = pname[:30] + "..." if len(pname) > 30 else pname
-
-        # 更新進度：正在匹配第 N 個
+    async def on_progress(current: int, total: int, match_stats: dict, message: str):
         await _save_task(task_id, progress={
-            "current": idx,
+            "current": current,
             "total": total,
-            "failed": stats["products_failed"],
-            "message": f"({idx + 1}/{total}) {short_name}",
-            "stats": {**stats},
+            "failed": match_stats.get("products_failed", 0),
+            "message": f"({current}/{total}) {message}" if total > 0 else message,
+            "stats": match_stats,
         })
 
-        try:
-            async with async_session_maker() as session:
-                product_stats = await match_product(session, pid)
-                await session.commit()
-            stats["products_matched"] += 1
-            stats["total_level_1"] += product_stats["level_1"]
-            stats["total_level_2"] += product_stats["level_2"]
-            stats["total_level_3"] += product_stats["level_3"]
-        except Exception as e:
-            stats["products_failed"] += 1
-            logger.error(f"match_resilient: product {pid} 失敗: {e}", exc_info=True)
-
-    # Phase 3: 清除 needs_matching 標記
-    await _save_task(task_id, progress={
-        "current": total,
-        "total": total,
-        "failed": stats["products_failed"],
-        "message": "清除匹配標記...",
-    })
-
-    async with async_session_maker() as session:
-        stmt = select(CompetitorProduct).where(
-            CompetitorProduct.id.in_(pending_cp_ids),
-        )
-        result = await session.execute(stmt)
-        for cp in result.scalars().all():
-            cp.needs_matching = False
-        await session.commit()
-
-    stats["competitors_processed"] = len(pending_cp_ids)
-    logger.info(
-        f"match_resilient 完成: products={stats['products_matched']}, "
-        f"failed={stats['products_failed']}, "
-        f"L1={stats['total_level_1']} L2={stats['total_level_2']} "
-        f"L3={stats['total_level_3']}",
-    )
-    return stats
+    return await match_all_pending(progress_callback=on_progress)
 
 
 # =============================================
@@ -482,17 +376,18 @@ async def pipeline_stream(
             async def run_step(_key=step_key):
                 nonlocal step_result, step_error
                 try:
-                    async with async_session_maker() as session:
-                        if _key == "build":
-                            step_result = await CatalogService.build_catalog(
-                                session, platform=platform,
-                            )
-                        elif _key == "tag":
-                            step_result = await tag_all_untagged(session)
-                            await session.commit()
-                        elif _key == "match":
-                            step_result = await match_all_pending(session)
-                            await session.commit()
+                    if _key == "match":
+                        # match_all_pending 自行管理 session（並行匹配）
+                        step_result = await match_all_pending()
+                    else:
+                        async with async_session_maker() as session:
+                            if _key == "build":
+                                step_result = await CatalogService.build_catalog(
+                                    session, platform=platform,
+                                )
+                            elif _key == "tag":
+                                step_result = await tag_all_untagged(session)
+                                await session.commit()
                 except Exception as e:
                     logger.error(
                         f"pipeline_stream {_key} 失敗: {e}",
