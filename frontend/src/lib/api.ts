@@ -585,6 +585,7 @@ export const api = {
       step_results: Record<string, any>
       step_errors: Record<string, string>
       step_durations: Record<string, number>
+      progress: { current: number; total: number; failed?: number; message?: string } | null
     }>(`/catalog/pipeline/progress/${taskId}`),
 
   // 建庫：抓取競品平台商品（長時間操作，5 分鐘超時）

@@ -142,8 +142,12 @@ export function CatalogPipelineDialog() {
     tag: { status: 'pending' },
     match: { status: 'pending' },
   })
-  // 從 SSE heartbeat 取得的即時耗時（秒）
+  // 從輪詢取得的即時耗時（秒）
   const [heartbeatElapsed, setHeartbeatElapsed] = useState(0)
+  // 當前步驟即時進度（匹配步驟的逐商品進度）
+  const [progress, setProgress] = useState<{
+    current: number; total: number; failed?: number; message?: string
+  } | null>(null)
 
   const logsEndRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -164,6 +168,7 @@ export function CatalogPipelineDialog() {
     setExpandedStep(null)
     setLogs([])
     setHeartbeatElapsed(0)
+    setProgress(null)
     setSteps({
       build: { status: 'pending' },
       tag: { status: 'pending' },
@@ -271,6 +276,8 @@ export function CatalogPipelineDialog() {
             loggedStarts.add(step)
           }
           setHeartbeatElapsed(p.elapsed * 1000)
+          // 即時進度（匹配步驟的逐商品進度）
+          setProgress(p.progress ?? null)
         }
 
         // 全部完成
@@ -436,6 +443,29 @@ export function CatalogPipelineDialog() {
                       )}
                     </div>
 
+                    {/* 即時進度條（匹配步驟的逐商品進度） */}
+                    {s.status === 'running' && progress && progress.total > 0 && (
+                      <div className="px-3 pb-2 space-y-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-blue-600 truncate max-w-[240px]">
+                            {progress.message}
+                          </span>
+                          <span className="text-blue-500 tabular-nums flex-shrink-0 ml-2">
+                            {progress.current}/{progress.total}
+                            {(progress.failed ?? 0) > 0 && (
+                              <span className="text-red-400 ml-1">({progress.failed} 失敗)</span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="w-full h-1.5 bg-blue-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                            style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     {/* 展開詳情 */}
                     {isExpanded && s.status === 'done' && s.data && (
                       <div className="px-3 pb-2.5 pt-0">
@@ -460,8 +490,8 @@ export function CatalogPipelineDialog() {
                 <Terminal className="w-3.5 h-3.5 text-slate-400" />
                 <span className="text-xs text-slate-400 font-mono">Pipeline Log</span>
                 {isRunning && (
-                  <span className="ml-auto text-xs text-blue-400 font-mono animate-pulse">
-                    {activityMessage}
+                  <span className="ml-auto text-xs text-blue-400 font-mono animate-pulse truncate max-w-[200px]">
+                    {progress?.message || activityMessage}
                   </span>
                 )}
               </div>

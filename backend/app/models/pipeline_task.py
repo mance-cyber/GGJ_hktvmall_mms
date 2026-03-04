@@ -29,6 +29,10 @@ class PipelineTask(Base):
     step_errors: Mapped[dict] = mapped_column(JSONB, default=dict)
     step_durations: Mapped[dict] = mapped_column(JSONB, default=dict)
     step_started_at: Mapped[Optional[datetime]] = mapped_column()
+    progress: Mapped[Optional[dict]] = mapped_column(
+        JSONB, default=None,
+        comment="當前步驟即時進度，如 {current: 3, total: 15, message: '...'}",
+    )
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
 
