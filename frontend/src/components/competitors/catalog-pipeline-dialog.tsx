@@ -220,23 +220,18 @@ export function CatalogPipelineDialog() {
         let p
         try {
           p = await api.getPipelineProgress(taskId)
-        } catch {
-          // 單次輪詢失敗可忽略，下次重試
+        } catch (pollErr: any) {
+          // 404 = 任務遺失（伺服器重啟），不可恢復
+          if (pollErr.message?.includes('404') || pollErr.message?.includes('不存在') || pollErr.message?.includes('過期')) {
+            addLog('✗ 任務狀態遺失（伺服器可能已重啟），請重試。', 'error')
+            setPhase('error')
+            break
+          }
+          // 其他網絡錯誤可忽略，下次重試
           continue
         }
 
-        // 更新當前步驟 → running
-        if (p.current_step) {
-          const step = p.current_step as StepKey
-          if (!loggedStarts.has(step)) {
-            updateStep(step, { status: 'running', error: undefined, data: undefined, duration: undefined })
-            addLog(`▶ 開始步驟 ${p.current_step_number}/${p.total_steps}: ${stepNames[step]}`, 'step')
-            loggedStarts.add(step)
-          }
-          setHeartbeatElapsed(p.elapsed * 1000)
-        }
-
-        // 更新已完成步驟 → done
+        // 先更新已完成步驟（保證「完成」日誌在「開始下一步」之前）
         for (const step of STEPS) {
           if (p.step_results[step] && !loggedDones.has(step)) {
             const dur = (p.step_durations[step] ?? 0) * 1000
@@ -246,6 +241,17 @@ export function CatalogPipelineDialog() {
             setExpandedStep(step)
             loggedDones.add(step)
           }
+        }
+
+        // 再更新當前步驟 → running
+        if (p.current_step) {
+          const step = p.current_step as StepKey
+          if (!loggedStarts.has(step)) {
+            updateStep(step, { status: 'running', error: undefined, data: undefined, duration: undefined })
+            addLog(`▶ 開始步驟 ${p.current_step_number}/${p.total_steps}: ${stepNames[step]}`, 'step')
+            loggedStarts.add(step)
+          }
+          setHeartbeatElapsed(p.elapsed * 1000)
         }
 
         // 全部完成

@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.database import get_db, async_session_maker
 from app.models.competitor import Competitor, CompetitorProduct
-from app.models.product import ProductCompetitorMapping
+from app.models.product import Product, ProductCompetitorMapping
 
 logger = logging.getLogger(__name__)
 
@@ -193,7 +193,6 @@ async def _run_pipeline_task(task: PipelineTask):
     """後台執行管線全流程（asyncio.Task 內跑）"""
     from app.services.cataloger import CatalogService
     from app.services.tagger import tag_all_untagged
-    from app.services.matcher import match_all_pending
 
     for step_key, _step_name in PIPELINE_STEPS:
         task.current_step = step_key
@@ -201,17 +200,19 @@ async def _run_pipeline_task(task: PipelineTask):
         task.step_start_time = time.time()
 
         try:
-            async with async_session_maker() as session:
-                if step_key == "build":
-                    result = await CatalogService.build_catalog(
-                        session, platform=task.platform,
-                    )
-                elif step_key == "tag":
-                    result = await tag_all_untagged(session)
-                    await session.commit()
-                elif step_key == "match":
-                    result = await match_all_pending(session)
-                    await session.commit()
+            if step_key == "match":
+                # 匹配步驟較長（10+ 分鐘），使用每個商品獨立 session，
+                # 避免 Neon DB 的 idle_in_transaction_session_timeout (5min) 斷連
+                result = await _match_with_fresh_sessions()
+            else:
+                async with async_session_maker() as session:
+                    if step_key == "build":
+                        result = await CatalogService.build_catalog(
+                            session, platform=task.platform,
+                        )
+                    elif step_key == "tag":
+                        result = await tag_all_untagged(session)
+                        await session.commit()
 
             task.step_results[step_key] = result
             task.step_durations[step_key] = round(
@@ -230,6 +231,98 @@ async def _run_pipeline_task(task: PipelineTask):
     task.status = "done"
     task.current_step = None
     logger.info(f"pipeline task {task.id} 全部完成")
+
+
+async def _match_with_fresh_sessions() -> dict:
+    """
+    匹配步驟：每個商品使用獨立 DB session
+
+    Neon PostgreSQL 的 idle_in_transaction_session_timeout 預設 5 分鐘，
+    match_product 每個商品需 30-60 秒（含 AI 調用），多個商品串行處理
+    總時間容易超過 5 分鐘 → 連線被殺。
+
+    解法：每個商品用完即關 session，下個商品拿新連線。
+    """
+    from app.services.matcher import match_product
+
+    stats = {
+        "products_matched": 0,
+        "competitors_processed": 0,
+        "total_level_1": 0,
+        "total_level_2": 0,
+        "total_level_3": 0,
+    }
+
+    # Phase 1: 查詢待匹配數據（短暫 session，用完即關）
+    async with async_session_maker() as session:
+        stmt = select(CompetitorProduct).where(
+            CompetitorProduct.needs_matching == True,
+            CompetitorProduct.is_active == True,
+            CompetitorProduct.category_tag.isnot(None),
+        )
+        result = await session.execute(stmt)
+        pending_cps = list(result.scalars().all())
+
+        if not pending_cps:
+            logger.info("match_resilient: 無待匹配的競品")
+            return stats
+
+        affected_tags = {cp.category_tag for cp in pending_cps if cp.category_tag}
+        pending_cp_ids = [cp.id for cp in pending_cps]
+
+        stmt = select(Product.id).where(Product.category_tag.in_(affected_tags))
+        result = await session.execute(stmt)
+        product_ids = [str(row[0]) for row in result]
+
+    if not product_ids:
+        # 無相關自家商品，僅清除 needs_matching 標記
+        async with async_session_maker() as session:
+            stmt = select(CompetitorProduct).where(
+                CompetitorProduct.id.in_(pending_cp_ids),
+            )
+            result = await session.execute(stmt)
+            for cp in result.scalars().all():
+                cp.needs_matching = False
+            await session.commit()
+        stats["competitors_processed"] = len(pending_cp_ids)
+        return stats
+
+    logger.info(
+        f"match_resilient: {len(product_ids)} 個商品, "
+        f"{len(pending_cp_ids)} 個待匹配競品, 品類: {affected_tags}",
+    )
+
+    # Phase 2: 逐個匹配（每個商品獨立 session）
+    for pid in product_ids:
+        try:
+            async with async_session_maker() as session:
+                product_stats = await match_product(session, pid)
+                await session.commit()
+            stats["products_matched"] += 1
+            stats["total_level_1"] += product_stats["level_1"]
+            stats["total_level_2"] += product_stats["level_2"]
+            stats["total_level_3"] += product_stats["level_3"]
+        except Exception as e:
+            # 單個商品失敗不中斷整個流程
+            logger.error(f"match_resilient: product {pid} 失敗: {e}", exc_info=True)
+
+    # Phase 3: 清除 needs_matching 標記
+    async with async_session_maker() as session:
+        stmt = select(CompetitorProduct).where(
+            CompetitorProduct.id.in_(pending_cp_ids),
+        )
+        result = await session.execute(stmt)
+        for cp in result.scalars().all():
+            cp.needs_matching = False
+        await session.commit()
+
+    stats["competitors_processed"] = len(pending_cp_ids)
+    logger.info(
+        f"match_resilient 完成: products={stats['products_matched']}, "
+        f"L1={stats['total_level_1']} L2={stats['total_level_2']} "
+        f"L3={stats['total_level_3']}",
+    )
+    return stats
 
 
 # =============================================
