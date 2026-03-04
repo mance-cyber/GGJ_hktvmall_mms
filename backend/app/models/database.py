@@ -139,6 +139,7 @@ async def init_db():
         user,
         seo,
         seo_ranking,
+        pipeline_task,
     )
     
     try:

@@ -2,7 +2,7 @@
 # 競品建庫 API
 # =============================================
 # 手動觸發建庫、打標、匹配，以及競品庫統計
-# /pipeline/start  + /pipeline/progress — 後台任務 + 輪詢模式
+# /pipeline/start  + /pipeline/progress — 後台任務 + 輪詢模式（DB 持久化）
 # /pipeline/stream — SSE 串流版（保留向後相容）
 
 import asyncio
@@ -10,16 +10,15 @@ import json
 import logging
 import time
 import uuid as _uuid
-from dataclasses import dataclass, field
-from typing import Any
 
 from fastapi import APIRouter, Depends, Query, HTTPException
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.database import get_db, async_session_maker
+from app.models.database import get_db, async_session_maker, utcnow
 from app.models.competitor import Competitor, CompetitorProduct
+from app.models.pipeline_task import PipelineTask as PipelineTaskModel
 from app.models.product import Product, ProductCompetitorMapping
 
 logger = logging.getLogger(__name__)
@@ -108,36 +107,39 @@ VALID_STEP_KEYS = set(STEP_NUMBERS.keys())
 
 
 # =============================================
-# 後台任務 + 輪詢模式（取代 SSE 長連線）
+# 後台任務 + 輪詢模式（DB 持久化）
 # =============================================
-# 徹底解決反向代理超時：不再依賴長連線，
-# 改用短請求輪詢後台任務進度，每次 < 1 秒。
-
-@dataclass
-class PipelineTask:
-    """管線任務狀態（記憶體內，進程重啟後清空）"""
-    id: str
-    platform: str
-    status: str = "running"          # running | done | error
-    current_step: str | None = None
-    current_step_number: int = 0
-    step_results: dict[str, Any] = field(default_factory=dict)
-    step_errors: dict[str, str] = field(default_factory=dict)
-    step_durations: dict[str, float] = field(default_factory=dict)
-    start_time: float = 0.0
-    step_start_time: float = 0.0
+# 徹底解決反向代理超時 + 伺服器重啟狀態丟失：
+# 1. 用短請求輪詢後台任務進度，每次 < 1 秒
+# 2. 任務狀態持久化到 DB，進程重啟後可恢復查詢
 
 
-# 記憶體中的任務表
-_tasks: dict[str, PipelineTask] = {}
+async def _save_task(task_id: str, **fields) -> None:
+    """更新 DB 中的任務狀態（獨立 session，用完即關）"""
+    try:
+        async with async_session_maker() as session:
+            task = await session.get(PipelineTaskModel, task_id)
+            if task:
+                for k, v in fields.items():
+                    setattr(task, k, v)
+                task.updated_at = utcnow()
+                await session.commit()
+    except Exception as e:
+        logger.warning(f"_save_task {task_id} 寫入失敗（不影響管線）: {e}")
 
 
-def _cleanup_old_tasks():
-    """清理 1 小時前的過期任務"""
-    cutoff = time.time() - 3600
-    for tid in list(_tasks.keys()):
-        if _tasks[tid].start_time < cutoff:
-            del _tasks[tid]
+async def _cleanup_old_tasks() -> None:
+    """清理 24 小時前的過期任務"""
+    try:
+        from datetime import timedelta
+        cutoff = utcnow() - timedelta(hours=24)
+        async with async_session_maker() as session:
+            await session.execute(
+                delete(PipelineTaskModel).where(PipelineTaskModel.created_at < cutoff),
+            )
+            await session.commit()
+    except Exception as e:
+        logger.warning(f"_cleanup_old_tasks 失敗: {e}")
 
 
 @router.post("/pipeline/start")
@@ -148,17 +150,29 @@ async def pipeline_start(
     啟動管線後台任務，立即返回 task_id
 
     前端用 GET /pipeline/progress/{task_id} 輪詢進度。
+    任務狀態持久化到 DB，伺服器重啟不會丟失。
     """
     if platform not in ("all", "hktvmall", "wellcome"):
         raise HTTPException(status_code=400, detail=f"不支援的平台: {platform}")
 
-    _cleanup_old_tasks()
+    await _cleanup_old_tasks()
 
     task_id = _uuid.uuid4().hex[:8]
-    task = PipelineTask(id=task_id, platform=platform, start_time=time.time())
-    _tasks[task_id] = task
 
-    asyncio.create_task(_run_pipeline_task(task))
+    # 寫入 DB
+    async with async_session_maker() as session:
+        db_task = PipelineTaskModel(
+            id=task_id,
+            platform=platform,
+            status="running",
+            step_results={},
+            step_errors={},
+            step_durations={},
+        )
+        session.add(db_task)
+        await session.commit()
+
+    asyncio.create_task(_run_pipeline_task(task_id, platform))
     logger.info(f"pipeline task {task_id} 已啟動, platform={platform}")
 
     return {"task_id": task_id}
@@ -166,15 +180,17 @@ async def pipeline_start(
 
 @router.get("/pipeline/progress/{task_id}")
 async def pipeline_progress(task_id: str):
-    """查詢管線任務進度"""
-    task = _tasks.get(task_id)
+    """查詢管線任務進度（從 DB 讀取，伺服器重啟後依然有效）"""
+    async with async_session_maker() as session:
+        task = await session.get(PipelineTaskModel, task_id)
+
     if not task:
         raise HTTPException(status_code=404, detail="任務不存在或已過期")
 
-    elapsed = (
-        round(time.time() - task.step_start_time, 1)
-        if task.current_step else 0
-    )
+    # 計算當前步驟的即時耗時
+    elapsed = 0.0
+    if task.current_step and task.step_started_at:
+        elapsed = round((utcnow() - task.step_started_at).total_seconds(), 1)
 
     return {
         "task_id": task.id,
@@ -183,54 +199,94 @@ async def pipeline_progress(task_id: str):
         "current_step_number": task.current_step_number,
         "total_steps": len(PIPELINE_STEPS),
         "elapsed": elapsed,
-        "step_results": task.step_results,
-        "step_errors": task.step_errors,
-        "step_durations": task.step_durations,
+        "step_results": task.step_results or {},
+        "step_errors": task.step_errors or {},
+        "step_durations": task.step_durations or {},
     }
 
 
-async def _run_pipeline_task(task: PipelineTask):
-    """後台執行管線全流程（asyncio.Task 內跑）"""
+async def _run_pipeline_task(task_id: str, platform: str) -> None:
+    """
+    後台執行管線全流程（asyncio.Task 內跑）
+
+    頂層 try/except 防止任何未預期異常導致任務狀態懸停。
+    每步驟完成後立即同步到 DB，伺服器重啟後前端可查到最新狀態。
+    """
     from app.services.cataloger import CatalogService
     from app.services.tagger import tag_all_untagged
 
-    for step_key, _step_name in PIPELINE_STEPS:
-        task.current_step = step_key
-        task.current_step_number = STEP_NUMBERS[step_key]
-        task.step_start_time = time.time()
+    try:
+        step_results: dict = {}
+        step_durations: dict = {}
 
+        for step_key, _step_name in PIPELINE_STEPS:
+            step_start = time.time()
+
+            # 更新 DB：當前步驟 → running
+            await _save_task(
+                task_id,
+                current_step=step_key,
+                current_step_number=STEP_NUMBERS[step_key],
+                step_started_at=utcnow(),
+            )
+
+            try:
+                if step_key == "match":
+                    result = await _match_with_fresh_sessions()
+                else:
+                    async with async_session_maker() as session:
+                        if step_key == "build":
+                            result = await CatalogService.build_catalog(
+                                session, platform=platform,
+                            )
+                        elif step_key == "tag":
+                            result = await tag_all_untagged(session)
+                            await session.commit()
+
+                duration = round(time.time() - step_start, 1)
+                step_results[step_key] = result
+                step_durations[step_key] = duration
+
+                # 更新 DB：步驟完成
+                await _save_task(
+                    task_id,
+                    step_results={**step_results},
+                    step_durations={**step_durations},
+                )
+
+            except Exception as e:
+                logger.error(
+                    f"pipeline task {task_id} {step_key} 失敗: {e}",
+                    exc_info=True,
+                )
+                duration = round(time.time() - step_start, 1)
+                step_durations[step_key] = duration
+
+                await _save_task(
+                    task_id,
+                    status="error",
+                    current_step=None,
+                    step_errors={step_key: str(e)},
+                    step_durations={**step_durations},
+                )
+                return
+
+        # 全部完成
+        await _save_task(task_id, status="done", current_step=None)
+        logger.info(f"pipeline task {task_id} 全部完成")
+
+    except Exception as e:
+        # 頂層兜底：任何未預期錯誤都不會讓任務狀態懸停
+        logger.error(f"pipeline task {task_id} 頂層異常: {e}", exc_info=True)
         try:
-            if step_key == "match":
-                # 匹配步驟較長（10+ 分鐘），使用每個商品獨立 session，
-                # 避免 Neon DB 的 idle_in_transaction_session_timeout (5min) 斷連
-                result = await _match_with_fresh_sessions()
-            else:
-                async with async_session_maker() as session:
-                    if step_key == "build":
-                        result = await CatalogService.build_catalog(
-                            session, platform=task.platform,
-                        )
-                    elif step_key == "tag":
-                        result = await tag_all_untagged(session)
-                        await session.commit()
-
-            task.step_results[step_key] = result
-            task.step_durations[step_key] = round(
-                time.time() - task.step_start_time, 1,
+            await _save_task(
+                task_id,
+                status="error",
+                current_step=None,
+                step_errors={"_fatal": str(e)},
             )
-        except Exception as e:
-            logger.error(f"pipeline task {task.id} {step_key} 失敗: {e}", exc_info=True)
-            task.step_errors[step_key] = str(e)
-            task.step_durations[step_key] = round(
-                time.time() - task.step_start_time, 1,
-            )
-            task.status = "error"
-            task.current_step = None
-            return
-
-    task.status = "done"
-    task.current_step = None
-    logger.info(f"pipeline task {task.id} 全部完成")
+        except Exception:
+            pass
 
 
 async def _match_with_fresh_sessions() -> dict:

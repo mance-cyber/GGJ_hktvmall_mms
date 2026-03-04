@@ -212,6 +212,10 @@ export function CatalogPipelineDialog() {
       const { task_id: taskId } = await api.startPipeline(platform)
 
       // 輪詢進度（每 2 秒一次短請求，完全不受反代超時限制）
+      // 連續錯誤上限：防止無限輪詢
+      const MAX_CONSECUTIVE_ERRORS = 20
+      let consecutiveErrors = 0
+
       while (true) {
         if (controller.signal.aborted) return
         await new Promise(r => setTimeout(r, 2000))
@@ -220,14 +224,29 @@ export function CatalogPipelineDialog() {
         let p
         try {
           p = await api.getPipelineProgress(taskId)
+          consecutiveErrors = 0  // 成功時重置計數
         } catch (pollErr: any) {
-          // 404 = 任務遺失（伺服器重啟），不可恢復
-          if (pollErr.message?.includes('404') || pollErr.message?.includes('不存在') || pollErr.message?.includes('過期')) {
-            addLog('✗ 任務狀態遺失（伺服器可能已重啟），請重試。', 'error')
+          consecutiveErrors++
+          const msg = pollErr.message ?? ''
+
+          // 404 = 任務不存在（DB 已持久化，僅過期或誤刪才會 404）
+          if (msg.includes('404') || msg.includes('不存在') || msg.includes('過期')) {
+            addLog('✗ 任務不存在或已過期，請重試。', 'error')
             setPhase('error')
             break
           }
-          // 其他網絡錯誤可忽略，下次重試
+
+          // 連續錯誤太多 → 放棄
+          if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+            addLog(`✗ 連續 ${consecutiveErrors} 次輪詢失敗，停止。最後錯誤: ${msg}`, 'error')
+            setPhase('error')
+            break
+          }
+
+          // 502/503 或其他瞬時錯誤 → 下次重試
+          if (consecutiveErrors % 5 === 0) {
+            addLog(`⚠ 輪詢暫時失敗 (${consecutiveErrors}/${MAX_CONSECUTIVE_ERRORS})，重試中...`, 'info')
+          }
           continue
         }
 
@@ -501,7 +520,7 @@ export function CatalogPipelineDialog() {
               處理中，請勿關閉此視窗...
             </p>
           )}
-          {phase === 'error' && failedStep && (
+          {phase === 'error' && (
             <>
               <Button variant="outline" onClick={() => handleDialogClose(false)}>
                 {t['common.cancel']}
