@@ -21,18 +21,18 @@ api_router.include_router(
     tags=["認證"]
 )
 
+# 競品比較 Dashboard（必須在 competitors.router 之前，避免 /{competitor_id} 攔截 /comparison/*）
+api_router.include_router(
+    competitors.comparison_router,
+    prefix="/competitors/comparison",
+    tags=["競品比較 Dashboard"]
+)
+
 # 競品監測
 api_router.include_router(
     competitors.router,
     prefix="/competitors",
     tags=["競品監測"]
-)
-
-# 警報
-api_router.include_router(
-    competitors.comparison_router,
-    prefix="/competitors/comparison",
-    tags=["競品比較 Dashboard"]
 )
 
 api_router.include_router(
