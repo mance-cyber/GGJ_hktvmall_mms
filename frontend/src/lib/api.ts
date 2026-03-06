@@ -738,6 +738,19 @@ export const api = {
     
   hktvStatus: () =>
     fetchAPI<{ status: string; mode: string; base_url: string }>('/hktvmall/status'),
+
+  // =============================================
+  // Competitor v2 — Comparison Dashboard
+  // =============================================
+
+  getComparisonSummary: () =>
+    fetchAPI<ComparisonSummary>('/competitors/comparison/summary'),
+
+  getComparisonProducts: (scope: 'mapped' | 'all' = 'mapped') =>
+    fetchAPI<{ items: ProductComparison[] }>(`/competitors/comparison/products?scope=${scope}`),
+
+  getComparisonMerchants: () =>
+    fetchAPI<{ items: MerchantOverview[] }>('/competitors/comparison/merchants'),
 }
 
 // =============================================
@@ -2044,4 +2057,76 @@ export const contentPipelineApi = {
     fetchAPI<{ message: string; id: string }>(`/content-pipeline/history/${sessionId}`, {
       method: 'DELETE',
     }),
+
+}
+
+
+// =============================================
+// Competitor v2 Types
+// =============================================
+
+export interface ComparisonSummary {
+  total_competitors: number
+  total_tracked_products: number
+  our_products: number
+  mapped_competitors: number
+  price_alerts_24h: number
+  we_are_cheapest_pct: number
+  avg_price_diff_pct: number
+  last_scan: string | null
+}
+
+export interface CompetitorPrice {
+  competitor_name: string
+  competitor_tier: number
+  product_name: string
+  price: number | null
+  original_price: number | null
+  unit_price_per_100g: number | null
+  price_change_7d: number | null
+  stock_status: string | null
+  url: string
+  last_updated: string | null
+}
+
+export interface ProductComparison {
+  product: {
+    id: string
+    name: string
+    sku: string
+    price: number | null
+    image_url: string | null
+    category_tag: string | null
+  }
+  competitors: CompetitorPrice[]
+  cheapest_competitor: string | null
+  our_price_rank: number
+  total_competitors: number
+}
+
+export interface MerchantOverview {
+  competitor: {
+    id: string
+    name: string
+    tier: number
+    store_code: string | null
+    total_products: number
+    fresh_products: number
+    overlap_products: number
+    unique_products: number
+  }
+  price_comparison: {
+    cheaper_count: number
+    same_count: number
+    expensive_count: number
+    avg_price_diff_pct: number
+  }
+  recent_changes: Array<{
+    product_name: string
+    change_type: string
+    old_price: number | null
+    new_price: number | null
+    change_pct: number | null
+    date: string
+  }>
 }

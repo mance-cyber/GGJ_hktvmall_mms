@@ -30,6 +30,12 @@ api_router.include_router(
 
 # 警報
 api_router.include_router(
+    competitors.comparison_router,
+    prefix="/competitors/comparison",
+    tags=["競品比較 Dashboard"]
+)
+
+api_router.include_router(
     competitors.alerts_router,
     prefix="/alerts",
     tags=["警報"]

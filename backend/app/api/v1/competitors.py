@@ -776,3 +776,374 @@ async def mark_alert_read(
 
     return {"message": "已標記為已讀"}
 
+
+# =============================================
+# Competitor v2 — Comparison Dashboard API
+# =============================================
+
+from app.models.product import Product, ProductCompetitorMapping
+
+comparison_router = APIRouter()
+
+
+@comparison_router.get("/summary")
+async def get_comparison_summary(
+    db: AsyncSession = Depends(get_db),
+):
+    """Dashboard 頂部統計摘要"""
+    from datetime import datetime, timezone, timedelta
+
+    # Total competitors
+    total_comp = await db.execute(
+        select(func.count()).select_from(Competitor).where(Competitor.is_active == True)
+    )
+    total_competitors = total_comp.scalar() or 0
+
+    # Total tracked competitor products
+    total_tracked = await db.execute(
+        select(func.count()).select_from(CompetitorProduct).where(CompetitorProduct.is_active == True)
+    )
+    total_tracked_products = total_tracked.scalar() or 0
+
+    # Our products
+    our_count = await db.execute(
+        select(func.count()).select_from(Product).where(Product.status == "active")
+    )
+    our_products = our_count.scalar() or 0
+
+    # Mapped competitor products (with mappings)
+    mapped_count = await db.execute(
+        select(func.count(func.distinct(ProductCompetitorMapping.competitor_product_id)))
+    )
+    mapped_competitors = mapped_count.scalar() or 0
+
+    # Price alerts in last 24h
+    cutoff_24h = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=24)
+    alerts_count = await db.execute(
+        select(func.count()).select_from(PriceAlert).where(PriceAlert.created_at >= cutoff_24h)
+    )
+    price_alerts_24h = alerts_count.scalar() or 0
+
+    # We are cheapest percentage (among mapped products)
+    # For each of our products that has mappings, check if our price is the lowest
+    our_products_stmt = (
+        select(Product.id, Product.price)
+        .where(Product.status == "active", Product.price.isnot(None))
+    )
+    our_result = await db.execute(our_products_stmt)
+    our_rows = our_result.all()
+
+    cheapest_count = 0
+    compared_count = 0
+    total_diff_pct = 0.0
+
+    for pid, our_price in our_rows:
+        if not our_price or our_price <= 0:
+            continue
+        # Get latest competitor prices for this product
+        comp_prices_stmt = (
+            select(func.min(PriceSnapshot.price))
+            .join(CompetitorProduct, PriceSnapshot.competitor_product_id == CompetitorProduct.id)
+            .join(ProductCompetitorMapping, ProductCompetitorMapping.competitor_product_id == CompetitorProduct.id)
+            .where(
+                ProductCompetitorMapping.product_id == pid,
+                PriceSnapshot.price.isnot(None),
+                PriceSnapshot.price > 0,
+            )
+        )
+        min_result = await db.execute(comp_prices_stmt)
+        min_price = min_result.scalar()
+
+        if min_price is not None:
+            compared_count += 1
+            if float(our_price) <= float(min_price):
+                cheapest_count += 1
+            diff_pct = (float(min_price) - float(our_price)) / float(our_price) * 100
+            total_diff_pct += diff_pct
+
+    we_are_cheapest_pct = round(cheapest_count / compared_count * 100) if compared_count > 0 else 0
+    avg_price_diff_pct = round(total_diff_pct / compared_count, 1) if compared_count > 0 else 0
+
+    # Last scan time
+    last_scan_result = await db.execute(
+        select(func.max(CompetitorProduct.last_scraped_at))
+    )
+    last_scan = last_scan_result.scalar()
+
+    return {
+        "total_competitors": total_competitors,
+        "total_tracked_products": total_tracked_products,
+        "our_products": our_products,
+        "mapped_competitors": mapped_competitors,
+        "price_alerts_24h": price_alerts_24h,
+        "we_are_cheapest_pct": we_are_cheapest_pct,
+        "avg_price_diff_pct": avg_price_diff_pct,
+        "last_scan": last_scan.isoformat() if last_scan else None,
+    }
+
+
+@comparison_router.get("/products")
+async def get_comparison_products(
+    db: AsyncSession = Depends(get_db),
+    scope: str = Query("mapped", description="mapped=自家競品, all=全部生鮮"),
+):
+    """
+    商品比較視角：每件自家商品配上競品價格
+    """
+    # Get our products
+    our_stmt = (
+        select(Product)
+        .where(Product.status == "active")
+        .order_by(Product.category_tag, Product.name)
+    )
+    our_result = await db.execute(our_stmt)
+    our_products = our_result.scalars().all()
+
+    items = []
+    for product in our_products:
+        # Get competitor mappings with latest prices
+        if scope == "mapped":
+            # Only mapped competitor products
+            comp_stmt = (
+                select(
+                    CompetitorProduct,
+                    Competitor.name.label("comp_name"),
+                    Competitor.tier.label("comp_tier"),
+                )
+                .join(ProductCompetitorMapping, ProductCompetitorMapping.competitor_product_id == CompetitorProduct.id)
+                .join(Competitor, CompetitorProduct.competitor_id == Competitor.id)
+                .where(
+                    ProductCompetitorMapping.product_id == product.id,
+                    CompetitorProduct.is_active == True,
+                )
+            )
+        else:
+            # All fresh products with same category
+            if product.category_tag:
+                comp_stmt = (
+                    select(
+                        CompetitorProduct,
+                        Competitor.name.label("comp_name"),
+                        Competitor.tier.label("comp_tier"),
+                    )
+                    .join(Competitor, CompetitorProduct.competitor_id == Competitor.id)
+                    .where(
+                        CompetitorProduct.is_active == True,
+                        CompetitorProduct.category == product.category_tag,
+                    )
+                )
+            else:
+                continue
+
+        comp_result = await db.execute(comp_stmt)
+        comp_rows = comp_result.all()
+
+        competitors = []
+        for cp, comp_name, comp_tier in comp_rows:
+            # Get latest price snapshot
+            price_stmt = (
+                select(PriceSnapshot)
+                .where(PriceSnapshot.competitor_product_id == cp.id)
+                .order_by(PriceSnapshot.scraped_at.desc())
+                .limit(1)
+            )
+            price_result = await db.execute(price_stmt)
+            latest = price_result.scalar_one_or_none()
+
+            # Get price 7 days ago for trend
+            from datetime import timedelta, datetime, timezone
+            week_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=7)
+            old_price_stmt = (
+                select(PriceSnapshot.price)
+                .where(
+                    PriceSnapshot.competitor_product_id == cp.id,
+                    PriceSnapshot.scraped_at <= week_ago,
+                )
+                .order_by(PriceSnapshot.scraped_at.desc())
+                .limit(1)
+            )
+            old_result = await db.execute(old_price_stmt)
+            old_price = old_result.scalar()
+
+            price_change_7d = None
+            if latest and latest.price and old_price and old_price > 0:
+                price_change_7d = round(float((latest.price - old_price) / old_price * 100), 1)
+
+            competitors.append({
+                "competitor_name": comp_name,
+                "competitor_tier": comp_tier,
+                "product_name": cp.name,
+                "price": float(latest.price) if latest and latest.price else None,
+                "original_price": float(latest.original_price) if latest and latest.original_price else None,
+                "unit_price_per_100g": float(latest.unit_price_per_100g) if latest and latest.unit_price_per_100g else None,
+                "price_change_7d": price_change_7d,
+                "stock_status": latest.stock_status if latest else None,
+                "url": cp.url,
+                "last_updated": latest.scraped_at.isoformat() if latest and latest.scraped_at else None,
+            })
+
+        # Sort by price
+        competitors.sort(key=lambda x: x["price"] or 99999)
+
+        # Calculate rank
+        all_prices = [c["price"] for c in competitors if c["price"]]
+        our_price = float(product.price) if product.price else None
+        our_rank = 1
+        if our_price and all_prices:
+            our_rank = sum(1 for p in all_prices if p < our_price) + 1
+
+        items.append({
+            "product": {
+                "id": str(product.id),
+                "name": product.name,
+                "sku": product.sku,
+                "price": float(product.price) if product.price else None,
+                "image_url": (product.images[0] if product.images else None),
+                "category_tag": product.category_tag,
+            },
+            "competitors": competitors,
+            "cheapest_competitor": competitors[0]["competitor_name"] if competitors and competitors[0]["price"] else None,
+            "our_price_rank": our_rank,
+            "total_competitors": len(competitors),
+        })
+
+    return {"items": items}
+
+
+@comparison_router.get("/merchants")
+async def get_comparison_merchants(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    商戶概覽視角：每間商戶嘅競品統計
+    """
+    stmt = (
+        select(Competitor)
+        .where(Competitor.is_active == True)
+        .order_by(Competitor.tier, Competitor.name)
+    )
+    result = await db.execute(stmt)
+    merchants = result.scalars().all()
+
+    items = []
+    for merchant in merchants:
+        # Total products
+        total_stmt = select(func.count()).select_from(CompetitorProduct).where(
+            CompetitorProduct.competitor_id == merchant.id,
+            CompetitorProduct.is_active == True,
+        )
+        total_result = await db.execute(total_stmt)
+        total_products = total_result.scalar() or 0
+
+        # Fresh products (not 'unknown' or 'processed')
+        fresh_stmt = select(func.count()).select_from(CompetitorProduct).where(
+            CompetitorProduct.competitor_id == merchant.id,
+            CompetitorProduct.is_active == True,
+            CompetitorProduct.product_type.in_(["fresh", "frozen"]),
+        )
+        fresh_result = await db.execute(fresh_stmt)
+        fresh_products = fresh_result.scalar() or 0
+
+        # Overlap products (with mappings to our products)
+        overlap_stmt = (
+            select(func.count(func.distinct(ProductCompetitorMapping.competitor_product_id)))
+            .join(CompetitorProduct, ProductCompetitorMapping.competitor_product_id == CompetitorProduct.id)
+            .where(CompetitorProduct.competitor_id == merchant.id)
+        )
+        overlap_result = await db.execute(overlap_stmt)
+        overlap_products = overlap_result.scalar() or 0
+        unique_products = total_products - overlap_products
+
+        # Price comparison for overlapping products
+        cheaper = 0
+        same = 0
+        expensive = 0
+        total_diff = 0.0
+        compared = 0
+
+        if overlap_products > 0:
+            mapping_stmt = (
+                select(ProductCompetitorMapping, Product.price)
+                .join(Product, ProductCompetitorMapping.product_id == Product.id)
+                .join(CompetitorProduct, ProductCompetitorMapping.competitor_product_id == CompetitorProduct.id)
+                .where(CompetitorProduct.competitor_id == merchant.id)
+            )
+            mapping_result = await db.execute(mapping_stmt)
+
+            for mapping, our_price in mapping_result.all():
+                if not our_price:
+                    continue
+                # Get latest competitor price
+                cp_price_stmt = (
+                    select(PriceSnapshot.price)
+                    .where(PriceSnapshot.competitor_product_id == mapping.competitor_product_id)
+                    .order_by(PriceSnapshot.scraped_at.desc())
+                    .limit(1)
+                )
+                cp_result = await db.execute(cp_price_stmt)
+                cp_price = cp_result.scalar()
+                if not cp_price:
+                    continue
+
+                compared += 1
+                diff = float(cp_price) - float(our_price)
+                diff_pct = diff / float(our_price) * 100
+                total_diff += diff_pct
+
+                if abs(diff_pct) < 3:
+                    same += 1
+                elif diff < 0:
+                    cheaper += 1  # competitor is cheaper
+                else:
+                    expensive += 1  # competitor is more expensive (we are cheaper)
+
+        avg_diff = round(total_diff / compared, 1) if compared > 0 else 0
+
+        # Recent price changes (last 7 days)
+        from datetime import datetime, timezone, timedelta
+        week_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=7)
+        changes_stmt = (
+            select(PriceAlert, CompetitorProduct.name)
+            .join(CompetitorProduct, PriceAlert.competitor_product_id == CompetitorProduct.id)
+            .where(
+                CompetitorProduct.competitor_id == merchant.id,
+                PriceAlert.created_at >= week_ago,
+            )
+            .order_by(PriceAlert.created_at.desc())
+            .limit(5)
+        )
+        changes_result = await db.execute(changes_stmt)
+        recent_changes = [
+            {
+                "product_name": name,
+                "change_type": alert.alert_type,
+                "old_price": float(alert.old_value) if alert.old_value else None,
+                "new_price": float(alert.new_value) if alert.new_value else None,
+                "change_pct": float(alert.change_percent) if alert.change_percent else None,
+                "date": alert.created_at.strftime("%Y-%m-%d"),
+            }
+            for alert, name in changes_result.all()
+        ]
+
+        items.append({
+            "competitor": {
+                "id": str(merchant.id),
+                "name": merchant.name,
+                "tier": merchant.tier,
+                "store_code": merchant.store_code,
+                "total_products": total_products,
+                "fresh_products": fresh_products,
+                "overlap_products": overlap_products,
+                "unique_products": unique_products,
+            },
+            "price_comparison": {
+                "cheaper_count": cheaper,
+                "same_count": same,
+                "expensive_count": expensive,
+                "avg_price_diff_pct": avg_diff,
+            },
+            "recent_changes": recent_changes,
+        })
+
+    return {"items": items}
+
