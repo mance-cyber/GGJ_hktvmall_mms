@@ -1,34 +1,27 @@
 """
-競品監測系統 v2 — 主執行腳本
+CLI: Competitor Builder v2 — 競品建庫 + 價格更新
 
 Usage:
-    python scripts/run_competitor_build.py --mode full      # 完整重建（Line A + B）
-    python scripts/run_competitor_build.py --mode line-a    # 只跑 Line A（自家商品 → 競品）
-    python scripts/run_competitor_build.py --mode line-b    # 只跑 Line B（商戶全部生鮮）
-    python scripts/run_competitor_build.py --mode prices    # 每日價格刷新
-    python scripts/run_competitor_build.py --mode discover  # 新商戶發現
-    python scripts/run_competitor_build.py --mode alerts    # 生成價格警報
-
-Examples:
-    # 首次建庫（migration 後）
-    python scripts/run_competitor_build.py --mode full
-
-    # 每日 06:00 / 15:00 跑
-    python scripts/run_competitor_build.py --mode prices
+    python scripts/run_competitor_build.py --mode full       # 完整建庫（Line A + B）
+    python scripts/run_competitor_build.py --mode line-a     # 自家商品搵競品
+    python scripts/run_competitor_build.py --mode line-b     # 商戶全部生鮮
+    python scripts/run_competitor_build.py --mode prices     # 價格更新
+    python scripts/run_competitor_build.py --mode discover   # 新商戶發現
+    python scripts/run_competitor_build.py --mode line-a --dry-run
+    python scripts/run_competitor_build.py --mode line-a --product-id <UUID>
 """
 
 import sys
 import os
 import asyncio
 import argparse
-import logging
 import json
+import logging
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.models.database import async_session_maker
 from app.services.competitor_builder import CompetitorBuilder
-from app.services.price_alerter import PriceAlerter
 
 logging.basicConfig(
     level=logging.INFO,
@@ -37,118 +30,78 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-async def run_full():
-    """完整重建：Line A + Line B"""
+async def main(mode: str, dry_run: bool = False, product_id: str = None):
     builder = CompetitorBuilder()
+
     async with async_session_maker() as db:
-        logger.info("=== Line A: 自家商品 → 競品 ===")
-        stats_a = await builder.build_line_a(db)
-        await db.commit()
+        if mode == "full":
+            logger.info("=" * 60)
+            logger.info("Full build: Line A + Line B")
+            logger.info("=" * 60)
 
-        logger.info("=== Line B: 核心商戶 → 全部生鮮 ===")
-        stats_b = await builder.build_line_b(db)
-        await db.commit()
+            logger.info("\n--- Line A: 自家商品 → 搵競品 ---")
+            result_a = await builder.build_line_a(db, dry_run=dry_run, product_id=product_id)
+            logger.info(f"Line A 結果: {json.dumps(result_a, ensure_ascii=False)}")
 
-    logger.info(f"完整重建完成: Line A={stats_a}, Line B={stats_b}")
-    return {"line_a": stats_a, "line_b": stats_b}
+            logger.info("\n--- Line B: 商戶 → 全部生鮮 ---")
+            result_b = await builder.build_line_b(db, dry_run=dry_run)
+            logger.info(f"Line B 結果: {json.dumps(result_b, ensure_ascii=False)}")
 
+            if not dry_run:
+                await db.commit()
+                logger.info("\n✅ Full build 完成並已 commit")
 
-async def run_line_a():
-    """只跑 Line A"""
-    builder = CompetitorBuilder()
-    async with async_session_maker() as db:
-        stats = await builder.build_line_a(db)
-        await db.commit()
-    logger.info(f"Line A 完成: {stats}")
-    return stats
+        elif mode == "line-a":
+            logger.info("Line A: 自家商品 → 搵競品")
+            result = await builder.build_line_a(db, dry_run=dry_run, product_id=product_id)
+            logger.info(f"結果: {json.dumps(result, ensure_ascii=False)}")
+            if not dry_run:
+                await db.commit()
+                logger.info("✅ Line A 完成並已 commit")
 
+        elif mode == "line-b":
+            logger.info("Line B: 商戶 → 全部生鮮")
+            result = await builder.build_line_b(db, dry_run=dry_run)
+            logger.info(f"結果: {json.dumps(result, ensure_ascii=False)}")
+            if not dry_run:
+                await db.commit()
+                logger.info("✅ Line B 完成並已 commit")
 
-async def run_line_b():
-    """只跑 Line B"""
-    builder = CompetitorBuilder()
-    async with async_session_maker() as db:
-        stats = await builder.build_line_b(db)
-        await db.commit()
-    logger.info(f"Line B 完成: {stats}")
-    return stats
+        elif mode == "prices":
+            logger.info("Price refresh: 更新所有競品價格")
+            result = await builder.refresh_prices(db)
+            logger.info(f"結果: {json.dumps(result, ensure_ascii=False)}")
+            await db.commit()
+            logger.info("✅ Price refresh 完成")
 
+        elif mode == "discover":
+            logger.info("Discover: 搜索新商戶")
+            new_merchants = await builder.discover_new_merchants(db)
+            if new_merchants:
+                logger.info(f"\n發現 {len(new_merchants)} 間新商戶:")
+                for m in new_merchants:
+                    logger.info(
+                        f"  🏪 {m['store_name']} ({m['product_count']} 件相關商品)"
+                    )
+                    for sample in m['sample_products']:
+                        logger.info(f"     - {sample}")
+            else:
+                logger.info("未發現新商戶")
 
-async def run_prices():
-    """每日價格刷新"""
-    builder = CompetitorBuilder()
-    async with async_session_maker() as db:
-        stats = await builder.refresh_prices(db)
-        await db.commit()
-    logger.info(f"價格刷新完成: {stats}")
-    return stats
-
-
-async def run_discover():
-    """新商戶發現"""
-    builder = CompetitorBuilder()
-    async with async_session_maker() as db:
-        new_merchants = await builder.discover_new_merchants(db)
-
-    if new_merchants:
-        logger.info(f"發現 {len(new_merchants)} 間新商戶：")
-        for m in new_merchants:
-            logger.info(
-                f"  {m['store_name']} ({m['store_code']}) — "
-                f"示例商品: {m['sample_products'][:2]}"
-            )
-        print("\n=== 新商戶候選（請確認後加入 init_competitors.py）===")
-        print(json.dumps(new_merchants, ensure_ascii=False, indent=2))
-    else:
-        logger.info("未發現新商戶")
-    return new_merchants
-
-
-async def run_alerts():
-    """生成價格警報"""
-    async with async_session_maker() as db:
-        stats = await PriceAlerter.check_all_products(db)
-        await db.commit()
-
-        pending = await PriceAlerter.get_pending_alerts(db)
-        if pending:
-            logger.info(f"待通知警報 {len(pending)} 條：")
-            for a in pending:
-                logger.info(
-                    f"  [{a.alert_type}] {a.old_value} → {a.new_value} "
-                    f"({a.change_percent:+.1f}%)"
-                )
         else:
-            logger.info("無待通知警報")
-    return stats
-
-
-MODES = {
-    "full": run_full,
-    "line-a": run_line_a,
-    "line-b": run_line_b,
-    "prices": run_prices,
-    "discover": run_discover,
-    "alerts": run_alerts,
-}
-
-
-async def main(mode: str):
-    if mode not in MODES:
-        logger.error(f"未知模式: {mode}，可用: {list(MODES.keys())}")
-        sys.exit(1)
-
-    logger.info(f"執行模式: {mode}")
-    result = await MODES[mode]()
-    logger.info(f"執行完成: {result}")
+            logger.error(f"未知模式: {mode}")
+            sys.exit(1)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="競品監測系統 v2")
+    parser = argparse.ArgumentParser(description="Competitor Builder v2")
     parser.add_argument(
         "--mode",
-        choices=list(MODES.keys()),
-        default="prices",
-        help="執行模式（預設: prices）",
+        required=True,
+        choices=["full", "line-a", "line-b", "prices", "discover"],
+        help="建庫模式",
     )
+    parser.add_argument("--dry-run", action="store_true", help="唔寫 DB，只睇結果")
+    parser.add_argument("--product-id", help="指定單件自家商品 UUID（Line A 用）")
     args = parser.parse_args()
-    asyncio.run(main(args.mode))
+    asyncio.run(main(mode=args.mode, dry_run=args.dry_run, product_id=args.product_id))
