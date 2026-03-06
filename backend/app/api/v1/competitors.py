@@ -147,10 +147,11 @@ async def get_competitor(
     if not competitor:
         raise HTTPException(status_code=404, detail="競爭對手不存在")
 
-    # 獲取商品數量
+    # 獲取商品數量（只計 active）
     count_result = await db.execute(
         select(func.count(CompetitorProduct.id)).where(
-            CompetitorProduct.competitor_id == competitor_id
+            CompetitorProduct.competitor_id == competitor_id,
+            CompetitorProduct.is_active == True,
         )
     )
     product_count = count_result.scalar() or 0
@@ -240,9 +241,10 @@ async def list_competitor_products(
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="競爭對手不存在")
 
-    # 構建查詢
+    # 構建查詢（只顯示 active 商品）
     query = select(CompetitorProduct).where(
-        CompetitorProduct.competitor_id == competitor_id
+        CompetitorProduct.competitor_id == competitor_id,
+        CompetitorProduct.is_active == True,
     )
     if search:
         query = query.where(CompetitorProduct.name.ilike(f"%{search}%"))
@@ -617,10 +619,11 @@ async def fix_product_urls(
     - confirm=false：預覽需修復的記錄
     - confirm=true：執行修復
     """
-    # 找出所有 HKTVmall 商品
+    # 找出所有 active HKTVmall 商品
     result = await db.execute(
         select(CompetitorProduct).where(
-            CompetitorProduct.url.ilike("%hktvmall.com%")
+            CompetitorProduct.url.ilike("%hktvmall.com%"),
+            CompetitorProduct.is_active == True,
         )
     )
     products = result.scalars().all()
