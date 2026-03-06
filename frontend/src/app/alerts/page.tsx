@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, PriceAlert } from '@/lib/api'
 import Link from 'next/link'
+import { useLocale } from '@/components/providers/locale-provider'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Bell,
@@ -63,6 +64,7 @@ type FilterType = 'all' | 'unread' | 'price_drop' | 'price_increase' | 'out_of_s
 
 export default function AlertsPage() {
   const queryClient = useQueryClient()
+  const { t } = useLocale()
   const [searchQuery, setSearchQuery] = useState('')
   const [filterType, setFilterType] = useState<FilterType>('all')
   const [selectedAlerts, setSelectedAlerts] = useState<Set<string>>(new Set())
@@ -205,7 +207,7 @@ export default function AlertsPage() {
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              警報中心
+              {t['alerts.title']}
               {stats.unread > 0 && (
                 <HoloBadge variant="error" pulse>
                   {stats.unread}
@@ -213,7 +215,7 @@ export default function AlertsPage() {
               )}
             </h1>
             <p className="text-sm text-muted-foreground mt-1 hidden sm:block">
-              即時監控價格波動
+              {t['alerts.subtitle']}
             </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -224,7 +226,7 @@ export default function AlertsPage() {
               icon={<RefreshCw className="w-3.5 h-3.5" />}
               className="px-2 sm:px-3"
             >
-              <span className="hidden sm:inline">刷新</span>
+              <span className="hidden sm:inline">{t['alerts.refresh']}</span>
             </HoloButton>
             {stats.unread > 0 && (
               <HoloButton
@@ -233,8 +235,8 @@ export default function AlertsPage() {
                 onClick={handleMarkAllRead}
                 icon={<CheckCheck className="w-3.5 h-3.5" />}
               >
-                <span className="hidden sm:inline">全部已讀</span>
-                <span className="sm:hidden">已讀</span>
+                <span className="hidden sm:inline">{t['alerts.mark_all_read']}</span>
+                <span className="sm:hidden">{t['alerts.read']}</span>
               </HoloButton>
             )}
           </div>
@@ -243,7 +245,7 @@ export default function AlertsPage() {
         {/* ========== 統計卡片 ========== */}
         <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
           <MetricCard
-            label="總警報"
+            label={t['alerts.total']}
             value={stats.total}
             icon={<Bell className="w-4 h-4" />}
             color="cyan"
@@ -251,7 +253,7 @@ export default function AlertsPage() {
             onClick={() => setFilterType('all')}
           />
           <MetricCard
-            label="未讀"
+            label={t['alerts.unread']}
             value={stats.unread}
             icon={<Inbox className="w-4 h-4" />}
             color="blue"
@@ -259,7 +261,7 @@ export default function AlertsPage() {
             onClick={() => setFilterType('unread')}
           />
           <MetricCard
-            label="降價"
+            label={t['alerts.price_drop']}
             value={stats.priceDrops}
             icon={<TrendingDown className="w-4 h-4" />}
             color="green"
@@ -267,7 +269,7 @@ export default function AlertsPage() {
             onClick={() => setFilterType('price_drop')}
           />
           <MetricCard
-            label="漲價"
+            label={t['alerts.price_increase']}
             value={stats.priceIncreases}
             icon={<TrendingUp className="w-4 h-4" />}
             color="orange"
@@ -283,7 +285,7 @@ export default function AlertsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
               type="text"
-              placeholder="搜索..."
+              placeholder={t['alerts.search_placeholder']}
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
               className="pl-9 bg-white/50 h-9 text-sm"
@@ -304,38 +306,38 @@ export default function AlertsPage() {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="h-10">
                   <SlidersHorizontal className="w-4 h-4 mr-2" />
-                  {filterType === 'all' ? '全部類型' :
-                   filterType === 'unread' ? '未讀' :
-                   filterType === 'price_drop' ? '降價' :
-                   filterType === 'price_increase' ? '漲價' :
-                   filterType === 'out_of_stock' ? '缺貨' : '補貨'}
+                  {filterType === 'all' ? t['alerts.all_types'] :
+                   filterType === 'unread' ? t['alerts.unread'] :
+                   filterType === 'price_drop' ? t['alerts.price_drop'] :
+                   filterType === 'price_increase' ? t['alerts.price_increase'] :
+                   filterType === 'out_of_stock' ? t['alerts.out_of_stock'] : t['alerts.back_in_stock']}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={() => { setFilterType('all'); setCurrentPage(1); }}>
                   <Bell className="w-4 h-4 mr-2" />
-                  全部類型
+                  {t['alerts.all_types']}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { setFilterType('unread'); setCurrentPage(1); }}>
                   <Inbox className="w-4 h-4 mr-2" />
-                  未讀警報
+                  {t['alerts.unread_alerts']}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => { setFilterType('price_drop'); setCurrentPage(1); }}>
                   <TrendingDown className="w-4 h-4 mr-2 text-green-500" />
-                  價格下跌
+                  {t['alerts.price_decreased']}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { setFilterType('price_increase'); setCurrentPage(1); }}>
                   <TrendingUp className="w-4 h-4 mr-2 text-red-500" />
-                  價格上漲
+                  {t['alerts.price_increased']}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { setFilterType('out_of_stock'); setCurrentPage(1); }}>
                   <AlertTriangle className="w-4 h-4 mr-2 text-orange-500" />
-                  缺貨警報
+                  {t['alerts.out_of_stock_alert']}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { setFilterType('back_in_stock'); setCurrentPage(1); }}>
                   <Check className="w-4 h-4 mr-2 text-blue-500" />
-                  補貨通知
+                  {t['alerts.back_in_stock_alert']}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -360,16 +362,16 @@ export default function AlertsPage() {
                 </div>
               </button>
               <span className="text-sm text-slate-600">
-                {filteredAlerts.length} 條警報
-                {searchQuery && ` (搜索: "${searchQuery}")`}
+                {filteredAlerts.length} {t['alerts.alert_count']}
+                {searchQuery && ` (${t['alerts.search_prefix']}: "${searchQuery}")`}
               </span>
             </div>
             {selectedAlerts.size > 0 && (
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-slate-500">已選 {selectedAlerts.size} 項</span>
+                <span className="text-sm text-slate-500">{t['alerts.selected_count'].replace('{n}', String(selectedAlerts.size))}</span>
                 <HoloButton size="sm" variant="ghost">
                   <CheckCheck className="w-4 h-4 mr-1" />
-                  標為已讀
+                  {t['alerts.mark_as_read']}
                 </HoloButton>
               </div>
             )}
@@ -412,10 +414,10 @@ export default function AlertsPage() {
                 <Bell className="w-8 h-8 text-slate-300" />
               </div>
               <h3 className="text-lg font-medium text-slate-800">
-                {searchQuery ? '未找到匹配的警報' : '暫無警報'}
+                {searchQuery ? t['alerts.no_search_results'] : t['alerts.no_alerts']}
               </h3>
               <p className="text-slate-500 mt-1">
-                {searchQuery ? '請嘗試其他搜索關鍵詞' : '當競品價格變動時會顯示在這裡'}
+                {searchQuery ? t['alerts.try_other_keywords'] : t['alerts.empty_hint']}
               </p>
             </div>
           )}
@@ -424,7 +426,7 @@ export default function AlertsPage() {
           {totalPages > 1 && (
             <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
               <span className="text-sm text-slate-500">
-                第 {currentPage} / {totalPages} 頁，共 {filteredAlerts.length} 條
+                {t['alerts.page_info'].replace('{current}', String(currentPage)).replace('{total}', String(totalPages)).replace('{count}', String(filteredAlerts.length))}
               </span>
               <div className="flex items-center space-x-2">
                 <HoloButton
@@ -434,7 +436,7 @@ export default function AlertsPage() {
                   disabled={currentPage <= 1}
                   icon={<ChevronLeft className="w-4 h-4" />}
                 >
-                  上一頁
+                  {t['alerts.prev_page']}
                 </HoloButton>
                 <HoloButton
                   variant="secondary"
@@ -443,7 +445,7 @@ export default function AlertsPage() {
                   disabled={currentPage >= totalPages}
                   icon={<ChevronRight className="w-4 h-4" />}
                 >
-                  下一頁
+                  {t['alerts.next_page']}
                 </HoloButton>
               </div>
             </div>
@@ -511,44 +513,45 @@ function AlertCard({
   onSelect: () => void
   onMarkRead: () => void
 }) {
+  const { t } = useLocale()
   const isRead = alert.is_read
 
-  const typeConfig = {
+  const typeConfig = useMemo(() => ({
     price_drop: {
       icon: TrendingDown,
       color: "text-green-600",
       bg: "bg-green-100",
-      label: "降價",
+      label: t['alerts.price_drop'],
       badgeVariant: "success" as const
     },
     price_increase: {
       icon: TrendingUp,
       color: "text-red-600",
       bg: "bg-red-100",
-      label: "漲價",
+      label: t['alerts.price_increase'],
       badgeVariant: "error" as const
     },
     out_of_stock: {
       icon: AlertTriangle,
       color: "text-orange-600",
       bg: "bg-orange-100",
-      label: "缺貨",
+      label: t['alerts.out_of_stock'],
       badgeVariant: "warning" as const
     },
     back_in_stock: {
       icon: Check,
       color: "text-blue-600",
       bg: "bg-blue-100",
-      label: "補貨",
+      label: t['alerts.back_in_stock'],
       badgeVariant: "info" as const
     },
-  }
+  }), [t])
 
   const config = typeConfig[alert.alert_type as keyof typeof typeConfig] || {
     icon: Bell,
     color: "text-slate-600",
     bg: "bg-slate-100",
-    label: "通知",
+    label: t['alerts.notification'],
     badgeVariant: "default" as const
   }
 
@@ -584,7 +587,7 @@ function AlertCard({
           {!isRead && (
             <span className="flex items-center text-xs text-blue-600 font-medium">
               <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-1 animate-pulse" />
-              未讀
+              {t['alerts.unread']}
             </span>
           )}
         </div>
@@ -630,7 +633,7 @@ function AlertCard({
             onClick={onMarkRead}
             icon={<CheckCheck className="w-4 h-4" />}
           >
-            已讀
+            {t['alerts.read']}
           </HoloButton>
         )}
         <DropdownMenu>
@@ -642,16 +645,16 @@ function AlertCard({
           <DropdownMenuContent align="end">
             <DropdownMenuItem>
               <Eye className="w-4 h-4 mr-2" />
-              查看詳情
+              {t['alerts.view_details']}
             </DropdownMenuItem>
             <DropdownMenuItem>
               <ExternalLink className="w-4 h-4 mr-2" />
-              前往商品頁
+              {t['alerts.go_to_product']}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-slate-500">
               <Archive className="w-4 h-4 mr-2" />
-              歸檔
+              {t['alerts.archive']}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

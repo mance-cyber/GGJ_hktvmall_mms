@@ -30,6 +30,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/components/ui/use-toast'
+import { useLocale } from '@/components/providers/locale-provider'
 import {
   PageTransition,
   HoloCard,
@@ -55,6 +56,7 @@ interface CategoryData {
 // =============================================
 
 export default function MarketResponsePage() {
+  const { t } = useLocale()
   const { toast } = useToast()
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
@@ -71,8 +73,8 @@ export default function MarketResponsePage() {
   // 匯出報告功能
   const handleExportReport = () => {
     toast({
-      title: '功能開發中',
-      description: '報告匯出功能即將推出，敬請期待！',
+      title: t['market_response.toast_developing_title'],
+      description: t['market_response.toast_developing_desc'],
     })
   }
 
@@ -132,15 +134,15 @@ export default function MarketResponsePage() {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Globe className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-            <h1 className="page-title">市場應對</h1>
+            <h1 className="page-title">{t['market_response.title']}</h1>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-3">
             <Badge variant="outline" className="px-2 py-0.5 sm:px-3 sm:py-1 bg-blue-50 text-blue-700 border-blue-200 text-[10px] sm:text-xs">
-              <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1 fill-blue-700" /> 即時
+              <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1 fill-blue-700" /> {t['market_response.badge_realtime']}
             </Badge>
             <BatchMatchDialog invalidateKeys={[['competitors-for-mrc'], ['products-for-mrc']]} />
             <HoloButton variant="secondary" size="sm" icon={<Download className="w-3.5 h-3.5" />} onClick={handleExportReport}>
-              <span className="hidden sm:inline">匯出</span>
+              <span className="hidden sm:inline">{t['market_response.export']}</span>
             </HoloButton>
           </div>
         </div>
@@ -148,21 +150,21 @@ export default function MarketResponsePage() {
         {/* Feature Introduction Cards */}
         <StaggerContainer className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
           <Link href="/competitors">
-            <FeatureCard icon={Eye} title="競品監測" description="追蹤價格變動" color="blue" />
+            <FeatureCard icon={Eye} title={t['market_response.feature_competitor_title']} description={t['market_response.feature_competitor_desc']} color="blue" />
           </Link>
           <Link href="/products">
-            <FeatureCard icon={Target} title="SKU 配對" description="AI 智能配對" color="purple" />
+            <FeatureCard icon={Target} title={t['market_response.feature_sku_title']} description={t['market_response.feature_sku_desc']} color="purple" />
           </Link>
           <Link href="/ai-analysis">
-            <FeatureCard icon={TrendingUp} title="趨勢分析" description="價格走勢" color="green" />
+            <FeatureCard icon={TrendingUp} title={t['market_response.feature_trend_title']} description={t['market_response.feature_trend_desc']} color="green" />
           </Link>
           <Link href="/alerts">
-            <FeatureCard icon={Bell} title="智能警報" description="即時推送" color="orange" />
+            <FeatureCard icon={Bell} title={t['market_response.feature_alert_title']} description={t['market_response.feature_alert_desc']} color="orange" />
           </Link>
           <Link href="/agent">
-            <FeatureCard icon={Sparkles} title="AI 文案" description="自動生成" color="pink" />
+            <FeatureCard icon={Sparkles} title={t['market_response.feature_content_title']} description={t['market_response.feature_content_desc']} color="pink" />
           </Link>
-          <FeatureCard icon={FileBarChart} title="報表匯出" description="Excel/PDF" color="cyan" onClick={handleExportReport} />
+          <FeatureCard icon={FileBarChart} title={t['market_response.feature_report_title']} description={t['market_response.feature_report_desc']} color="cyan" onClick={handleExportReport} />
         </StaggerContainer>
 
         {/* Search Section */}
@@ -171,7 +173,7 @@ export default function MarketResponsePage() {
             <SearchIcon className="w-4 h-4 sm:w-5 sm:h-5 ml-2 sm:ml-3 text-muted-foreground" />
             <Input
               className="border-none shadow-none focus-visible:ring-0 bg-transparent text-sm sm:text-lg placeholder:text-muted-foreground/50 h-9 sm:h-12"
-              placeholder="搜尋商品..."
+              placeholder={t['market_response.search_placeholder']}
               value={searchQuery}
               onChange={handleSearch}
             />
@@ -192,7 +194,7 @@ export default function MarketResponsePage() {
                           <h4 className="font-medium text-slate-800 group-hover:text-primary transition-colors">{product.name}</h4>
                           <p className="text-xs text-slate-500 flex items-center gap-2 mt-1">
                             <Badge variant="secondary" className="text-[10px] h-5">{product.sku}</Badge>
-                            <span>{product.category || '未分類'}</span>
+                            <span>{product.category || t['market_response.uncategorized']}</span>
                           </p>
                         </div>
                         <div className="text-right">
@@ -200,7 +202,7 @@ export default function MarketResponsePage() {
                           <p className={cn(
                             "text-xs",
                             product.status === 'active' ? "text-green-600" : "text-red-500"
-                          )}>{product.status === 'active' ? '有貨' : '缺貨'}</p>
+                          )}>{product.status === 'active' ? t['market_response.in_stock'] : t['market_response.out_of_stock']}</p>
                         </div>
                       </div>
                     </Link>
@@ -208,7 +210,7 @@ export default function MarketResponsePage() {
                 </div>
               ) : (
                 <div className="p-8 text-center text-muted-foreground">
-                  找不到符合「{debouncedQuery}」的商品
+                  {t['market_response.no_results'].replace('{query}', debouncedQuery)}
                 </div>
               )}
             </div>
@@ -219,7 +221,7 @@ export default function MarketResponsePage() {
         <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           <Link href="/products">
             <DataMetric
-              label="SKU"
+              label={t['market_response.stat_sku']}
               value={stats?.total_skus || 0}
               icon={<Package className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />}
               color="blue"
@@ -228,7 +230,7 @@ export default function MarketResponsePage() {
           </Link>
           <Link href="/competitors">
             <DataMetric
-              label="監測競品"
+              label={t['market_response.stat_competitors']}
               value={stats?.products_with_competitors || 0}
               icon={<Layers className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />}
               color="purple"
@@ -237,7 +239,7 @@ export default function MarketResponsePage() {
           </Link>
           <Link href="/products">
             <DataMetric
-              label="當季商品"
+              label={t['market_response.stat_seasonal']}
               value={stats?.seasonal_products || 0}
               icon={<ThermometerSun className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />}
               color="orange"
@@ -246,7 +248,7 @@ export default function MarketResponsePage() {
           </Link>
           <Link href="/alerts">
             <DataMetric
-              label="待處理"
+              label={t['market_response.stat_pending']}
               value={stats?.unread_alerts || 0}
               icon={<Zap className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-600" />}
               color="cyan"
@@ -259,11 +261,11 @@ export default function MarketResponsePage() {
           {/* Category Breakdown */}
           <HoloCard className="lg:col-span-2" glowColor="blue">
             <HoloPanelHeader
-              title="分類分佈"
+              title={t['market_response.section_category_dist']}
               icon={<BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />}
               action={
                 <Link href="/categories">
-                  <HoloButton variant="ghost" size="sm">全部</HoloButton>
+                  <HoloButton variant="ghost" size="sm">{t['market_response.view_all']}</HoloButton>
                 </Link>
               }
             />
@@ -283,10 +285,10 @@ export default function MarketResponsePage() {
           {/* Seasonal Products */}
           <HoloCard glowColor="green" className="bg-gradient-to-b from-orange-50/30 to-transparent">
             <HoloPanelHeader
-              title="熱門商品"
+              title={t['market_response.section_popular']}
               icon={<ThermometerSun className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" />}
               action={
-                <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-200 border-none text-[10px] sm:text-xs">精選</Badge>
+                <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-200 border-none text-[10px] sm:text-xs">{t['market_response.badge_featured']}</Badge>
               }
             />
             <div className="p-3 sm:p-6">
@@ -306,7 +308,7 @@ export default function MarketResponsePage() {
                           {product.name}
                         </h4>
                         <div className="flex items-center justify-between mt-0.5 sm:mt-1">
-                          <span className="text-[10px] sm:text-xs text-muted-foreground">{product.status === 'active' ? '有貨' : '缺貨'}</span>
+                          <span className="text-[10px] sm:text-xs text-muted-foreground">{product.status === 'active' ? t['market_response.in_stock'] : t['market_response.out_of_stock']}</span>
                           <span className="font-bold text-xs sm:text-sm">${Number(product.price || 0).toFixed(0)}</span>
                         </div>
                       </div>
@@ -318,7 +320,7 @@ export default function MarketResponsePage() {
 
               <Link href="/products">
                 <HoloButton className="w-full mt-3 sm:mt-4" variant="secondary" size="sm">
-                  查看全部
+                  {t['market_response.view_all_products']}
                 </HoloButton>
               </Link>
             </div>

@@ -1,0 +1,15 @@
+export const C = {
+  bg: "#FFFFFF",
+  bgSoft: "#F8FAFC",
+  bgMuted: "#F1F5F9",
+  primary: "#4361EE",
+  primaryLight: "#818CF8",
+  purple: "#7209B7",
+  green: "#06D6A0",
+  text: "#0F172A",
+  textMuted: "#64748B",
+  textLight: "#94A3B8",
+  border: "#E2E8F0",
+  cardShadow: "0 4px 24px rgba(0,0,0,0.06)",
+  gradientBlue: "linear-gradient(135deg, #4361EE, #7209B7)",
+};

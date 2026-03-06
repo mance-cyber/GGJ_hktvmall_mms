@@ -6,6 +6,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale } from "@/components/providers/locale-provider";
 import {
   Search,
   Plus,
@@ -35,6 +36,7 @@ import { KeywordConfig, KeywordType } from "@/lib/api/seo-ranking";
 import { KeywordConfigDialog } from "../components/KeywordConfigDialog";
 
 export default function KeywordsPage() {
+  const { t } = useLocale();
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<KeywordType | "">("");
@@ -59,7 +61,7 @@ export default function KeywordsPage() {
   const updateKeyword = useUpdateKeywordConfig();
 
   const handleDelete = async (id: string) => {
-    if (confirm("確定要刪除這個關鍵詞嗎？相關的排名記錄也會被刪除。")) {
+    if (confirm(t['keywords.confirm_delete'])) {
       await deleteKeyword.mutateAsync(id);
     }
   };
@@ -94,16 +96,16 @@ export default function KeywordsPage() {
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
               <Search className="w-6 h-6 text-cyan-400" />
-              關鍵詞管理
+              {t['keywords.title']}
             </h1>
             <p className="text-gray-400 text-sm mt-1">
-              管理追蹤的 SEO 關鍵詞配置
+              {t['keywords.subtitle']}
             </p>
           </div>
           <div className="flex items-center gap-3">
             <HoloButton onClick={handleCreate}>
               <Plus className="w-4 h-4 mr-2" />
-              新增關鍵詞
+              {t['keywords.add']}
             </HoloButton>
             <HoloButton variant="ghost" onClick={() => refetch()}>
               <RefreshCw className="w-4 h-4" />
@@ -119,7 +121,7 @@ export default function KeywordsPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
               <input
                 type="text"
-                placeholder="搜尋關鍵詞..."
+                placeholder={t['keywords.search_placeholder']}
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -138,12 +140,12 @@ export default function KeywordsPage() {
               }}
               className="bg-gray-800/50 border border-cyan-500/30 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
             >
-              <option value="">所有類型</option>
-              <option value="primary">主要關鍵詞</option>
-              <option value="secondary">次要關鍵詞</option>
-              <option value="long_tail">長尾關鍵詞</option>
-              <option value="brand">品牌關鍵詞</option>
-              <option value="competitor">競品關鍵詞</option>
+              <option value="">{t['keywords.filter_all_types']}</option>
+              <option value="primary">{t['keywords.type_primary']}</option>
+              <option value="secondary">{t['keywords.type_secondary']}</option>
+              <option value="long_tail">{t['keywords.type_long_tail']}</option>
+              <option value="brand">{t['keywords.type_brand']}</option>
+              <option value="competitor">{t['keywords.type_competitor']}</option>
             </select>
 
             {/* 狀態篩選 */}
@@ -156,9 +158,9 @@ export default function KeywordsPage() {
               }}
               className="bg-gray-800/50 border border-cyan-500/30 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
             >
-              <option value="">所有狀態</option>
-              <option value="active">啟用中</option>
-              <option value="inactive">已停用</option>
+              <option value="">{t['keywords.filter_all_statuses']}</option>
+              <option value="active">{t['keywords.status_active']}</option>
+              <option value="inactive">{t['keywords.status_inactive']}</option>
             </select>
           </div>
         </HoloCard>
@@ -166,8 +168,8 @@ export default function KeywordsPage() {
         {/* ==================== 關鍵詞列表 ==================== */}
         <HoloCard>
           <HoloPanelHeader
-            title="關鍵詞列表"
-            subtitle={`共 ${data?.total || 0} 個關鍵詞`}
+            title={t['keywords.table_title']}
+            subtitle={t['keywords.table_subtitle'].replace('{count}', String(data?.total || 0))}
             icon={<Filter className="w-5 h-5" />}
           />
           <div className="p-4">
@@ -180,20 +182,20 @@ export default function KeywordsPage() {
             ) : data?.data.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <Search className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-                <p className="text-lg">沒有找到關鍵詞</p>
-                <p className="text-sm mt-1">嘗試調整篩選條件或新增關鍵詞</p>
+                <p className="text-lg">{t['keywords.empty_title']}</p>
+                <p className="text-sm mt-1">{t['keywords.empty_hint']}</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="text-left text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800">
-                      <th className="pb-3">關鍵詞</th>
-                      <th className="pb-3">類型</th>
-                      <th className="pb-3 text-center">Google 排名</th>
-                      <th className="pb-3 text-center">HKTVmall 排名</th>
-                      <th className="pb-3 text-center">狀態</th>
-                      <th className="pb-3 text-right">操作</th>
+                      <th className="pb-3">{t['keywords.col_keyword']}</th>
+                      <th className="pb-3">{t['keywords.col_type']}</th>
+                      <th className="pb-3 text-center">{t['keywords.col_google_rank']}</th>
+                      <th className="pb-3 text-center">{t['keywords.col_hktvmall_rank']}</th>
+                      <th className="pb-3 text-center">{t['keywords.col_status']}</th>
+                      <th className="pb-3 text-right">{t['keywords.col_actions']}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-800/50">
@@ -253,7 +255,7 @@ export default function KeywordsPage() {
                             <HoloBadge
                               variant={keyword.is_active ? "success" : "default"}
                             >
-                              {keyword.is_active ? "啟用中" : "已停用"}
+                              {keyword.is_active ? t['keywords.status_active'] : t['keywords.status_inactive']}
                             </HoloBadge>
                           </button>
                         </td>
@@ -264,7 +266,7 @@ export default function KeywordsPage() {
                             <button
                               onClick={() => handleEdit(keyword)}
                               className="p-2 text-gray-400 hover:text-cyan-400 transition-colors"
-                              title="編輯"
+                              title={t['keywords.edit']}
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
@@ -272,7 +274,7 @@ export default function KeywordsPage() {
                               onClick={() => handleDelete(keyword.id)}
                               disabled={deleteKeyword.isPending}
                               className="p-2 text-gray-400 hover:text-red-400 transition-colors"
-                              title="刪除"
+                              title={t['keywords.delete']}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -289,8 +291,7 @@ export default function KeywordsPage() {
             {data && data.total > 20 && (
               <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-800">
                 <p className="text-sm text-gray-500">
-                  顯示 {(page - 1) * 20 + 1} - {Math.min(page * 20, data.total)} / 共{" "}
-                  {data.total} 個
+                  {t['keywords.pagination'].replace('{from}', String((page - 1) * 20 + 1)).replace('{to}', String(Math.min(page * 20, data.total)))} / {data.total} {t['keywords.pagination_page']}
                 </p>
                 <div className="flex items-center gap-2">
                   <HoloButton
@@ -298,7 +299,7 @@ export default function KeywordsPage() {
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
                   >
-                    上一頁
+                    {t['keywords.prev_page']}
                   </HoloButton>
                   <span className="text-gray-400 px-2">
                     {page} / {Math.ceil(data.total / 20)}
@@ -308,7 +309,7 @@ export default function KeywordsPage() {
                     onClick={() => setPage((p) => p + 1)}
                     disabled={page * 20 >= data.total}
                   >
-                    下一頁
+                    {t['keywords.next_page']}
                   </HoloButton>
                 </div>
               </div>
@@ -330,15 +331,16 @@ export default function KeywordsPage() {
 // ==================== 輔助組件 ====================
 
 function KeywordTypeBadge({ type }: { type: string }) {
+  const { t } = useLocale();
   const config: Record<
     string,
     { label: string; variant: "default" | "info" | "success" | "warning" | "error" }
   > = {
-    primary: { label: "主要", variant: "info" },
-    secondary: { label: "次要", variant: "default" },
-    long_tail: { label: "長尾", variant: "success" },
-    brand: { label: "品牌", variant: "warning" },
-    competitor: { label: "競品", variant: "error" },
+    primary: { label: t['keywords.badge_primary'], variant: "info" },
+    secondary: { label: t['keywords.badge_secondary'], variant: "default" },
+    long_tail: { label: t['keywords.badge_long_tail'], variant: "success" },
+    brand: { label: t['keywords.badge_brand'], variant: "warning" },
+    competitor: { label: t['keywords.badge_competitor'], variant: "error" },
   };
 
   const { label, variant } = config[type] || { label: type, variant: "default" };
@@ -355,6 +357,7 @@ function RankDisplay({
   change: number | null;
   target: number | null;
 }) {
+  const { t } = useLocale();
   if (rank === null) {
     return <span className="text-gray-600">-</span>;
   }
@@ -377,7 +380,7 @@ function RankDisplay({
         </span>
       )}
       {target && (
-        <span className="text-xs text-gray-500">目標: #{target}</span>
+        <span className="text-xs text-gray-500">{t['keywords.badge_target']}: #{target}</span>
       )}
     </div>
   );

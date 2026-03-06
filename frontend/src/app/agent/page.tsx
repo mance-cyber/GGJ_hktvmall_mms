@@ -55,6 +55,7 @@ import { ConversationList } from '@/components/agent/ConversationList'
 import { QuickActions } from '@/components/agent/QuickActions'
 import { SchedulePanel } from './components/SchedulePanel'
 import { toast } from '@/components/ui/use-toast'
+import { useLocale } from '@/components/providers/locale-provider'
 
 // =============================================
 // 聲音提醒 Hook
@@ -186,23 +187,24 @@ function ChartRenderer({ chart }: { chart: any }) {
 // Message Components
 // =============================================
 
-const THINKING_PHRASES = [
-  '等我睇睇...',
-  '諗緊...',
-  '分析緊...',
-  '處理緊...',
-  '查緊資料...',
-]
-
 function ThinkingMessage() {
+  const { t } = useLocale()
   const [phraseIndex, setPhraseIndex] = useState(0)
+
+  const phrases = [
+    t['agent.thinking_1'],
+    t['agent.thinking_2'],
+    t['agent.thinking_3'],
+    t['agent.thinking_4'],
+    t['agent.thinking_5'],
+  ]
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setPhraseIndex(prev => (prev + 1) % THINKING_PHRASES.length)
+      setPhraseIndex(prev => (prev + 1) % phrases.length)
     }, 2000)
     return () => clearInterval(interval)
-  }, [])
+  }, [phrases.length])
 
   return (
     <motion.div
@@ -243,7 +245,7 @@ function ThinkingMessage() {
             animate={{ opacity: 1 }}
             className="text-slate-500 text-sm"
           >
-            {THINKING_PHRASES[phraseIndex]}
+            {phrases[phraseIndex]}
           </motion.span>
         </div>
       </div>
@@ -264,6 +266,8 @@ function ClarificationCard({
   onSubmit: () => void
   isLoading: boolean
 }) {
+  const { t } = useLocale()
+
   const allRequired = options.every(opt => {
     const sel = selections[opt.slot_name]
     if (opt.type === 'multi') {
@@ -279,7 +283,7 @@ function ClarificationCard({
           <div className="flex items-center gap-2">
             <span className="font-medium text-slate-700">{opt.label}</span>
             {opt.type === 'multi' && (
-              <span className="text-xs text-slate-400">(可多選)</span>
+              <span className="text-xs text-slate-400">{t['agent.multi_select']}</span>
             )}
           </div>
           <div className="flex flex-wrap gap-2">
@@ -316,12 +320,12 @@ function ClarificationCard({
         {isLoading ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            處理中...
+            {t['agent.processing']}
           </>
         ) : (
           <>
             <Check className="w-4 h-4 mr-2" />
-            確認選擇
+            {t['agent.confirm_selection']}
           </>
         )}
       </Button>
@@ -330,13 +334,13 @@ function ClarificationCard({
 }
 
 // 訊息時間格式化
-function formatMessageTime(date: Date): string {
+function formatMessageTime(date: Date, t: Record<string, string>): string {
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
   const diffMins = Math.floor(diffMs / 60000)
 
-  if (diffMins < 1) return '剛剛'
-  if (diffMins < 60) return `${diffMins} 分鐘前`
+  if (diffMins < 1) return t['agent.just_now']
+  if (diffMins < 60) return t['agent.minutes_ago'].replace('{n}', String(diffMins))
 
   return date.toLocaleTimeString('zh-HK', {
     hour: '2-digit',
@@ -345,6 +349,7 @@ function formatMessageTime(date: Date): string {
 }
 
 function MessageBubble({ message }: { message: Message }) {
+  const { t } = useLocale()
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
@@ -403,7 +408,7 @@ function MessageBubble({ message }: { message: Message }) {
         )}>
           <span className="flex items-center gap-1">
             <Clock className="w-3 h-3" />
-            {formatMessageTime(message.timestamp)}
+            {formatMessageTime(message.timestamp, t)}
           </span>
           {!isUser && message.content && (
             <button
@@ -412,7 +417,7 @@ function MessageBubble({ message }: { message: Message }) {
               className="hover:text-slate-600 flex items-center gap-1 transition-colors"
             >
               {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-              {copied ? '已複製' : '複製'}
+              {copied ? t['agent.copied'] : t['agent.copy']}
             </button>
           )}
         </div>
@@ -426,6 +431,7 @@ function MessageBubble({ message }: { message: Message }) {
 // =============================================
 
 export default function AgentPage() {
+  const { t } = useLocale()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [conversationId, setConversationId] = useState<string | null>(null)
@@ -525,8 +531,8 @@ export default function AgentPage() {
       setMessages(prev => prev.filter(m => m.type !== 'thinking'))
       toast({
         variant: 'destructive',
-        title: '哎呀，出錯啦！',
-        description: error.message || '無法處理你嘅請求，請稍後再試',
+        title: t['agent.error_title'],
+        description: error.message || t['agent.error_desc'],
       })
     }
   })
@@ -567,8 +573,8 @@ export default function AgentPage() {
       setMessages(prev => prev.filter(m => m.type !== 'thinking'))
       toast({
         variant: 'destructive',
-        title: '哎呀，出錯啦！',
-        description: error.message || '無法處理你嘅選擇，請稍後再試',
+        title: t['agent.error_title'],
+        description: error.message || t['agent.error_selection_desc'],
       })
     }
   })
@@ -590,11 +596,11 @@ export default function AgentPage() {
       id: 'thinking',
       role: 'assistant',
       type: 'thinking',
-      content: '分析緊你嘅問題...',
+      content: t['agent.analyzing'],
       timestamp: new Date()
     }
     setMessages(prev => [...prev, thinkingMessage])
-    
+
     chatMutation.mutate(input.trim())
     setInput('')
   }
@@ -631,7 +637,7 @@ export default function AgentPage() {
       id: Date.now().toString(),
       role: 'user',
       type: 'message',
-      content: selectionText || '確認',
+      content: selectionText || t['agent.confirm'],
       timestamp: new Date()
     }
     setMessages(prev => [...prev, userMessage])
@@ -640,11 +646,11 @@ export default function AgentPage() {
       id: 'thinking',
       role: 'assistant',
       type: 'thinking',
-      content: '查詢緊數據...',
+      content: t['agent.querying'],
       timestamp: new Date()
     }
     setMessages(prev => [...prev, thinkingMessage])
-    
+
     clarifyMutation.mutate()
   }
 
@@ -745,7 +751,7 @@ export default function AgentPage() {
             <summary className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors">
               <span className="flex items-center gap-2 text-sm font-medium text-slate-600">
                 <CalendarClock className="w-4 h-4 text-purple-500" />
-                排程報告
+                {t['agent.schedule_reports']}
               </span>
               <ChevronDown className="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180" />
             </summary>
@@ -779,7 +785,7 @@ export default function AgentPage() {
               <summary className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors">
                 <span className="flex items-center gap-2 text-sm font-medium text-slate-600">
                   <CalendarClock className="w-4 h-4 text-purple-500" />
-                  排程報告
+                  {t['agent.schedule_reports']}
                 </span>
                 <ChevronDown className="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180" />
               </summary>
@@ -802,7 +808,7 @@ export default function AgentPage() {
             variant="ghost"
             size="icon"
             onClick={() => setIsSidebarOpen(true)}
-            aria-label="開啟對話列表"
+            aria-label={t['agent.open_sidebar']}
           >
             <Menu className="w-5 h-5" aria-hidden="true" />
           </Button>
@@ -816,7 +822,7 @@ export default function AgentPage() {
           className="flex-1 overflow-y-auto p-4 space-y-4 relative"
           role="log"
           aria-live="polite"
-          aria-label="對話訊息"
+          aria-label={t['agent.chat_label']}
         >
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center px-4">
@@ -829,31 +835,31 @@ export default function AgentPage() {
                 />
               </div>
               <h2 className="text-xl font-semibold text-slate-700 mb-2">
-                Hey！我係 Jap仔 🙋‍♂️
+                {t['agent.welcome_title']}
               </h2>
               <p className="text-slate-500 mb-4 max-w-md">
-                你嘅日本產品專家！我可以幫你分析產品數據、比較競爭對手價格、生成市場報告，有咩問題隨時話我知～
+                {t['agent.welcome_desc']}
               </p>
               {/* 鍵盤快捷鍵提示 - 只在桌面顯示 */}
               <div className="hidden sm:flex items-center gap-4 text-xs text-slate-400 mb-6">
                 <span className="flex items-center gap-1">
                   <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">⌘K</kbd>
-                  <span>新對話</span>
+                  <span>{t['agent.new_conversation']}</span>
                 </span>
                 <span className="flex items-center gap-1">
                   <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">⌘/</kbd>
-                  <span>聚焦輸入</span>
+                  <span>{t['agent.focus_input']}</span>
                 </span>
                 <span className="flex items-center gap-1">
                   <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">Esc</kbd>
-                  <span>取消</span>
+                  <span>{t['agent.cancel']}</span>
                 </span>
               </div>
               
               {/* Suggestions */}
               {suggestionsData?.suggestions && suggestionsData.suggestions.length > 0 && (
                 <div className="w-full max-w-lg space-y-2">
-                  <p className="text-sm text-slate-400 mb-3">試下呢啲問題：</p>
+                  <p className="text-sm text-slate-400 mb-3">{t['agent.try_these']}</p>
                   <div className="grid gap-2">
                     {suggestionsData.suggestions.slice(0, 4).map((suggestion, i) => (
                       <button
@@ -934,7 +940,7 @@ export default function AgentPage() {
                                 id: 'thinking',
                                 role: 'assistant',
                                 type: 'thinking',
-                                content: '重新生成緊...',
+                                content: t['agent.regenerating'],
                                 timestamp: new Date()
                               }
                               setMessages(prev => [...prev, thinkingMessage])
@@ -946,7 +952,7 @@ export default function AgentPage() {
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-50"
                         >
                           <RefreshCw className="w-3.5 h-3.5" />
-                          <span>重新生成</span>
+                          <span>{t['agent.regenerate']}</span>
                         </button>
                       </div>
 
@@ -976,7 +982,7 @@ export default function AgentPage() {
                                       id: 'thinking',
                                       role: 'assistant',
                                       type: 'thinking',
-                                      content: '等我睇睇...',
+                                      content: t['agent.looking'],
                                       timestamp: new Date()
                                     }
                                     setMessages(prev => [...prev, thinkingMessage])
@@ -1017,7 +1023,7 @@ export default function AgentPage() {
                 exit={{ opacity: 0, scale: 0.8 }}
                 onClick={scrollToBottom}
                 className="fixed bottom-32 right-6 md:right-10 w-10 h-10 rounded-full bg-purple-600 text-white shadow-lg hover:bg-purple-700 transition-colors flex items-center justify-center z-10"
-                aria-label="滾動到底部"
+                aria-label={t['agent.scroll_to_bottom']}
               >
                 <ArrowDown className="w-5 h-5" />
               </motion.button>
@@ -1044,7 +1050,7 @@ export default function AgentPage() {
                   id: 'thinking',
                   role: 'assistant',
                   type: 'thinking',
-                  content: '分析緊你嘅問題...',
+                  content: t['agent.analyzing'],
                   timestamp: new Date()
                 }
                 setMessages(prev => [...prev, thinkingMessage])
@@ -1065,16 +1071,16 @@ export default function AgentPage() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                placeholder="同 Jap仔 傾下計..."
+                placeholder={t['agent.input_placeholder']}
                 disabled={isLoading || !!pendingClarification}
                 className="flex-1"
-                aria-label="輸入訊息"
+                aria-label={t['agent.input_label']}
               />
               <Button
                 onClick={handleSend}
                 disabled={!input.trim() || isLoading || !!pendingClarification}
                 className="bg-purple-600 hover:bg-purple-700"
-                aria-label={isLoading ? "發送中" : "發送訊息"}
+                aria-label={isLoading ? t['agent.sending'] : t['agent.send']}
               >
                 {isLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
@@ -1085,7 +1091,7 @@ export default function AgentPage() {
             </div>
             {pendingClarification && (
               <p className="text-xs text-amber-600 mt-2 text-center">
-                請先完成上面嘅選擇
+                {t['agent.complete_selection']}
               </p>
             )}
           </div>

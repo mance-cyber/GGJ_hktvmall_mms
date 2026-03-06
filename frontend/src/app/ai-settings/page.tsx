@@ -32,12 +32,14 @@ import { Label } from '@/components/ui/label'
 import { ModelCombobox } from '@/components/ui/model-combobox'
 import { cn } from '@/lib/utils'
 import { PageTransition, HoloCard, HoloButton, HoloBadge } from '@/components/ui/future-tech'
+import { useLocale } from '@/components/providers/locale-provider'
 
 // =============================================
 // Page Component
 // =============================================
 
 export default function AISettingsPage() {
+  const { t } = useLocale()
   const queryClient = useQueryClient()
 
   // State
@@ -89,15 +91,15 @@ export default function AISettingsPage() {
     onSuccess: (data) => {
       if (data.valid) {
         setTestStatus('success')
-        setTestMessage(data.message || '連接成功！')
+        setTestMessage(data.message || t['ai_settings.test_success'])
       } else {
         setTestStatus('error')
-        setTestMessage(data.error || '連接失敗')
+        setTestMessage(data.error || t['ai_settings.test_failed'])
       }
     },
     onError: (error: any) => {
       setTestStatus('error')
-      setTestMessage(error.message || '測試失敗')
+      setTestMessage(error.message || t['ai_settings.test_error'])
     },
   })
 
@@ -124,12 +126,12 @@ export default function AISettingsPage() {
         setFetchModelsStatus('success')
       } else {
         setFetchModelsStatus('error')
-        setFetchModelsError(data.error || '獲取模型列表失敗')
+        setFetchModelsError(data.error || t['ai_settings.error_fetch_models'])
       }
     },
     onError: (error: any) => {
       setFetchModelsStatus('error')
-      setFetchModelsError(error.message || '獲取模型列表失敗')
+      setFetchModelsError(error.message || t['ai_settings.error_fetch_models'])
     },
   })
 
@@ -140,12 +142,12 @@ export default function AISettingsPage() {
 
     if (!key || key === 'existing') {
       setTestStatus('error')
-      setTestMessage('請先輸入 API Key')
+      setTestMessage(t['ai_settings.error_api_key_missing'])
       return
     }
     if (!url) {
       setTestStatus('error')
-      setTestMessage('請先輸入 Base URL')
+      setTestMessage(t['ai_settings.error_base_url_missing'])
       return
     }
 
@@ -161,7 +163,7 @@ export default function AISettingsPage() {
     if (newKey) {
       if (!newUrl && !config?.base_url) {
         setFetchModelsStatus('error')
-        setFetchModelsError('請輸入 Base URL')
+        setFetchModelsError(t['ai_settings.error_base_url_required'])
         return
       }
       fetchModelsMutation.mutate({
@@ -179,7 +181,7 @@ export default function AISettingsPage() {
     // 都沒有，顯示錯誤
     else {
       setFetchModelsStatus('error')
-      setFetchModelsError('請先設定 API Key')
+      setFetchModelsError(t['ai_settings.error_set_api_key'])
     }
   }
 
@@ -214,7 +216,7 @@ export default function AISettingsPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[300px] gap-3">
         <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-primary" />
-        <p className="text-xs sm:text-sm text-muted-foreground">連接中...</p>
+        <p className="text-xs sm:text-sm text-muted-foreground">{t['ai_settings.connecting']}</p>
       </div>
     )
   }
@@ -225,13 +227,13 @@ export default function AISettingsPage() {
         <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-red-100 flex items-center justify-center">
           <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-red-600" />
         </div>
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-900">無法連接後端</h2>
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900">{t['ai_settings.error_backend']}</h2>
         <p className="text-xs sm:text-sm text-gray-600 text-center max-w-md">
-          請確保後端服務正在運行
+          {t['ai_settings.error_backend_desc']}
         </p>
         <Button onClick={() => window.location.reload()} size="sm" className="mt-2">
           <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-          重試
+          {t['ai_settings.retry']}
         </Button>
       </div>
     )
@@ -244,13 +246,13 @@ export default function AISettingsPage() {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Brain className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-            <h1 className="page-title">AI 設定</h1>
+            <h1 className="page-title">{t['ai_settings.title']}</h1>
           </div>
           <HoloBadge variant={config?.api_key_set ? 'success' : 'warning'} className="text-[10px] sm:text-xs">
             {config?.api_key_set ? (
-              <><CheckCircle2 className="w-3 h-3" /> 已設定</>
+              <><CheckCircle2 className="w-3 h-3" /> {t['ai_settings.badge_configured']}</>
             ) : (
-              <><AlertCircle className="w-3 h-3" /> 未設定</>
+              <><AlertCircle className="w-3 h-3" /> {t['ai_settings.badge_not_configured']}</>
             )}
           </HoloBadge>
         </div>
@@ -259,14 +261,14 @@ export default function AISettingsPage() {
         <div className="grid grid-cols-2 gap-2 sm:gap-4">
           <InfoCard
             icon={Sparkles}
-            title="數據摘要"
-            description="市場數據分析"
+            title={t['ai_settings.info_insights_title']}
+            description={t['ai_settings.info_insights_desc']}
             color="purple"
           />
           <InfoCard
             icon={Target}
-            title="策略顧問"
-            description="Marketing 建議"
+            title={t['ai_settings.info_strategy_title']}
+            description={t['ai_settings.info_strategy_desc']}
             color="blue"
           />
         </div>
@@ -278,8 +280,8 @@ export default function AISettingsPage() {
               <Server className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
             </div>
             <div>
-              <h2 className="text-base sm:text-xl font-bold text-slate-800">API 連接</h2>
-              <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">設定中轉站地址和 API Key</p>
+              <h2 className="text-base sm:text-xl font-bold text-slate-800">{t['ai_settings.section_api_connection']}</h2>
+              <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">{t['ai_settings.section_api_connection_desc']}</p>
             </div>
           </div>
 
@@ -289,7 +291,7 @@ export default function AISettingsPage() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-                  <span className="text-sm font-medium text-green-800">已設定</span>
+                  <span className="text-sm font-medium text-green-800">{t['ai_settings.status_configured']}</span>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm">
                   <span className="text-green-700 truncate">
@@ -332,7 +334,7 @@ export default function AISettingsPage() {
                   <Input
                     id="api-key"
                     type={showApiKey ? 'text' : 'password'}
-                    placeholder={config?.api_key_set ? '輸入新 Key...' : 'sk-...'}
+                    placeholder={config?.api_key_set ? t['ai_settings.placeholder_new_key'] : 'sk-...'}
                     value={apiKey}
                     onChange={(e) => {
                       setApiKey(e.target.value)
@@ -361,7 +363,7 @@ export default function AISettingsPage() {
                 loading={testMutation.isPending}
                 icon={!testMutation.isPending ? <Zap className="w-3.5 h-3.5" /> : undefined}
               >
-                測試
+                {t['ai_settings.test']}
               </HoloButton>
               <HoloButton
                 variant="primary"
@@ -371,7 +373,7 @@ export default function AISettingsPage() {
                 loading={saveMutation.isPending}
                 icon={!saveMutation.isPending ? <Check className="w-3.5 h-3.5" /> : undefined}
               >
-                保存
+                {t['ai_settings.save']}
               </HoloButton>
             </div>
 
@@ -402,7 +404,7 @@ export default function AISettingsPage() {
                 className="p-3 rounded-lg bg-green-50 text-green-700 flex items-center gap-2"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span className="text-sm font-medium">設定已保存</span>
+                <span className="text-sm font-medium">{t['ai_settings.saved']}</span>
               </motion.div>
             )}
           </div>
@@ -416,7 +418,7 @@ export default function AISettingsPage() {
                 <Cpu className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
               </div>
               <div>
-                <h2 className="text-base sm:text-xl font-bold text-slate-800">模型選擇</h2>
+                <h2 className="text-base sm:text-xl font-bold text-slate-800">{t['ai_settings.section_model_selection']}</h2>
               </div>
             </div>
             <HoloButton
@@ -427,7 +429,7 @@ export default function AISettingsPage() {
               loading={fetchModelsMutation.isPending}
               icon={!fetchModelsMutation.isPending ? <RefreshCw className="w-3.5 h-3.5" /> : undefined}
             >
-              <span className="hidden sm:inline">獲取模型</span>
+              <span className="hidden sm:inline">{t['ai_settings.fetch_models']}</span>
             </HoloButton>
           </div>
 
@@ -447,8 +449,8 @@ export default function AISettingsPage() {
               {fetchModelsStatus === 'success' && <CheckCircle2 className="w-4 h-4" />}
               {fetchModelsStatus === 'error' && <AlertCircle className="w-4 h-4" />}
               <span className="text-sm font-medium">
-                {fetchModelsStatus === 'loading' && '正在獲取模型列表...'}
-                {fetchModelsStatus === 'success' && `成功獲取 ${fetchedModels.length} 個模型`}
+                {fetchModelsStatus === 'loading' && t['ai_settings.fetching_models']}
+                {fetchModelsStatus === 'success' && t['ai_settings.models_fetched'].replace('{n}', String(fetchedModels.length))}
                 {fetchModelsStatus === 'error' && fetchModelsError}
               </span>
             </motion.div>
@@ -458,19 +460,19 @@ export default function AISettingsPage() {
             <div className="space-y-2 sm:space-y-3">
               <div className="flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5 text-purple-500" />
-                <Label className="text-xs sm:text-sm text-slate-700 font-medium">摘要模型</Label>
+                <Label className="text-xs sm:text-sm text-slate-700 font-medium">{t['ai_settings.label_insights_model']}</Label>
               </div>
               <ModelCombobox
                 value={insightsModel}
                 onValueChange={setInsightsModel}
                 fetchedModels={fetchedModels}
                 presetModels={models || []}
-                placeholder="選擇..."
-                searchPlaceholder="搜尋..."
+                placeholder={t['ai_settings.placeholder_select']}
+                searchPlaceholder={t['ai_settings.placeholder_search']}
               />
               {insightsModel === 'custom' && (
                 <Input
-                  placeholder="自定義模型..."
+                  placeholder={t['ai_settings.placeholder_custom_model']}
                   value={customInsightsModel}
                   onChange={(e) => setCustomInsightsModel(e.target.value)}
                   className="font-mono text-sm h-9"
@@ -481,19 +483,19 @@ export default function AISettingsPage() {
             <div className="space-y-2 sm:space-y-3">
               <div className="flex items-center gap-1.5">
                 <Target className="w-3.5 h-3.5 text-blue-500" />
-                <Label className="text-xs sm:text-sm text-slate-700 font-medium">策略模型</Label>
+                <Label className="text-xs sm:text-sm text-slate-700 font-medium">{t['ai_settings.label_strategy_model']}</Label>
               </div>
               <ModelCombobox
                 value={strategyModel}
                 onValueChange={setStrategyModel}
                 fetchedModels={fetchedModels}
                 presetModels={models || []}
-                placeholder="選擇..."
-                searchPlaceholder="搜尋..."
+                placeholder={t['ai_settings.placeholder_select']}
+                searchPlaceholder={t['ai_settings.placeholder_search']}
               />
               {strategyModel === 'custom' && (
                 <Input
-                  placeholder="自定義模型..."
+                  placeholder={t['ai_settings.placeholder_custom_model']}
                   value={customStrategyModel}
                   onChange={(e) => setCustomStrategyModel(e.target.value)}
                   className="font-mono text-sm h-9"
@@ -511,7 +513,7 @@ export default function AISettingsPage() {
               loading={saveMutation.isPending}
               icon={!saveMutation.isPending ? <Check className="w-3.5 h-3.5" /> : undefined}
             >
-              保存
+              {t['ai_settings.save']}
             </HoloButton>
           </div>
 
@@ -522,7 +524,7 @@ export default function AISettingsPage() {
               className="p-2 sm:p-3 rounded-lg bg-green-50 text-green-700 flex items-center gap-2"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span className="text-xs sm:text-sm font-medium">已保存</span>
+              <span className="text-xs sm:text-sm font-medium">{t['ai_settings.saved_short']}</span>
             </motion.div>
           )}
 
@@ -530,7 +532,7 @@ export default function AISettingsPage() {
             <div className="flex items-start gap-2">
               <Zap className="w-4 h-4 text-blue-500 mt-0.5" />
               <p className="text-xs text-blue-600">
-                點擊「獲取模型」查看中轉站支持的模型
+                {t['ai_settings.hint_fetch_models']}
               </p>
             </div>
           </div>
@@ -540,29 +542,29 @@ export default function AISettingsPage() {
         <HoloCard glowColor="blue" className="p-3 sm:p-6 bg-gradient-to-br from-slate-50/50 to-transparent hidden sm:block">
           <h2 className="text-base sm:text-xl font-bold text-slate-800 mb-3 sm:mb-4 flex items-center gap-2">
             <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-            使用指南
+            {t['ai_settings.section_guide']}
           </h2>
 
           <div className="space-y-3 sm:space-y-4">
             <GuideStep
               step={1}
-              title="設定中轉站"
-              description="輸入你的 API Base URL 和 API Key"
+              title={t['ai_settings.guide_step1_title']}
+              description={t['ai_settings.guide_step1_desc']}
             />
             <GuideStep
               step={2}
-              title="測試連接"
-              description="點擊「測試連接」確認配置正確"
+              title={t['ai_settings.guide_step2_title']}
+              description={t['ai_settings.guide_step2_desc']}
             />
             <GuideStep
               step={3}
-              title="選擇模型"
-              description="為數據摘要和策略生成選擇合適的模型"
+              title={t['ai_settings.guide_step3_title']}
+              description={t['ai_settings.guide_step3_desc']}
             />
             <GuideStep
               step={4}
-              title="開始分析"
-              description="前往 AI 分析頁面開始使用"
+              title={t['ai_settings.guide_step4_title']}
+              description={t['ai_settings.guide_step4_desc']}
             />
           </div>
         </HoloCard>

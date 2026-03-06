@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLocale } from '@/components/providers/locale-provider'
 import {
   listTasks,
   deleteTask,
@@ -29,40 +30,42 @@ import {
 
 // 狀態標籤組件
 function StatusBadge({ status }: { status: string }) {
-  const config: Record<string, { color: string; icon: React.ReactNode; text: string }> = {
+  const { t } = useLocale()
+
+  const config: Record<string, { color: string; icon: React.ReactNode; key: keyof typeof t }> = {
     pending: {
       color: 'bg-gray-100 text-gray-700',
       icon: <Clock className="w-3 h-3" />,
-      text: '等待中'
+      key: 'image_gen.status_pending'
     },
     analyzing: {
       color: 'bg-purple-100 text-purple-700',
       icon: <Loader2 className="w-3 h-3 animate-spin" />,
-      text: 'AI 分析中'
+      key: 'image_gen.status_analyzing'
     },
     processing: {
       color: 'bg-blue-100 text-blue-700',
       icon: <Loader2 className="w-3 h-3 animate-spin" />,
-      text: '生成中'
+      key: 'image_gen.status_processing'
     },
     completed: {
       color: 'bg-green-100 text-green-700',
       icon: <CheckCircle2 className="w-3 h-3" />,
-      text: '已完成'
+      key: 'image_gen.status_completed'
     },
     failed: {
       color: 'bg-red-100 text-red-700',
       icon: <XCircle className="w-3 h-3" />,
-      text: '失敗'
+      key: 'image_gen.status_failed'
     }
   }
 
-  const { color, icon, text } = config[status] || config.pending
+  const { color, icon, key } = config[status] || config.pending
 
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${color}`}>
       {icon}
-      {text}
+      {t[key]}
     </span>
   )
 }
@@ -90,6 +93,7 @@ function getDaysRemaining(dateString: string): number {
 
 export default function ImageGenerationHistoryPage() {
   const router = useRouter()
+  const { t } = useLocale()
   const [tasks, setTasks] = useState<ImageGenerationTask[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -112,11 +116,11 @@ export default function ImageGenerationHistoryPage() {
       setTotal(response.total)
     } catch (err: any) {
       console.error('Failed to load tasks:', err)
-      setError(err.response?.data?.detail || '無法加載任務列表')
+      setError(err.response?.data?.detail || t['image_gen.error_load_failed'])
     } finally {
       setIsLoading(false)
     }
-  }, [page, pageSize])
+  }, [page, pageSize, t])
 
   useEffect(() => {
     loadTasks()
@@ -147,7 +151,7 @@ export default function ImageGenerationHistoryPage() {
 
   // 刪除單個任務
   const handleDeleteTask = async (taskId: string) => {
-    if (!confirm('確定要刪除此任務嗎？關聯的圖片也會被刪除。')) {
+    if (!confirm(t['image_gen.confirm_delete'])) {
       return
     }
 
@@ -162,7 +166,7 @@ export default function ImageGenerationHistoryPage() {
       await loadTasks()
     } catch (err: any) {
       console.error('Failed to delete task:', err)
-      alert(err.response?.data?.detail || '刪除失敗')
+      alert(err.response?.data?.detail || t['image_gen.error_delete_failed'])
     } finally {
       setIsDeleting(false)
     }
@@ -172,7 +176,8 @@ export default function ImageGenerationHistoryPage() {
   const handleBatchDelete = async () => {
     if (selectedIds.size === 0) return
 
-    if (!confirm(`確定要刪除選中的 ${selectedIds.size} 個任務嗎？關聯的圖片也會被刪除。`)) {
+    const msg = t['image_gen.confirm_batch_delete'].replace('{count}', String(selectedIds.size))
+    if (!confirm(msg)) {
       return
     }
 
@@ -183,7 +188,7 @@ export default function ImageGenerationHistoryPage() {
       await loadTasks()
     } catch (err: any) {
       console.error('Failed to batch delete tasks:', err)
-      alert(err.response?.data?.detail || '批量刪除失敗')
+      alert(err.response?.data?.detail || t['image_gen.error_batch_delete_failed'])
     } finally {
       setIsDeleting(false)
     }
@@ -199,9 +204,9 @@ export default function ImageGenerationHistoryPage() {
       {/* 標題 */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">生成歷史</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t['image_gen.history_title']}</h1>
           <p className="text-gray-600 mt-1">
-            查看和管理您的圖片生成記錄（保留 7 天）
+            {t['image_gen.history_subtitle']}
           </p>
         </div>
         <button
@@ -213,7 +218,7 @@ export default function ImageGenerationHistoryPage() {
           "
         >
           <Plus className="w-5 h-5" />
-          新建生成
+          {t['image_gen.new_generation']}
         </button>
       </div>
 
@@ -229,7 +234,9 @@ export default function ImageGenerationHistoryPage() {
                 className="w-4 h-4 text-blue-600 rounded"
               />
               <span className="text-sm text-gray-600">
-                {selectedIds.size > 0 ? `已選中 ${selectedIds.size} 項` : '全選'}
+                {selectedIds.size > 0
+                  ? `${t['image_gen.selected']} ${selectedIds.size} ${t['image_gen.items']}`
+                  : t['image_gen.select_all']}
               </span>
             </label>
           </div>
@@ -250,7 +257,7 @@ export default function ImageGenerationHistoryPage() {
               ) : (
                 <Trash2 className="w-4 h-4" />
               )}
-              刪除選中
+              {t['image_gen.delete_selected']}
             </button>
           )}
         </div>
@@ -269,14 +276,14 @@ export default function ImageGenerationHistoryPage() {
             onClick={loadTasks}
             className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
           >
-            重試
+            {t['image_gen.retry']}
           </button>
         </div>
       ) : tasks.length === 0 ? (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
           <ImageIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">暫無生成記錄</h3>
-          <p className="text-gray-600 mb-6">開始創建您的第一個圖片生成任務吧</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t['image_gen.empty_title']}</h3>
+          <p className="text-gray-600 mb-6">{t['image_gen.empty_desc']}</p>
           <button
             onClick={() => router.push('/image-generation/upload')}
             className="
@@ -284,7 +291,7 @@ export default function ImageGenerationHistoryPage() {
               font-medium hover:bg-blue-700
             "
           >
-            開始生成
+            {t['image_gen.start']}
           </button>
         </div>
       ) : (
@@ -293,14 +300,14 @@ export default function ImageGenerationHistoryPage() {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-4 py-3 text-left w-10">
-                  <span className="sr-only">選擇</span>
+                  <span className="sr-only">{t['image_gen.select']}</span>
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">模式</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">狀態</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">圖片數量</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">創建時間</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">剩餘時間</th>
-                <th className="px-4 py-3 text-right text-sm font-medium text-gray-600">操作</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">{t['image_gen.col_mode']}</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">{t['image_gen.col_status']}</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">{t['image_gen.col_image_count']}</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">{t['image_gen.col_created_time']}</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">{t['image_gen.col_remaining_time']}</th>
+                <th className="px-4 py-3 text-right text-sm font-medium text-gray-600">{t['image_gen.col_actions']}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -318,7 +325,7 @@ export default function ImageGenerationHistoryPage() {
                     </td>
                     <td className="px-4 py-4">
                       <span className="text-sm text-gray-900">
-                        {task.mode === 'white_bg_topview' ? '白底圖' : '專業攝影'}
+                        {task.mode === 'white_bg_topview' ? t['image_gen.mode_white_bg'] : t['image_gen.mode_professional']}
                       </span>
                     </td>
                     <td className="px-4 py-4">
@@ -326,7 +333,7 @@ export default function ImageGenerationHistoryPage() {
                     </td>
                     <td className="px-4 py-4">
                       <span className="text-sm text-gray-600">
-                        {task.input_images.length} 輸入 / {task.output_images.length} 輸出
+                        {task.input_images.length} {t['image_gen.input']} / {task.output_images.length} {t['image_gen.output']}
                       </span>
                     </td>
                     <td className="px-4 py-4">
@@ -337,12 +344,12 @@ export default function ImageGenerationHistoryPage() {
                     <td className="px-4 py-4">
                       {daysRemaining > 0 ? (
                         <span className={`text-sm ${daysRemaining <= 2 ? 'text-orange-600' : 'text-gray-600'}`}>
-                          {daysRemaining} 天
+                          {daysRemaining} {t['image_gen.days']}
                         </span>
                       ) : (
                         <span className="text-sm text-red-600 flex items-center gap-1">
                           <AlertCircle className="w-3 h-3" />
-                          即將過期
+                          {t['image_gen.expiring']}
                         </span>
                       )}
                     </td>
@@ -354,7 +361,7 @@ export default function ImageGenerationHistoryPage() {
                             p-2 text-gray-600 hover:text-blue-600
                             hover:bg-blue-50 rounded-lg
                           "
-                          title="查看詳情"
+                          title={t['image_gen.view_details']}
                         >
                           <Eye className="w-4 h-4" />
                         </button>
@@ -366,7 +373,7 @@ export default function ImageGenerationHistoryPage() {
                             hover:bg-red-50 rounded-lg
                             disabled:opacity-50
                           "
-                          title="刪除"
+                          title={t['image_gen.delete']}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -382,7 +389,10 @@ export default function ImageGenerationHistoryPage() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
               <div className="text-sm text-gray-600">
-                共 {total} 條記錄，第 {page} / {totalPages} 頁
+                {t['image_gen.pagination']
+                  .replace('{total}', String(total))
+                  .replace('{page}', String(page))
+                  .replace('{pages}', String(totalPages))}
               </div>
               <div className="flex items-center gap-2">
                 <button

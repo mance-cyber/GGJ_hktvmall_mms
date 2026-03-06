@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, Product, PreviewProduct, PreviewScrapeResponse } from '@/lib/api'
+import { useLocale } from '@/components/providers/locale-provider'
 import Link from 'next/link'
 import {
   ArrowLeft,
@@ -47,6 +48,7 @@ import {
 } from '@/components/ui/future-tech'
 
 export default function CategoryDetailPage({ params }: { params: { id: string } }) {
+  const { t } = useLocale()
   const queryClient = useQueryClient()
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null)
   const [isScrapng, setIsScraping] = useState(false)
@@ -288,14 +290,14 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
                 onClick={cancelPreview}
                 icon={<ArrowLeft className="w-5 h-5" />}
               >
-                返回
+                {t['category_detail.back']}
               </HoloButton>
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-                  審核抓取結果
+                  {t['category_detail.review_title']}
                 </h1>
                 <p className="text-slate-500 mt-1">
-                  已抓取 <span className="font-semibold text-cyan-600">{previewData.total_scraped}</span> 個商品，請選擇要保存的商品
+                  {t['category_detail.scraped_count'].replace('{count}', String(previewData.total_scraped))}
                 </p>
               </div>
             </div>
@@ -305,7 +307,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
                 onClick={cancelPreview}
                 icon={<X className="w-4 h-4" />}
               >
-                取消
+                {t['category_detail.cancel']}
               </HoloButton>
               <HoloButton
                 variant="primary"
@@ -317,7 +319,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
                 loading={isConfirming}
                 icon={<Check className="w-4 h-4" />}
               >
-                確認保存 ({selectedPreviewIndices.size})
+                {t['category_detail.confirm_save']} ({selectedPreviewIndices.size})
               </HoloButton>
             </div>
           </div>
@@ -328,7 +330,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
               <div className="flex items-start">
                 <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
                 <div>
-                  <h4 className="text-sm font-medium text-amber-800">部分抓取失敗</h4>
+                  <h4 className="text-sm font-medium text-amber-800">{t['category_detail.partial_failure']}</h4>
                   <ul className="mt-2 text-sm text-amber-700 space-y-1">
                     {previewData.errors.slice(0, 3).map((err, i) => (
                       <li key={i}>{err}</li>
@@ -345,14 +347,14 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
           {/* 預覽商品列表 */}
           <HoloCard glowColor="cyan">
             <HoloPanelHeader
-              title={`待審核商品 (${previewData.products.length})`}
+              title={`${t['category_detail.pending_products']} (${previewData.products.length})`}
               icon={<Package className="w-5 h-5" />}
               action={
                 <button
                   onClick={togglePreviewSelectAll}
                   className="text-sm font-medium text-cyan-600 hover:text-cyan-700 transition-colors"
                 >
-                  {selectedPreviewIndices.size === previewData.products.length ? '取消全選' : '全選'}
+                  {selectedPreviewIndices.size === previewData.products.length ? t['category_detail.deselect_all'] : t['category_detail.select_all']}
                 </button>
               }
             />
@@ -384,7 +386,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-800 truncate">{product.name}</p>
                     <p className="text-xs text-slate-500">
-                      {product.brand || '未知品牌'} {product.sku && `| SKU: ${product.sku}`}
+                      {product.brand || t['category_detail.unknown_brand']} {product.sku && `| SKU: ${product.sku}`}
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
@@ -431,7 +433,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
               <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
                 {category?.name}
               </h1>
-              <p className="text-slate-500 mt-1">{category?.description || '類別商品監測'}</p>
+              <p className="text-slate-500 mt-1">{category?.description || t['category_detail.description']}</p>
             </div>
           </div>
           <div className="flex items-center space-x-3">
@@ -446,7 +448,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
               loading={isSmartScraping}
               icon={<Zap className="w-4 h-4" />}
             >
-              {isSmartScraping ? '智能更新中...' : '智能抓取'}
+              {isSmartScraping ? t['category_detail.smart_scraping'] : t['category_detail.smart_scrape']}
             </HoloButton>
             <HoloButton
               variant="primary"
@@ -458,7 +460,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
               loading={isScrapng}
               icon={<Eye className="w-4 h-4" />}
             >
-              {isScrapng ? '抓取中...' : '預覽抓取'}
+              {isScrapng ? t['category_detail.scraping'] : t['category_detail.preview_scrape']}
             </HoloButton>
             <a
               href={`/api/v1/categories/${params.id}/export/excel`}
@@ -469,7 +471,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
                 border border-emerald-400/30 transition-all duration-200"
             >
               <Download className="w-4 h-4" />
-              導出 Excel
+              {t['category_detail.export_excel']}
             </a>
           </div>
         </div>
@@ -490,9 +492,9 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
                     {smartScrapeResult.message}
                   </p>
                   <p className="text-sm text-slate-600 mt-1">
-                    新增 <span className="font-semibold text-cyan-600">{smartScrapeResult.new_products}</span> 個 |
-                    更新 <span className="font-semibold text-cyan-600">{smartScrapeResult.updated_products}</span> 個 |
-                    消耗 <span className="font-semibold text-violet-600">{smartScrapeResult.credits_used}</span> credits
+                    {t['category_detail.add']} <span className="font-semibold text-cyan-600">{smartScrapeResult.new_products}</span> {t['category_detail.items']} |
+                    {t['category_detail.update']} <span className="font-semibold text-cyan-600">{smartScrapeResult.updated_products}</span> {t['category_detail.items']} |
+                    {t['category_detail.consumed']} <span className="font-semibold text-violet-600">{smartScrapeResult.credits_used}</span> {t['category_detail.credits']}
                   </p>
                 </div>
               </div>
@@ -500,8 +502,8 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
                 type="button"
                 onClick={() => setSmartScrapeResult(null)}
                 className="p-2 hover:bg-slate-200/50 rounded-lg transition-colors"
-                title="關閉通知"
-                aria-label="關閉通知"
+                title={t['category_detail.close_notification']}
+                aria-label={t['category_detail.close_notification']}
               >
                 <X className="w-4 h-4 text-slate-500" />
               </button>
@@ -512,32 +514,32 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
         {/* 統計卡片 */}
         <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <DataMetric
-            label="商品總數"
+            label={t['category_detail.total_products']}
             value={stats?.total_products || 0}
-            suffix={`個 (${stats?.available_products || 0} 有貨)`}
+            suffix={`${t['category_detail.items']} (${stats?.available_products || 0} ${t['category_detail.in_stock']})`}
             icon={<Package className="w-5 h-5 text-cyan-600" />}
             color="cyan"
           />
           <DataMetric
-            label="平均價格"
+            label={t['category_detail.avg_price']}
             value={stats?.avg_price ? Number(stats.avg_price) : 0}
             prefix="$"
-            suffix={stats?.price_range ? ` (波動 $${Number(stats.price_range).toFixed(0)})` : ''}
+            suffix={stats?.price_range ? ` (${t['category_detail.price_range']} $${Number(stats.price_range).toFixed(0)})` : ''}
             icon={<DollarSign className="w-5 h-5 text-green-600" />}
             color="green"
           />
           <DataMetric
-            label="最低價"
+            label={t['category_detail.min_price']}
             value={stats?.min_price ? Number(stats.min_price) : 0}
             prefix="$"
-            suffix=" 類別最便宜"
+            suffix={` ${t['category_detail.cheapest']}`}
             icon={<TrendingDown className="w-5 h-5 text-blue-600" />}
             color="blue"
           />
           <DataMetric
-            label="品牌數量"
+            label={t['category_detail.brand_count']}
             value={stats?.brands_count || 0}
-            suffix=" 不同品牌"
+            suffix={` ${t['category_detail.different_brands']}`}
             icon={<BarChart3 className="w-5 h-5 text-purple-600" />}
             color="purple"
           />
@@ -548,7 +550,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
           {/* 價格分佈 */}
           <HoloCard glowColor="blue">
             <HoloPanelHeader
-              title="價格分佈"
+              title={t['category_detail.price_distribution']}
               icon={<BarChart3 className="w-5 h-5" />}
             />
             <div className="p-6">
@@ -579,7 +581,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
                 <div className="h-[250px] flex items-center justify-center text-slate-400">
                   <div className="text-center">
                     <BarChart3 className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>暫無數據</p>
+                    <p>{t['category_detail.no_data']}</p>
                   </div>
                 </div>
               )}
@@ -589,7 +591,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
           {/* 品牌比較 */}
           <HoloCard glowColor="green">
             <HoloPanelHeader
-              title="品牌價格比較"
+              title={t['category_detail.brand_comparison']}
               icon={<DollarSign className="w-5 h-5" />}
             />
             <div className="p-6">
@@ -620,7 +622,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
                 <div className="h-[250px] flex items-center justify-center text-slate-400">
                   <div className="text-center">
                     <DollarSign className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>暫無數據</p>
+                    <p>{t['category_detail.no_data']}</p>
                   </div>
                 </div>
               )}
@@ -632,8 +634,8 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
         {overview?.top_deals && overview.top_deals.length > 0 && (
           <HoloCard glowColor="purple">
             <HoloPanelHeader
-              title="最優惠商品"
-              subtitle="目前折扣最大的商品"
+              title={t['category_detail.best_deals']}
+              subtitle={t['category_detail.best_deals_desc']}
               icon={<TrendingDown className="w-5 h-5" />}
             />
             <div className="p-6">
@@ -679,7 +681,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
         {selectedProduct && priceHistory && (
           <HoloCard glowColor="cyan" scanLine>
             <HoloPanelHeader
-              title={`價格趨勢: ${priceHistory.product_name}`}
+              title={`${t['category_detail.price_history']}: ${priceHistory.product_name}`}
               icon={<BarChart3 className="w-5 h-5" />}
               action={
                 <HoloButton
@@ -688,7 +690,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
                   onClick={() => setSelectedProduct(null)}
                   icon={<X className="w-4 h-4" />}
                 >
-                  關閉
+                  {t['common.cancel']}
                 </HoloButton>
               }
             />
@@ -727,7 +729,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
                 <div className="h-[300px] flex items-center justify-center text-slate-400">
                   <div className="text-center">
                     <BarChart3 className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>暫無價格歷史數據</p>
+                    <p>{t['category_detail.no_price_history']}</p>
                   </div>
                 </div>
               )}
@@ -738,7 +740,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
         {/* 商品列表 */}
         <HoloCard glowColor="cyan">
           <HoloPanelHeader
-            title="商品列表"
+            title={t['category_detail.product_list']}
             icon={<Package className="w-5 h-5" />}
             action={
               selectedProducts.size > 0 && (
@@ -746,7 +748,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
                   variant="secondary"
                   size="sm"
                   onClick={() => {
-                    if (confirm(`確定要刪除選中的 ${selectedProducts.size} 個商品嗎？`)) {
+                    if (confirm(t['category_detail.confirm_delete_batch'].replace('{count}', String(selectedProducts.size)))) {
                       setIsDeleting(true)
                       bulkDeleteMutation.mutate(Array.from(selectedProducts))
                     }
@@ -756,7 +758,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
                   icon={<Trash2 className="w-4 h-4" />}
                   className="!text-red-600 !border-red-200 hover:!bg-red-50"
                 >
-                  刪除選中 ({selectedProducts.size})
+                  {t['category_detail.delete_selected']} ({selectedProducts.size})
                 </HoloButton>
               )
             }
@@ -787,12 +789,12 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
                         )}
                       </button>
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">商品名稱</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">品牌</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">價格</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">單位價</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">狀態</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">操作</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{t['category_detail.col_name']}</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{t['category_detail.col_brand']}</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">{t['category_detail.col_price']}</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">{t['category_detail.col_unit_price']}</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">{t['categories.col_status']}</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">{t['categories.col_actions']}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -841,7 +843,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
                       </td>
                       <td className="px-4 py-4 text-center">
                         <HoloBadge variant={product.is_available ? 'success' : 'error'} size="sm">
-                          {product.is_available ? '有貨' : '缺貨'}
+                          {product.is_available ? t['category_detail.availability_in_stock'] : t['category_detail.availability_out_of_stock']}
                         </HoloBadge>
                       </td>
                       <td className="px-4 py-4 text-right">
@@ -849,7 +851,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
                           <button
                             onClick={() => setSelectedProduct(product.id)}
                             className="p-2 hover:bg-cyan-50 text-cyan-600 rounded-lg transition-all hover:scale-105"
-                            title="查看價格趨勢"
+                            title={t['category_detail.view_trend']}
                           >
                             <BarChart3 className="w-4 h-4" />
                           </button>
@@ -858,18 +860,18 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
                             target="_blank"
                             rel="noopener noreferrer"
                             className="p-2 hover:bg-slate-100 text-slate-600 rounded-lg transition-all hover:scale-105"
-                            title="前往商品頁面"
+                            title={t['category_detail.go_to_product']}
                           >
                             <ExternalLink className="w-4 h-4" />
                           </a>
                           <button
                             onClick={() => {
-                              if (confirm(`確定要刪除「${product.name}」嗎？`)) {
+                              if (confirm(t['category_detail.confirm_delete_single'].replace('{name}', product.name))) {
                                 deleteProductMutation.mutate(product.id)
                               }
                             }}
                             className="p-2 hover:bg-red-50 text-red-500 rounded-lg transition-all hover:scale-105"
-                            title="刪除商品"
+                            title={t['common.delete']}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -886,8 +888,8 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
               <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 flex items-center justify-center">
                 <Package className="w-8 h-8 text-slate-400" />
               </div>
-              <p className="text-slate-600 font-medium">此類別暫無商品</p>
-              <p className="text-sm text-slate-400 mt-1">點擊「預覽抓取」獲取商品數據</p>
+              <p className="text-slate-600 font-medium">{t['category_detail.empty_title']}</p>
+              <p className="text-sm text-slate-400 mt-1">{t['category_detail.empty_hint']}</p>
             </div>
           )}
         </HoloCard>

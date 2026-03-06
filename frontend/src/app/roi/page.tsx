@@ -6,6 +6,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useLocale } from '@/components/providers/locale-provider'
 import { TrendingUp, Brain, Eye, BarChart3 } from 'lucide-react'
 import { HoloCard } from '@/components/ui/future-tech'
 import { ROISummaryCards } from './components/ROISummaryCards'
@@ -16,6 +17,7 @@ import { CompetitorValueCard } from './components/CompetitorValueCard'
 import type { ROIPeriod } from '@/lib/api/roi'
 
 export default function ROIDashboardPage() {
+  const { t } = useLocale()
   const [period, setPeriod] = useState<ROIPeriod>('month')
 
   // 根據 period 計算趨勢天數
@@ -36,9 +38,9 @@ export default function ROIDashboardPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <TrendingUp className="w-7 h-7 text-green-500" />
-            投資回報分析
+            {t['roi.title']}
           </h1>
-          <p className="text-gray-500 mt-1">GoGoJap 幫你賺了多少錢</p>
+          <p className="text-gray-500 mt-1">{t['roi.subtitle']}</p>
         </div>
 
         {/* 時間範圍選擇 */}
@@ -52,7 +54,7 @@ export default function ROIDashboardPage() {
       <HoloCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <BarChart3 className="w-5 h-5 text-gray-400" />
-          <h2 className="text-lg font-semibold text-gray-900">價值趨勢</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t['roi.value_trend']}</h2>
         </div>
         <ROITrendChart days={getTrendDays(period)} />
       </HoloCard>
@@ -63,7 +65,7 @@ export default function ROIDashboardPage() {
         <HoloCard className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <Brain className="w-5 h-5 text-purple-500" />
-            <h2 className="text-lg font-semibold text-gray-900">AI 改價影響</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t['roi.pricing_impact']}</h2>
           </div>
           <PricingImpactTable />
         </HoloCard>
@@ -72,7 +74,7 @@ export default function ROIDashboardPage() {
         <HoloCard className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <Eye className="w-5 h-5 text-cyan-500" />
-            <h2 className="text-lg font-semibold text-gray-900">競品監測價值</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t['roi.competitor_value']}</h2>
           </div>
           <CompetitorValueCard period={period} />
         </HoloCard>
@@ -80,8 +82,8 @@ export default function ROIDashboardPage() {
 
       {/* 頁腳說明 */}
       <div className="text-center text-xs text-gray-400 py-4">
-        <p>ROI 計算基於 AI 改價提案、競品價格告警等數據進行估算</p>
-        <p className="mt-1">實際收益可能因市場變化而有所不同</p>
+        <p>{t['roi.footer_note1']}</p>
+        <p className="mt-1">{t['roi.footer_note2']}</p>
       </div>
     </div>
   )

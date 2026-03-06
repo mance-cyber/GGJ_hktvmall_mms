@@ -39,6 +39,8 @@ class HKTVProduct:
     original_price: Optional[Decimal] = None    # priceList 中 priceType=BUY（原價）
     plus_price: Optional[Decimal] = None        # priceList 中 priceType=PLUS（會員價）
     review_count: Optional[int] = None          # numberOfReviews
+    stock_status: Optional[str] = None          # "in_stock" / "out_of_stock" / None
+    cat_name_zh: Optional[list] = None          # raw catNameZh from Algolia
 
     def to_dict(self) -> Dict[str, Any]:
         result = {
@@ -56,6 +58,10 @@ class HKTVProduct:
             result["plus_price"] = str(self.plus_price)
         if self.review_count is not None:
             result["review_count"] = self.review_count
+        if self.stock_status is not None:
+            result["stock_status"] = self.stock_status
+        if self.cat_name_zh is not None:
+            result["cat_name_zh"] = self.cat_name_zh
         return result
 
 
@@ -220,6 +226,120 @@ class HKTVApiClient:
         self._cache_set(cache_key, products)
         return products
 
+    async def search_by_store(
+        self,
+        store_name: str,
+        page_size: int = 100,
+        page: int = 0,
+    ) -> List[HKTVProduct]:
+        """
+        通過店舖名稱搜索 Algolia，獲取該店舖的所有商品
+
+        使用 facetFilters 過濾 storeNameZh 字段，精確匹配店舖。
+        適合用於擴展已確認競品店舖的商品目錄。
+
+        Args:
+            store_name: 店舖名稱（對應 Algolia storeNameZh 字段）
+            page_size: 每頁結果數（最多 100）
+            page: 頁碼（從 0 開始）
+
+        Returns:
+            HKTVProduct 列表
+        """
+        cache_key = f"store:{store_name}:{page_size}:{page}"
+        cached = self._cache_get(cache_key)
+        if cached is not None:
+            logger.info(f"cache hit: store='{store_name}' ({len(cached)} 商品)")
+            return cached
+
+        import json as _json
+        from urllib.parse import quote as _quote
+
+        facet_filters = _json.dumps([["storeNameZh:" + store_name]])
+        attrs_json = _json.dumps(self.ALGOLIA_FIELDS)
+        params = (
+            f"query="
+            f"&hitsPerPage={page_size}"
+            f"&page={page}"
+            f"&attributesToRetrieve={_quote(attrs_json)}"
+            f"&facetFilters={_quote(facet_filters)}"
+        )
+
+        payload = {
+            "requests": [{
+                "indexName": self.ALGOLIA_INDEX,
+                "params": params,
+            }]
+        }
+
+        try:
+            client = await self._get_client()
+            resp = await client.post(
+                self.ALGOLIA_URL,
+                json=payload,
+                headers=self.ALGOLIA_HEADERS,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception as e:
+            logger.warning(f"search_by_store 失敗: store={store_name} - {e}")
+            self._cache_set(cache_key, [])
+            return []
+
+        products = self._parse_algolia_hits(data)
+        self._cache_set(cache_key, products)
+        logger.info(f"search_by_store: store='{store_name}' → {len(products)} 商品")
+        return products
+
+
+    async def search_by_store_code(
+        self,
+        store_code: str,
+        page_size: int = 100,
+        page: int = 0,
+    ) -> List[HKTVProduct]:
+        """通過店舖代碼搜索 Algolia，比 storeNameZh 更可靠"""
+        cache_key = f"store_code:{store_code}:{page_size}:{page}"
+        cached = self._cache_get(cache_key)
+        if cached is not None:
+            logger.info(f"cache hit: store_code='{store_code}' ({len(cached)} products)")
+            return cached
+
+        import json as _json
+        from urllib.parse import quote as _quote
+
+        facet_filters = _json.dumps([["storeCode:" + store_code]])
+        attrs_json = _json.dumps(self.ALGOLIA_FIELDS)
+        params = (
+            f"query="
+            f"&hitsPerPage={page_size}"
+            f"&page={page}"
+            f"&attributesToRetrieve={_quote(attrs_json)}"
+            f"&facetFilters={_quote(facet_filters)}"
+        )
+
+        payload = {
+            "requests": [{
+                "indexName": self.ALGOLIA_INDEX,
+                "params": params,
+            }]
+        }
+
+        try:
+            client = await self._get_client()
+            resp = await client.post(self.ALGOLIA_URL, json=payload, headers=self.ALGOLIA_HEADERS)
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception as e:
+            logger.warning(f"search_by_store_code failed: store_code={store_code} - {e}")
+            self._cache_set(cache_key, [])
+            return []
+
+        products = self._parse_algolia_hits(data)
+        self._cache_set(cache_key, products)
+        logger.info(f"search_by_store_code: code='{store_code}' -> {len(products)} products")
+        return products
+
     # =============================================
     # Algolia 全文搜索
     # =============================================
@@ -312,6 +432,17 @@ class HKTVApiClient:
                 except (ValueError, TypeError):
                     pass
 
+            # Stock status
+            has_stock = hit.get("hasStock")
+            stock_status = None
+            if has_stock is True:
+                stock_status = "in_stock"
+            elif has_stock is False:
+                stock_status = "out_of_stock"
+
+            # Category names
+            cat_name_zh = hit.get("catNameZh") or None
+
             products.append(HKTVProduct(
                 name=name,
                 url=full_url,
@@ -322,6 +453,8 @@ class HKTVApiClient:
                 original_price=price_map.get("buy"),
                 plus_price=price_map.get("plus"),
                 review_count=review_count,
+                stock_status=stock_status,
+                cat_name_zh=cat_name_zh,
             ))
 
         if filtered:

@@ -4,13 +4,14 @@
 // 登入頁面 - Future Tech 設計
 // =============================================
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { GoogleLogin } from '@react-oauth/google'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/components/providers/auth-provider'
+import { useLocale } from '@/components/providers/locale-provider'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -30,22 +31,23 @@ import {
 } from '@/components/ui/future-tech'
 import { Lock, Mail, Zap } from 'lucide-react'
 
-const formSchema = z.object({
-  username: z.string().email({ message: '請輸入有效的電子郵件地址' }),
-  password: z.string().min(1, { message: '請輸入密碼' }),
-})
-
-// 開發模式測試帳號
-const DEV_ACCOUNTS = [
-  { email: 'admin@dev.local', password: 'admin123', role: '管理員', color: 'from-red-500 to-orange-500' },
-  { email: 'operator@dev.local', password: 'operator123', role: '操作員', color: 'from-blue-500 to-cyan-500' },
-  { email: 'viewer@dev.local', password: 'viewer123', role: '檢視者', color: 'from-green-500 to-emerald-500' },
-]
-
 export default function LoginPage() {
   const { login, loginGoogle } = useAuth()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
+  const { t } = useLocale()
+
+  const formSchema = useMemo(() => z.object({
+    username: z.string().email({ message: t['login.email_invalid'] }),
+    password: z.string().min(1, { message: t['login.password_required'] }),
+  }), [t])
+
+  // 開發模式測試帳號
+  const devAccounts = useMemo(() => [
+    { email: 'admin@dev.local', password: 'admin123', role: t['common.admin'], color: 'from-red-500 to-orange-500' },
+    { email: 'operator@dev.local', password: 'operator123', role: t['common.operator'], color: 'from-blue-500 to-cyan-500' },
+    { email: 'viewer@dev.local', password: 'viewer123', role: t['common.viewer'], color: 'from-green-500 to-emerald-500' },
+  ], [t])
 
   // 檢測是否為開發環境
   const isDevelopment = typeof window !== 'undefined' && (
@@ -67,14 +69,14 @@ export default function LoginPage() {
     try {
       await login(values)
       toast({
-        title: '登入成功',
-        description: '歡迎回來！',
+        title: t['login.success'],
+        description: t['login.welcome_desc'],
       })
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: '登入失敗',
-        description: error.message || '無效的電子郵件或密碼',
+        title: t['login.failed'],
+        description: error.message || t['login.invalid_credentials'],
       })
     } finally {
       setIsLoading(false)
@@ -87,14 +89,14 @@ export default function LoginPage() {
     try {
       await login({ username: email, password })
       toast({
-        title: '🚀 開發模式登入成功',
-        description: `已使用 ${role} 帳號登入`,
+        title: t['login.dev_success'],
+        description: t['login.dev_success_desc'].replace('{role}', role),
       })
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: '快速登入失敗',
-        description: error.message || '請確認後端已配置開發帳號',
+        title: t['login.dev_failed'],
+        description: error.message || t['login.dev_failed_desc'],
       })
     } finally {
       setIsLoading(false)
@@ -134,8 +136,8 @@ export default function LoginPage() {
                   className="w-[120px] h-[120px] object-contain"
                 />
               </motion.div>
-              <h1 className="text-2xl font-bold text-slate-800">歡迎回來</h1>
-              <p className="text-slate-500 mt-1">登入 GoGoJap AI 營運系統</p>
+              <h1 className="text-2xl font-bold text-slate-800">{t['login.welcome_back']}</h1>
+              <p className="text-slate-500 mt-1">{t['login.subtitle']}</p>
             </div>
 
             {/* 登入表單 */}
@@ -146,7 +148,7 @@ export default function LoginPage() {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-slate-700">電子郵件</FormLabel>
+                      <FormLabel className="text-slate-700">{t['login.email']}</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -166,7 +168,7 @@ export default function LoginPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-slate-700">密碼</FormLabel>
+                      <FormLabel className="text-slate-700">{t['login.password']}</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -188,7 +190,7 @@ export default function LoginPage() {
                   disabled={isLoading}
                   loading={isLoading}
                 >
-                  {isLoading ? '登入中...' : '登入'}
+                  {isLoading ? t['login.logging_in'] : t['login.login']}
                 </HoloButton>
               </form>
             </Form>
@@ -200,7 +202,7 @@ export default function LoginPage() {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-white/80 backdrop-blur-sm px-3 text-slate-400">
-                  或使用以下方式
+                  {t['login.or_use']}
                 </span>
               </div>
             </div>
@@ -213,14 +215,14 @@ export default function LoginPage() {
                     loginGoogle(credentialResponse.credential)
                       .then(() => {
                         toast({
-                          title: '登入成功',
-                          description: '歡迎回來！',
+                          title: t['login.success'],
+                          description: t['login.welcome_desc'],
                         })
                       })
                       .catch(err => {
                         toast({
                           variant: 'destructive',
-                          title: 'Google 登入失敗',
+                          title: t['login.google_failed'],
                           description: err.message
                         })
                       })
@@ -229,8 +231,8 @@ export default function LoginPage() {
                 onError={() => {
                   toast({
                     variant: 'destructive',
-                    title: 'Google 登入失敗',
-                    description: '登入視窗已關閉或發生錯誤'
+                    title: t['login.google_failed'],
+                    description: t['login.google_error_desc']
                   })
                 }}
                 useOneTap
@@ -248,13 +250,13 @@ export default function LoginPage() {
                   <div className="relative flex justify-center text-xs uppercase">
                     <span className="bg-amber-50 backdrop-blur-sm px-3 text-amber-600 font-medium flex items-center gap-1">
                       <Zap className="w-3 h-3" />
-                      開發模式快速登入
+                      {t['login.dev_quick_login']}
                     </span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  {DEV_ACCOUNTS.map((account) => (
+                  {devAccounts.map((account) => (
                     <motion.button
                       key={account.email}
                       type="button"
@@ -275,7 +277,7 @@ export default function LoginPage() {
                   ))}
                   <p className="text-xs text-amber-600 text-center mt-3 flex items-center justify-center gap-1">
                     <span>⚠️</span>
-                    <span>此功能僅在 localhost 環境顯示</span>
+                    <span>{t['login.dev_only_hint']}</span>
                   </p>
                 </div>
               </>

@@ -6,6 +6,7 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLocale } from '@/components/providers/locale-provider'
 import { ImageUploadZone } from '@/components/image-generation/ImageUploadZone'
 import { createTask, uploadImages, startGeneration, type GenerationMode } from '@/lib/api/image-generation'
 import { usePermissions } from '@/hooks/usePermissions'
@@ -13,6 +14,7 @@ import { Loader2, Sparkles, Image as ImageIcon, History } from 'lucide-react'
 
 export default function ImageGenerationUploadPage() {
   const router = useRouter()
+  const { t } = useLocale()
   const { isAdmin } = usePermissions()
   const [files, setFiles] = useState<File[]>([])
   const [mode, setMode] = useState<GenerationMode>('white_bg_topview')
@@ -31,7 +33,7 @@ export default function ImageGenerationUploadPage() {
 
   const handleSubmit = async () => {
     if (files.length === 0) {
-      setError('請至少上傳一張圖片')
+      setError(t['image_gen.error_no_images'])
       return
     }
 
@@ -56,7 +58,7 @@ export default function ImageGenerationUploadPage() {
       router.push(`/image-generation/results/${task.id}`)
     } catch (err: any) {
       console.error('Image generation error:', err)
-      setError(err.response?.data?.detail || '圖片生成失敗，請重試')
+      setError(err.response?.data?.detail || t['image_gen.error_generation_failed'])
     } finally {
       setIsUploading(false)
     }
@@ -67,9 +69,9 @@ export default function ImageGenerationUploadPage() {
       {/* 標題 */}
       <div className="mb-8 flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">AI 圖片生成</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{t['image_gen.upload_title']}</h1>
           <p className="text-gray-600">
-            上傳產品圖片，AI 將自動生成專業的電商圖片或白底圖
+            {t['image_gen.upload_subtitle']}
           </p>
         </div>
         <button
@@ -82,13 +84,13 @@ export default function ImageGenerationUploadPage() {
           "
         >
           <History className="w-4 h-4" />
-          查看歷史
+          {t['image_gen.view_history']}
         </button>
       </div>
 
       {/* 生成模式選擇 */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">選擇生成模式</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t['image_gen.select_mode']}</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* 白底圖模式 */}
@@ -114,12 +116,12 @@ export default function ImageGenerationUploadPage() {
             <div className="ml-3">
               <div className="flex items-center gap-2">
                 <ImageIcon className="w-5 h-5 text-gray-700" />
-                <span className="font-medium text-gray-900">白底 TopView 正面圖</span>
+                <span className="font-medium text-gray-900">{t['image_gen.mode_white_bg_topview']}</span>
               </div>
               <p className="text-sm text-gray-600 mt-1">
-                生成純白背景、俯視角度的專業產品圖
+                {t['image_gen.mode_white_bg_desc']}
               </p>
-              <p className="text-xs text-gray-500 mt-1">適合電商平台展示</p>
+              <p className="text-xs text-gray-500 mt-1">{t['image_gen.mode_white_bg_hint']}</p>
             </div>
           </label>
 
@@ -146,12 +148,12 @@ export default function ImageGenerationUploadPage() {
             <div className="ml-3">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-gray-700" />
-                <span className="font-medium text-gray-900">專業美食攝影圖</span>
+                <span className="font-medium text-gray-900">{t['image_gen.mode_professional_photo']}</span>
               </div>
               <p className="text-sm text-gray-600 mt-1">
-                生成多角度、專業打光的高質感產品圖
+                {t['image_gen.mode_professional_desc']}
               </p>
-              <p className="text-xs text-gray-500 mt-1">適合社交媒體、廣告宣傳</p>
+              <p className="text-xs text-gray-500 mt-1">{t['image_gen.mode_professional_hint']}</p>
             </div>
           </label>
         </div>
@@ -160,12 +162,12 @@ export default function ImageGenerationUploadPage() {
         {mode === 'professional_photo' && (
           <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              風格描述（可選）
+              {t['image_gen.style_description']}
             </label>
             <textarea
               value={styleDescription}
               onChange={(e) => setStyleDescription(e.target.value)}
-              placeholder="例如：溫暖陽光灑落、木質餐桌背景、清新自然風格..."
+              placeholder={t['image_gen.style_hint']}
               rows={3}
               className="
                 w-full px-3 py-2 border border-gray-300 rounded-lg
@@ -174,7 +176,7 @@ export default function ImageGenerationUploadPage() {
               "
             />
             <p className="text-xs text-gray-500 mt-1">
-              描述您期望的拍攝風格、背景、光線等，AI 將根據描述生成
+              {t['image_gen.style_help']}
             </p>
           </div>
         )}
@@ -182,7 +184,7 @@ export default function ImageGenerationUploadPage() {
         {/* 每張圖片輸出數量 */}
         <div className="mt-6 pt-6 border-t border-gray-200">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            每張圖片生成數量
+            {t['image_gen.outputs_per_image']}
           </label>
           <div className="flex items-center gap-4">
             <select
@@ -195,27 +197,27 @@ export default function ImageGenerationUploadPage() {
               "
             >
               {outputOptions.map((n) => (
-                <option key={n} value={n}>{n} 張</option>
+                <option key={n} value={n}>{n} {t['image_gen.pieces']}</option>
               ))}
             </select>
             <span className="text-sm text-gray-600">
-              預計生成 <span className="font-semibold text-blue-600">{files.length * outputsPerImage}</span> 張圖片
+              {t['image_gen.estimated_output'].replace('{count}', String(files.length * outputsPerImage))}
               {files.length > 0 && (
                 <span className="text-gray-500">
-                  （{files.length} 張輸入 × {outputsPerImage} 張輸出）
+                  {`（${t['image_gen.inputs_label'].replace('{n}', String(files.length))} × ${t['image_gen.outputs_label'].replace('{n}', String(outputsPerImage))}）`}
                 </span>
               )}
             </span>
           </div>
           <p className="text-xs text-gray-500 mt-2">
-            每張上傳的產品圖片都會生成指定數量的結果圖片
+            {t['image_gen.outputs_help']}
           </p>
         </div>
       </div>
 
       {/* 圖片上傳區域 */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">上傳產品圖片</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t['image_gen.upload_section']}</h2>
         <ImageUploadZone onFilesChange={setFiles} maxFiles={maxFiles} />
       </div>
 
@@ -239,7 +241,7 @@ export default function ImageGenerationUploadPage() {
           "
           disabled={isUploading}
         >
-          取消
+          {t['image_gen.cancel']}
         </button>
 
         <button
@@ -258,12 +260,12 @@ export default function ImageGenerationUploadPage() {
           {isUploading ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              上傳中...
+              {t['image_gen.uploading']}
             </>
           ) : (
             <>
               <Sparkles className="w-5 h-5" />
-              開始生成
+              {t['image_gen.start_generation']}
             </>
           )}
         </button>

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
 import { GoogleOAuthProvider } from "@react-oauth/google"
 import { ScrapeProvider } from '@/contexts/scrape-context'
+import { LocaleProvider } from '@/components/providers/locale-provider'
 import { AuthProvider } from '@/components/providers/auth-provider'
 import { GlobalScrapeIndicator } from '@/components/global-scrape-indicator'
 import { KeyboardShortcutsDialog } from '@/components/keyboard-shortcuts-dialog'
@@ -52,16 +53,18 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <GoogleOAuthProvider clientId={googleClientId}>
-      <AuthProvider>
-        <QueryClientProvider client={queryClient}>
-          <ScrapeProvider>
-            <GlobalShortcutsProvider>
-              {children}
-              <GlobalScrapeIndicator />
-            </GlobalShortcutsProvider>
-          </ScrapeProvider>
-        </QueryClientProvider>
-      </AuthProvider>
+      <LocaleProvider>
+        <AuthProvider>
+          <QueryClientProvider client={queryClient}>
+            <ScrapeProvider>
+              <GlobalShortcutsProvider>
+                {children}
+                <GlobalScrapeIndicator />
+              </GlobalShortcutsProvider>
+            </ScrapeProvider>
+          </QueryClientProvider>
+        </AuthProvider>
+      </LocaleProvider>
     </GoogleOAuthProvider>
   )
 }

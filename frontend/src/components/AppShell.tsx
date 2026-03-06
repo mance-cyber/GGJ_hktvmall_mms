@@ -7,6 +7,7 @@
 import { usePathname } from 'next/navigation'
 import { Sidebar, MobileBottomNav } from './Sidebar'
 import { useAuth } from './providers/auth-provider'
+import { useLocale } from './providers/locale-provider'
 import { ClickSpark } from './ui/click-spark'
 import { GlobalChatWidget } from './GlobalChatWidget'
 
@@ -54,6 +55,7 @@ function AnimatedBackground() {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { user, loading } = useAuth()
+  const { t } = useLocale()
 
   // 公共頁面不顯示側邊欄
   const isPublicPage = publicPaths.some(path => pathname.startsWith(path))
@@ -69,7 +71,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-3">
           <div className="animate-spin w-8 h-8 border-3 border-cyan-500 border-t-transparent rounded-full" />
-          <p className="text-sm text-slate-400">載入中...</p>
+          <p className="text-sm text-slate-400">{t['common.loading']}</p>
         </div>
       </div>
     )

@@ -28,6 +28,7 @@ async def batch_find_competitors(
     category_sub: str = None,
     dry_run: bool = False,
     platform: str = "hktvmall",
+    force: bool = False,
 ):
     """
     批量為商品搜索競品（多平台）
@@ -63,12 +64,17 @@ async def batch_find_competitors(
         )
 
         # 支援多種 source：gogojap_csv / xlsx_import
-        query = select(Product).where(
-            and_(
-                Product.source.in_(['gogojap_csv', 'xlsx_import']),
-                ~Product.id.in_(subquery)
+        if force:
+            query = select(Product).where(
+                Product.source.in_(['gogojap_csv', 'xlsx_import'])
             )
-        )
+        else:
+            query = select(Product).where(
+                and_(
+                    Product.source.in_(['gogojap_csv', 'xlsx_import']),
+                    ~Product.id.in_(subquery)
+                )
+            )
 
         if category_main:
             query = query.where(Product.category_main == category_main)
@@ -130,7 +136,7 @@ async def batch_find_competitors(
                 matches = [r for r in results if r.is_match and r.match_confidence >= 0.4]
 
                 if matches:
-                    for match in matches[:1]:  # 每個商品最多保存一個最佳匹配
+                    for match in matches:  # 保存所有符合條件的匹配
                         await service.save_match_to_db(
                             db=session,
                             product_id=str(product.id),
@@ -203,6 +209,7 @@ def main():
                         choices=["hktvmall", "wellcome"],
                         help="搜索平台（預設: hktvmall）")
     parser.add_argument("--dry-run", action="store_true", help="測試模式（不實際執行）")
+    parser.add_argument("--force", action="store_true", help="強制重新匹配所有商品（忽略已有映射）")
     parser.add_argument("--stats", action="store_true", help="顯示統計信息")
 
     args = parser.parse_args()
@@ -216,6 +223,7 @@ def main():
             category_sub=args.category_sub,
             dry_run=args.dry_run,
             platform=args.platform,
+            force=args.force,
         ))
 
 

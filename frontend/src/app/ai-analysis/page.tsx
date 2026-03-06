@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { api, analyticsApi } from '@/lib/api'
+import { useLocale } from '@/components/providers/locale-provider'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Brain,
@@ -86,6 +87,8 @@ interface DataSummary {
 }
 
 export default function AIAnalysisPage() {
+  const { t } = useLocale()
+
   // State
   const [inputData, setInputData] = useState<string>('')
   const [dataSummary, setDataSummary] = useState<DataSummary | null>(null)
@@ -186,7 +189,7 @@ export default function AIAnalysisPage() {
         products_sample: analysisData.our_products.slice(0, 5).map((p: any) => ({
           name: p.name,
           price: p.price || 0,
-          category: p.category || '未分類'
+          category: p.category || t['ai_analysis.uncategorized']
         })),
         competitors_sample: analysisData.competitors.slice(0, 3).map((c: any) => ({
           name: c.name,
@@ -198,7 +201,7 @@ export default function AIAnalysisPage() {
       setDataLoaded(true)
     } catch (error) {
       console.error('Failed to load database data:', error)
-      alert('加載數據失敗，請稍後再試')
+      alert(t['ai_analysis.error_load_failed'])
     } finally {
       setIsLoadingData(false)
     }
@@ -209,7 +212,7 @@ export default function AIAnalysisPage() {
     mutationFn: async (data: Record<string, any>) => {
       const result = await api.generateDataInsights(data)
       if (!result.success) {
-        throw new Error(result.error || '生成摘要失敗')
+        throw new Error(result.error || t['ai_analysis.error_insights_failed'])
       }
       return result
     },
@@ -224,7 +227,7 @@ export default function AIAnalysisPage() {
     mutationFn: async ({ insights, context }: { insights: string; context: Record<string, any> }) => {
       const result = await api.generateMarketingStrategy(insights, context)
       if (!result.success) {
-        throw new Error(result.error || '生成策略失敗')
+        throw new Error(result.error || t['ai_analysis.error_strategy_failed'])
       }
       return result
     },
@@ -240,7 +243,7 @@ export default function AIAnalysisPage() {
       const result = await api.runFullAnalysis(data, {})
       // 後端可能返回 200 但 success: false，需要手動處理
       if (!result.success) {
-        const errorMsg = result.error || result.strategy?.error || '分析失敗，請稍後再試'
+        const errorMsg = result.error || result.strategy?.error || t['ai_analysis.error_analysis_failed']
         throw new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg))
       }
       return result
@@ -265,7 +268,7 @@ export default function AIAnalysisPage() {
       setTotalTokens(0)
       insightsMutation.mutate(data)
     } catch (e) {
-      alert('輸入數據格式錯誤，請確保是有效的 JSON')
+      alert(t['ai_analysis.error_invalid_json'])
     }
   }
 
@@ -285,7 +288,7 @@ export default function AIAnalysisPage() {
       setTotalTokens(0)
       fullAnalysisMutation.mutate(data)
     } catch (e) {
-      alert('輸入數據格式錯誤，請確保是有效的 JSON')
+      alert(t['ai_analysis.error_invalid_json'])
     }
   }
 
@@ -304,21 +307,21 @@ export default function AIAnalysisPage() {
           <div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <Brain className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
-              AI 智能分析
+              {t['ai_analysis.title']}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              數據摘要 + Marketing 策略
+              {t['ai_analysis.subtitle']}
             </p>
           </div>
 
           {/* Status Badge */}
           {config?.api_key_set ? (
             <HoloBadge variant="success">
-              <CheckCircle2 className="w-3 h-3" /> AI 已就緒
+              <CheckCircle2 className="w-3 h-3" /> {t['ai_analysis.badge_ready']}
             </HoloBadge>
           ) : (
             <HoloBadge variant="error">
-              <AlertCircle className="w-3 h-3" /> 請先設定 API Key
+              <AlertCircle className="w-3 h-3" /> {t['ai_analysis.badge_no_key']}
             </HoloBadge>
           )}
         </div>
@@ -327,15 +330,15 @@ export default function AIAnalysisPage() {
         <HoloCard glowColor="cyan" className="p-3 sm:p-4">
           <h2 className="text-sm sm:text-base font-bold text-slate-800 mb-3 flex items-center gap-2">
             <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
-            分析流程
+            {t['ai_analysis.pipeline_title']}
           </h2>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3">
             <PipelineStep
               step={1}
               icon={BarChart3}
-              title="輸入數據"
-              description="市場數據、價格變動"
+              title={t['ai_analysis.pipeline_step1_title']}
+              description={t['ai_analysis.pipeline_step1_desc']}
               status={inputData ? 'completed' : 'pending'}
               color="blue"
             />
@@ -344,8 +347,8 @@ export default function AIAnalysisPage() {
             <PipelineStep
               step={2}
               icon={FileText}
-              title="AI #1: 摘要"
-              description="生成洞察報告"
+              title={t['ai_analysis.pipeline_step2_title']}
+              description={t['ai_analysis.pipeline_step2_desc']}
               status={insightsMutation.isPending ? 'processing' : insightsResult ? 'completed' : 'pending'}
               color="purple"
             />
@@ -354,8 +357,8 @@ export default function AIAnalysisPage() {
             <PipelineStep
               step={3}
               icon={Target}
-              title="AI #2: 策略"
-              description="Marketing 建議"
+              title={t['ai_analysis.pipeline_step3_title']}
+              description={t['ai_analysis.pipeline_step3_desc']}
               status={strategyMutation.isPending || fullAnalysisMutation.isPending ? 'processing' : strategyResult ? 'completed' : 'pending'}
               color="green"
             />
@@ -370,11 +373,11 @@ export default function AIAnalysisPage() {
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm sm:text-base font-bold text-slate-800 flex items-center gap-2">
                   <Database className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
-                  數據來源
+                  {t['ai_analysis.section_data_source']}
                 </h3>
                 {dataLoaded && (
                   <HoloBadge variant="success" size="sm">
-                    <CheckCircle2 className="w-3 h-3" /> 數據已就緒
+                    <CheckCircle2 className="w-3 h-3" /> {t['ai_analysis.badge_data_ready']}
                   </HoloBadge>
                 )}
               </div>
@@ -385,14 +388,14 @@ export default function AIAnalysisPage() {
                   <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center">
                     <Database className="w-6 h-6 sm:w-7 sm:h-7 text-blue-500" />
                   </div>
-                  <p className="text-sm text-slate-600 mb-3">從數據庫獲取最新數據</p>
+                  <p className="text-sm text-slate-600 mb-3">{t['ai_analysis.fetch_description']}</p>
                   <HoloButton
                     onClick={loadDatabaseData}
                     disabled={isLoadingData}
                     loading={isLoadingData}
                     icon={!isLoadingData ? <RefreshCw className="w-4 h-4" /> : undefined}
                   >
-                    {isLoadingData ? '正在加載...' : '加載數據'}
+                    {isLoadingData ? t['ai_analysis.loading'] : t['ai_analysis.load_data']}
                   </HoloButton>
                 </div>
               ) : (
@@ -401,27 +404,27 @@ export default function AIAnalysisPage() {
                   {/* 統計數據網格 */}
                   <div className="grid grid-cols-3 gap-2">
                     <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-2 border border-blue-100">
-                      <p className="text-[10px] text-slate-500">產品</p>
+                      <p className="text-[10px] text-slate-500">{t['ai_analysis.stat_products']}</p>
                       <p className="text-base sm:text-lg font-bold text-blue-600">{dataSummary?.total_products || 0}</p>
                     </div>
                     <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-2 border border-purple-100">
-                      <p className="text-[10px] text-slate-500">競品</p>
+                      <p className="text-[10px] text-slate-500">{t['ai_analysis.stat_competitors']}</p>
                       <p className="text-base sm:text-lg font-bold text-purple-600">{dataSummary?.total_competitors || 0}</p>
                     </div>
                     <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-2 border border-green-100">
-                      <p className="text-[10px] text-slate-500">類別</p>
+                      <p className="text-[10px] text-slate-500">{t['ai_analysis.stat_categories']}</p>
                       <p className="text-base sm:text-lg font-bold text-green-600">{dataSummary?.total_categories || 0}</p>
                     </div>
                     <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-2 border border-amber-100">
-                      <p className="text-[10px] text-slate-500">月營收</p>
+                      <p className="text-[10px] text-slate-500">{t['ai_analysis.stat_monthly_revenue']}</p>
                       <p className="text-base sm:text-lg font-bold text-amber-600">${(dataSummary?.monthly_revenue || 0).toLocaleString()}</p>
                     </div>
                     <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-lg p-2 border border-cyan-100">
-                      <p className="text-[10px] text-slate-500">月利潤</p>
+                      <p className="text-[10px] text-slate-500">{t['ai_analysis.stat_monthly_profit']}</p>
                       <p className="text-base sm:text-lg font-bold text-cyan-600">${(dataSummary?.monthly_profit || 0).toLocaleString()}</p>
                     </div>
                     <div className="bg-gradient-to-br from-red-50 to-pink-50 rounded-lg p-2 border border-red-100">
-                      <p className="text-[10px] text-slate-500">警報</p>
+                      <p className="text-[10px] text-slate-500">{t['ai_analysis.stat_alerts']}</p>
                       <p className="text-base sm:text-lg font-bold text-red-600">{dataSummary?.pending_alerts || 0}</p>
                     </div>
                   </div>
@@ -429,7 +432,7 @@ export default function AIAnalysisPage() {
                   {/* 產品樣本 - 手機隱藏 */}
                   {dataSummary?.products_sample && dataSummary.products_sample.length > 0 && (
                     <div className="hidden sm:block bg-slate-50 rounded-lg p-2 border border-slate-100">
-                      <p className="text-[10px] text-slate-500 mb-1">產品樣本</p>
+                      <p className="text-[10px] text-slate-500 mb-1">{t['ai_analysis.product_sample']}</p>
                       <div className="space-y-0.5">
                         {dataSummary.products_sample.slice(0, 3).map((p, i) => (
                           <div key={i} className="flex items-center justify-between text-xs">
@@ -444,12 +447,12 @@ export default function AIAnalysisPage() {
                   {/* 競品樣本 - 手機隱藏 */}
                   {dataSummary?.competitors_sample && dataSummary.competitors_sample.length > 0 && (
                     <div className="hidden sm:block bg-slate-50 rounded-lg p-2 border border-slate-100">
-                      <p className="text-[10px] text-slate-500 mb-1">競爭對手</p>
+                      <p className="text-[10px] text-slate-500 mb-1">{t['ai_analysis.competitor_sample']}</p>
                       <div className="space-y-0.5">
                         {dataSummary.competitors_sample.map((c, i) => (
                           <div key={i} className="flex items-center justify-between text-xs">
                             <span className="text-slate-700">{c.name}</span>
-                            <span className="text-slate-500">{c.product_count} 個</span>
+                            <span className="text-slate-500">{t['ai_analysis.competitor_count'].replace('{count}', String(c.product_count))}</span>
                           </div>
                         ))}
                       </div>
@@ -466,7 +469,7 @@ export default function AIAnalysisPage() {
                       className="text-slate-500 text-xs h-7"
                     >
                       <RefreshCw className={cn("w-3 h-3 mr-1", isLoadingData && "animate-spin")} />
-                      刷新
+                      {t['ai_analysis.refresh']}
                     </Button>
                   </div>
                 </div>
@@ -483,7 +486,7 @@ export default function AIAnalysisPage() {
                   loading={fullAnalysisMutation.isPending}
                   icon={!fullAnalysisMutation.isPending ? <Play className="w-4 h-4" /> : undefined}
                 >
-                  {fullAnalysisMutation.isPending ? '分析中...' : '一鍵分析'}
+                  {fullAnalysisMutation.isPending ? t['ai_analysis.analyzing'] : t['ai_analysis.full_analysis']}
                 </HoloButton>
 
                 <HoloButton
@@ -493,21 +496,21 @@ export default function AIAnalysisPage() {
                   loading={insightsMutation.isPending}
                   className="hidden sm:flex"
                 >
-                  {insightsMutation.isPending ? '' : '僅摘要'}
+                  {insightsMutation.isPending ? '' : t['ai_analysis.insights_only']}
                 </HoloButton>
               </div>
 
               {!config?.api_key_set && (
                 <p className="text-xs text-red-500 mt-2 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" />
-                  請先設定 API Key
+                  {t['ai_analysis.warning_api_key']}
                 </p>
               )}
 
               {!inputData && config?.api_key_set && (
                 <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" />
-                  請先加載數據
+                  {t['ai_analysis.warning_load_data']}
                 </p>
               )}
             </HoloCard>
@@ -522,7 +525,7 @@ export default function AIAnalysisPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-slate-600 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    Tokens
+                    {t['ai_analysis.tokens']}
                   </span>
                   <span className="text-sm font-bold text-slate-800">{totalTokens.toLocaleString()}</span>
                 </div>
@@ -534,7 +537,7 @@ export default function AIAnalysisPage() {
           <div className="space-y-3 sm:space-y-4">
             {/* Insights Result */}
             <ResultPanel
-              title="數據摘要"
+              title={t['ai_analysis.result_insights_title']}
               icon={FileText}
               content={insightsResult}
               isLoading={insightsMutation.isPending}
@@ -561,14 +564,14 @@ export default function AIAnalysisPage() {
                   loading={strategyMutation.isPending}
                   icon={!strategyMutation.isPending ? <ArrowRight className="w-4 h-4" /> : undefined}
                 >
-                  {strategyMutation.isPending ? '生成策略中...' : '繼續生成 Marketing 策略'}
+                  {strategyMutation.isPending ? t['ai_analysis.generating_strategy'] : t['ai_analysis.generate_strategy']}
                 </HoloButton>
               </motion.div>
             )}
 
             {/* Strategy Result */}
             <ResultPanel
-              title="Marketing 策略"
+              title={t['ai_analysis.result_strategy_title']}
               icon={Target}
               content={strategyResult}
               isLoading={strategyMutation.isPending || (fullAnalysisMutation.isPending && !!insightsResult)}
@@ -673,6 +676,8 @@ function ResultPanel({
   expanded: boolean
   onToggle: () => void
 }) {
+  const { t } = useLocale()
+
   const colors = {
     purple: {
       header: 'bg-purple-50 border-purple-100',
@@ -703,7 +708,7 @@ function ResultPanel({
           {content && (
             <HoloBadge variant="success" size="sm" className="hidden sm:flex">
               <CheckCircle2 className="w-2.5 h-2.5" />
-              已生成
+              {t['ai_analysis.badge_generated']}
             </HoloBadge>
           )}
         </div>
@@ -751,7 +756,7 @@ function ResultPanel({
               ) : (
                 <div className="text-center py-8 text-slate-400">
                   <Icon className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                  <p className="text-xs">尚未生成</p>
+                  <p className="text-xs">{t['ai_analysis.result_empty']}</p>
                 </div>
               )}
             </div>

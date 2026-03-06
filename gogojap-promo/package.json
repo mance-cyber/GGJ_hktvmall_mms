@@ -1,0 +1,24 @@
+{
+  "name": "gogojap-promo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render GoGoJapPromo out/gogojap-promo.mp4",
+    "preview": "remotion still GoGoJapPromo --frame=0 out/preview-0.png && remotion still GoGoJapPromo --frame=150 out/preview-150.png && remotion still GoGoJapPromo --frame=450 out/preview-450.png && remotion still GoGoJapPromo --frame=750 out/preview-750.png && remotion still GoGoJapPromo --frame=899 out/preview-899.png"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.242",
+    "@remotion/transitions": "4.0.242",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "4.0.242"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "typescript": "^5.7.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  }
+}

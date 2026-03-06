@@ -31,19 +31,23 @@ import {
   ContentPipelineInput,
   LocalizedContentResponse,
 } from '@/lib/api'
+import { useLocale } from '@/components/providers/locale-provider'
 
 // =============================================
 // 統一內容生成流水線頁面（支持多語言）
 // =============================================
 
-const AVAILABLE_LANGUAGES = [
-  { code: 'zh-HK', name: '繁體中文', flag: '🇭🇰' },
-  { code: 'zh-CN', name: '簡體中文', flag: '🇨🇳' },
-  { code: 'en', name: 'English', flag: '🇬🇧' },
-  { code: 'ja', name: '日本語', flag: '🇯🇵' },
-]
-
 export default function ContentPipelinePage() {
+  const { t } = useLocale()
+
+  // 可用語言列表（name 從 i18n 字典讀取）
+  const AVAILABLE_LANGUAGES = [
+    { code: 'zh-HK', name: t['content_pipeline.lang_zh_HK'], flag: '🇭🇰' },
+    { code: 'zh-CN', name: t['content_pipeline.lang_zh_CN'], flag: '🇨🇳' },
+    { code: 'en', name: 'English', flag: '🇬🇧' },
+    { code: 'ja', name: '日本語', flag: '🇯🇵' },
+  ]
+
   // Tab 狀態
   const [activeTab, setActiveTab] = useState<'single' | 'batch'>('single')
 
@@ -102,12 +106,12 @@ export default function ContentPipelinePage() {
 
   const handleGenerate = async () => {
     if (!productName.trim()) {
-      setError('請輸入產品名稱')
+      setError(t['content_pipeline.error_no_name'])
       return
     }
 
     if (selectedLanguages.length === 0) {
-      setError('請至少選擇一種語言')
+      setError(t['content_pipeline.error_no_lang'])
       return
     }
 
@@ -139,7 +143,7 @@ export default function ContentPipelinePage() {
         setActiveResultLang(response.languages[0])
       }
     } catch (err: any) {
-      setError(err.message || '生成失敗')
+      setError(err.message || t['content_pipeline.error_failed'])
     } finally {
       setIsLoading(false)
     }
@@ -184,17 +188,17 @@ export default function ContentPipelinePage() {
     const products = parseBatchInput(batchInput)
 
     if (products.length === 0) {
-      setError('請輸入產品信息')
+      setError(t['content_pipeline.error_no_info'])
       return
     }
 
     if (products.length > 20) {
-      setError('最多支持 20 個產品')
+      setError(t['content_pipeline.error_max_products'])
       return
     }
 
     if (selectedLanguages.length === 0) {
-      setError('請至少選擇一種語言')
+      setError(t['content_pipeline.error_no_lang'])
       return
     }
 
@@ -214,7 +218,7 @@ export default function ContentPipelinePage() {
       const response = await contentPipelineApi.batchGenerate(request)
       setBatchResult(response)
     } catch (err: any) {
-      setError(err.message || '批量生成失敗')
+      setError(err.message || t['content_pipeline.error_batch_failed'])
     } finally {
       setIsLoading(false)
     }
@@ -233,9 +237,9 @@ export default function ContentPipelinePage() {
               <Zap className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-800">內容生成流水線</h1>
+              <h1 className="text-2xl font-bold text-slate-800">{t['content_pipeline.title']}</h1>
               <p className="text-slate-500 text-sm">
-                一次 AI 調用，生成多語言文案、SEO、結構化數據
+                {t['content_pipeline.subtitle']}
               </p>
             </div>
           </div>
@@ -253,7 +257,7 @@ export default function ContentPipelinePage() {
           >
             <span className="flex items-center gap-2">
               <Wand2 className="w-4 h-4" />
-              單個生成
+              {t['content_pipeline.tab_single']}
             </span>
           </button>
           <button
@@ -266,7 +270,7 @@ export default function ContentPipelinePage() {
           >
             <span className="flex items-center gap-2">
               <List className="w-4 h-4" />
-              批量生成
+              {t['content_pipeline.tab_batch']}
             </span>
           </button>
         </div>
@@ -278,26 +282,26 @@ export default function ContentPipelinePage() {
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
                 <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-amber-500" />
-                  產品信息
+                  {t['content_pipeline.section_product_info']}
                 </h2>
 
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      產品名稱 <span className="text-red-500">*</span>
+                      {t['content_pipeline.field_product_name']} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={productName}
                       onChange={(e) => setProductName(e.target.value)}
-                      placeholder="例：A5 和牛"
+                      placeholder={t['content_pipeline.placeholder_product_name']}
                       className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">品牌</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t['content_pipeline.field_brand']}</label>
                       <input
                         type="text"
                         value={brand}
@@ -307,12 +311,12 @@ export default function ContentPipelinePage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">分類</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t['content_pipeline.field_category']}</label>
                       <input
                         type="text"
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
-                        placeholder="例：和牛"
+                        placeholder={t['content_pipeline.placeholder_category']}
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                       />
                     </div>
@@ -320,44 +324,44 @@ export default function ContentPipelinePage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">價格 (HKD)</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t['content_pipeline.field_price']}</label>
                       <input
                         type="number"
                         value={price}
                         onChange={(e) => setPrice(e.target.value)}
-                        placeholder="例：888"
+                        placeholder={t['content_pipeline.placeholder_price']}
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">產地</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t['content_pipeline.field_origin']}</label>
                       <input
                         type="text"
                         value={origin}
                         onChange={(e) => setOrigin(e.target.value)}
-                        placeholder="例：日本福崗"
+                        placeholder={t['content_pipeline.placeholder_origin']}
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">產品特點（每行一個）</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">{t['content_pipeline.field_features']}</label>
                     <textarea
                       value={features}
                       onChange={(e) => setFeatures(e.target.value)}
-                      placeholder="福崗直送&#10;雪花紋理細膩&#10;入口即化"
+                      placeholder={t['content_pipeline.placeholder_features']}
                       rows={3}
                       className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all resize-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">現有描述（可選）</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">{t['content_pipeline.field_description']}</label>
                     <textarea
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      placeholder="如有現有描述可填入，AI 會參考優化"
+                      placeholder={t['content_pipeline.placeholder_description']}
                       rows={2}
                       className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all resize-none"
                     />
@@ -368,22 +372,19 @@ export default function ContentPipelinePage() {
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
                 <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
                   <List className="w-5 h-5 text-amber-500" />
-                  批量產品輸入
+                  {t['content_pipeline.section_batch_input']}
                 </h2>
 
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      產品列表 <span className="text-red-500">*</span>
-                      <span className="font-normal text-slate-500 ml-2">（最多 20 個）</span>
+                      {t['content_pipeline.field_product_list']} <span className="text-red-500">*</span>
+                      <span className="font-normal text-slate-500 ml-2">{t['content_pipeline.product_list_limit']}</span>
                     </label>
                     <textarea
                       value={batchInput}
                       onChange={(e) => setBatchInput(e.target.value)}
-                      placeholder={`每行一個產品名，或 JSON 格式：
-A5 和牛
-北海道帆立貝
-博多明太子`}
+                      placeholder={t['content_pipeline.placeholder_batch']}
                       rows={8}
                       className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all resize-none font-mono text-sm"
                     />
@@ -396,9 +397,9 @@ A5 和牛
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
               <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
                 <Languages className="w-5 h-5 text-emerald-500" />
-                語言選擇
+                {t['content_pipeline.section_language']}
                 <span className="text-xs font-normal text-slate-500">
-                  （最多 4 種，一次 AI 調用）
+                  {t['content_pipeline.language_limit']}
                 </span>
               </h2>
 
@@ -428,15 +429,15 @@ A5 和牛
               {/* 其他選項 */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">語氣風格</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t['content_pipeline.field_tone']}</label>
                   <select
                     value={tone}
                     onChange={(e) => setTone(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                   >
-                    <option value="professional">專業</option>
-                    <option value="casual">輕鬆</option>
-                    <option value="luxury">高端奢華</option>
+                    <option value="professional">{t['content_pipeline.tone_professional']}</option>
+                    <option value="casual">{t['content_pipeline.tone_casual']}</option>
+                    <option value="luxury">{t['content_pipeline.tone_luxury']}</option>
                   </select>
                 </div>
                 <div className="flex items-end">
@@ -447,7 +448,7 @@ A5 和牛
                       onChange={(e) => setIncludeFaq(e.target.checked)}
                       className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-slate-700">生成 FAQ Schema</span>
+                    <span className="text-sm text-slate-700">{t['content_pipeline.option_faq']}</span>
                   </label>
                 </div>
               </div>
@@ -468,12 +469,12 @@ A5 和牛
                 {isLoading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    生成中...
+                    {t['content_pipeline.generating']}
                   </>
                 ) : (
                   <>
                     <Wand2 className="w-5 h-5" />
-                    生成 {selectedLanguages.length} 種語言
+                    {t['content_pipeline.generate_n_langs'].replace('{n}', String(selectedLanguages.length))}
                   </>
                 )}
               </button>
@@ -497,15 +498,15 @@ A5 和牛
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {batchResult.failed_count === 0 ? <CheckCircle className="w-6 h-6" /> : <AlertCircle className="w-6 h-6" />}
-                      <span className="font-semibold">批量生成完成</span>
+                      <span className="font-semibold">{t['content_pipeline.batch_complete']}</span>
                     </div>
                     <div className="flex items-center gap-4 text-white/80 text-sm">
                       <span className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
                         {batchResult.total_time_ms}ms
                       </span>
-                      <span>成功 {batchResult.successful_count}/{batchResult.total_products}</span>
-                      <span>{batchResult.languages.length} 種語言</span>
+                      <span>{t['content_pipeline.batch_success'].replace('{successful}', String(batchResult.successful_count)).replace('{total}', String(batchResult.total_products))}</span>
+                      <span>{t['content_pipeline.result_lang_count'].replace('{n}', String(batchResult.languages.length))}</span>
                     </div>
                   </div>
                 </div>
@@ -519,7 +520,7 @@ A5 和牛
                           {index + 1}
                         </span>
                         <span className="font-medium text-slate-800">
-                          {res.product_info?.name || `產品 ${index + 1}`}
+                          {res.product_info?.name || t['content_pipeline.batch_product_fallback'].replace('{n}', String(index + 1))}
                         </span>
                       </div>
                       <span className="text-xs text-slate-500">{res.generation_time_ms}ms</span>
@@ -554,14 +555,14 @@ A5 和牛
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <Check className="w-6 h-6" />
-                      <span className="font-semibold">生成完成</span>
+                      <span className="font-semibold">{t['content_pipeline.result_complete']}</span>
                     </div>
                     <div className="flex items-center gap-4 text-emerald-100 text-sm">
                       <span className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
                         {result.generation_time_ms}ms
                       </span>
-                      <span>{result.languages.length} 種語言</span>
+                      <span>{t['content_pipeline.result_lang_count'].replace('{n}', String(result.languages.length))}</span>
                     </div>
                   </div>
                 </div>
@@ -599,7 +600,7 @@ A5 和牛
 
                 {/* 文案結果 */}
                 <ResultSection
-                  title="文案生成"
+                  title={t['content_pipeline.result_section_content']}
                   icon={<FileText className="w-5 h-5" />}
                   color="blue"
                   expanded={expandedSections.has('content')}
@@ -607,18 +608,18 @@ A5 和牛
                 >
                   <div className="space-y-4">
                     <ResultItem
-                      label="標題"
+                      label={t['content_pipeline.result_field_title']}
                       value={currentLangContent.title}
                       onCopy={() => copyToClipboard(currentLangContent.title)}
                     />
                     <ResultItem
-                      label="賣點"
+                      label={t['content_pipeline.result_field_selling_points']}
                       value={currentLangContent.selling_points.map((p, i) => `${i + 1}. ${p}`).join('\n')}
                       onCopy={() => copyToClipboard(currentLangContent.selling_points.join('\n'))}
                       multiline
                     />
                     <ResultItem
-                      label="描述"
+                      label={t['content_pipeline.result_field_description']}
                       value={currentLangContent.description}
                       onCopy={() => copyToClipboard(currentLangContent.description)}
                       multiline
@@ -628,14 +629,14 @@ A5 和牛
 
                 {/* SEO 結果 */}
                 <ResultSection
-                  title="SEO 優化"
+                  title={t['content_pipeline.result_section_seo']}
                   icon={<Target className="w-5 h-5" />}
                   color="emerald"
                   expanded={expandedSections.has('seo')}
                   onToggle={() => toggleSection('seo')}
                   badge={
                     <span className="px-2 py-0.5 text-xs font-bold bg-emerald-100 text-emerald-700 rounded-full">
-                      {currentLangContent.seo_score} 分
+                      {t['content_pipeline.result_seo_score'].replace('{score}', String(currentLangContent.seo_score))}
                     </span>
                   }
                 >
@@ -653,10 +654,10 @@ A5 和牛
                     />
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <span className="text-xs font-medium text-slate-500 uppercase">主關鍵詞</span>
+                        <span className="text-xs font-medium text-slate-500 uppercase">{t['content_pipeline.result_field_primary_keyword']}</span>
                         <p className="mt-1 font-medium text-emerald-700">{currentLangContent.primary_keyword}</p>
                         <div className="mt-2">
-                          <span className="text-xs text-slate-400">次要關鍵詞</span>
+                          <span className="text-xs text-slate-400">{t['content_pipeline.result_field_secondary_keywords']}</span>
                           <div className="flex flex-wrap gap-1 mt-1">
                             {currentLangContent.secondary_keywords.map((kw, i) => (
                               <span key={i} className="px-2 py-0.5 text-xs bg-slate-100 text-slate-600 rounded">{kw}</span>
@@ -665,7 +666,7 @@ A5 和牛
                         </div>
                       </div>
                       <div>
-                        <span className="text-xs font-medium text-slate-500 uppercase">評分明細</span>
+                        <span className="text-xs font-medium text-slate-500 uppercase">{t['content_pipeline.result_field_score_breakdown']}</span>
                         <div className="mt-1 space-y-1">
                           {Object.entries(currentLangContent.score_breakdown).map(([key, value]) => (
                             <div key={key} className="flex justify-between text-sm">
@@ -681,7 +682,7 @@ A5 和牛
 
                 {/* GEO 結果 */}
                 <ResultSection
-                  title="GEO 結構化數據"
+                  title={t['content_pipeline.result_section_geo']}
                   icon={<Code className="w-5 h-5" />}
                   color="purple"
                   expanded={expandedSections.has('geo')}
@@ -705,7 +706,7 @@ A5 和牛
 
                     {currentLangContent.ai_summary && (
                       <ResultItem
-                        label="AI 摘要"
+                        label={t['content_pipeline.result_field_ai_summary']}
                         value={currentLangContent.ai_summary}
                         onCopy={() => copyToClipboard(currentLangContent.ai_summary)}
                         multiline
@@ -714,7 +715,7 @@ A5 和牛
 
                     {currentLangContent.ai_facts.length > 0 && (
                       <div>
-                        <span className="text-xs font-medium text-slate-500 uppercase">AI 事實</span>
+                        <span className="text-xs font-medium text-slate-500 uppercase">{t['content_pipeline.result_field_ai_facts']}</span>
                         <ul className="mt-1 space-y-1">
                           {currentLangContent.ai_facts.map((fact, i) => (
                             <li key={i} className="text-sm text-slate-700 flex items-start gap-2">
@@ -734,9 +735,9 @@ A5 和牛
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center mx-auto mb-4">
                   <Languages className="w-8 h-8 text-blue-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-800 mb-2">多語言內容生成</h3>
+                <h3 className="text-lg font-semibold text-slate-800 mb-2">{t['content_pipeline.empty_title']}</h3>
                 <p className="text-slate-500 text-sm max-w-sm mx-auto">
-                  選擇語言後，一次 AI 調用即可生成多種語言的文案、SEO 和結構化數據
+                  {t['content_pipeline.empty_description']}
                 </p>
 
                 <div className="mt-8 flex items-center justify-center gap-2">
@@ -751,7 +752,7 @@ A5 和牛
                 </div>
 
                 <div className="mt-4 text-xs text-slate-400">
-                  支持繁體中文、簡體中文、英文、日文
+                  {t['content_pipeline.empty_supported']}
                 </div>
               </div>
             )}

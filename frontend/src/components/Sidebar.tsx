@@ -37,7 +37,10 @@ import { cn } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useAuth } from '@/components/providers/auth-provider'
+import { useLocale } from '@/components/providers/locale-provider'
 import { usePermissions, PERMISSIONS } from '@/hooks/usePermissions'
+import { LocaleToggle } from '@/components/LocaleToggle'
+import type { TranslationDict } from '@/i18n/types'
 
 // =============================================
 // 導航項目類型定義
@@ -133,145 +136,147 @@ const categoryColors = {
 // 導航配置 - 按功能分組（含權限和顏色）
 // =============================================
 
-const navigationGroups: NavGroup[] = [
-  {
-    title: '總覽',
-    color: categoryColors.blue,
-    items: [
-      { name: '儀表板', href: '/', icon: LayoutDashboard },
-      { name: '投資回報', href: '/roi', icon: DollarSign, description: 'GoGoJap 幫你賺了多少錢' },
-    ]
-  },
-  {
-    title: '市場情報',
-    color: categoryColors.emerald,
-    items: [
-      {
-        name: 'AI 助手',
-        href: '/agent',
-        icon: MessageSquare,
-        permissions: [PERMISSIONS.AGENT_READ]
-      },
-      {
-        name: '市場應對中心',
-        href: '/market-response',
-        icon: Globe,
-        permissions: [PERMISSIONS.COMPETITORS_READ]
-      },
-      {
-        name: '競品監測',
-        href: '/competitors',
-        icon: Eye,
-        permissions: [PERMISSIONS.COMPETITORS_READ]
-      },
-      {
-        name: '價格趨勢',
-        href: '/trends',
-        icon: TrendingUp,
-        permissions: [PERMISSIONS.PRICES_READ]
-      },
-      {
-        name: 'SEO 排名',
-        href: '/seo-ranking',
-        icon: Search,
-        permissions: [PERMISSIONS.COMPETITORS_READ]
-      },
-    ]
-  },
-  {
-    title: '商品管理',
-    color: categoryColors.purple,
-    items: [
-      {
-        name: '改價審批',
-        href: '/pricing-approval',
-        icon: ClipboardCheck,
-        description: 'Human-in-the-Loop 審批 AI 改價提案',
-        permissions: [PERMISSIONS.PRICES_READ]
-      },
-      {
-        name: '商品庫',
-        href: '/products',
-        icon: Package,
-        permissions: [PERMISSIONS.COMPETITORS_READ]
-      },
-      {
-        name: '類別管理',
-        href: '/categories',
-        icon: FolderOpen,
-        permissions: [PERMISSIONS.COMPETITORS_READ]
-      },
-      {
-        name: 'AI 圖片生成',
-        href: '/image-generation/upload',
-        icon: Image,
-        permissions: [PERMISSIONS.AGENT_READ]
-      },
-      {
-        name: '內容流水線',
-        href: '/content-pipeline',
-        icon: Zap,
-        permissions: [PERMISSIONS.AGENT_READ]
-      },
-      {
-        name: '生成歷史',
-        href: '/content-history',
-        icon: Clock,
-        permissions: [PERMISSIONS.AGENT_READ]
-      },
-      {
-        name: 'AI 分析',
-        href: '/ai-analysis',
-        icon: Brain,
-        permissions: [PERMISSIONS.AGENT_READ]
-      },
-    ]
-  },
-  {
-    title: '通知',
-    color: categoryColors.orange,
-    items: [
-      {
-        name: '警報中心',
-        href: '/alerts',
-        icon: Bell,
-        permissions: [PERMISSIONS.NOTIFICATIONS_READ]
-      },
-    ]
-  },
-  {
-    title: '系統',
-    color: categoryColors.pink,
-    roles: ['admin'],
-    items: [
-      {
-        name: 'Agent Team',
-        href: '/agent-team',
-        icon: Bot,
-        description: 'Agent 團隊狀態與控制',
-        permissions: [PERMISSIONS.SYSTEM_SETTINGS_READ]
-      },
-      {
-        name: 'AI 設定',
-        href: '/ai-settings',
-        icon: Brain,
-        permissions: [PERMISSIONS.SYSTEM_SETTINGS_READ]
-      },
-      {
-        name: '數據導出',
-        href: '/export',
-        icon: Download,
-        permissions: [PERMISSIONS.REPORTS_EXPORT]
-      },
-      {
-        name: '設定',
-        href: '/settings',
-        icon: Settings,
-        permissions: [PERMISSIONS.SYSTEM_SETTINGS_READ]
-      },
-    ]
-  },
-]
+function getNavigationGroups(t: TranslationDict): NavGroup[] {
+  return [
+    {
+      title: t['sidebar.overview'],
+      color: categoryColors.blue,
+      items: [
+        { name: t['sidebar.dashboard'], href: '/', icon: LayoutDashboard },
+        { name: t['sidebar.roi'], href: '/roi', icon: DollarSign, description: t['sidebar.roi_desc'] },
+      ]
+    },
+    {
+      title: t['sidebar.market_intel'],
+      color: categoryColors.emerald,
+      items: [
+        {
+          name: t['sidebar.ai_assistant'],
+          href: '/agent',
+          icon: MessageSquare,
+          permissions: [PERMISSIONS.AGENT_READ]
+        },
+        {
+          name: t['sidebar.market_response'],
+          href: '/market-response',
+          icon: Globe,
+          permissions: [PERMISSIONS.COMPETITORS_READ]
+        },
+        {
+          name: t['sidebar.competitor_monitor'],
+          href: '/competitors',
+          icon: Eye,
+          permissions: [PERMISSIONS.COMPETITORS_READ]
+        },
+        {
+          name: t['sidebar.price_trends'],
+          href: '/trends',
+          icon: TrendingUp,
+          permissions: [PERMISSIONS.PRICES_READ]
+        },
+        {
+          name: t['sidebar.seo_ranking'],
+          href: '/seo-ranking',
+          icon: Search,
+          permissions: [PERMISSIONS.COMPETITORS_READ]
+        },
+      ]
+    },
+    {
+      title: t['sidebar.product_mgmt'],
+      color: categoryColors.purple,
+      items: [
+        {
+          name: t['sidebar.pricing_approval'],
+          href: '/pricing-approval',
+          icon: ClipboardCheck,
+          description: t['sidebar.pricing_approval_desc'],
+          permissions: [PERMISSIONS.PRICES_READ]
+        },
+        {
+          name: t['sidebar.product_library'],
+          href: '/products',
+          icon: Package,
+          permissions: [PERMISSIONS.COMPETITORS_READ]
+        },
+        {
+          name: t['sidebar.categories'],
+          href: '/categories',
+          icon: FolderOpen,
+          permissions: [PERMISSIONS.COMPETITORS_READ]
+        },
+        {
+          name: t['sidebar.ai_image'],
+          href: '/image-generation/upload',
+          icon: Image,
+          permissions: [PERMISSIONS.AGENT_READ]
+        },
+        {
+          name: t['sidebar.content_pipeline'],
+          href: '/content-pipeline',
+          icon: Zap,
+          permissions: [PERMISSIONS.AGENT_READ]
+        },
+        {
+          name: t['sidebar.content_history'],
+          href: '/content-history',
+          icon: Clock,
+          permissions: [PERMISSIONS.AGENT_READ]
+        },
+        {
+          name: t['sidebar.ai_analysis'],
+          href: '/ai-analysis',
+          icon: Brain,
+          permissions: [PERMISSIONS.AGENT_READ]
+        },
+      ]
+    },
+    {
+      title: t['sidebar.notifications'],
+      color: categoryColors.orange,
+      items: [
+        {
+          name: t['sidebar.alert_center'],
+          href: '/alerts',
+          icon: Bell,
+          permissions: [PERMISSIONS.NOTIFICATIONS_READ]
+        },
+      ]
+    },
+    {
+      title: t['sidebar.system'],
+      color: categoryColors.pink,
+      roles: ['admin'],
+      items: [
+        {
+          name: t['sidebar.agent_team'],
+          href: '/agent-team',
+          icon: Bot,
+          description: t['sidebar.agent_team_desc'],
+          permissions: [PERMISSIONS.SYSTEM_SETTINGS_READ]
+        },
+        {
+          name: t['sidebar.ai_settings'],
+          href: '/ai-settings',
+          icon: Brain,
+          permissions: [PERMISSIONS.SYSTEM_SETTINGS_READ]
+        },
+        {
+          name: t['sidebar.data_export'],
+          href: '/export',
+          icon: Download,
+          permissions: [PERMISSIONS.REPORTS_EXPORT]
+        },
+        {
+          name: t['sidebar.settings'],
+          href: '/settings',
+          icon: Settings,
+          permissions: [PERMISSIONS.SYSTEM_SETTINGS_READ]
+        },
+      ]
+    },
+  ]
+}
 
 // =============================================
 // 主組件
@@ -282,6 +287,7 @@ export function Sidebar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const { user, logout } = useAuth()
   const { role, hasAnyPermission } = usePermissions()
+  const { t } = useLocale()
 
   // 獲取未讀警報數
   const { data: alerts } = useQuery({
@@ -293,7 +299,7 @@ export function Sidebar() {
 
   // 過濾有權限的導航組和項目
   const filteredNavGroups = useMemo(() => {
-    return navigationGroups
+    return getNavigationGroups(t)
       .filter((group) => {
         if (group.roles && role && !group.roles.includes(role)) return false
         if (group.permissions && !hasAnyPermission(...group.permissions)) return false
@@ -308,7 +314,7 @@ export function Sidebar() {
         }),
       }))
       .filter((group) => group.items.length > 0)
-  }, [role, hasAnyPermission])
+  }, [role, hasAnyPermission, t])
 
   // 路由變化時關閉移動端菜單
   useEffect(() => {
@@ -348,7 +354,7 @@ export function Sidebar() {
             <div className="text-gray-900 font-semibold text-lg">GoGoJap</div>
             <div className="text-gray-500 text-xs flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-              AI 營運系統
+              {t['sidebar.system_name']}
             </div>
           </div>
         </div>
@@ -425,8 +431,13 @@ export function Sidebar() {
         })}
       </nav>
 
+      {/* 語言切換 */}
+      <div className="mt-3 px-1">
+        <LocaleToggle />
+      </div>
+
       {/* User Info & Logout */}
-      <div className="mt-4 pt-4 border-t border-purple-200/30">
+      <div className="mt-2 pt-4 border-t border-purple-200/30">
         {user && (
           <div className="p-3 rounded-xl bg-gradient-to-br from-purple-50 to-cyan-50 border border-purple-200/50 backdrop-blur-sm">
             <div className="flex items-center gap-3 mb-3">
@@ -439,7 +450,7 @@ export function Sidebar() {
                 </p>
                 <p className="text-xs text-gray-500 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                  {role === 'admin' ? '管理員' : role === 'operator' ? '操作員' : '檢視者'}
+                  {role === 'admin' ? t['common.admin'] : role === 'operator' ? t['common.operator'] : t['common.viewer']}
                 </p>
               </div>
             </div>
@@ -449,7 +460,7 @@ export function Sidebar() {
               className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50/50 rounded-lg transition-all border border-transparent hover:border-red-200"
             >
               <LogOut className="w-4 h-4" />
-              登出
+              {t['common.logout']}
             </button>
           </div>
         )}
@@ -504,6 +515,7 @@ export function Sidebar() {
 export function MobileBottomNav() {
   const pathname = usePathname()
   const [showMore, setShowMore] = useState(false)
+  const { t } = useLocale()
   const { data: alerts } = useQuery({
     queryKey: ['alerts-count-mobile'],
     queryFn: () => api.getAlerts(false, undefined, 1),
@@ -513,18 +525,18 @@ export function MobileBottomNav() {
 
   // 主導航項目（顯示在底部欄）
   const quickNav = [
-    { name: '首頁', href: '/', icon: LayoutDashboard },
-    { name: '警報', href: '/alerts', icon: Bell, badge: unreadCount },
-    { name: 'AI', href: '/agent', icon: MessageSquare },
+    { name: t['mobile.home'], href: '/', icon: LayoutDashboard },
+    { name: t['mobile.alerts'], href: '/alerts', icon: Bell, badge: unreadCount },
+    { name: t['mobile.ai'], href: '/agent', icon: MessageSquare },
   ]
 
   // 更多菜單項目
   const moreItems = [
-    { name: '競品監測', href: '/competitors', icon: Eye },
-    { name: '商品庫', href: '/products', icon: Package },
-    { name: 'AI 文案', href: '/ai-content', icon: Sparkles },
-    { name: '價格趨勢', href: '/trends', icon: TrendingUp },
-    { name: '設定', href: '/settings', icon: Settings },
+    { name: t['mobile.competitor_monitor'], href: '/competitors', icon: Eye },
+    { name: t['mobile.product_library'], href: '/products', icon: Package },
+    { name: t['mobile.ai_content'], href: '/ai-content', icon: Sparkles },
+    { name: t['mobile.price_trends'], href: '/trends', icon: TrendingUp },
+    { name: t['mobile.settings'], href: '/settings', icon: Settings },
   ]
 
   // 檢查更多菜單中是否有當前頁面
@@ -621,7 +633,7 @@ export function MobileBottomNav() {
             )}
           >
             <Menu className={cn("w-5 h-5", (showMore || isMoreActive) && "scale-110")} />
-            <span className="text-[10px] mt-1 font-medium">更多</span>
+            <span className="text-[10px] mt-1 font-medium">{t['common.more']}</span>
           </button>
         </nav>
       </div>

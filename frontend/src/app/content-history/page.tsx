@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/future-tech'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { useLocale } from '@/components/providers/locale-provider'
 
 // =============================================
 // 內容生成歷史記錄頁面
@@ -51,15 +52,17 @@ const LANGUAGE_FLAGS: Record<string, string> = {
   'ja': '🇯🇵',
 }
 
-const LANGUAGE_NAMES: Record<string, string> = {
-  'zh-HK': '繁體中文',
-  'zh-CN': '簡體中文',
-  'en': 'English',
-  'ja': '日本語',
-}
-
 export default function ContentHistoryPage() {
   const router = useRouter()
+  const { t } = useLocale()
+
+  // 語言名稱映射（從 i18n 字典讀取）
+  const LANGUAGE_NAMES: Record<string, string> = useMemo(() => ({
+    'zh-HK': t['content_history.lang_zh_HK'],
+    'zh-CN': t['content_history.lang_zh_CN'],
+    'en': 'English',
+    'ja': '日本語',
+  }), [t])
 
   // 數據狀態
   const [history, setHistory] = useState<PipelineHistoryListResponse | null>(null)
@@ -92,11 +95,11 @@ export default function ContentHistoryPage() {
       })
       setHistory(response)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '獲取歷史記錄失敗')
+      setError(err instanceof Error ? err.message : t['content_history.fetch_failed'])
     } finally {
       setIsLoading(false)
     }
-  }, [page, searchQuery, filterLanguage, filterBatch])
+  }, [page, searchQuery, filterLanguage, filterBatch, t])
 
   useEffect(() => {
     fetchHistory()
@@ -115,7 +118,7 @@ export default function ContentHistoryPage() {
       setDeleteId(null)
       fetchHistory()
     } catch (err) {
-      setError(err instanceof Error ? err.message : '刪除失敗')
+      setError(err instanceof Error ? err.message : t['content_history.delete_failed'])
     } finally {
       setIsDeleting(false)
     }
@@ -130,7 +133,7 @@ export default function ContentHistoryPage() {
   }
 
   // 格式化時間
-  const formatTime = (dateStr: string) => {
+  const formatTime = useCallback((dateStr: string) => {
     const date = new Date(dateStr)
     const now = new Date()
     const diffMs = now.getTime() - date.getTime()
@@ -138,16 +141,16 @@ export default function ContentHistoryPage() {
     const diffHours = Math.floor(diffMs / 3600000)
     const diffDays = Math.floor(diffMs / 86400000)
 
-    if (diffMins < 1) return '剛剛'
-    if (diffMins < 60) return `${diffMins} 分鐘前`
-    if (diffHours < 24) return `${diffHours} 小時前`
-    if (diffDays < 7) return `${diffDays} 天前`
+    if (diffMins < 1) return t['content_history.time_just_now']
+    if (diffMins < 60) return t['content_history.time_minutes_ago'].replace('{n}', String(diffMins))
+    if (diffHours < 24) return t['content_history.time_hours_ago'].replace('{n}', String(diffHours))
+    if (diffDays < 7) return t['content_history.time_days_ago'].replace('{n}', String(diffDays))
     return date.toLocaleDateString('zh-HK', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
     })
-  }
+  }, [t])
 
   // SEO 分數顏色
   const getSeoScoreStyle = (score: number | null) => {
@@ -220,10 +223,10 @@ export default function ContentHistoryPage() {
               <div className="p-2 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl shadow-lg shadow-purple-500/20">
                 <Clock className="w-6 h-6 text-white" />
               </div>
-              生成歷史
+              {t['content_history.title']}
             </h1>
             <p className="text-slate-500 mt-2">
-              查看和管理內容流水線的生成記錄
+              {t['content_history.subtitle']}
             </p>
           </div>
 
@@ -232,7 +235,7 @@ export default function ContentHistoryPage() {
             icon={<Zap className="w-4 h-4" />}
             onClick={() => router.push('/content-pipeline')}
           >
-            前往生成
+            {t['content_history.go_generate']}
           </HoloButton>
         </div>
 
@@ -240,7 +243,7 @@ export default function ContentHistoryPage() {
         <StaggerContainer className="grid grid-cols-3 gap-4">
           <HoloCard className="p-4">
             <DataMetric
-              label="總記錄"
+              label={t['content_history.metric_total']}
               value={stats.total}
               icon={<FileText className="w-5 h-5" />}
               color="purple"
@@ -248,7 +251,7 @@ export default function ContentHistoryPage() {
           </HoloCard>
           <HoloCard className="p-4">
             <DataMetric
-              label="單個生成"
+              label={t['content_history.metric_single']}
               value={stats.single}
               icon={<Zap className="w-5 h-5" />}
               color="blue"
@@ -256,7 +259,7 @@ export default function ContentHistoryPage() {
           </HoloCard>
           <HoloCard className="p-4">
             <DataMetric
-              label="批量生成"
+              label={t['content_history.metric_batch']}
               value={stats.batch}
               icon={<CheckCheck className="w-5 h-5" />}
               color="green"
@@ -274,7 +277,7 @@ export default function ContentHistoryPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="搜索產品名稱..."
+                placeholder={t['content_history.search_placeholder']}
                 className="pl-10"
               />
             </div>
@@ -289,7 +292,7 @@ export default function ContentHistoryPage() {
               )}
             >
               <SlidersHorizontal className="w-4 h-4" />
-              篩選
+              {t['content_history.filter']}
               {(filterLanguage || filterBatch) && (
                 <span className="w-2 h-2 bg-purple-500 rounded-full" />
               )}
@@ -319,15 +322,15 @@ export default function ContentHistoryPage() {
                   <div className="flex items-end gap-6">
                     {/* 語言篩選 */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-600">語言</label>
+                      <label className="text-sm font-medium text-slate-600">{t['content_history.filter_language']}</label>
                       <select
                         value={filterLanguage}
                         onChange={(e) => setFilterLanguage(e.target.value)}
                         className="h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400"
                       >
-                        <option value="">全部語言</option>
-                        <option value="zh-HK">🇭🇰 繁體中文</option>
-                        <option value="zh-CN">🇨🇳 簡體中文</option>
+                        <option value="">{t['content_history.filter_all_languages']}</option>
+                        <option value="zh-HK">🇭🇰 {t['content_history.lang_zh_HK']}</option>
+                        <option value="zh-CN">🇨🇳 {t['content_history.lang_zh_CN']}</option>
                         <option value="en">🇬🇧 English</option>
                         <option value="ja">🇯🇵 日本語</option>
                       </select>
@@ -335,15 +338,15 @@ export default function ContentHistoryPage() {
 
                     {/* 類型篩選 */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-600">生成類型</label>
+                      <label className="text-sm font-medium text-slate-600">{t['content_history.filter_gen_type']}</label>
                       <select
                         value={filterBatch}
                         onChange={(e) => setFilterBatch(e.target.value)}
                         className="h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400"
                       >
-                        <option value="">全部類型</option>
-                        <option value="false">單個生成</option>
-                        <option value="true">批量生成</option>
+                        <option value="">{t['content_history.filter_all_types']}</option>
+                        <option value="false">{t['content_history.filter_single']}</option>
+                        <option value="true">{t['content_history.filter_batch']}</option>
                       </select>
                     </div>
 
@@ -359,7 +362,7 @@ export default function ContentHistoryPage() {
                         className="text-slate-500 hover:text-slate-700"
                       >
                         <X className="w-4 h-4 mr-1" />
-                        清除篩選
+                        {t['content_history.clear_filter']}
                       </Button>
                     )}
                   </div>
@@ -390,22 +393,22 @@ export default function ContentHistoryPage() {
         {/* ========== 歷史記錄列表 ========== */}
         <HoloCard className="overflow-hidden">
           <HoloPanelHeader
-            title={`生成記錄${history ? ` (${history.total} 條)` : ''}`}
+            title={`${t['content_history.table_title']}${history ? ` (${t['content_history.table_count'].replace('{total}', String(history.total))})` : ''}`}
             icon={<Clock className="w-4 h-4" />}
           />
 
           {history?.items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-slate-400">
               <FileText className="w-12 h-12 mb-4 opacity-50" />
-              <p className="text-lg font-medium">暫無生成記錄</p>
-              <p className="text-sm mt-1">開始生成內容，記錄將顯示在這裡</p>
+              <p className="text-lg font-medium">{t['content_history.empty_title']}</p>
+              <p className="text-sm mt-1">{t['content_history.empty_desc']}</p>
               <HoloButton
                 variant="primary"
                 icon={<Zap className="w-4 h-4" />}
                 className="mt-6"
                 onClick={() => router.push('/content-pipeline')}
               >
-                開始生成
+                {t['content_history.start_generate']}
               </HoloButton>
             </div>
           ) : (
@@ -415,12 +418,12 @@ export default function ContentHistoryPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/80">
-                      <th className="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">產品</th>
-                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">語言</th>
-                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">SEO</th>
-                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">耗時</th>
-                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">時間</th>
-                      <th className="text-right py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">操作</th>
+                      <th className="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t['content_history.col_product']}</th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t['content_history.col_language']}</th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t['content_history.col_seo']}</th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t['content_history.col_duration']}</th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t['content_history.col_time']}</th>
+                      <th className="text-right py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t['content_history.col_actions']}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -448,7 +451,7 @@ export default function ContentHistoryPage() {
                               </div>
                               {item.is_batch && (
                                 <HoloBadge variant="info" size="sm">
-                                  批量 #{(item.batch_index ?? 0) + 1}
+                                  {t['content_history.batch_label'].replace('{n}', String((item.batch_index ?? 0) + 1))}
                                 </HoloBadge>
                               )}
                             </div>
@@ -507,7 +510,7 @@ export default function ContentHistoryPage() {
                                 className="gap-1.5 text-purple-600 border-purple-200 hover:bg-purple-50"
                               >
                                 <RefreshCw className="w-3.5 h-3.5" />
-                                重新生成
+                                {t['content_history.regenerate']}
                               </Button>
                               <Button
                                 variant="ghost"
@@ -530,7 +533,10 @@ export default function ContentHistoryPage() {
               {history && history.total > 20 && (
                 <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
                   <p className="text-sm text-slate-500">
-                    共 {history.total} 條記錄，第 {history.page} / {Math.ceil(history.total / history.page_size)} 頁
+                    {t['content_history.pagination']
+                      .replace('{total}', String(history.total))
+                      .replace('{page}', String(history.page))
+                      .replace('{pages}', String(Math.ceil(history.total / history.page_size)))}
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -541,7 +547,7 @@ export default function ContentHistoryPage() {
                       className="gap-1"
                     >
                       <ChevronLeft className="w-4 h-4" />
-                      上一頁
+                      {t['content_history.prev_page']}
                     </Button>
                     <Button
                       variant="outline"
@@ -550,7 +556,7 @@ export default function ContentHistoryPage() {
                       disabled={!history.has_more}
                       className="gap-1"
                     >
-                      下一頁
+                      {t['content_history.next_page']}
                       <ChevronRight className="w-4 h-4" />
                     </Button>
                   </div>
@@ -581,17 +587,17 @@ export default function ContentHistoryPage() {
                   <div className="p-2 bg-red-100 rounded-lg">
                     <Trash2 className="w-5 h-5 text-red-600" />
                   </div>
-                  <h3 className="text-lg font-semibold text-slate-900">確認刪除</h3>
+                  <h3 className="text-lg font-semibold text-slate-900">{t['content_history.dialog_delete_title']}</h3>
                 </div>
                 <p className="text-slate-600 mb-6">
-                  確定要刪除這條歷史記錄嗎？此操作無法撤銷。
+                  {t['content_history.dialog_delete_message']}
                 </p>
                 <div className="flex gap-3 justify-end">
                   <Button
                     variant="outline"
                     onClick={() => setDeleteId(null)}
                   >
-                    取消
+                    {t['common.cancel']}
                   </Button>
                   <Button
                     variant="destructive"
@@ -600,7 +606,7 @@ export default function ContentHistoryPage() {
                     className="gap-2"
                   >
                     {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
-                    刪除
+                    {t['content_history.delete']}
                   </Button>
                 </div>
               </motion.div>

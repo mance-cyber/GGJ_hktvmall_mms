@@ -28,6 +28,7 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { PageTransition, HoloCard } from '@/components/ui/future-tech'
 import { apiClient } from '@/lib/api/client'
+import { useLocale } from '@/components/providers/locale-provider'
 
 // =============================================
 // Types
@@ -97,6 +98,7 @@ function AgentCard({
   onToggle: (name: string, enable: boolean) => void
   isToggling: boolean
 }) {
+  const { t } = useLocale()
   const Icon = AGENT_ICONS[agent.name] || Bot
   const gradient = AGENT_COLORS[agent.name] || 'from-slate-500 to-slate-600'
 
@@ -145,18 +147,18 @@ function AgentCard({
             ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
             : 'bg-slate-100 text-slate-500'
         )}>
-          {agent.enabled ? '運行中' : '已停用'}
+          {agent.enabled ? t['agent_team.status_running'] : t['agent_team.status_disabled']}
         </Badge>
         {agent.is_quiet_hours && (
           <Badge variant="outline" className="text-xs text-amber-600 border-amber-200">
-            靜默時段
+            {t['agent_team.badge_quiet_hours']}
           </Badge>
         )}
       </div>
 
       {/* 訂閱的事件 */}
       <div className="space-y-1">
-        <span className="text-xs text-slate-400">訂閱事件:</span>
+        <span className="text-xs text-slate-400">{t['agent_team.label_subscriptions']}</span>
         <div className="flex flex-wrap gap-1">
           {agent.subscriptions.map(sub => (
             <span key={sub} className="text-xs px-2 py-0.5 bg-slate-100 rounded-full text-slate-600">
@@ -169,7 +171,7 @@ function AgentCard({
       {/* 擴展信息 */}
       {agent.rules && (
         <div className="mt-3 pt-3 border-t border-slate-100">
-          <span className="text-xs text-slate-400">定價規則:</span>
+          <span className="text-xs text-slate-400">{t['agent_team.label_pricing_rules']}</span>
           <div className="grid grid-cols-2 gap-1 mt-1">
             {Object.entries(agent.rules).map(([k, v]) => (
               <span key={k} className="text-xs text-slate-600">
@@ -182,7 +184,7 @@ function AgentCard({
 
       {agent.schedule && (
         <div className="mt-3 pt-3 border-t border-slate-100">
-          <span className="text-xs text-slate-400">排程:</span>
+          <span className="text-xs text-slate-400">{t['agent_team.label_schedule']}</span>
           <div className="space-y-1 mt-1">
             {Object.entries(agent.schedule).map(([time, events]) => (
               <div key={time} className="flex items-center gap-2 text-xs text-slate-600">
@@ -203,11 +205,13 @@ function AgentCard({
 // =============================================
 
 function EventLogPanel({ events }: { events: EventLog[] }) {
+  const { t } = useLocale()
+
   if (!events.length) {
     return (
       <div className="text-center py-8 text-slate-400">
         <Activity className="w-8 h-8 mx-auto mb-2 opacity-50" />
-        <p className="text-sm">尚無事件記錄</p>
+        <p className="text-sm">{t['agent_team.events_empty']}</p>
       </div>
     )
   }
@@ -244,6 +248,7 @@ function EventLogPanel({ events }: { events: EventLog[] }) {
 // =============================================
 
 export default function AgentTeamPage() {
+  const { t } = useLocale()
   const queryClient = useQueryClient()
   const [togglingAgent, setTogglingAgent] = useState<string | null>(null)
 
@@ -286,7 +291,7 @@ export default function AgentTeamPage() {
             Agent Team
           </h1>
           <p className="text-slate-500 mt-1">
-            6 Agent 協同運營 \u00B7 事件驅動架構
+            {t['agent_team.subtitle']}
           </p>
         </div>
         <Button
@@ -300,7 +305,7 @@ export default function AgentTeamPage() {
           ) : (
             <RefreshCw className="w-4 h-4 mr-2" />
           )}
-          刷新
+          {t['agent_team.refresh']}
         </Button>
       </div>
 
@@ -308,15 +313,15 @@ export default function AgentTeamPage() {
       <div className="grid grid-cols-3 gap-4">
         <HoloCard className="p-4 text-center">
           <div className="text-2xl font-bold text-emerald-600">{enabledCount}/{agents.length}</div>
-          <div className="text-xs text-slate-500 mt-1">Agent 運行中</div>
+          <div className="text-xs text-slate-500 mt-1">{t['agent_team.stat_agents_running']}</div>
         </HoloCard>
         <HoloCard className="p-4 text-center">
           <div className="text-2xl font-bold text-blue-600">{totalHandlers}</div>
-          <div className="text-xs text-slate-500 mt-1">事件處理器</div>
+          <div className="text-xs text-slate-500 mt-1">{t['agent_team.stat_event_handlers']}</div>
         </HoloCard>
         <HoloCard className="p-4 text-center">
           <div className="text-2xl font-bold text-purple-600">{events.length}</div>
-          <div className="text-xs text-slate-500 mt-1">最近事件</div>
+          <div className="text-xs text-slate-500 mt-1">{t['agent_team.stat_recent_events']}</div>
         </HoloCard>
       </div>
 
@@ -325,14 +330,14 @@ export default function AgentTeamPage() {
         <div className="flex items-center gap-2 p-4 bg-red-50 rounded-lg border border-red-200">
           <AlertTriangle className="w-5 h-5 text-red-500" />
           <span className="text-sm text-red-700">
-            無法連接 Agent Team API: {(error as Error).message}
+            {t['agent_team.error_connect']}{(error as Error).message}
           </span>
         </div>
       )}
 
       {/* Agent Cards */}
       <div>
-        <h2 className="text-lg font-semibold text-slate-700 mb-3">Agent 狀態</h2>
+        <h2 className="text-lg font-semibold text-slate-700 mb-3">{t['agent_team.section_agent_status']}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {agents.map(agent => (
             <AgentCard
@@ -351,7 +356,7 @@ export default function AgentTeamPage() {
       <div>
         <h2 className="text-lg font-semibold text-slate-700 mb-3 flex items-center gap-2">
           <Activity className="w-5 h-5 text-blue-500" />
-          事件日誌
+          {t['agent_team.section_event_log']}
         </h2>
         <HoloCard className="p-4">
           <EventLogPanel events={events} />
@@ -361,7 +366,7 @@ export default function AgentTeamPage() {
       {/* Handler Map */}
       {Object.keys(handlerMap).length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-slate-700 mb-3">事件訂閱圖</h2>
+          <h2 className="text-lg font-semibold text-slate-700 mb-3">{t['agent_team.section_event_map']}</h2>
           <HoloCard className="p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {Object.entries(handlerMap).map(([eventType, handlers]) => (

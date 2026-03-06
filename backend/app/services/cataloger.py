@@ -176,6 +176,7 @@ class CatalogService:
                             original_price=product.original_price,
                             review_count=product.review_count,
                             extra_data=extra_data,
+                            stock_status=product.stock_status,
                         )
                         stats[action] += 1
 
@@ -310,6 +311,7 @@ class CatalogService:
         original_price: Optional[Decimal] = None,
         review_count: Optional[int] = None,
         extra_data: Optional[dict] = None,
+        stock_status: Optional[str] = None,
     ) -> str:
         """
         插入或更新單個競品商品
@@ -347,6 +349,7 @@ class CatalogService:
                     competitor_product_id=cp.id,
                     price=price,
                     original_price=original_price,
+                    stock_status=stock_status,
                     review_count=review_count,
                     raw_data=extra_data,
                     currency="HKD",
@@ -365,6 +368,7 @@ class CatalogService:
                     competitor_product_id=existing.id,
                     price=price,
                     original_price=original_price,
+                    stock_status=stock_status,
                     review_count=review_count,
                     raw_data=extra_data,
                     currency="HKD",

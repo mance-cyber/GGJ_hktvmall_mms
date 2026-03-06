@@ -1,0 +1,172 @@
+# =============================================
+# GoGoJap - Vultr 生產環境 Docker Compose
+# =============================================
+# 服務清單：
+#   - backend (FastAPI + Uvicorn)
+#   - celery-worker (後台任務)
+#   - celery-beat (定時排程)
+#   - redis (佇列 + 快取)
+#   - nginx (反向代理 + SSL)
+#   - openclaw (爬蟲引擎)
+# =============================================
+
+services:
+  # ==================== Nginx 反向代理 ====================
+  nginx:
+    image: nginx:alpine
+    container_name: gogojap-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - gogojap-net
+
+  # ==================== FastAPI 後端 ====================
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: gogojap-backend
+    restart: unless-stopped
+    expose:
+      - "8000"
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - app_logs:/app/logs
+    networks:
+      - gogojap-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  # ==================== Celery Worker ====================
+  celery-worker:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: gogojap-celery-worker
+    restart: unless-stopped
+    command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=2
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    volumes:
+      - app_logs:/app/logs
+    networks:
+      - gogojap-net
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # ==================== Celery Beat ====================
+  celery-beat:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: gogojap-celery-beat
+    restart: unless-stopped
+    command: celery -A app.tasks.celery_app beat --loglevel=info
+    env_file:
+      - .env
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+      celery-worker:
+        condition: service_started
+    networks:
+      - gogojap-net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ==================== Redis ====================
+  redis:
+    image: redis:7-alpine
+    container_name: gogojap-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+        --appendonly yes
+        --maxmemory 512mb
+        --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - gogojap-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 640M
+
+  # ==================== OpenClaw 爬蟲引擎 ====================
+  openclaw:
+    image: ghcr.io/openclaw/openclaw:latest
+    container_name: gogojap-openclaw
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3002:3000"
+    env_file:
+      - .env.openclaw
+    volumes:
+      - openclaw_data:/app/data
+    networks:
+      - gogojap-net
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+# ==================== 網絡 ====================
+networks:
+  gogojap-net:
+    driver: bridge
+
+# ==================== 數據卷 ====================
+volumes:
+  redis_data:
+    driver: local
+  app_logs:
+    driver: local
+  openclaw_data:
+    driver: local

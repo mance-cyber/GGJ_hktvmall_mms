@@ -8,6 +8,7 @@ import { useState, useCallback } from 'react'
 import { Sparkles, Loader2, RefreshCw } from 'lucide-react'
 import { HoloCard, HoloButton } from '@/components/ui/future-tech'
 import { useToast } from '@/components/ui/use-toast'
+import { useLocale } from '@/components/providers/locale-provider'
 import { ProposalStats } from './components/ProposalStats'
 import { ProposalList } from './components/ProposalList'
 import { ApprovalDialog } from './components/ApprovalDialog'
@@ -23,6 +24,7 @@ import type { PriceProposal } from '@/lib/api/pricing'
 
 export default function PricingApprovalPage() {
   const { toast } = useToast()
+  const { t } = useLocale()
 
   // 數據查詢
   const { data: proposals = [], isLoading, refetch } = usePendingProposals()
@@ -78,8 +80,8 @@ export default function PricingApprovalPage() {
     try {
       await approveProposal.mutateAsync(dialogProposal.id)
       toast({
-        title: '批准成功',
-        description: `已批准「${dialogProposal.product_name}」的改價提案`,
+        title: t['pricing.approve_success'],
+        description: t['pricing.approve_desc'].replace('{name}', dialogProposal.product_name ?? ''),
       })
       setDialogOpen(false)
       setSelectedIds((prev) => {
@@ -89,12 +91,12 @@ export default function PricingApprovalPage() {
       })
     } catch (error) {
       toast({
-        title: '批准失敗',
-        description: error instanceof Error ? error.message : '請稍後重試',
+        title: t['pricing.approve_failed'],
+        description: error instanceof Error ? error.message : t['pricing.retry_later'],
         variant: 'destructive',
       })
     }
-  }, [dialogProposal, approveProposal, toast])
+  }, [dialogProposal, approveProposal, toast, t])
 
   // 單個拒絕
   const handleReject = useCallback(async (id: string) => {
@@ -104,8 +106,8 @@ export default function PricingApprovalPage() {
     try {
       await rejectProposal.mutateAsync(id)
       toast({
-        title: '已拒絕',
-        description: `已拒絕「${proposal.product_name}」的改價提案`,
+        title: t['pricing.rejected'],
+        description: t['pricing.reject_desc'].replace('{name}', proposal.product_name ?? ''),
       })
       setSelectedIds((prev) => {
         const newSet = new Set(prev)
@@ -114,12 +116,12 @@ export default function PricingApprovalPage() {
       })
     } catch (error) {
       toast({
-        title: '拒絕失敗',
-        description: error instanceof Error ? error.message : '請稍後重試',
+        title: t['pricing.reject_failed'],
+        description: error instanceof Error ? error.message : t['pricing.retry_later'],
         variant: 'destructive',
       })
     }
-  }, [proposals, rejectProposal, toast])
+  }, [proposals, rejectProposal, toast, t])
 
   // 批量批准
   const handleBatchApprove = useCallback(async () => {
@@ -128,18 +130,18 @@ export default function PricingApprovalPage() {
     try {
       const result = await batchApprove.mutateAsync(Array.from(selectedIds))
       toast({
-        title: '批量批准完成',
-        description: `成功 ${result.succeeded} 項，失敗 ${result.failed} 項`,
+        title: t['pricing.batch_approve_done'],
+        description: t['pricing.batch_result'].replace('{success}', String(result.succeeded)).replace('{failed}', String(result.failed)),
       })
       setSelectedIds(new Set())
     } catch (error) {
       toast({
-        title: '批量批准失敗',
-        description: error instanceof Error ? error.message : '請稍後重試',
+        title: t['pricing.batch_approve_failed'],
+        description: error instanceof Error ? error.message : t['pricing.retry_later'],
         variant: 'destructive',
       })
     }
-  }, [selectedIds, batchApprove, toast])
+  }, [selectedIds, batchApprove, toast, t])
 
   // 批量拒絕
   const handleBatchReject = useCallback(async () => {
@@ -148,35 +150,35 @@ export default function PricingApprovalPage() {
     try {
       const result = await batchReject.mutateAsync(Array.from(selectedIds))
       toast({
-        title: '批量拒絕完成',
-        description: `成功 ${result.succeeded} 項，失敗 ${result.failed} 項`,
+        title: t['pricing.batch_reject_done'],
+        description: t['pricing.batch_result'].replace('{success}', String(result.succeeded)).replace('{failed}', String(result.failed)),
       })
       setSelectedIds(new Set())
     } catch (error) {
       toast({
-        title: '批量拒絕失敗',
-        description: error instanceof Error ? error.message : '請稍後重試',
+        title: t['pricing.batch_reject_failed'],
+        description: error instanceof Error ? error.message : t['pricing.retry_later'],
         variant: 'destructive',
       })
     }
-  }, [selectedIds, batchReject, toast])
+  }, [selectedIds, batchReject, toast, t])
 
   // 觸發 AI 分析
   const handleTriggerAI = useCallback(async () => {
     try {
       const result = await triggerAI.mutateAsync()
       toast({
-        title: 'AI 分析完成',
-        description: `已生成 ${result.generated_proposals} 個新提案`,
+        title: t['pricing.ai_done'],
+        description: t['pricing.ai_result'].replace('{count}', String(result.generated_proposals)),
       })
     } catch (error) {
       toast({
-        title: 'AI 分析失敗',
-        description: error instanceof Error ? error.message : '請稍後重試',
+        title: t['pricing.ai_failed'],
+        description: error instanceof Error ? error.message : t['pricing.retry_later'],
         variant: 'destructive',
       })
     }
-  }, [triggerAI, toast])
+  }, [triggerAI, toast, t])
 
   // 統計數據 - 暫時只顯示 pending 數量
   // TODO: 從後端獲取完整統計
@@ -192,8 +194,8 @@ export default function PricingApprovalPage() {
       {/* 頁面標題 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">改價審批中心</h1>
-          <p className="text-gray-500 mt-1">審核 AI 生成的改價提案，批准後自動更新 HKTVmall 價格</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t['pricing.title']}</h1>
+          <p className="text-gray-500 mt-1">{t['pricing.subtitle']}</p>
         </div>
         <div className="flex items-center gap-2">
           <HoloButton
@@ -202,7 +204,7 @@ export default function PricingApprovalPage() {
             disabled={isLoading}
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            刷新
+            {t['pricing.refresh']}
           </HoloButton>
           <HoloButton
             variant="primary"
@@ -214,7 +216,7 @@ export default function PricingApprovalPage() {
             ) : (
               <Sparkles className="w-4 h-4 mr-2" />
             )}
-            觸發 AI 分析
+            {t['pricing.trigger_ai']}
           </HoloButton>
         </div>
       </div>
