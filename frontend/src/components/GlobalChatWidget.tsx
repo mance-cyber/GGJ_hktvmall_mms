@@ -162,9 +162,6 @@ function FloatingButton({
   onClick: () => void
   hasUnread: boolean
 }) {
-  // 使用 useMotionValue 實現流暢拖動（避免 state 更新造成的延遲）
-  const x = useMotionValue(0)
-  const y = useMotionValue(0)
   const dotLottieInstance = useRef<any>(null)
 
   // 動畫播放完成後停頓 3 秒再重新播放（使用 play API 避免閃爍）
@@ -185,14 +182,10 @@ function FloatingButton({
 
   return (
     <motion.button
-      drag
-      dragElastic={0.15}
-      dragTransition={{ bounceStiffness: 300, bounceDamping: 20 }}
       onClick={onClick}
-      style={{ x, y }}
       className={cn(
         "w-36 h-36 flex items-center justify-center",
-        "relative cursor-grab active:cursor-grabbing touch-none"
+        "relative touch-none"
       )}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
@@ -686,6 +679,11 @@ export function GlobalChatWidget() {
   const [hasUnread, setHasUnread] = useState(false)
   const [attachments, setAttachments] = useState<FileAttachment[]>([])
 
+  // 拖曳狀態 — 整個 container 一齊移動（icon + chat overlay）
+  const dragX = useMotionValue(0)
+  const dragY = useMotionValue(0)
+  const isDragging = useRef(false)
+
   // 聲音提醒
   const { soundEnabled, toggleSound, playSound } = useNotificationSound()
 
@@ -810,10 +808,18 @@ export function GlobalChatWidget() {
   }
 
   return (
-    <div className={cn(
-      "fixed z-50 flex flex-col items-end gap-4",
-      "bottom-24 right-4 sm:bottom-20 sm:right-6"
-    )}>
+    <motion.div
+      drag
+      dragElastic={0.15}
+      dragTransition={{ bounceStiffness: 300, bounceDamping: 20 }}
+      style={{ x: dragX, y: dragY }}
+      onDragStart={() => { isDragging.current = true }}
+      onDragEnd={() => { setTimeout(() => { isDragging.current = false }, 50) }}
+      className={cn(
+        "fixed z-50 flex flex-col items-end gap-4 cursor-grab active:cursor-grabbing",
+        "bottom-24 right-4 sm:bottom-20 sm:right-6"
+      )}
+    >
       <AnimatePresence>
         {isOpen && (
           <MiniChatBox
@@ -839,9 +845,9 @@ export function GlobalChatWidget() {
 
       <FloatingButton
         isOpen={isOpen}
-        onClick={isOpen ? handleClose : handleOpen}
+        onClick={() => { if (!isDragging.current) { isOpen ? handleClose() : handleOpen() } }}
         hasUnread={hasUnread}
       />
-    </div>
+    </motion.div>
   )
 }
