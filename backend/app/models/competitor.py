@@ -55,7 +55,6 @@ class CompetitorProduct(Base):
     description: Mapped[Optional[str]] = mapped_column(Text)
     specs: Mapped[Optional[dict]] = mapped_column(JSONB, default=dict, comment="商品規格")
     images: Mapped[Optional[list]] = mapped_column(JSONB, default=list, comment="多張商品圖片")
-    scrape_config_override: Mapped[Optional[dict]] = mapped_column(JSONB, comment="特定商品的爬取配置覆蓋")
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     last_scraped_at: Mapped[Optional[datetime]] = mapped_column()

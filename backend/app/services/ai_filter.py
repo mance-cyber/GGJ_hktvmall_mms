@@ -5,6 +5,7 @@
 
 import json
 import logging
+import os
 from typing import Optional
 
 import httpx
@@ -12,7 +13,10 @@ import httpx
 logger = logging.getLogger(__name__)
 
 # OpenClaw Gateway 本地端口
-OPENCLAW_GATEWAY_URL = "http://localhost:3577/v1/chat/completions"
+OPENCLAW_GATEWAY_URL = os.environ.get(
+    "OPENCLAW_GATEWAY_URL",
+    "http://localhost:18789/v1/chat/completions"
+)
 OPENCLAW_MODEL = "anthropic/claude-sonnet-4-5"
 
 CLASSIFY_PROMPT_TEMPLATE = """你是 HKTVmall 生鮮食材分類專家。
@@ -57,7 +61,7 @@ class AIProductFilter:
         self,
         gateway_url: str = OPENCLAW_GATEWAY_URL,
         model: str = OPENCLAW_MODEL,
-        timeout: float = 60.0,
+        timeout: float = 120.0,
     ):
         self.gateway_url = gateway_url
         self.model = model
@@ -107,7 +111,15 @@ class AIProductFilter:
             raw = await self._call_gateway(prompt)
             return self._parse_response(raw, products)
         except Exception as e:
-            logger.error(f"AI filter batch failed: {e}")
+            logger.error(f"AI filter batch failed (attempt 1): {e}")
+            # Retry once
+            try:
+                import asyncio
+                await asyncio.sleep(2)
+                raw = await self._call_gateway(prompt)
+                return self._parse_response(raw, products)
+            except Exception as e2:
+                logger.error(f"AI filter batch failed (attempt 2): {e2}")
             # Fallback: mark all as unknown (relevant=False to be safe)
             return [
                 {
@@ -131,7 +143,7 @@ class AIProductFilter:
                     "messages": [{"role": "user", "content": prompt}],
                     "temperature": 0.1,
                 },
-                headers={"Authorization": "Bearer not-needed-for-local"},
+                headers={"Authorization": f"Bearer {os.environ.get('OPENCLAW_GATEWAY_TOKEN', '329f0d69593409c4cc6cf4c420a34d5d2b734af71ed71d35')}"},
             )
             resp.raise_for_status()
             return resp.json()["choices"][0]["message"]["content"]
