@@ -247,10 +247,24 @@ class CompetitorBuilder:
                 if hktv_product.sku not in ai_map:
                     continue
                 ai = ai_map[hktv_product.sku]
-                await self._upsert_competitor_product(
-                    db, merchant, hktv_product, ai
-                )
+                try:
+                    await self._upsert_competitor_product(
+                        db, merchant, hktv_product, ai
+                    )
+                except Exception as e:
+                    if "connection is closed" in str(e):
+                        logger.warning(f"    DB 連線斷開，重新連接...")
+                        await db.rollback()
+                        await self._upsert_competitor_product(
+                            db, merchant, hktv_product, ai
+                        )
+                    else:
+                        raise
                 total_fresh += 1
+
+            # Commit per merchant to keep connection alive
+            await db.commit()
+            logger.info(f"    已提交 {merchant.name}: {len(ai_map)} 件生鮮")
 
         return {
             "merchants_scanned": len(merchants),
