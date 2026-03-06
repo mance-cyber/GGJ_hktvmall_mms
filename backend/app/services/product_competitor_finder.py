@@ -384,9 +384,8 @@ class ProductCompetitorFinder:
             stats.new_competitors += 1
             return cp
 
-        # 已存在：更新 last_seen_at + is_active
+        # 已存在：只更新 last_seen_at（不自動 re-activate，保留 orphan soft-delete 決策）
         existing.last_seen_at = now
-        existing.is_active = True
 
         # 名字變更 → 更新
         if hit.name and existing.name != hit.name:

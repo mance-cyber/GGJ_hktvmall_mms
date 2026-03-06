@@ -390,8 +390,9 @@ class CatalogService:
             changed = True
 
         # 無論是否有其他變更，都更新 last_seen_at
+        # 注意：不自動 re-activate，避免覆蓋 orphan soft-delete 決策
+        # is_active 由 monitor（下架判定）和 orphan cleanup 管理
         existing.last_seen_at = now
-        existing.is_active = True
 
         return "updated" if changed else "unchanged"
 
