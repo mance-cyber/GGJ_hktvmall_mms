@@ -65,6 +65,7 @@ async def list_competitors(
             func.count(CompetitorProduct.id).label("product_count"),
             func.max(CompetitorProduct.last_scraped_at).label("last_scraped_at"),
         )
+        .where(CompetitorProduct.is_active == True)
         .group_by(CompetitorProduct.competitor_id)
         .subquery()
     )
