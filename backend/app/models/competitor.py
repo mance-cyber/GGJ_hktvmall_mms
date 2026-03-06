@@ -24,10 +24,10 @@ class Competitor(Base):
     notes: Mapped[Optional[str]] = mapped_column(Text)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    # 爬取配置關聯
-    scrape_config_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("scrape_configs.id", ondelete="SET NULL"), nullable=True
-    )
+    # v2 新增：商戶分級 + Algolia 店鋪代碼
+    tier: Mapped[int] = mapped_column(Integer, default=2, comment="1=直接對手, 2=品類重疊, 3=參考")
+    store_code: Mapped[Optional[str]] = mapped_column(String(50), comment="HKTVmall 店鋪代碼（Algolia storeCode）")
+
     category_patterns: Mapped[Optional[list]] = mapped_column(JSONB, default=list)
 
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
@@ -35,7 +35,6 @@ class Competitor(Base):
 
     # 關聯
     products: Mapped[List["CompetitorProduct"]] = relationship(back_populates="competitor", cascade="all, delete-orphan")
-    scrape_config: Mapped[Optional["ScrapeConfig"]] = relationship(back_populates="competitors")
     import_jobs: Mapped[List["ImportJob"]] = relationship(back_populates="competitor")
 
 
@@ -60,16 +59,14 @@ class CompetitorProduct(Base):
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     last_scraped_at: Mapped[Optional[datetime]] = mapped_column()
-    scrape_error: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
 
-    # 競品建庫重設計：標籤 + 監測狀態
-    category_tag: Mapped[Optional[str]] = mapped_column(String(50), comment="大類標籤：牛/豬/羊/雞鴨/魚/蝦/蟹/貝")
-    sub_tag: Mapped[Optional[str]] = mapped_column(String(50), comment="細分標籤：西冷/肉眼/牛柳/牛仔骨/三文魚/刺身...")
-    needs_matching: Mapped[bool] = mapped_column(Boolean, default=True, comment="是否需要重新匹配")
-    last_seen_at: Mapped[Optional[datetime]] = mapped_column(comment="最後一次在分類頁出現的時間")
-    tag_source: Mapped[Optional[str]] = mapped_column(String(20), comment="標籤來源：rule/ai")
+    # v2：商品分類（AI 判斷）
+    product_type: Mapped[Optional[str]] = mapped_column(String(20), default='unknown', comment="fresh/frozen/processed/unknown")
+    # category 欄位保留，重新用途：牛/豬/魚/蝦/蟹/貝/蠔/其他
+    unit_weight_g: Mapped[Optional[int]] = mapped_column(Integer, comment="重量（克），用於計算每100g單價")
+    last_seen_at: Mapped[Optional[datetime]] = mapped_column(comment="最後一次在 Algolia 出現的時間")
 
     # 關聯
     competitor: Mapped["Competitor"] = relationship(back_populates="products")
@@ -80,9 +77,9 @@ class CompetitorProduct(Base):
         Index("idx_competitor_products_competitor_id", "competitor_id"),
         Index("idx_competitor_products_url", "url"),
         Index("idx_competitor_products_is_active", "is_active"),
-        Index("idx_cp_category_tag", "category_tag"),
-        Index("idx_cp_sub_tag", "sub_tag"),
-        Index("idx_cp_needs_matching", "needs_matching"),
+        Index("idx_cp_product_type", "product_type"),
+        Index("idx_cp_category", "category"),
+        Index("idx_cp_last_seen_at", "last_seen_at"),
     )
 
 
@@ -108,6 +105,9 @@ class PriceSnapshot(Base):
     description: Mapped[Optional[str]] = mapped_column(Text)
     specs: Mapped[Optional[dict]] = mapped_column(JSONB)
     images: Mapped[Optional[list]] = mapped_column(JSONB)
+
+    # v2 新增：每 100g 單位價（方便比較）
+    unit_price_per_100g: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), comment="每 100g 價格（HKD）")
 
     # 關聯
     product: Mapped["CompetitorProduct"] = relationship(back_populates="price_snapshots")

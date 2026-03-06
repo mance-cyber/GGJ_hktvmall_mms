@@ -118,6 +118,7 @@ class ProductCompetitorMapping(Base):
     match_confidence: Mapped[Optional[Decimal]] = mapped_column(Numeric(3, 2), comment="0.00 - 1.00 匹配信心度")
     match_level: Mapped[Optional[int]] = mapped_column(Integer, comment="匹配層級：1=直接替代 2=近似競品 3=品類競品")
     match_reason: Mapped[Optional[str]] = mapped_column(Text, comment="AI 匹配理由")
+    match_type: Mapped[str] = mapped_column(String(20), default='ai_matched', comment="ai_matched / manual")
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, comment="人工確認")
     notes: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)

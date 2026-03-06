@@ -56,8 +56,8 @@ class ScrapeConfig(Base):
         default=utcnow, onupdate=utcnow
     )
 
-    # 關聯
-    competitors = relationship("Competitor", back_populates="scrape_config")
+    # 關聯（v2: 移除 scrape_config_id FK，不再關聯 Competitor）
+    # competitors = relationship("Competitor", back_populates="scrape_config")  # REMOVED
 
     __table_args__ = (
         Index("idx_scrape_configs_platform", "platform"),

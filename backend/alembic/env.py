@@ -1,13 +1,32 @@
+import os
+import sys
 from logging.config import fileConfig
 
+from dotenv import load_dotenv
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
 
+# Load .env for DATABASE_URL
+load_dotenv()
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+# Override sqlalchemy.url from .env if available
+db_url = os.getenv("DATABASE_URL")
+if db_url:
+    # 移除 asyncpg / channel_binding 不支持的 libpq 參數（psycopg2 兼容）
+    from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+    parsed = urlparse(db_url)
+    params = parse_qs(parsed.query)
+    for key in ("channel_binding",):
+        params.pop(key, None)
+    # 保留 sslmode=require
+    clean_url = urlunparse(parsed._replace(query=urlencode(params, doseq=True)))
+    config.set_main_option("sqlalchemy.url", clean_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
