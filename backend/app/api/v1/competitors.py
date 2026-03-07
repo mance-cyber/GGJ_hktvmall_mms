@@ -1219,7 +1219,7 @@ async def get_comparison_merchants(
 # ═══════════════════════════════════════════════
 @comparison_router.get("/products/{product_id}/price-history")
 async def get_product_price_history(
-    product_id: uuid.UUID,
+    product_id: UUID,
     days: int = Query(30, ge=7, le=90),
     db: AsyncSession = Depends(get_db),
 ):
@@ -1409,3 +1409,4 @@ async def get_pricing_suggestions(db: AsyncSession = Depends(get_db)):
 
     suggestions.sort(key=lambda x: ({"high": 0, "medium": 1, "low": 2}.get(x["priority"], 3), -abs(x["price_diff_pct"])))
     return {"suggestions": suggestions}
+
