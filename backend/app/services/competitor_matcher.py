@@ -179,19 +179,24 @@ class ClaudeMatcher:
     ) -> str:
         """構建匹配判斷 Prompt"""
         return f"""
-你是一位專業的日本海鮮/食材專家。請判斷以下兩個商品是否為「同類商品」。
+你是一位專業的日本海鮮/食材專家。請判斷以下兩個商品是否為「可比較的競品」。
 
-匹配規則（寬泛匹配 — 同品類都算）：
+匹配規則（精準匹配 — 必須係消費者會直接比較的商品）：
 
 match_level 定義：
 - 1 = 直接替代（幾乎同一商品，只係唔同店賣）
-- 2 = 同品類競品（都係和牛/都係三文魚/都係刺身，產地等級唔同都算）
-- 3 = 相關品類（同大類但唔同細類，如：和牛 vs 安格斯牛）
+- 2 = 同品類競品（同一食材，產地或等級唔同，但消費者會直接比較）
+
+嚴格排除規則（以下情況必須 is_match: false）：
+- 加工形態不同：刺身/生食級 vs 急凍煮食用（例：牡丹蝦刺身 vs 急凍蝦仁 → false）
+- 物種不同：蟹 vs 蝦、鮟鱇魚 vs 三文魚、和牛 vs 安格斯牛 → false
+- 用途完全不同：調味料 vs 食材 → false
+- 規格差距過大暗示不同產品層級
 
 判斷原則：
-- match_level 1-3 → is_match: true
-- 完全無關 → is_match: false
-- 寧可多搵，唔好漏搵
+- 只有 match_level 1 或 2 → is_match: true
+- 相關但不同品類 → is_match: false
+- 寧可漏搵，唔好錯配
 
 ---
 
@@ -399,21 +404,25 @@ match_level 定義：
 
         candidates_text = "\n".join(lines)
 
-        return f"""你是一位專業的日本海鮮/食材專家。請判斷以下每個對手商品是否與我方商品為「同類商品」。
+        return f"""你是一位專業的日本海鮮/食材專家。請判斷以下每個對手商品是否與我方商品為「可比較的競品」。
 
-匹配規則（寬泛匹配 — 同品類都算）：
+匹配規則（精準匹配 — 必須係消費者會直接比較的商品）：
 
 match_level 定義：
 - 1 = 直接替代（幾乎同一商品，只係唔同店賣）
-- 2 = 同品類競品（都係和牛/都係三文魚/都係刺身，產地等級唔同都算）
-- 3 = 相關品類（同大類但唔同細類，如：和牛 vs 安格斯牛、三文魚 vs 吞拿魚）
+- 2 = 同品類競品（同一食材，產地或等級唔同，但消費者會直接比較）
+
+嚴格排除規則（以下情況必須 is_match: false）：
+- 加工形態不同：刺身/生食級 vs 急凍煮食用（例：牡丹蝦刺身 vs 急凍蝦仁 → false）
+- 物種不同：蟹 vs 蝦、鮟鱇魚 vs 三文魚、和牛 vs 安格斯牛 → false
+- 用途完全不同：調味料 vs 食材 → false
+- 規格差距過大暗示不同產品層級
 
 判斷原則：
-- 同品類（match_level 1 或 2）→ is_match: true
-- 相關品類（match_level 3）→ is_match: true
-- 完全無關（和牛 vs 三文魚）→ is_match: false
-- 產地不同、等級不同、規格不同 → 仍然 is_match: true
-- 寧可多搵，唔好漏搵
+- 只有 match_level 1 或 2 → is_match: true
+- 相關但不同品類 → is_match: false
+- 產地不同、等級不同 → 仍然 is_match: true（A5 vs A4 和牛 OK）
+- 寧可漏搵，唔好錯配
 
 ---
 
@@ -473,7 +482,7 @@ match_level 定義：
         matches = sum(1 for kw in keywords if kw in candidate_name)
         confidence = matches / max(len(keywords), 1)
 
-        is_match = confidence >= 0.4
+        is_match = confidence >= 0.5  # 收緊閾值（從 0.4 → 0.5）
 
         return MatchResult(
             product_id=str(our_product.get('id', '')),
@@ -511,6 +520,46 @@ def extract_core_category(name: str | None) -> str | None:
         if cat in name:
             return cat
     return None
+
+
+def _price_sanity_filter(
+    results: List['MatchResult'],
+    our_price: Optional[Decimal],
+    candidate_prices: Dict[str, Optional[Decimal]],
+    max_diff_pct: float = 80.0,
+) -> List['MatchResult']:
+    """
+    價格合理性過濾：移除價差超過閾值的配對
+
+    - 價差 > max_diff_pct (80%) → 自動 reject
+    - 沒有價格數據的配對 → 保留（不能因為缺數據就砍掉）
+    """
+    if our_price is None or our_price <= 0:
+        return results  # 我方沒價格，無法過濾
+
+    filtered = []
+    for r in results:
+        comp_price = candidate_prices.get(r.candidate_url)
+        if comp_price is None or comp_price <= 0:
+            filtered.append(r)  # 沒價格數據，保留
+            continue
+
+        diff_pct = abs(float(our_price - comp_price) / float(our_price) * 100)
+        if diff_pct <= max_diff_pct:
+            filtered.append(r)
+        else:
+            logger.info(
+                f"價格過濾: {r.candidate_name[:30]} "
+                f"(${comp_price} vs ${our_price}, {diff_pct:.1f}% diff) → reject"
+            )
+
+    if len(filtered) < len(results):
+        logger.info(
+            f"價格過濾移除 {len(results) - len(filtered)} 項 "
+            f"(threshold={max_diff_pct}%)"
+        )
+
+    return filtered
 
 
 def _dynamic_threshold(n: int) -> float:
@@ -790,8 +839,34 @@ class CompetitorMatcherService:
 
         all_matches = self.matcher.batch_judge_match(our_product_dict, candidate_dicts)
 
-        # 寬泛匹配：保留所有 is_match=true 的結果
-        results = [r for r in all_matches if r.is_match]
+        # 只保留 is_match=true 且 match_level <= 2 的結果
+        results = [
+            r for r in all_matches
+            if r.is_match and r.match_level <= 2
+        ]
+
+        # 價格合理性過濾（>80% 價差 → reject）
+        candidate_prices = {
+            p.url: p.price for p in unique_products if p.price
+        }
+        our_price = None
+        # 從 DB 查我方價格（product dict 沒帶）
+        try:
+            from app.models.product import Product as ProductModel
+            stmt = select(ProductModel.price).where(
+                ProductModel.id == our_product_dict.get('id')
+            )
+            price_result = await db.execute(stmt)
+            row = price_result.scalar_one_or_none()
+            if row:
+                our_price = row
+        except Exception:
+            pass
+
+        if our_price and candidate_prices:
+            results = _price_sanity_filter(
+                results, our_price, candidate_prices
+            )
 
         if results:
             logger.info(
