@@ -889,89 +889,128 @@ async def get_comparison_products(
 ):
     """
     商品比較視角：每件自家商品配上競品價格
+    Optimised: 3 batch queries instead of N*M individual queries
     """
-    # Get our products
-    our_stmt = (
+    from datetime import timedelta, datetime, timezone
+    from sqlalchemy import func, over
+
+    # ── 1. 所有 active 自家商品 ──────────────────────────────────────────
+    our_result = await db.execute(
         select(Product)
         .where(Product.status == "active")
         .order_by(Product.category_tag, Product.name)
     )
-    our_result = await db.execute(our_stmt)
     our_products = our_result.scalars().all()
+    if not our_products:
+        return {"items": []}
 
-    items = []
-    for product in our_products:
-        # Get competitor mappings with latest prices
-        if scope == "mapped":
-            # Only mapped competitor products
-            comp_stmt = (
-                select(
-                    CompetitorProduct,
-                    Competitor.name.label("comp_name"),
-                    Competitor.tier.label("comp_tier"),
-                )
-                .join(ProductCompetitorMapping, ProductCompetitorMapping.competitor_product_id == CompetitorProduct.id)
-                .join(Competitor, CompetitorProduct.competitor_id == Competitor.id)
-                .where(
-                    ProductCompetitorMapping.product_id == product.id,
-                    CompetitorProduct.is_active == True,
-                )
+    product_ids = [p.id for p in our_products]
+    product_map = {p.id: p for p in our_products}
+
+    # ── 2. Batch: 所有競品 + mapping（1 query）───────────────────────────
+    if scope == "mapped":
+        comp_stmt = (
+            select(
+                CompetitorProduct,
+                Competitor.name.label("comp_name"),
+                Competitor.tier.label("comp_tier"),
+                ProductCompetitorMapping.product_id.label("our_product_id"),
             )
-        else:
-            # All fresh products with same category
-            if product.category_tag:
-                comp_stmt = (
-                    select(
-                        CompetitorProduct,
-                        Competitor.name.label("comp_name"),
-                        Competitor.tier.label("comp_tier"),
-                    )
-                    .join(Competitor, CompetitorProduct.competitor_id == Competitor.id)
-                    .where(
-                        CompetitorProduct.is_active == True,
-                        CompetitorProduct.category == product.category_tag,
-                    )
-                )
-            else:
-                continue
-
-        comp_result = await db.execute(comp_stmt)
-        comp_rows = comp_result.all()
-
-        competitors = []
-        for cp, comp_name, comp_tier in comp_rows:
-            # Get latest price snapshot
-            price_stmt = (
-                select(PriceSnapshot)
-                .where(PriceSnapshot.competitor_product_id == cp.id)
-                .order_by(PriceSnapshot.scraped_at.desc())
-                .limit(1)
+            .join(ProductCompetitorMapping,
+                  ProductCompetitorMapping.competitor_product_id == CompetitorProduct.id)
+            .join(Competitor, CompetitorProduct.competitor_id == Competitor.id)
+            .where(
+                ProductCompetitorMapping.product_id.in_(product_ids),
+                CompetitorProduct.is_active == True,
             )
-            price_result = await db.execute(price_stmt)
-            latest = price_result.scalar_one_or_none()
-
-            # Get price 7 days ago for trend
-            from datetime import timedelta, datetime, timezone
-            week_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=7)
-            old_price_stmt = (
-                select(PriceSnapshot.price)
-                .where(
-                    PriceSnapshot.competitor_product_id == cp.id,
-                    PriceSnapshot.scraped_at <= week_ago,
-                )
-                .order_by(PriceSnapshot.scraped_at.desc())
-                .limit(1)
+        )
+    else:
+        category_tags = list({p.category_tag for p in our_products if p.category_tag})
+        if not category_tags:
+            return {"items": []}
+        comp_stmt = (
+            select(
+                CompetitorProduct,
+                Competitor.name.label("comp_name"),
+                Competitor.tier.label("comp_tier"),
+                # for 'all' scope, group by category_tag
+                CompetitorProduct.category.label("our_product_id"),  # placeholder, fixed below
             )
-            old_result = await db.execute(old_price_stmt)
-            old_price = old_result.scalar()
+            .join(Competitor, CompetitorProduct.competitor_id == Competitor.id)
+            .where(
+                CompetitorProduct.is_active == True,
+                CompetitorProduct.category.in_(category_tags),
+            )
+        )
+
+    comp_result = await db.execute(comp_stmt)
+    comp_rows = comp_result.all()
+
+    # Build: cp_id → row
+    all_cp_ids = [row.CompetitorProduct.id for row in comp_rows]
+
+    # ── 3. Batch: latest price per competitor product（1 subquery）────────
+    if all_cp_ids:
+        # Subquery: latest scraped_at per cp_id
+        latest_subq = (
+            select(
+                PriceSnapshot.competitor_product_id,
+                func.max(PriceSnapshot.scraped_at).label("max_scraped_at"),
+            )
+            .where(PriceSnapshot.competitor_product_id.in_(all_cp_ids))
+            .group_by(PriceSnapshot.competitor_product_id)
+            .subquery()
+        )
+        # Join back to get full row
+        price_result = await db.execute(
+            select(PriceSnapshot)
+            .join(latest_subq, (PriceSnapshot.competitor_product_id == latest_subq.c.competitor_product_id)
+                  & (PriceSnapshot.scraped_at == latest_subq.c.max_scraped_at))
+        )
+        latest_prices: dict = {ps.competitor_product_id: ps for ps in price_result.scalars().all()}
+
+        # ── 4. Batch: price 7 days ago（1 subquery）───────────────────────
+        week_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=7)
+        old_subq = (
+            select(
+                PriceSnapshot.competitor_product_id,
+                func.max(PriceSnapshot.scraped_at).label("max_old_at"),
+            )
+            .where(
+                PriceSnapshot.competitor_product_id.in_(all_cp_ids),
+                PriceSnapshot.scraped_at <= week_ago,
+            )
+            .group_by(PriceSnapshot.competitor_product_id)
+            .subquery()
+        )
+        old_result = await db.execute(
+            select(PriceSnapshot.competitor_product_id, PriceSnapshot.price)
+            .join(old_subq, (PriceSnapshot.competitor_product_id == old_subq.c.competitor_product_id)
+                  & (PriceSnapshot.scraped_at == old_subq.c.max_old_at))
+        )
+        old_prices: dict = {row.competitor_product_id: row.price for row in old_result.all()}
+    else:
+        latest_prices = {}
+        old_prices = {}
+
+    # ── 5. Assemble per-product ──────────────────────────────────────────
+    # Group comp_rows by our_product_id
+    from collections import defaultdict
+    product_competitors: dict = defaultdict(list)
+
+    if scope == "mapped":
+        for row in comp_rows:
+            cp = row.CompetitorProduct
+            latest = latest_prices.get(cp.id)
+            old_price_val = old_prices.get(cp.id)
 
             price_change_7d = None
-            if latest and latest.price and old_price and old_price > 0:
-                price_change_7d = round(float((latest.price - old_price) / old_price * 100), 1)
+            if latest and latest.price and old_price_val and old_price_val > 0:
+                price_change_7d = round(float((latest.price - old_price_val) / old_price_val * 100), 1)
 
-            competitors.append({
-                "competitor_name": comp_name,
-                "competitor_tier": comp_tier,
+            product_competitors[row.our_product_id].append({
+                "competitor_name": row.comp_name,
+                "competitor_tier": row.comp_tier,
                 "product_name": cp.name,
                 "price": float(latest.price) if latest and latest.price else None,
                 "original_price": float(latest.original_price) if latest and latest.original_price else None,
@@ -981,11 +1020,37 @@ async def get_comparison_products(
                 "url": cp.url,
                 "last_updated": latest.scraped_at.isoformat() if latest and latest.scraped_at else None,
             })
+    else:
+        # For 'all' scope: group by category_tag, then fan out to matching products
+        category_competitors: dict = defaultdict(list)
+        for row in comp_rows:
+            cp = row.CompetitorProduct
+            latest = latest_prices.get(cp.id)
+            old_price_val = old_prices.get(cp.id)
+            price_change_7d = None
+            if latest and latest.price and old_price_val and old_price_val > 0:
+                price_change_7d = round(float((latest.price - old_price_val) / old_price_val * 100), 1)
+            category_competitors[cp.category].append({
+                "competitor_name": row.comp_name,
+                "competitor_tier": row.comp_tier,
+                "product_name": cp.name,
+                "price": float(latest.price) if latest and latest.price else None,
+                "original_price": float(latest.original_price) if latest and latest.original_price else None,
+                "unit_price_per_100g": float(latest.unit_price_per_100g) if latest and latest.unit_price_per_100g else None,
+                "price_change_7d": price_change_7d,
+                "stock_status": latest.stock_status if latest else None,
+                "url": cp.url,
+                "last_updated": latest.scraped_at.isoformat() if latest and latest.scraped_at else None,
+            })
+        for p in our_products:
+            if p.category_tag:
+                product_competitors[p.id] = category_competitors.get(p.category_tag, [])
 
-        # Sort by price
+    items = []
+    for product in our_products:
+        competitors = product_competitors.get(product.id, [])
         competitors.sort(key=lambda x: x["price"] or 99999)
 
-        # Calculate rank
         all_prices = [c["price"] for c in competitors if c["price"]]
         our_price = float(product.price) if product.price else None
         our_rank = 1
