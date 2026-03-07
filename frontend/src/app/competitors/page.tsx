@@ -2,23 +2,44 @@
 
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { api } from '@/lib/api'
-import { motion } from 'framer-motion'
+import { api, ProductComparison } from '@/lib/api'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Package, Building2, RefreshCw, Target, Globe,
-  Download, Lightbulb,
+  Download, Lightbulb, ChevronDown, ChevronRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { DashboardStats } from '@/components/competitors/dashboard-stats'
 import { ProductComparisonCard } from '@/components/competitors/product-comparison-card'
+import { ProductDetailPanel } from '@/components/competitors/product-detail-panel'
 import { MerchantOverviewCard } from '@/components/competitors/merchant-overview-card'
 import { FilterBar, SortKey, SortDir } from '@/components/competitors/filter-bar'
 import { PricingSuggestionsPanel } from '@/components/competitors/pricing-suggestions-panel'
-import { PriceHistoryModal } from '@/components/competitors/price-history-modal'
 
 type ViewMode = 'products' | 'merchants' | 'suggestions'
 type ScopeMode = 'mapped' | 'all'
+
+type ThreatLevel = 'danger' | 'warning' | 'cheapest' | 'normal'
+
+function getThreatLevel(item: ProductComparison): ThreatLevel {
+  const ourPrice = item.product.price
+  const cheapestPrice = item.competitors[0]?.price
+  if (item.our_price_rank === 1) return 'cheapest'
+  if (ourPrice && cheapestPrice) {
+    const diff = ((ourPrice - cheapestPrice) / ourPrice) * 100
+    if (diff > 20) return 'danger'
+    if (diff > 5) return 'warning'
+  }
+  return 'normal'
+}
+
+const THREAT_GROUPS: { key: ThreatLevel; label: string; color: string; badge: string }[] = [
+  { key: 'danger',   label: '高威脅 · 價差 >20%',     color: 'border-red-200 bg-red-50/60',     badge: 'bg-red-100 text-red-700 border-red-200' },
+  { key: 'warning',  label: '注意 · 價差 5-20%',       color: 'border-amber-200 bg-amber-50/60', badge: 'bg-amber-100 text-amber-700 border-amber-200' },
+  { key: 'normal',   label: '正常範圍',                color: 'border-gray-200 bg-gray-50/60',   badge: 'bg-gray-100 text-gray-600 border-gray-200' },
+  { key: 'cheapest', label: '我哋最平 🏆',             color: 'border-emerald-200 bg-emerald-50/60', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+]
 
 export default function CompetitorsPage() {
   const [view, setView] = useState<ViewMode>('products')
@@ -30,8 +51,9 @@ export default function CompetitorsPage() {
   const [sortKey, setSortKey] = useState<SortKey>('threat')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
 
-  // Price history modal
-  const [historyModal, setHistoryModal] = useState<{ id: string; name: string } | null>(null)
+  // Split panel state
+  const [selectedProduct, setSelectedProduct] = useState<ProductComparison | null>(null)
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<ThreatLevel>>(new Set())
 
   const { data: summary, isLoading: summaryLoading, refetch: refetchSummary } = useQuery({
     queryKey: ['comparison-summary'],
@@ -54,6 +76,15 @@ export default function CompetitorsPage() {
     refetchSummary()
     if (view === 'products') refetchProducts()
     if (view === 'merchants') refetchMerchants()
+  }
+
+  const toggleGroup = (key: ThreatLevel) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
   }
 
   // ─── Derived: unique categories
@@ -146,7 +177,19 @@ export default function CompetitorsPage() {
     setCategoryFilter('')
     setSortKey('threat')
     setSortDir('desc')
+    setSelectedProduct(null)
   }
+
+  // Grouped products
+  const groupedProducts = useMemo(() => {
+    const groups: Record<ThreatLevel, ProductComparison[]> = {
+      danger: [], warning: [], normal: [], cheapest: []
+    }
+    filteredProducts.forEach(item => {
+      groups[getThreatLevel(item)].push(item)
+    })
+    return groups
+  }, [filteredProducts])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30 px-3 py-4 sm:p-6 overflow-x-hidden">
@@ -273,35 +316,127 @@ export default function CompetitorsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
         >
-          {/* Products */}
+          {/* Products — Split Panel */}
           {view === 'products' && (
-            <div className="space-y-2 sm:space-y-3">
-              {productsLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="rounded-xl border border-gray-200 bg-white p-3 sm:p-4 animate-pulse shadow-sm">
-                    <div className="flex items-center gap-3">
-                      <div className="h-5 bg-gray-100 rounded w-12" />
-                      <div className="h-5 bg-gray-100 rounded w-32 sm:w-48" />
-                      <div className="h-5 bg-gray-100 rounded w-16" />
+            <div className="flex gap-4 items-start">
+              {/* ── Left: Product List ── */}
+              <div className={cn(
+                'min-w-0 flex-shrink-0 space-y-3',
+                selectedProduct ? 'w-full lg:w-[54%]' : 'w-full'
+              )}>
+                {productsLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="rounded-xl border border-gray-200 bg-white p-3 sm:p-4 animate-pulse shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="h-5 bg-gray-100 rounded w-12" />
+                        <div className="h-5 bg-gray-100 rounded w-32 sm:w-48" />
+                        <div className="h-5 bg-gray-100 rounded w-16" />
+                      </div>
                     </div>
+                  ))
+                ) : filteredProducts.length === 0 ? (
+                  <div className="text-center py-16 sm:py-20 text-gray-400">
+                    <Package className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">{search || categoryFilter ? '冇符合條件嘅商品' : '未有商品比較數據'}</p>
                   </div>
-                ))
-              ) : filteredProducts.length === 0 ? (
-                <div className="text-center py-16 sm:py-20 text-gray-400">
-                  <Package className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">{search || categoryFilter ? '冇符合條件嘅商品' : '未有商品比較數據'}</p>
-                </div>
-              ) : (
-                filteredProducts.map((item) => (
-                  <ProductComparisonCard
-                    key={item.product.id}
-                    data={item}
-                    onShowHistory={(id, name) => setHistoryModal({ id, name })}
-                  />
-                ))
-              )}
+                ) : (
+                  THREAT_GROUPS.map(group => {
+                    const items = groupedProducts[group.key]
+                    if (items.length === 0) return null
+                    const isCollapsed = collapsedGroups.has(group.key)
+                    return (
+                      <div key={group.key} className={cn('rounded-xl border overflow-hidden', group.color)}>
+                        {/* Group Header */}
+                        <button
+                          onClick={() => toggleGroup(group.key)}
+                          className="w-full flex items-center gap-2 px-3 py-2 hover:bg-black/5 transition-colors"
+                        >
+                          {isCollapsed
+                            ? <ChevronRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                            : <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                          }
+                          <span className={cn(
+                            'text-[11px] font-semibold px-2 py-0.5 rounded-full border',
+                            group.badge
+                          )}>
+                            {group.label}
+                          </span>
+                          <span className="text-[10px] text-gray-400 ml-auto">{items.length} 件</span>
+                        </button>
+
+                        {/* Group Items */}
+                        <AnimatePresence initial={false}>
+                          {!isCollapsed && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.18 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="px-2 pb-2 space-y-1.5">
+                                {items.map(item => (
+                                  <ProductComparisonCard
+                                    key={item.product.id}
+                                    data={item}
+                                    selected={selectedProduct?.product.id === item.product.id}
+                                    onClick={() => setSelectedProduct(
+                                      selectedProduct?.product.id === item.product.id ? null : item
+                                    )}
+                                  />
+                                ))}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+
+              {/* ── Right: Detail Panel (desktop sticky, mobile hidden) ── */}
+              <AnimatePresence>
+                {selectedProduct && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 16 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 16 }}
+                    transition={{ duration: 0.2 }}
+                    className="hidden lg:block lg:w-[46%] sticky top-4"
+                    style={{ maxHeight: 'calc(100vh - 2rem)' }}
+                  >
+                    <ProductDetailPanel
+                      data={selectedProduct}
+                      onClose={() => setSelectedProduct(null)}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
+
+          {/* Mobile Detail Sheet */}
+          <AnimatePresence>
+            {view === 'products' && selectedProduct && (
+              <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-white rounded-t-2xl shadow-2xl border-t border-gray-200"
+                style={{ maxHeight: '75vh' }}
+              >
+                <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 mb-1" />
+                <div style={{ height: 'calc(75vh - 20px)', overflow: 'hidden' }}>
+                  <ProductDetailPanel
+                    data={selectedProduct}
+                    onClose={() => setSelectedProduct(null)}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Merchants */}
           {view === 'merchants' && (
@@ -334,12 +469,11 @@ export default function CompetitorsPage() {
         </motion.div>
       </div>
 
-      {/* Price History Modal */}
-      {historyModal && (
-        <PriceHistoryModal
-          productId={historyModal.id}
-          productName={historyModal.name}
-          onClose={() => setHistoryModal(null)}
+      {/* Mobile overlay backdrop */}
+      {view === 'products' && selectedProduct && (
+        <div
+          className="lg:hidden fixed inset-0 z-30 bg-black/20"
+          onClick={() => setSelectedProduct(null)}
         />
       )}
     </div>
