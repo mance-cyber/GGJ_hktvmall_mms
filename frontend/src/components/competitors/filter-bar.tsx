@@ -85,8 +85,8 @@ export function FilterBar({
 
       {/* Row 2: Sort chips + result count */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1 flex-wrap">
-          <span className="text-[10px] sm:text-xs text-gray-400 flex items-center gap-1 mr-1">
+        <div className="flex items-center gap-1 min-w-0 overflow-x-auto scrollbar-hide">
+          <span className="text-[10px] sm:text-xs text-gray-400 flex items-center gap-1 mr-1 shrink-0">
             <ArrowUpDown className="w-3 h-3" /> 排序:
           </span>
           {sortOptions.map(opt => (
@@ -94,7 +94,7 @@ export function FilterBar({
               key={opt.key}
               onClick={() => handleSortSelect(opt.key)}
               className={cn(
-                'text-[10px] sm:text-xs px-2 py-1 rounded-full border transition-all',
+                'text-[10px] sm:text-xs px-2 py-1 rounded-full border transition-all whitespace-nowrap shrink-0',
                 sortKey === opt.key
                   ? 'bg-teal-500 text-white border-teal-500'
                   : 'text-gray-500 border-gray-200 hover:border-teal-300 hover:text-teal-600'

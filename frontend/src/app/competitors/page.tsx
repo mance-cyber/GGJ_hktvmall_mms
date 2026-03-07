@@ -192,8 +192,8 @@ export default function CompetitorsPage() {
   }, [filteredProducts])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30 px-3 py-4 sm:p-6 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 w-full">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30 px-3 py-4 sm:p-6 overflow-x-hidden w-full">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 w-full overflow-x-hidden">
 
         {/* ===== Header ===== */}
         <div className="flex items-start sm:items-center justify-between gap-2">
@@ -232,8 +232,8 @@ export default function CompetitorsPage() {
         <DashboardStats summary={summary} isLoading={summaryLoading} />
 
         {/* ===== View + Scope Toggles ===== */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-white border border-gray-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 overflow-x-hidden">
+          <div className="flex items-center gap-1 p-1 rounded-lg bg-white border border-gray-200 shadow-sm min-w-0">
             <button
               onClick={() => handleViewChange('products')}
               className={cn(
@@ -267,25 +267,25 @@ export default function CompetitorsPage() {
           </div>
 
           {view === 'products' && (
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-white border border-gray-200 shadow-sm">
+            <div className="flex items-center gap-1 p-1 rounded-lg bg-white border border-gray-200 shadow-sm shrink-0">
               <button
                 onClick={() => setScope('mapped')}
                 className={cn(
-                  'flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-all',
+                  'flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md text-xs transition-all whitespace-nowrap',
                   scope === 'mapped' ? 'bg-amber-500 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                 )}
               >
-                <Target className="w-3.5 h-3.5" />
+                <Target className="w-3.5 h-3.5 shrink-0" />
                 自家競品
               </button>
               <button
                 onClick={() => setScope('all')}
                 className={cn(
-                  'flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-all',
+                  'flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md text-xs transition-all whitespace-nowrap',
                   scope === 'all' ? 'bg-amber-500 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                 )}
               >
-                <Globe className="w-3.5 h-3.5" />
+                <Globe className="w-3.5 h-3.5 shrink-0" />
                 全部生鮮
               </button>
             </div>
