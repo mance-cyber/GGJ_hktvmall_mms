@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { ProductComparison } from '@/lib/api'
-import { ChevronDown, ChevronUp, ExternalLink, Crown } from 'lucide-react'
+import { ChevronDown, ChevronUp, ExternalLink, Crown, Shield, ShieldAlert, TrendingDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TierBadge } from './tier-badge'
 import { PriceBadge, PriceChangeIndicator } from './price-badge'
@@ -14,57 +14,145 @@ interface ProductComparisonCardProps {
 
 export function ProductComparisonCard({ data }: ProductComparisonCardProps) {
   const [expanded, setExpanded] = useState(false)
-  const { product, competitors, our_price_rank, total_competitors } = data
+  const { product, competitors, our_price_rank, total_competitors, cheapest_competitor } = data
 
   const isWeCheapest = our_price_rank === 1
+  const cheapestPrice = competitors.length > 0 && competitors[0]?.price ? competitors[0].price : null
+  const ourPrice = product.price || null
+
+  // Calculate threat level
+  let threatLevel: 'safe' | 'warning' | 'danger' = 'safe'
+  let priceDiffPct = 0
+  if (ourPrice && cheapestPrice && !isWeCheapest) {
+    priceDiffPct = ((ourPrice - cheapestPrice) / ourPrice) * 100
+    if (priceDiffPct > 20) threatLevel = 'danger'
+    else if (priceDiffPct > 5) threatLevel = 'warning'
+  }
+
+  // Stock stats
+  const inStockCount = competitors.filter(c => c.stock_status === 'in_stock').length
+  const outOfStockCount = competitors.filter(c => c.stock_status === 'out_of_stock').length
+  const cheaperCount = competitors.filter(c => c.price && ourPrice && c.price < ourPrice).length
 
   return (
     <div className={cn(
       'rounded-xl border transition-all shadow-sm',
-      isWeCheapest
-        ? 'border-emerald-200 bg-gradient-to-r from-white to-emerald-50/50'
-        : 'border-gray-200 bg-white',
+      threatLevel === 'danger'
+        ? 'border-red-200 bg-gradient-to-r from-white to-red-50/30'
+        : isWeCheapest
+          ? 'border-emerald-200 bg-gradient-to-r from-white to-emerald-50/50'
+          : threatLevel === 'warning'
+            ? 'border-amber-200 bg-gradient-to-r from-white to-amber-50/30'
+            : 'border-gray-200 bg-white',
     )}>
-      {/* Header — mobile: stack vertically */}
+      {/* Header — rich info even when collapsed */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full p-3 sm:p-4 flex items-center justify-between text-left"
+        className="w-full p-3 sm:p-4 text-left"
       >
-        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+        {/* Row 1: Product info */}
+        <div className="flex items-center gap-2 sm:gap-3 mb-1.5 sm:mb-2">
           {product.category_tag && (
-            <span className="hidden sm:inline-flex shrink-0 text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-600 border border-teal-200">
+            <span className="shrink-0 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full bg-teal-50 text-teal-600 border border-teal-200">
               {product.category_tag}
             </span>
           )}
 
-          <span className="font-medium text-gray-700 text-sm sm:text-base truncate min-w-0">
+          <span className="font-medium text-gray-700 text-sm sm:text-base truncate min-w-0 flex-1">
             {product.name.replace(/^GOGOJAP-/, '')}
           </span>
 
-          {product.price && (
-            <span className="shrink-0 font-mono text-sm font-bold text-teal-600">
-              ${product.price.toFixed(0)}
-            </span>
-          )}
-
-          {isWeCheapest && total_competitors > 0 && (
-            <span className="shrink-0 flex items-center gap-0.5 text-[10px] sm:text-xs text-emerald-600 bg-emerald-50 px-1.5 sm:px-2 py-0.5 rounded-full border border-emerald-200">
-              <Crown className="w-3 h-3" />
-              <span className="hidden sm:inline">最平</span>
-            </span>
+          {expanded ? (
+            <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
           )}
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-2">
-          <span className="text-[10px] sm:text-xs text-gray-400">
-            {total_competitors}
-            <span className="hidden sm:inline"> 間競品</span>
-          </span>
-          {expanded ? (
-            <ChevronUp className="w-4 h-4 text-gray-400" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-gray-400" />
+        {/* Row 2: Price comparison strip */}
+        <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+          {/* Our price */}
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] sm:text-xs text-gray-400">我哋</span>
+            <span className="font-mono text-sm sm:text-base font-bold text-teal-600">
+              ${ourPrice?.toFixed(0) || 'N/A'}
+            </span>
+          </div>
+
+          {/* Separator */}
+          <span className="text-gray-200">|</span>
+
+          {/* Cheapest competitor */}
+          {cheapestPrice && (
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] sm:text-xs text-gray-400">最平</span>
+              <span className={cn(
+                'font-mono text-sm font-semibold',
+                isWeCheapest ? 'text-emerald-500' :
+                threatLevel === 'danger' ? 'text-red-500' :
+                threatLevel === 'warning' ? 'text-amber-500' : 'text-gray-600'
+              )}>
+                ${cheapestPrice.toFixed(0)}
+              </span>
+              {!isWeCheapest && priceDiffPct > 1 && (
+                <span className={cn(
+                  'text-[10px] sm:text-xs font-mono',
+                  threatLevel === 'danger' ? 'text-red-500' : 'text-amber-500'
+                )}>
+                  (-{priceDiffPct.toFixed(0)}%)
+                </span>
+              )}
+            </div>
           )}
+
+          {/* Separator */}
+          <span className="text-gray-200 hidden sm:inline">|</span>
+
+          {/* Rank */}
+          <div className="flex items-center gap-1">
+            {isWeCheapest ? (
+              <span className="flex items-center gap-0.5 text-[10px] sm:text-xs text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200">
+                <Crown className="w-3 h-3" /> 最平
+              </span>
+            ) : (
+              <span className={cn(
+                'text-[10px] sm:text-xs px-1.5 py-0.5 rounded-full border',
+                threatLevel === 'danger'
+                  ? 'text-red-600 bg-red-50 border-red-200'
+                  : threatLevel === 'warning'
+                    ? 'text-amber-600 bg-amber-50 border-amber-200'
+                    : 'text-gray-500 bg-gray-50 border-gray-200'
+              )}>
+                第{our_price_rank}/{total_competitors}
+              </span>
+            )}
+          </div>
+
+          {/* Separator */}
+          <span className="text-gray-200 hidden sm:inline">|</span>
+
+          {/* Threat indicators */}
+          <div className="hidden sm:flex items-center gap-2 text-[10px] sm:text-xs">
+            {cheaperCount > 0 && (
+              <span className="text-red-400 flex items-center gap-0.5">
+                <TrendingDown className="w-3 h-3" />
+                {cheaperCount}間更平
+              </span>
+            )}
+            {inStockCount > 0 && (
+              <span className="text-gray-400">
+                {inStockCount}/{total_competitors} 有貨
+              </span>
+            )}
+          </div>
+
+          {/* Mobile: compact threat info */}
+          <div className="sm:hidden flex items-center gap-2 text-[10px]">
+            {cheaperCount > 0 && (
+              <span className="text-red-400">{cheaperCount}間更平</span>
+            )}
+            <span className="text-gray-400">{total_competitors}間</span>
+          </div>
         </div>
       </button>
 
@@ -79,13 +167,6 @@ export function ProductComparisonCard({ data }: ProductComparisonCardProps) {
             className="overflow-hidden"
           >
             <div className="px-3 sm:px-4 pb-3 sm:pb-4">
-              {/* Mobile: category tag shown here */}
-              {product.category_tag && (
-                <span className="sm:hidden inline-flex mb-2 text-[10px] px-2 py-0.5 rounded-full bg-teal-50 text-teal-600 border border-teal-200">
-                  {product.category_tag}
-                </span>
-              )}
-
               <div className="border-t border-gray-100 pt-2 sm:pt-3">
                 {competitors.length === 0 ? (
                   <p className="text-sm text-gray-400 text-center py-4">
@@ -106,7 +187,10 @@ export function ProductComparisonCard({ data }: ProductComparisonCardProps) {
                     {competitors.map((comp, i) => (
                       <div
                         key={i}
-                        className="flex items-center gap-2 sm:gap-3 py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg hover:bg-gray-50 transition-colors"
+                        className={cn(
+                          'flex items-center gap-2 sm:gap-3 py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg transition-colors',
+                          i === 0 && !isWeCheapest ? 'bg-red-50/50' : 'hover:bg-gray-50'
+                        )}
                       >
                         <div className="flex items-center gap-1 sm:gap-2 w-20 sm:w-28 shrink-0">
                           <span className="hidden sm:inline"><TierBadge tier={comp.competitor_tier} /></span>
