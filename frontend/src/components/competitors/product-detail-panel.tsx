@@ -212,7 +212,7 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
                     <th className="text-left text-[10px] text-gray-400 font-normal py-1.5 px-2">商戶名稱</th>
                     <th className="text-right text-[10px] text-gray-400 font-normal py-1.5 px-2">售價</th>
                     <th className="text-center text-[10px] text-gray-400 font-normal py-1.5 px-2 hidden sm:table-cell">7天價格趨勢</th>
-                    <th className="text-center text-[10px] text-gray-400 font-normal py-1.5 px-2">股數</th>
+                    <th className="text-center text-[10px] text-gray-400 font-normal py-1.5 px-2">庫存</th>
                     <th className="text-right text-[10px] text-gray-400 font-normal py-1.5 px-2">外規</th>
                   </tr>
                 </thead>
@@ -230,7 +230,7 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
                         <span className="text-gray-300">—</span>
                       )}
                     </td>
-                    <td className="py-2 px-2 text-center text-teal-500">已常</td>
+                    <td className="py-2 px-2 text-center text-teal-500">有貨</td>
                     <td className="py-2 px-2 text-right text-gray-300">—</td>
                   </tr>
 
@@ -274,7 +274,7 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
                             comp.stock_status === 'in_stock' ? 'text-emerald-600 bg-emerald-50' :
                             comp.stock_status === 'out_of_stock' ? 'text-red-500 bg-red-50' : 'text-gray-400'
                           )}>
-                            {comp.stock_status === 'in_stock' ? '已常' :
+                            {comp.stock_status === 'in_stock' ? '有貨' :
                              comp.stock_status === 'out_of_stock' ? '缺貨' : '-'}
                           </span>
                         </td>

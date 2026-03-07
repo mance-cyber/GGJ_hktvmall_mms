@@ -145,7 +145,7 @@ export function ProductComparisonCard({ data, selected, onClick }: ProductCompar
 
           {/* 股貨狀態 */}
           <div>
-            <div className="text-[10px] text-gray-400 mb-0.5">股貨狀態</div>
+            <div className="text-[10px] text-gray-400 mb-0.5">庫存</div>
             <div className={cn(
               'font-medium text-[11px]',
               outOfStockCount > 0 && inStockCount === 0 ? 'text-red-500' :
