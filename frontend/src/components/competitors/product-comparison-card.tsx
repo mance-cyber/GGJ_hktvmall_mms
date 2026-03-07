@@ -37,8 +37,8 @@ export function ProductComparisonCard({ data }: ProductComparisonCardProps) {
             </span>
           )}
 
-          <span className="font-medium text-gray-700 text-sm sm:text-base truncate">
-            {product.name}
+          <span className="font-medium text-gray-700 text-sm sm:text-base truncate min-w-0">
+            {product.name.replace(/^GOGOJAP-/, '')}
           </span>
 
           {product.price && (

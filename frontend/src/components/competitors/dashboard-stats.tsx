@@ -45,7 +45,7 @@ function StatCard({
 export function DashboardStats({ summary, isLoading }: DashboardStatsProps) {
   if (isLoading || !summary) {
     return (
-      <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="rounded-xl border border-gray-200 bg-white p-3 sm:p-4 animate-pulse shadow-sm">
             <div className="h-3 sm:h-4 bg-gray-100 rounded w-14 sm:w-20 mb-2" />
@@ -57,7 +57,7 @@ export function DashboardStats({ summary, isLoading }: DashboardStatsProps) {
   }
 
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
       <StatCard
         icon={Building2}
         label="追蹤商戶"

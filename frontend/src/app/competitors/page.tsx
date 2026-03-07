@@ -48,8 +48,8 @@ export default function CompetitorsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30 px-3 py-4 sm:p-6">
-      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30 px-3 py-4 sm:p-6 overflow-x-hidden">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 w-full">
 
         {/* ===== Header ===== */}
         <div className="flex items-start sm:items-center justify-between gap-2">
