@@ -1212,3 +1212,200 @@ async def get_comparison_merchants(
 
     return {"items": items}
 
+
+
+# ═══════════════════════════════════════════════
+# Feature 3: Price History Chart API
+# ═══════════════════════════════════════════════
+@comparison_router.get("/products/{product_id}/price-history")
+async def get_product_price_history(
+    product_id: uuid.UUID,
+    days: int = Query(30, ge=7, le=90),
+    db: AsyncSession = Depends(get_db),
+):
+    from datetime import datetime, timezone, timedelta
+    from collections import defaultdict
+
+    since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
+    our_result = await db.execute(select(Product).where(Product.id == product_id))
+    product = our_result.scalar_one_or_none()
+    if not product:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    cp_stmt = (
+        select(CompetitorProduct, Competitor.name.label("comp_name"))
+        .join(ProductCompetitorMapping, ProductCompetitorMapping.competitor_product_id == CompetitorProduct.id)
+        .join(Competitor, CompetitorProduct.competitor_id == Competitor.id)
+        .where(ProductCompetitorMapping.product_id == product_id, CompetitorProduct.is_active == True)
+        .limit(8)
+    )
+    cp_rows = (await db.execute(cp_stmt)).all()
+    cp_ids = [r.CompetitorProduct.id for r in cp_rows]
+
+    snaps = []
+    if cp_ids:
+        snaps_result = await db.execute(
+            select(PriceSnapshot)
+            .where(PriceSnapshot.competitor_product_id.in_(cp_ids), PriceSnapshot.scraped_at >= since, PriceSnapshot.price.isnot(None))
+            .order_by(PriceSnapshot.scraped_at)
+        )
+        snaps = snaps_result.scalars().all()
+
+    series_map: dict = defaultdict(dict)
+    for s in snaps:
+        series_map[s.competitor_product_id][s.scraped_at.strftime("%Y-%m-%d")] = float(s.price)
+
+    dates = [(since + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(days + 1)]
+    series = []
+    for row in cp_rows:
+        cp = row.CompetitorProduct
+        daily = series_map.get(cp.id, {})
+        filled, last_price = [], None
+        for d in dates:
+            if d in daily:
+                last_price = daily[d]
+            filled.append(last_price)
+        series.append({"id": str(cp.id), "name": row.comp_name, "data": filled})
+
+    return {
+        "product": {"id": str(product.id), "name": product.name.replace("GOGOJAP-", ""), "price": float(product.price) if product.price else None},
+        "dates": dates,
+        "our_price": float(product.price) if product.price else None,
+        "series": series,
+    }
+
+
+# ═══════════════════════════════════════════════
+# Feature 5: Export CSV
+# ═══════════════════════════════════════════════
+@comparison_router.get("/export")
+async def export_comparison(db: AsyncSession = Depends(get_db)):
+    import csv, io
+    from fastapi.responses import StreamingResponse
+    from sqlalchemy import func as sqlfunc
+
+    our_result = await db.execute(select(Product).where(Product.status == "active").order_by(Product.category_tag, Product.name))
+    our_products = our_result.scalars().all()
+    product_ids = [p.id for p in our_products]
+    if not product_ids:
+        return StreamingResponse(iter([""]), media_type="text/csv")
+
+    comp_stmt = (
+        select(CompetitorProduct, Competitor.name.label("comp_name"), ProductCompetitorMapping.product_id.label("our_product_id"))
+        .join(ProductCompetitorMapping, ProductCompetitorMapping.competitor_product_id == CompetitorProduct.id)
+        .join(Competitor, CompetitorProduct.competitor_id == Competitor.id)
+        .where(ProductCompetitorMapping.product_id.in_(product_ids), CompetitorProduct.is_active == True)
+    )
+    comp_rows = (await db.execute(comp_stmt)).all()
+    all_cp_ids = [r.CompetitorProduct.id for r in comp_rows]
+
+    latest_prices = {}
+    if all_cp_ids:
+        lsq = select(PriceSnapshot.competitor_product_id, sqlfunc.max(PriceSnapshot.scraped_at).label("max_at")).where(PriceSnapshot.competitor_product_id.in_(all_cp_ids)).group_by(PriceSnapshot.competitor_product_id).subquery()
+        pr = await db.execute(select(PriceSnapshot).join(lsq, (PriceSnapshot.competitor_product_id == lsq.c.competitor_product_id) & (PriceSnapshot.scraped_at == lsq.c.max_at)))
+        latest_prices = {ps.competitor_product_id: ps for ps in pr.scalars().all()}
+
+    from collections import defaultdict
+    pcmap = defaultdict(list)
+    for row in comp_rows:
+        pcmap[row.our_product_id].append(row)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["分類", "商品名", "我哋售價", "最平競品", "最平競品價", "價差%", "排名", "競品總數", "比我平嘅數", "有貨數"])
+    for product in our_products:
+        rows = pcmap.get(product.id, [])
+        comps = []
+        for row in rows:
+            latest = latest_prices.get(row.CompetitorProduct.id)
+            if latest and latest.price:
+                comps.append({"name": row.comp_name, "price": float(latest.price), "stock": latest.stock_status})
+        comps.sort(key=lambda x: x["price"])
+        our_price = float(product.price) if product.price else None
+        cheapest = comps[0] if comps else None
+        cheapest_price = cheapest["price"] if cheapest else None
+        diff_pct = round((our_price - cheapest_price) / our_price * 100, 1) if our_price and cheapest_price else None
+        rank = sum(1 for c in comps if c["price"] < (our_price or 99999)) + 1 if our_price else None
+        writer.writerow([product.category_tag or "", product.name.replace("GOGOJAP-", ""), f"${our_price:.0f}" if our_price else "", cheapest["name"] if cheapest else "", f"${cheapest_price:.0f}" if cheapest_price else "", f"{diff_pct:+.1f}%" if diff_pct is not None else "", f"{rank}/{len(comps)}" if rank else "", len(comps), sum(1 for c in comps if c["price"] < (our_price or 99999)), sum(1 for c in comps if c.get("stock") == "in_stock")])
+
+    output.seek(0)
+    from datetime import datetime as dt
+    fname = f"gogojap_competitors_{dt.now().strftime('%Y%m%d_%H%M')}.csv"
+    return StreamingResponse(iter(["\ufeff" + output.read()]), media_type="text/csv; charset=utf-8", headers={"Content-Disposition": f'attachment; filename="{fname}"'})
+
+
+# ═══════════════════════════════════════════════
+# Feature 6: Pricing Suggestions (Rule Engine)
+# ═══════════════════════════════════════════════
+@comparison_router.get("/pricing-suggestions")
+async def get_pricing_suggestions(db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import func as sqlfunc
+    from collections import defaultdict
+
+    our_result = await db.execute(select(Product).where(Product.status == "active"))
+    our_products = our_result.scalars().all()
+    product_ids = [p.id for p in our_products]
+    if not product_ids:
+        return {"suggestions": []}
+
+    comp_stmt = (
+        select(CompetitorProduct, ProductCompetitorMapping.product_id.label("our_product_id"))
+        .join(ProductCompetitorMapping, ProductCompetitorMapping.competitor_product_id == CompetitorProduct.id)
+        .join(Competitor, CompetitorProduct.competitor_id == Competitor.id)
+        .where(ProductCompetitorMapping.product_id.in_(product_ids), CompetitorProduct.is_active == True)
+    )
+    comp_rows = (await db.execute(comp_stmt)).all()
+    all_cp_ids = [r.CompetitorProduct.id for r in comp_rows]
+
+    latest_prices = {}
+    if all_cp_ids:
+        lsq = select(PriceSnapshot.competitor_product_id, sqlfunc.max(PriceSnapshot.scraped_at).label("max_at")).where(PriceSnapshot.competitor_product_id.in_(all_cp_ids)).group_by(PriceSnapshot.competitor_product_id).subquery()
+        pr = await db.execute(select(PriceSnapshot).join(lsq, (PriceSnapshot.competitor_product_id == lsq.c.competitor_product_id) & (PriceSnapshot.scraped_at == lsq.c.max_at)))
+        latest_prices = {ps.competitor_product_id: ps for ps in pr.scalars().all()}
+
+    pcmap = defaultdict(list)
+    for row in comp_rows:
+        pcmap[row.our_product_id].append(row)
+
+    suggestions = []
+    for product in our_products:
+        rows = pcmap.get(product.id, [])
+        our_price = float(product.price) if product.price else None
+        if not our_price or not rows:
+            continue
+        prices, out_of_stock = [], 0
+        for row in rows:
+            latest = latest_prices.get(row.CompetitorProduct.id)
+            if latest and latest.price:
+                prices.append(float(latest.price))
+            if latest and latest.stock_status == "out_of_stock":
+                out_of_stock += 1
+        if not prices:
+            continue
+        prices.sort()
+        cheapest = prices[0]
+        avg_price = sum(prices) / len(prices)
+        cheaper_count = sum(1 for p in prices if p < our_price)
+        total = len(prices)
+        stockout_pct = out_of_stock / total
+        diff_pct = (our_price - cheapest) / our_price * 100
+
+        action = reason = suggested_price = None
+        priority = "low"
+        if cheaper_count == 0 and diff_pct < -20:
+            action, reason, suggested_price, priority = "raise", f"我哋係最平，比次平競品便宜 {abs(diff_pct):.0f}%，有加價空間", round(cheapest * 0.97, 0), "medium"
+        elif cheaper_count == 0 and stockout_pct > 0.5:
+            action, reason, suggested_price, priority = "raise", f"{stockout_pct*100:.0f}% 競品缺貨，供應緊張可考慮微加", round(our_price * 1.05, 0), "low"
+        elif diff_pct > 25 and cheaper_count >= 3:
+            action, reason, suggested_price, priority = "lower", f"有 {cheaper_count} 間競品比我平 {diff_pct:.0f}%，競爭力不足", round(cheapest * 1.02, 0), "high"
+        elif diff_pct > 10 and cheaper_count >= 2:
+            action, reason, suggested_price, priority = "lower", f"有 {cheaper_count} 間競品比我平，建議跟價", round(cheapest * 1.03, 0), "medium"
+        elif stockout_pct > 0.7 and cheaper_count == 0:
+            action, reason, priority = "maintain", f"{stockout_pct*100:.0f}% 競品缺貨，維持現價即可", "low"
+
+        if action:
+            suggestions.append({"product_id": str(product.id), "product_name": product.name.replace("GOGOJAP-", ""), "category": product.category_tag, "our_price": our_price, "cheapest_competitor_price": cheapest, "avg_competitor_price": round(avg_price, 1), "cheaper_count": cheaper_count, "total_competitors": total, "price_diff_pct": round(diff_pct, 1), "stockout_pct": round(stockout_pct * 100, 1), "action": action, "reason": reason, "suggested_price": suggested_price, "priority": priority})
+
+    suggestions.sort(key=lambda x: ({"high": 0, "medium": 1, "low": 2}.get(x["priority"], 3), -abs(x["price_diff_pct"])))
+    return {"suggestions": suggestions}

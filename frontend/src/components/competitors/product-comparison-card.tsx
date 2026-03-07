@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { ProductComparison } from '@/lib/api'
-import { ChevronDown, ChevronUp, ExternalLink, Crown, Shield, ShieldAlert, TrendingDown } from 'lucide-react'
+import { ChevronDown, ChevronUp, ExternalLink, Crown, TrendingDown, LineChart } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TierBadge } from './tier-badge'
 import { PriceBadge, PriceChangeIndicator } from './price-badge'
@@ -10,9 +10,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 interface ProductComparisonCardProps {
   data: ProductComparison
+  onShowHistory?: (productId: string, productName: string) => void
 }
 
-export function ProductComparisonCard({ data }: ProductComparisonCardProps) {
+export function ProductComparisonCard({ data, onShowHistory }: ProductComparisonCardProps) {
   const [expanded, setExpanded] = useState(false)
   const { product, competitors, our_price_rank, total_competitors, cheapest_competitor } = data
 
@@ -167,6 +168,16 @@ export function ProductComparisonCard({ data }: ProductComparisonCardProps) {
             className="overflow-hidden"
           >
             <div className="px-3 sm:px-4 pb-3 sm:pb-4">
+              {onShowHistory && (
+                <div className="mb-2 pt-2">
+                  <button
+                    onClick={e => { e.stopPropagation(); onShowHistory(product.id, product.name.replace(/^GOGOJAP-/, '')) }}
+                    className="flex items-center gap-1 text-[10px] sm:text-xs text-teal-500 hover:text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-2 py-1 rounded-lg transition-colors"
+                  >
+                    <LineChart className="w-3 h-3" /> 查看 30 日趨勢
+                  </button>
+                </div>
+              )}
               <div className="border-t border-gray-100 pt-2 sm:pt-3">
                 {competitors.length === 0 ? (
                   <p className="text-sm text-gray-400 text-center py-4">

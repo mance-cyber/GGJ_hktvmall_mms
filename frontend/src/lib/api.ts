@@ -751,6 +751,15 @@ export const api = {
 
   getComparisonMerchants: () =>
     fetchAPI<{ items: MerchantOverview[] }>('/competitors/comparison/merchants'),
+
+  getPriceHistory: (productId: string, days = 30) =>
+    fetchAPI<PriceHistoryData>(`/competitors/comparison/products/${productId}/price-history?days=${days}`),
+
+  getComparisonExportUrl: () =>
+    `/api/v1/competitors/comparison/export`,
+
+  getPricingSuggestions: () =>
+    fetchAPI<{ suggestions: PricingSuggestion[] }>('/competitors/comparison/pricing-suggestions'),
 }
 
 // =============================================
@@ -2129,4 +2138,28 @@ export interface MerchantOverview {
     change_pct: number | null
     date: string
   }>
+}
+
+export interface PriceHistoryData {
+  product: { id: string; name: string; price: number | null }
+  dates: string[]
+  our_price: number | null
+  series: Array<{ id: string; name: string; data: (number | null)[] }>
+}
+
+export interface PricingSuggestion {
+  product_id: string
+  product_name: string
+  category: string | null
+  our_price: number
+  cheapest_competitor_price: number
+  avg_competitor_price: number
+  cheaper_count: number
+  total_competitors: number
+  price_diff_pct: number
+  stockout_pct: number
+  action: 'raise' | 'lower' | 'maintain'
+  reason: string
+  suggested_price: number | null
+  priority: 'high' | 'medium' | 'low'
 }
