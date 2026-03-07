@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { MerchantOverview } from '@/lib/api'
-import { ChevronDown, ChevronUp, Package, ArrowUpDown, AlertCircle } from 'lucide-react'
+import { ChevronDown, ChevronUp, Package, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TierBadge } from './tier-badge'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -18,7 +18,7 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
   const totalCompared = price_comparison.cheaper_count + price_comparison.same_count + price_comparison.expensive_count
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/50 transition-all hover:border-slate-700">
+    <div className="rounded-xl border border-gray-200 bg-white shadow-sm transition-all hover:border-teal-200 hover:shadow-md">
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
@@ -26,47 +26,45 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
       >
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <TierBadge tier={competitor.tier} />
-          <span className="font-medium text-slate-200 truncate">
+          <span className="font-medium text-gray-700 truncate">
             {competitor.name}
           </span>
           {competitor.store_code && (
-            <span className="text-xs text-slate-600 font-mono">
+            <span className="text-xs text-gray-400 font-mono">
               {competitor.store_code}
             </span>
           )}
         </div>
 
         <div className="flex items-center gap-4 shrink-0 ml-3">
-          {/* Product counts */}
-          <div className="flex items-center gap-1.5 text-xs text-slate-500">
+          <div className="flex items-center gap-1.5 text-xs text-gray-400">
             <Package className="w-3.5 h-3.5" />
             <span>{competitor.total_products}</span>
             {competitor.overlap_products > 0 && (
-              <span className="text-cyan-500">({competitor.overlap_products} 重疊)</span>
+              <span className="text-teal-500">({competitor.overlap_products} 重疊)</span>
             )}
           </div>
 
-          {/* Price comparison mini bar */}
           {totalCompared > 0 && (
             <div className="flex items-center gap-1">
-              <div className="flex h-2 w-20 rounded-full overflow-hidden bg-slate-800">
+              <div className="flex h-2 w-20 rounded-full overflow-hidden bg-gray-100">
                 {price_comparison.expensive_count > 0 && (
                   <div
-                    className="bg-emerald-500 h-full"
+                    className="bg-emerald-400 h-full"
                     style={{ width: `${(price_comparison.expensive_count / totalCompared) * 100}%` }}
                     title={`佢貴: ${price_comparison.expensive_count}`}
                   />
                 )}
                 {price_comparison.same_count > 0 && (
                   <div
-                    className="bg-slate-500 h-full"
+                    className="bg-gray-300 h-full"
                     style={{ width: `${(price_comparison.same_count / totalCompared) * 100}%` }}
                     title={`差不多: ${price_comparison.same_count}`}
                   />
                 )}
                 {price_comparison.cheaper_count > 0 && (
                   <div
-                    className="bg-red-500 h-full"
+                    className="bg-red-400 h-full"
                     style={{ width: `${(price_comparison.cheaper_count / totalCompared) * 100}%` }}
                     title={`佢平: ${price_comparison.cheaper_count}`}
                   />
@@ -74,7 +72,7 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
               </div>
               <span className={cn(
                 'text-xs font-mono',
-                price_comparison.avg_price_diff_pct > 0 ? 'text-emerald-400' : 'text-red-400'
+                price_comparison.avg_price_diff_pct > 0 ? 'text-emerald-500' : 'text-red-500'
               )}>
                 {price_comparison.avg_price_diff_pct > 0 ? '+' : ''}{price_comparison.avg_price_diff_pct}%
               </span>
@@ -82,9 +80,9 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
           )}
 
           {expanded ? (
-            <ChevronUp className="w-4 h-4 text-slate-500" />
+            <ChevronUp className="w-4 h-4 text-gray-400" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-slate-500" />
+            <ChevronDown className="w-4 h-4 text-gray-400" />
           )}
         </div>
       </button>
@@ -99,49 +97,47 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-4 border-t border-slate-800 pt-3">
+            <div className="px-4 pb-4 border-t border-gray-100 pt-3">
               {/* Stats grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                <div className="text-center p-2 rounded-lg bg-slate-800/50">
-                  <div className="text-lg font-bold text-slate-200">{competitor.total_products}</div>
-                  <div className="text-xs text-slate-500">總商品</div>
+                <div className="text-center p-2 rounded-lg bg-gray-50">
+                  <div className="text-lg font-bold text-gray-700">{competitor.total_products}</div>
+                  <div className="text-xs text-gray-400">總商品</div>
                 </div>
-                <div className="text-center p-2 rounded-lg bg-slate-800/50">
-                  <div className="text-lg font-bold text-cyan-400">{competitor.fresh_products}</div>
-                  <div className="text-xs text-slate-500">生鮮品</div>
+                <div className="text-center p-2 rounded-lg bg-teal-50">
+                  <div className="text-lg font-bold text-teal-600">{competitor.fresh_products}</div>
+                  <div className="text-xs text-gray-400">生鮮品</div>
                 </div>
-                <div className="text-center p-2 rounded-lg bg-slate-800/50">
-                  <div className="text-lg font-bold text-amber-400">{competitor.overlap_products}</div>
-                  <div className="text-xs text-slate-500">與我重疊</div>
+                <div className="text-center p-2 rounded-lg bg-amber-50">
+                  <div className="text-lg font-bold text-amber-600">{competitor.overlap_products}</div>
+                  <div className="text-xs text-gray-400">與我重疊</div>
                 </div>
-                <div className="text-center p-2 rounded-lg bg-slate-800/50">
-                  <div className="text-lg font-bold text-purple-400">{competitor.unique_products}</div>
-                  <div className="text-xs text-slate-500">獨有商品</div>
+                <div className="text-center p-2 rounded-lg bg-purple-50">
+                  <div className="text-lg font-bold text-purple-600">{competitor.unique_products}</div>
+                  <div className="text-xs text-gray-400">獨有商品</div>
                 </div>
               </div>
 
-              {/* Price comparison summary */}
               {totalCompared > 0 && (
                 <div className="flex items-center gap-4 mb-4 text-xs">
-                  <span className="flex items-center gap-1 text-emerald-400">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="flex items-center gap-1 text-emerald-500">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
                     佢貴過我: {price_comparison.expensive_count}
                   </span>
-                  <span className="flex items-center gap-1 text-slate-400">
-                    <span className="w-2 h-2 rounded-full bg-slate-500" />
+                  <span className="flex items-center gap-1 text-gray-400">
+                    <span className="w-2 h-2 rounded-full bg-gray-300" />
                     差不多: {price_comparison.same_count}
                   </span>
-                  <span className="flex items-center gap-1 text-red-400">
-                    <span className="w-2 h-2 rounded-full bg-red-500" />
+                  <span className="flex items-center gap-1 text-red-500">
+                    <span className="w-2 h-2 rounded-full bg-red-400" />
                     佢平過我: {price_comparison.cheaper_count}
                   </span>
                 </div>
               )}
 
-              {/* Recent changes */}
               {recent_changes.length > 0 && (
                 <div>
-                  <h4 className="text-xs text-slate-500 mb-2 flex items-center gap-1">
+                  <h4 className="text-xs text-gray-400 mb-2 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" />
                     最近 7 日變動
                   </h4>
@@ -150,21 +146,21 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
                       <div key={i} className="flex items-center gap-2 text-xs">
                         <span className={cn(
                           'px-1.5 py-0.5 rounded',
-                          change.change_type === 'price_drop' ? 'bg-emerald-500/10 text-emerald-400' :
-                          change.change_type === 'price_increase' ? 'bg-red-500/10 text-red-400' :
-                          'bg-slate-800 text-slate-400'
+                          change.change_type === 'price_drop' ? 'bg-emerald-50 text-emerald-600' :
+                          change.change_type === 'price_increase' ? 'bg-red-50 text-red-600' :
+                          'bg-gray-100 text-gray-500'
                         )}>
                           {change.change_type === 'price_drop' ? '↓ 降價' :
                            change.change_type === 'price_increase' ? '↑ 加價' :
                            change.change_type}
                         </span>
-                        <span className="text-slate-300 truncate flex-1">{change.product_name}</span>
+                        <span className="text-gray-600 truncate flex-1">{change.product_name}</span>
                         {change.old_price && change.new_price && (
-                          <span className="text-slate-500 font-mono">
+                          <span className="text-gray-400 font-mono">
                             ${change.old_price} → ${change.new_price}
                           </span>
                         )}
-                        <span className="text-slate-600">{change.date}</span>
+                        <span className="text-gray-300">{change.date}</span>
                       </div>
                     ))}
                   </div>
@@ -172,7 +168,7 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
               )}
 
               {recent_changes.length === 0 && totalCompared === 0 && (
-                <p className="text-sm text-slate-600 text-center py-2">
+                <p className="text-sm text-gray-400 text-center py-2">
                   暫無比較數據（需先跑建庫）
                 </p>
               )}

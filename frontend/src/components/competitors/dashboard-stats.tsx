@@ -13,31 +13,31 @@ function StatCard({
   label,
   value,
   sub,
-  color = 'cyan',
+  color = 'teal',
 }: {
   icon: React.ElementType
   label: string
   value: string | number
   sub?: string
-  color?: 'cyan' | 'emerald' | 'amber' | 'red' | 'purple' | 'blue'
+  color?: 'teal' | 'emerald' | 'amber' | 'red' | 'purple' | 'blue'
 }) {
   const colors = {
-    cyan: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20',
-    emerald: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    amber: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-    red: 'text-red-400 bg-red-500/10 border-red-500/20',
-    purple: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
-    blue: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+    teal: 'border-teal-200 bg-gradient-to-br from-white to-teal-50/50 text-teal-600',
+    emerald: 'border-emerald-200 bg-gradient-to-br from-white to-emerald-50/50 text-emerald-600',
+    amber: 'border-amber-200 bg-gradient-to-br from-white to-amber-50/50 text-amber-600',
+    red: 'border-red-200 bg-gradient-to-br from-white to-red-50/50 text-red-600',
+    purple: 'border-purple-200 bg-gradient-to-br from-white to-purple-50/50 text-purple-600',
+    blue: 'border-blue-200 bg-gradient-to-br from-white to-blue-50/50 text-blue-600',
   }
 
   return (
-    <div className={`rounded-xl border p-4 ${colors[color]}`}>
+    <div className={`rounded-xl border p-4 shadow-sm ${colors[color]}`}>
       <div className="flex items-center gap-2 mb-2">
-        <Icon className="w-4 h-4 opacity-70" />
-        <span className="text-xs text-slate-400">{label}</span>
+        <Icon className="w-4 h-4 opacity-60" />
+        <span className="text-xs text-gray-500">{label}</span>
       </div>
       <div className="text-2xl font-bold tracking-tight">{value}</div>
-      {sub && <div className="text-xs text-slate-500 mt-1">{sub}</div>}
+      {sub && <div className="text-xs text-gray-400 mt-1">{sub}</div>}
     </div>
   )
 }
@@ -47,9 +47,9 @@ export function DashboardStats({ summary, isLoading }: DashboardStatsProps) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-slate-800 p-4 animate-pulse">
-            <div className="h-4 bg-slate-800 rounded w-20 mb-2" />
-            <div className="h-8 bg-slate-800 rounded w-16" />
+          <div key={i} className="rounded-xl border border-gray-200 bg-white p-4 animate-pulse shadow-sm">
+            <div className="h-4 bg-gray-100 rounded w-20 mb-2" />
+            <div className="h-8 bg-gray-100 rounded w-16" />
           </div>
         ))}
       </div>
@@ -62,7 +62,7 @@ export function DashboardStats({ summary, isLoading }: DashboardStatsProps) {
         icon={Building2}
         label="追蹤商戶"
         value={summary.total_competitors}
-        color="cyan"
+        color="teal"
       />
       <StatCard
         icon={Package}
@@ -87,7 +87,7 @@ export function DashboardStats({ summary, isLoading }: DashboardStatsProps) {
         icon={AlertTriangle}
         label="24h 警報"
         value={summary.price_alerts_24h}
-        color={summary.price_alerts_24h > 0 ? 'amber' : 'cyan'}
+        color={summary.price_alerts_24h > 0 ? 'amber' : 'teal'}
       />
       <StatCard
         icon={Clock}

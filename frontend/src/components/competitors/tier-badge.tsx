@@ -3,9 +3,9 @@
 import { cn } from '@/lib/utils'
 
 const TIER_CONFIG: Record<number, { label: string; color: string; bg: string }> = {
-  1: { label: 'Tier 1', color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/30' },
-  2: { label: 'Tier 2', color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/30' },
-  3: { label: 'Tier 3', color: 'text-slate-400', bg: 'bg-slate-500/10 border-slate-500/30' },
+  1: { label: 'Tier 1', color: 'text-red-600', bg: 'bg-red-50 border-red-200' },
+  2: { label: 'Tier 2', color: 'text-amber-600', bg: 'bg-amber-50 border-amber-200' },
+  3: { label: 'Tier 3', color: 'text-gray-500', bg: 'bg-gray-50 border-gray-200' },
 }
 
 export function TierBadge({ tier }: { tier: number }) {
