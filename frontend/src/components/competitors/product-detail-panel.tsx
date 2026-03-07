@@ -209,17 +209,19 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-gray-100">
-                    <th className="text-left text-[10px] text-gray-400 font-normal py-1.5 px-2">商戶名稱</th>
+                    <th className="text-left text-[10px] text-gray-400 font-normal py-1.5 px-2">商戶</th>
+                    <th className="text-left text-[10px] text-gray-400 font-normal py-1.5 px-2">對手產品</th>
                     <th className="text-right text-[10px] text-gray-400 font-normal py-1.5 px-2">售價</th>
-                    <th className="text-center text-[10px] text-gray-400 font-normal py-1.5 px-2 hidden sm:table-cell">7天價格趨勢</th>
+                    <th className="text-center text-[10px] text-gray-400 font-normal py-1.5 px-2 hidden sm:table-cell">7天趨勢</th>
                     <th className="text-center text-[10px] text-gray-400 font-normal py-1.5 px-2">庫存</th>
-                    <th className="text-right text-[10px] text-gray-400 font-normal py-1.5 px-2">外規</th>
+                    <th className="text-right text-[10px] text-gray-400 font-normal py-1.5 px-2">連結</th>
                   </tr>
                 </thead>
                 <tbody>
                   {/* GoGoJap row */}
                   <tr className="bg-teal-50/70 border-b border-teal-100">
-                    <td className="py-2 px-2 font-semibold text-teal-700">GoGoJap ⭐</td>
+                    <td className="py-2 px-2 font-semibold text-teal-700 whitespace-nowrap">GoGoJap ⭐</td>
+                    <td className="py-2 px-2 text-xs text-teal-600">{productName}</td>
                     <td className="py-2 px-2 text-right font-mono font-bold text-teal-600">
                       ${product.price?.toFixed(0) || 'N/A'}
                     </td>
@@ -248,8 +250,13 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
                         <td className="py-2 px-2">
                           <div className="flex items-center gap-1.5">
                             <TierBadge tier={comp.competitor_tier} />
-                            <span className="text-gray-700 truncate max-w-[120px]">{comp.competitor_name}</span>
+                            <span className="text-gray-700 truncate max-w-[100px]">{comp.competitor_name}</span>
                           </div>
+                        </td>
+                        <td className="py-2 px-2">
+                          <span className="text-[11px] text-gray-500 truncate block max-w-[140px]" title={comp.product_name}>
+                            {comp.product_name}
+                          </span>
                         </td>
                         <td className="py-2 px-2 text-right">
                           <span className={cn(
