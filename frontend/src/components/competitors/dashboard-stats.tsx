@@ -31,13 +31,13 @@ function StatCard({
   }
 
   return (
-    <div className={`rounded-xl border p-4 shadow-sm ${colors[color]}`}>
-      <div className="flex items-center gap-2 mb-2">
-        <Icon className="w-4 h-4 opacity-60" />
-        <span className="text-xs text-gray-500">{label}</span>
+    <div className={`rounded-xl border p-3 sm:p-4 shadow-sm ${colors[color]}`}>
+      <div className="flex items-center gap-1.5 mb-1 sm:mb-2">
+        <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 opacity-60" />
+        <span className="text-[10px] sm:text-xs text-gray-500">{label}</span>
       </div>
-      <div className="text-2xl font-bold tracking-tight">{value}</div>
-      {sub && <div className="text-xs text-gray-400 mt-1">{sub}</div>}
+      <div className="text-xl sm:text-2xl font-bold tracking-tight">{value}</div>
+      {sub && <div className="text-[10px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1 truncate">{sub}</div>}
     </div>
   )
 }
@@ -45,11 +45,11 @@ function StatCard({
 export function DashboardStats({ summary, isLoading }: DashboardStatsProps) {
   if (isLoading || !summary) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-gray-200 bg-white p-4 animate-pulse shadow-sm">
-            <div className="h-4 bg-gray-100 rounded w-20 mb-2" />
-            <div className="h-8 bg-gray-100 rounded w-16" />
+          <div key={i} className="rounded-xl border border-gray-200 bg-white p-3 sm:p-4 animate-pulse shadow-sm">
+            <div className="h-3 sm:h-4 bg-gray-100 rounded w-14 sm:w-20 mb-2" />
+            <div className="h-6 sm:h-8 bg-gray-100 rounded w-10 sm:w-16" />
           </div>
         ))}
       </div>
@@ -57,7 +57,7 @@ export function DashboardStats({ summary, isLoading }: DashboardStatsProps) {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+    <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
       <StatCard
         icon={Building2}
         label="追蹤商戶"
