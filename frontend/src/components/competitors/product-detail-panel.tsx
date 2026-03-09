@@ -250,11 +250,11 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
                         <td className="py-2 px-2">
                           <div className="flex items-center gap-1.5">
                             <TierBadge tier={comp.competitor_tier} />
-                            <span className="text-gray-700 truncate max-w-[100px]">{comp.competitor_name}</span>
+                            <span className="text-gray-700 truncate max-w-[120px]">{comp.competitor_name}</span>
                           </div>
                         </td>
                         <td className="py-2 px-2">
-                          <span className="text-[11px] text-gray-500 truncate block max-w-[140px]" title={comp.product_name}>
+                          <span className="text-[11px] text-gray-500 line-clamp-2 leading-tight" title={comp.product_name}>
                             {comp.product_name}
                           </span>
                         </td>

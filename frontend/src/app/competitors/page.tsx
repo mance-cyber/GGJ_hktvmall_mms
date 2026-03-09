@@ -322,7 +322,7 @@ export default function CompetitorsPage() {
               {/* ── Left: Product List ── */}
               <div className={cn(
                 'min-w-0 flex-shrink-0 space-y-3',
-                selectedProduct ? 'w-full lg:w-[54%]' : 'w-full'
+                selectedProduct ? 'w-full lg:w-[40%]' : 'w-full'
               )}>
                 {productsLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
@@ -403,7 +403,7 @@ export default function CompetitorsPage() {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 16 }}
                     transition={{ duration: 0.2 }}
-                    className="hidden lg:block lg:w-[46%] sticky top-4"
+                    className="hidden lg:block lg:w-[60%] sticky top-4"
                     style={{ maxHeight: 'calc(100vh - 2rem)' }}
                   >
                     <ProductDetailPanel
