@@ -24,6 +24,7 @@ from app.models.product import Product, ProductCompetitorMapping
 from app.services.algolia_fetcher import AlgoliaFetcher, get_algolia_fetcher
 from app.services.ai_filter import AIProductFilter, get_ai_filter
 from app.connectors.hktv_api import HKTVProduct
+from app.services.stock_prober import probe_stocks_batch
 
 logger = logging.getLogger(__name__)
 
@@ -387,7 +388,62 @@ class CompetitorBuilder:
                             f"${prev.price} → ${new_price} ({change_pct:.1f}%)"
                         )
 
-        return {"products_updated": updated, "alerts_generated": alerts}
+        # ── Phase 2: Stock Probe（產品頁 SSR）──
+        # 批次讀取精確庫存，寫入最新 snapshot
+        all_skus = [cp.sku for cps in by_competitor.values() for cp in cps if cp.sku]
+        stock_probed = 0
+        if all_skus:
+            logger.info(f"Stock probe: {len(all_skus)} SKUs...")
+            try:
+                stock_results = await probe_stocks_batch(
+                    all_skus, concurrency=5, delay=0.3
+                )
+                # 更新剛建立的 snapshots（同一次 db session 內）
+                # 取最新 snapshot per product，填入 stock_level
+                for cps in by_competitor.values():
+                    for cp in cps:
+                        if not cp.sku or cp.sku not in stock_results:
+                            continue
+                        sr = stock_results[cp.sku]
+                        if sr.stock_level is None:
+                            continue
+                        # 找到本輪剛加的 snapshot（最新的 pending one）
+                        latest_stmt = (
+                            select(PriceSnapshot)
+                            .where(PriceSnapshot.competitor_product_id == cp.id)
+                            .order_by(PriceSnapshot.scraped_at.desc())
+                            .limit(1)
+                        )
+                        latest_result = await db.execute(latest_stmt)
+                        latest = latest_result.scalar_one_or_none()
+                        if latest:
+                            latest.stock_level = sr.stock_level
+                            stock_probed += 1
+
+                            # 庫存歸零告警
+                            if sr.stock_level == 0 and latest.stock_status != "out_of_stock":
+                                latest.stock_status = "out_of_stock"
+                                alert = PriceAlert(
+                                    id=uuid4(),
+                                    competitor_product_id=cp.id,
+                                    alert_type="out_of_stock",
+                                    old_value=None,
+                                    new_value="0",
+                                    created_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                                )
+                                db.add(alert)
+                                alerts += 1
+                                logger.info(f"  🚨 out_of_stock: {cp.name}")
+
+                logger.info(f"Stock probe done: {stock_probed}/{len(all_skus)} updated")
+            except Exception as e:
+                logger.warning(f"Stock probe failed (non-fatal): {e}")
+
+        return {
+            "products_updated": updated,
+            "alerts_generated": alerts,
+            "stock_probed": stock_probed,
+        }
 
     # =============================================
     # 新商戶發現

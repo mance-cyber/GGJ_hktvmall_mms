@@ -1,0 +1,19 @@
+{
+  "description": "HKTVmall consumer account cookies for inventory probing",
+  "updated": "2026-03-08T12:02:07.326Z",
+  "note": "Extracted via CDP Network.getCookies — includes httpOnly auth cookies",
+  "cookies": {
+    "access_token": "8d28eaf7-1c8d-4ec4-9401-f0b094e0b73e",
+    "ott-uuid": "8fcfb180-f5cc-48f1-9f1d-1ca4f820828d",
+    "refresh_token": "3cc78410-ad0b-4d4e-a7fe-e8aff3f98276",
+    "ZFAPILBI": "fbbb4848fa034ecb7a8b308e2de85fee",
+    "nextgen_EXPRESS_CHECKOUT": "true",
+    "_ALGOLIA": "anonymous-75939ac4-6f14-488d-ac61-43daca254b5a",
+    "device-type": "desktop-web",
+    "hktvstorefrontRememberMe": "a3RwaGluaGluOTk5OUBob3RtYWlsLmNvbToxNzc0MTY4OTA4Mjc3OmU1NDBjMWRhNDBjMWEzMjI1ODFlYjE3NjJhYzhmOTdh",
+    "JSESSIONID": "49B93D21D0AB45E6005EBB478E6A71F8",
+    "TS01035ec6": "01e5ac8956737c5d1d54d6dbb3b59c86389dfdf5f07f5354db83e29465356b2da83b3e315488f3628417728cd3891525c52b92f94b",
+    "NLBI": "2e5b3fed6a95ad0352895a9d7369c129"
+  },
+  "raw": "access_token=8d28eaf7-1c8d-4ec4-9401-f0b094e0b73e; ott-uuid=8fcfb180-f5cc-48f1-9f1d-1ca4f820828d; refresh_token=3cc78410-ad0b-4d4e-a7fe-e8aff3f98276; ZFAPILBI=fbbb4848fa034ecb7a8b308e2de85fee; nextgen_EXPRESS_CHECKOUT=true; _ALGOLIA=anonymous-75939ac4-6f14-488d-ac61-43daca254b5a; device-type=desktop-web; hktvstorefrontRememberMe=a3RwaGluaGluOTk5OUBob3RtYWlsLmNvbToxNzc0MTY4OTA4Mjc3OmU1NDBjMWRhNDBjMWEzMjI1ODFlYjE3NjJhYzhmOTdh; JSESSIONID=49B93D21D0AB45E6005EBB478E6A71F8; TS01035ec6=01e5ac8956737c5d1d54d6dbb3b59c86389dfdf5f07f5354db83e29465356b2da83b3e315488f3628417728cd3891525c52b92f94b; NLBI=2e5b3fed6a95ad0352895a9d7369c129"
+}

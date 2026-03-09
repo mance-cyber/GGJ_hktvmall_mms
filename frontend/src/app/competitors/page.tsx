@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api, ProductComparison } from '@/lib/api'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -54,6 +54,29 @@ export default function CompetitorsPage() {
   // Split panel state
   const [selectedProduct, setSelectedProduct] = useState<ProductComparison | null>(null)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<ThreatLevel>>(new Set())
+  const [detailOffset, setDetailOffset] = useState(0)
+  const listContainerRef = useRef<HTMLDivElement>(null)
+
+  const handleSelectProduct = useCallback((item: ProductComparison) => {
+    const isSame = selectedProduct?.product.id === item.product.id
+    setSelectedProduct(isSame ? null : item)
+    if (!isSame) {
+      // Calculate offset of the clicked card relative to the product list container
+      requestAnimationFrame(() => {
+        if (!listContainerRef.current) return
+        const card = listContainerRef.current.querySelector(
+          `[data-product-id="${item.product.id}"]`
+        ) as HTMLElement | null
+        if (card) {
+          const containerRect = listContainerRef.current.getBoundingClientRect()
+          const cardRect = card.getBoundingClientRect()
+          setDetailOffset(cardRect.top - containerRect.top)
+        }
+      })
+    } else {
+      setDetailOffset(0)
+    }
+  }, [selectedProduct])
 
   const { data: summary, isLoading: summaryLoading, refetch: refetchSummary } = useQuery({
     queryKey: ['comparison-summary'],
@@ -320,7 +343,9 @@ export default function CompetitorsPage() {
           {view === 'products' && (
             <div className="flex gap-4 items-start">
               {/* ── Left: Product List ── */}
-              <div className={cn(
+              <div
+                ref={listContainerRef}
+                className={cn(
                 'min-w-0 flex-shrink-0 space-y-3',
                 selectedProduct ? 'w-full lg:w-[40%]' : 'w-full'
               )}>
@@ -376,14 +401,13 @@ export default function CompetitorsPage() {
                             >
                               <div className="px-2 pb-2 space-y-1.5">
                                 {items.map(item => (
-                                  <ProductComparisonCard
-                                    key={item.product.id}
-                                    data={item}
-                                    selected={selectedProduct?.product.id === item.product.id}
-                                    onClick={() => setSelectedProduct(
-                                      selectedProduct?.product.id === item.product.id ? null : item
-                                    )}
-                                  />
+                                  <div key={item.product.id} data-product-id={item.product.id}>
+                                    <ProductComparisonCard
+                                      data={item}
+                                      selected={selectedProduct?.product.id === item.product.id}
+                                      onClick={() => handleSelectProduct(item)}
+                                    />
+                                  </div>
                                 ))}
                               </div>
                             </motion.div>
@@ -404,7 +428,7 @@ export default function CompetitorsPage() {
                     exit={{ opacity: 0, x: 16 }}
                     transition={{ duration: 0.2 }}
                     className="hidden lg:block lg:w-[60%] sticky top-4"
-                    style={{ maxHeight: 'calc(100vh - 2rem)' }}
+                    style={{ maxHeight: 'calc(100vh - 2rem)', marginTop: `${detailOffset}px` }}
                   >
                     <ProductDetailPanel
                       data={selectedProduct}
