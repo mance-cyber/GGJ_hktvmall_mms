@@ -107,6 +107,8 @@ class PriceSnapshot(Base):
 
     # v2 新增：每 100g 單位價（方便比較）
     unit_price_per_100g: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), comment="每 100g 價格（HKD）")
+    # v2.1 新增：精確庫存數量（from product page SSR）
+    stock_level: Mapped[Optional[int]] = mapped_column(Integer, comment="精確庫存數量（NULL=未探測）")
 
     # 關聯
     product: Mapped["CompetitorProduct"] = relationship(back_populates="price_snapshots")
