@@ -314,6 +314,8 @@ class CompetitorBuilder:
 
         updated = 0
         alerts = 0
+        # 追蹤本輪有新 snapshot 的 product IDs
+        refreshed_cp_ids: set[str] = set()
 
         # 取每個商戶的最新商品數據
         for cid, cps in by_competitor.items():
@@ -363,6 +365,7 @@ class CompetitorBuilder:
                 )
                 db.add(snapshot)
                 updated += 1
+                refreshed_cp_ids.add(str(cp.id))
 
                 # 更新 last_scraped_at
                 cp.last_scraped_at = now
@@ -398,8 +401,8 @@ class CompetitorBuilder:
                 stock_results = await probe_stocks_batch(
                     all_skus, concurrency=5, delay=0.3
                 )
-                # 更新剛建立的 snapshots（同一次 db session 內）
-                # 取最新 snapshot per product，填入 stock_level
+                # 更新 snapshots：本輪有新的直接寫，冇新的建 carry-forward snapshot
+                now_stock = datetime.now(timezone.utc).replace(tzinfo=None)
                 for cps in by_competitor.values():
                     for cp in cps:
                         if not cp.sku or cp.sku not in stock_results:
@@ -407,33 +410,82 @@ class CompetitorBuilder:
                         sr = stock_results[cp.sku]
                         if sr.stock_level is None:
                             continue
-                        # 找到本輪剛加的 snapshot（最新的 pending one）
-                        latest_stmt = (
-                            select(PriceSnapshot)
-                            .where(PriceSnapshot.competitor_product_id == cp.id)
-                            .order_by(PriceSnapshot.scraped_at.desc())
-                            .limit(1)
-                        )
-                        latest_result = await db.execute(latest_stmt)
-                        latest = latest_result.scalar_one_or_none()
-                        if latest:
-                            latest.stock_level = sr.stock_level
-                            stock_probed += 1
 
-                            # 庫存歸零告警
-                            if sr.stock_level == 0 and latest.stock_status != "out_of_stock":
-                                latest.stock_status = "out_of_stock"
-                                alert = PriceAlert(
-                                    id=uuid4(),
-                                    competitor_product_id=cp.id,
-                                    alert_type="out_of_stock",
-                                    old_value=None,
-                                    new_value="0",
-                                    created_at=datetime.now(timezone.utc).replace(tzinfo=None),
-                                )
-                                db.add(alert)
-                                alerts += 1
-                                logger.info(f"  🚨 out_of_stock: {cp.name}")
+                        cp_id_str = str(cp.id)
+
+                        if cp_id_str in refreshed_cp_ids:
+                            # 本輪有新 snapshot → 直接更新
+                            latest_stmt = (
+                                select(PriceSnapshot)
+                                .where(PriceSnapshot.competitor_product_id == cp.id)
+                                .order_by(PriceSnapshot.scraped_at.desc())
+                                .limit(1)
+                            )
+                            latest_result = await db.execute(latest_stmt)
+                            latest = latest_result.scalar_one_or_none()
+                            if latest:
+                                latest.stock_level = sr.stock_level
+                                stock_probed += 1
+                        else:
+                            # Algolia 冇返回此 SKU → 建 carry-forward snapshot
+                            # 沿用上次 price，寫入新 stock_level
+                            prev_stmt = (
+                                select(PriceSnapshot)
+                                .where(PriceSnapshot.competitor_product_id == cp.id)
+                                .order_by(PriceSnapshot.scraped_at.desc())
+                                .limit(1)
+                            )
+                            prev_result = await db.execute(prev_stmt)
+                            prev = prev_result.scalar_one_or_none()
+
+                            carried_price = prev.price if prev else None
+                            carried_original = prev.original_price if prev else None
+                            carried_unit = prev.unit_price_per_100g if prev else None
+                            stock_status = "out_of_stock" if sr.stock_level == 0 else "in_stock"
+
+                            new_snapshot = PriceSnapshot(
+                                id=uuid4(),
+                                competitor_product_id=cp.id,
+                                price=carried_price,
+                                original_price=carried_original,
+                                stock_status=stock_status,
+                                unit_price_per_100g=carried_unit,
+                                stock_level=sr.stock_level,
+                                scraped_at=now_stock,
+                            )
+                            db.add(new_snapshot)
+                            stock_probed += 1
+                            updated += 1
+                            cp.last_scraped_at = now_stock
+                            logger.debug(
+                                f"  📦 carry-forward snapshot: {cp.name} "
+                                f"stock={sr.stock_level} (Algolia missed)"
+                            )
+
+                        # 庫存歸零告警（兩條路徑共用）
+                        if sr.stock_level == 0:
+                            # 查本輪最新 snapshot 的 stock_status
+                            chk_stmt = (
+                                select(PriceSnapshot)
+                                .where(PriceSnapshot.competitor_product_id == cp.id)
+                                .order_by(PriceSnapshot.scraped_at.desc())
+                                .limit(1)
+                            )
+                            chk_result = await db.execute(chk_stmt)
+                            chk = chk_result.scalar_one_or_none()
+                            if chk and chk.stock_status != "out_of_stock":
+                                chk.stock_status = "out_of_stock"
+                            alert = PriceAlert(
+                                id=uuid4(),
+                                competitor_product_id=cp.id,
+                                alert_type="out_of_stock",
+                                old_value=None,
+                                new_value="0",
+                                created_at=now_stock,
+                            )
+                            db.add(alert)
+                            alerts += 1
+                            logger.info(f"  🚨 out_of_stock: {cp.name}")
 
                 logger.info(f"Stock probe done: {stock_probed}/{len(all_skus)} updated")
             except Exception as e:
