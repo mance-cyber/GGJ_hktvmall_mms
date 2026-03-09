@@ -278,11 +278,14 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
                         <td className="py-2 px-2 text-center">
                           <span className={cn(
                             'text-[10px] px-1.5 py-0.5 rounded',
-                            comp.stock_status === 'in_stock' ? 'text-emerald-600 bg-emerald-50' :
-                            comp.stock_status === 'out_of_stock' ? 'text-red-500 bg-red-50' : 'text-gray-400'
+                            comp.stock_status === 'out_of_stock' ? 'text-red-500 bg-red-50' :
+                            comp.stock_level !== null && comp.stock_level !== undefined && comp.stock_level <= 10 ? 'text-amber-600 bg-amber-50' :
+                            comp.stock_status === 'in_stock' ? 'text-emerald-600 bg-emerald-50' : 'text-gray-400'
                           )}>
-                            {comp.stock_status === 'in_stock' ? '有貨' :
-                             comp.stock_status === 'out_of_stock' ? '缺貨' : '-'}
+                            {comp.stock_status === 'out_of_stock' ? '缺貨' :
+                             comp.stock_status === 'in_stock'
+                               ? (comp.stock_level !== null && comp.stock_level !== undefined ? `${comp.stock_level}件` : '有貨')
+                               : '-'}
                           </span>
                         </td>
                         <td className="py-2 px-2 text-right">

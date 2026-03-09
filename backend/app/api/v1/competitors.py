@@ -1017,6 +1017,7 @@ async def get_comparison_products(
                 "unit_price_per_100g": float(latest.unit_price_per_100g) if latest and latest.unit_price_per_100g else None,
                 "price_change_7d": price_change_7d,
                 "stock_status": latest.stock_status if latest else None,
+                "stock_level": latest.stock_level if latest and latest.stock_level is not None else None,
                 "url": cp.url,
                 "last_updated": latest.scraped_at.isoformat() if latest and latest.scraped_at else None,
             })
@@ -1039,6 +1040,7 @@ async def get_comparison_products(
                 "unit_price_per_100g": float(latest.unit_price_per_100g) if latest and latest.unit_price_per_100g else None,
                 "price_change_7d": price_change_7d,
                 "stock_status": latest.stock_status if latest else None,
+                "stock_level": latest.stock_level if latest and latest.stock_level is not None else None,
                 "url": cp.url,
                 "last_updated": latest.scraped_at.isoformat() if latest and latest.scraped_at else None,
             })

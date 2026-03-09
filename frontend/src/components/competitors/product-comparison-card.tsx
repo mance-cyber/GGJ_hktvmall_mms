@@ -33,13 +33,24 @@ export function ProductComparisonCard({ data, selected, onClick }: ProductCompar
   const inStockCount = competitors.filter(c => c.stock_status === 'in_stock').length
   const outOfStockCount = competitors.filter(c => c.stock_status === 'out_of_stock').length
 
-  // Stock label
+  // Stock level: find the min stock among competitors with known stock_level
+  const knownStockLevels = competitors
+    .filter(c => c.stock_level !== null && c.stock_level !== undefined && c.stock_status === 'in_stock')
+    .map(c => c.stock_level as number)
+  const minStockLevel = knownStockLevels.length > 0 ? Math.min(...knownStockLevels) : null
+  const maxStockLevel = knownStockLevels.length > 0 ? Math.max(...knownStockLevels) : null
+
+  // Stock label with quantity
   const stockLabel = outOfStockCount > 0 && inStockCount === 0
     ? '已退車'
     : outOfStockCount > 0
       ? `${inStockCount}有/${outOfStockCount}缺`
       : inStockCount > 0
-        ? '有貨'
+        ? (knownStockLevels.length > 0
+          ? (knownStockLevels.length === 1
+            ? `庫存 ${knownStockLevels[0]}`
+            : `庫存 ${minStockLevel}-${maxStockLevel}`)
+          : '有貨')
         : '無資料'
 
   return (

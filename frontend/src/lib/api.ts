@@ -2094,6 +2094,7 @@ export interface CompetitorPrice {
   unit_price_per_100g: number | null
   price_change_7d: number | null
   stock_status: string | null
+  stock_level: number | null
   url: string
   last_updated: string | null
 }
