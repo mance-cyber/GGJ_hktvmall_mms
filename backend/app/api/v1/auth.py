@@ -1,9 +1,11 @@
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 import secrets
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy import select
+from pydantic import BaseModel
+from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from google.oauth2 import id_token
 from google.auth.transport import requests
@@ -12,53 +14,72 @@ from app.api import deps
 from app.core import security
 from app.config import settings
 from app.models.database import get_db
-from app.models.user import User, UserRole
+from app.models.user import User, UserRole, RefreshToken
 from app.schemas.user import Token, UserCreate, User as UserSchema, GoogleLogin, UserWithPermissions
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-@router.post("/login", response_model=Token)
+
+# =============================================
+# Helpers — Refresh Token 操作
+# =============================================
+
+async def _create_token_pair(db: AsyncSession, user: User) -> dict:
+    """創建 access + refresh token pair"""
+    access_token = security.create_access_token(user.id, role=user.role.value)
+    refresh_token_str = security.create_refresh_token()
+
+    # 存 refresh token 到 DB
+    refresh_token = RefreshToken(
+        token=refresh_token_str,
+        user_id=user.id,
+        expires_at=datetime.now(timezone.utc).replace(tzinfo=None)
+                   + timedelta(days=security.REFRESH_TOKEN_EXPIRE_DAYS),
+    )
+    db.add(refresh_token)
+    await db.commit()
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token_str,
+        "token_type": "bearer",
+    }
+
+
+# =============================================
+# Login endpoints
+# =============================================
+
+@router.post("/login")
 async def login_access_token(
     db: AsyncSession = Depends(get_db),
     form_data: OAuth2PasswordRequestForm = Depends()
 ) -> Any:
-    """
-    OAuth2 compatible token login, get an access token for future requests
-    """
-    # Find user by email
+    """OAuth2 compatible token login"""
     result = await db.execute(select(User).where(User.email == form_data.username))
     user = result.scalar_one_or_none()
-    
-    if not user or not security.verify_password(form_data.password, user.hashed_password):
+
+    # 統一錯誤訊息，防止 user enumeration
+    if not user or not user.is_active or not security.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="Invalid credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    elif not user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
-        
-    access_token_expires = timedelta(minutes=security.ACCESS_TOKEN_EXPIRE_MINUTES)
-    return {
-        "access_token": security.create_access_token(
-            user.id, role=user.role.value
-        ),
-        "token_type": "bearer",
-    }
 
-@router.post("/google", response_model=Token)
+    return await _create_token_pair(db, user)
+
+
+@router.post("/google")
 async def login_google(
     login_data: GoogleLogin,
     db: AsyncSession = Depends(get_db),
-    request: Any = None,  # Optional: for IP check
+    request: Any = None,
 ) -> Any:
-    """
-    Login with Google ID Token
-    """
-    from fastapi import Request
-
+    """Login with Google ID Token"""
     try:
-        # Verify Google Token
         id_info = id_token.verify_oauth2_token(
             login_data.credential,
             requests.Request(),
@@ -66,20 +87,17 @@ async def login_google(
         )
     except ValueError as e:
         # H-01: Mock mode 僅限開發環境 + 本地請求
-        # 生產環境完全禁用 mock 認證
         if (
             settings.app_env == "development"
-            and settings.debug  # 額外檢查 debug 模式
+            and settings.debug
             and login_data.credential.startswith("mock_")
         ):
-            # 僅允許本地測試
             id_info = {"email": "mock@example.com", "name": "Mock User"}
-            import logging
-            logging.warning("SECURITY: Mock authentication used in development mode")
+            logger.warning("SECURITY: Mock authentication used in development mode")
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid Google token: {str(e)}"
+                detail="Invalid Google token"
             )
 
     email = id_info.get("email")
@@ -89,7 +107,7 @@ async def login_google(
             detail="Google token missing email"
         )
 
-    # 檢查郵箱是否在白名單中
+    # 檢查郵箱白名單
     if settings.google_allowed_emails:
         allowed_emails = [e.strip().lower() for e in settings.google_allowed_emails.split(",") if e.strip()]
         if email.lower() not in allowed_emails:
@@ -98,7 +116,6 @@ async def login_google(
                 detail="此 Google 帳戶未被授權登入系統"
             )
 
-    # Check if user exists
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
 
@@ -116,11 +133,8 @@ async def login_google(
 
     try:
         if not user:
-            # Create new user
-            # Generate a random password since they use Google
             random_password = secrets.token_urlsafe(32)
             hashed_password = security.get_password_hash(random_password)
-
             user = User(
                 email=email,
                 hashed_password=hashed_password,
@@ -132,9 +146,11 @@ async def login_google(
             await db.commit()
             await db.refresh(user)
         elif not user.is_active:
-            raise HTTPException(status_code=400, detail="Inactive user")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials"
+            )
         else:
-            # 同步角色設定（如果環境變數有更新）
             if user.role != expected_role:
                 user.role = expected_role
                 await db.commit()
@@ -143,30 +159,93 @@ async def login_google(
         raise
     except Exception as e:
         await db.rollback()
-        import logging
-        logging.error(f"Error during Google login: {e}")
+        logger.error(f"Error during Google login: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="登入過程發生錯誤，請稍後再試"
         )
-        
-    # Create token
-    access_token_expires = timedelta(minutes=security.ACCESS_TOKEN_EXPIRE_MINUTES)
-    return {
-        "access_token": security.create_access_token(
-            user.id, role=user.role.value
-        ),
-        "token_type": "bearer",
-    }
+
+    return await _create_token_pair(db, user)
+
+
+# =============================================
+# Refresh Token endpoint
+# =============================================
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
+@router.post("/refresh")
+async def refresh_access_token(
+    body: RefreshRequest,
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """用 refresh token 換取新 access + refresh token"""
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    result = await db.execute(
+        select(RefreshToken).where(
+            and_(
+                RefreshToken.token == body.refresh_token,
+                RefreshToken.revoked == False,
+                RefreshToken.expires_at > now,
+            )
+        )
+    )
+    rt = result.scalar_one_or_none()
+    if not rt:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token"
+        )
+
+    # Revoke 舊 token
+    rt.revoked = True
+
+    # 取得用戶
+    user_result = await db.execute(select(User).where(User.id == rt.user_id))
+    user = user_result.scalar_one_or_none()
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials"
+        )
+
+    return await _create_token_pair(db, user)
+
+
+# =============================================
+# Logout (revoke refresh tokens)
+# =============================================
+
+@router.post("/logout")
+async def logout(
+    body: RefreshRequest,
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """Revoke refresh token"""
+    result = await db.execute(
+        select(RefreshToken).where(RefreshToken.token == body.refresh_token)
+    )
+    rt = result.scalar_one_or_none()
+    if rt:
+        rt.revoked = True
+        await db.commit()
+    return {"detail": "Logged out"}
+
+
+# =============================================
+# Register (admin only)
+# =============================================
 
 @router.post("/register", response_model=UserSchema)
 async def register_user(
     user_in: UserCreate,
     db: AsyncSession = Depends(get_db),
+    _current_admin: User = Depends(deps.get_current_active_superuser),
 ) -> Any:
-    """
-    Create new user without the need to be logged in
-    """
+    """Create new user (admin only)"""
     result = await db.execute(select(User).where(User.email == user_in.email))
     user = result.scalar_one_or_none()
     if user:
@@ -174,26 +253,30 @@ async def register_user(
             status_code=400,
             detail="The user with this username already exists in the system.",
         )
-        
+
+    assigned_role = user_in.role if user_in.role else UserRole.VIEWER
     user = User(
         email=user_in.email,
         hashed_password=security.get_password_hash(user_in.password),
         full_name=user_in.full_name,
-        role=user_in.role,
-        is_active=user_in.is_active,
+        role=assigned_role,
+        is_active=True,
     )
     db.add(user)
     await db.commit()
     await db.refresh(user)
     return user
 
+
+# =============================================
+# Current user
+# =============================================
+
 @router.get("/me", response_model=UserWithPermissions)
 async def read_users_me(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
-    """
-    Get current user with permissions
-    """
+    """Get current user with permissions"""
     from app.api.deps import get_user_permissions
 
     permissions = get_user_permissions(current_user)

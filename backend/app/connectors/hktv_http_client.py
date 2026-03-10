@@ -168,7 +168,7 @@ class HKTVHttpClient:
                 timeout=self.REQUEST_TIMEOUT,
                 headers=self.DEFAULT_HEADERS,
                 follow_redirects=True,
-                verify=False,  # HKTVmall CDN 需要跳過 TLS
+                verify=True,
             )
         return self._client
 

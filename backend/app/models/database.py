@@ -68,8 +68,7 @@ def _prepare_async_url(url: str) -> tuple[str, dict]:
     }
     if needs_ssl:
         ssl_ctx = ssl.create_default_context()
-        ssl_ctx.check_hostname = False
-        ssl_ctx.verify_mode = ssl.CERT_NONE
+        # 使用系統 CA 驗證 Neon DB 的 SSL 憑證（正規 CA-signed cert）
         connect_args["ssl"] = ssl_ctx
 
     return clean_url, connect_args
@@ -98,32 +97,21 @@ async_session_maker = async_sessionmaker(
 
 
 async def run_migrations(conn):
-    """手動執行 Schema 遷移 (MVP 簡易版)"""
+    """
+    啟動時 Schema 補丁（僅處理 Alembic 未覆蓋的基礎設施）。
+    所有業務欄位變更應使用 alembic/versions/ 管理。
+    """
     try:
-        # Add columns to products table if they don't exist
-        alter_statements = [
-            "ALTER TABLE products ADD COLUMN IF NOT EXISTS min_price NUMERIC(10, 2);",
-            "ALTER TABLE products ADD COLUMN IF NOT EXISTS max_price NUMERIC(10, 2);",
-            "ALTER TABLE products ADD COLUMN IF NOT EXISTS auto_pricing_enabled BOOLEAN DEFAULT FALSE;",
-            "ALTER TABLE products ADD COLUMN IF NOT EXISTS cost NUMERIC(10, 2);",
-            # P0-分級監測 - 添加監測優先級欄位
-            "ALTER TABLE products ADD COLUMN IF NOT EXISTS monitoring_priority VARCHAR(10) DEFAULT 'B';",
-            # 修復：將已存在但 monitoring_priority 為 NULL 的產品設為預設 'B'
-            "UPDATE products SET monitoring_priority = 'B' WHERE monitoring_priority IS NULL;",
-            # 管線任務 - progress 即時進度欄位
-            "ALTER TABLE pipeline_tasks ADD COLUMN IF NOT EXISTS progress JSONB;",
-            "ALTER TABLE pipeline_tasks ADD COLUMN IF NOT EXISTS step_started_at TIMESTAMP;",
-            # pg_trgm 文本相似度索引（競品匹配預篩加速）
+        # 僅保留 pg_trgm extension（Alembic 不方便處理 CREATE EXTENSION）
+        infra_statements = [
             "CREATE EXTENSION IF NOT EXISTS pg_trgm;",
             "CREATE INDEX IF NOT EXISTS idx_cp_name_trgm ON competitor_products USING GIN (name gin_trgm_ops);",
         ]
-
-        for stmt in alter_statements:
+        for stmt in infra_statements:
             try:
                 await conn.execute(text(stmt))
             except Exception as e:
-                logger.warning(f"Migration warning: {e}")
-
+                logger.warning(f"Migration infra warning: {e}")
     except Exception as e:
         logger.error(f"Migration failed: {e}", exc_info=True)
 

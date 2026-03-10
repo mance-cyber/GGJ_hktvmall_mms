@@ -35,6 +35,7 @@ class UserCreate(UserBase):
     email: str
     password: str
     role: UserRole = UserRole.VIEWER
+    is_active: bool = True  # 覆蓋 UserBase，客戶端不可控制（auth.py 強制 True）
 
 # Properties to receive via API on update
 class UserUpdate(UserBase):
@@ -62,6 +63,7 @@ class UserInDB(UserInDBBase):
 # Token schemas
 class Token(BaseModel):
     access_token: str
+    refresh_token: Optional[str] = None
     token_type: str
 
 class TokenPayload(BaseModel):

@@ -54,8 +54,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return request.client.host if request.client else "unknown"
 
     def _cleanup_old_records(self, now: float) -> None:
-        """清理過期的請求記錄"""
-        if now - self._last_cleanup < self._cleanup_interval:
+        """清理過期的請求記錄（含記憶體上限保護）"""
+        # 記憶體安全閥：超過 10000 個 IP 時強制清理
+        force_cleanup = len(self._requests) > 10000
+        if not force_cleanup and now - self._last_cleanup < self._cleanup_interval:
             return
 
         cutoff = now - self.window_seconds
@@ -65,6 +67,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 if ts > cutoff
             ]
             if not self._requests[ip]:
+                del self._requests[ip]
+
+        # 如果清理後仍超 10000，移除最舊的 IP
+        if len(self._requests) > 10000:
+            sorted_ips = sorted(
+                self._requests.keys(),
+                key=lambda ip: min(ts for ts, _ in self._requests[ip]) if self._requests[ip] else 0
+            )
+            for ip in sorted_ips[:len(self._requests) - 5000]:
                 del self._requests[ip]
 
         self._last_cleanup = now

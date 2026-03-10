@@ -683,6 +683,7 @@ export function GlobalChatWidget() {
   // 拖曳狀態 — 手動 pointer event，放手即停，零慣性
   const containerRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
+  const [isDraggingState, setIsDraggingState] = useState(false) // for cursor re-render
   const dragStart = useRef({ x: 0, y: 0, right: 0, bottom: 0 })
   const [position, setPosition] = useState({ right: 16, bottom: 96 }) // 對應 right-4 bottom-24
 
@@ -720,7 +721,10 @@ export function GlobalChatWidget() {
 
     // 移動超過 5px 先算拖曳（避免誤觸）
     if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-      isDragging.current = true
+      if (!isDragging.current) {
+        isDragging.current = true
+        setIsDraggingState(true)
+      }
     }
 
     if (isDragging.current) {
@@ -743,6 +747,7 @@ export function GlobalChatWidget() {
       el.releasePointerCapture(e.pointerId)
     }
     // 延遲 reset isDragging，讓 onClick 可以判斷
+    setIsDraggingState(false)
     setTimeout(() => { isDragging.current = false }, 50)
   }, [])
 
@@ -878,7 +883,7 @@ export function GlobalChatWidget() {
       style={{ right: position.right, bottom: position.bottom }}
       className={cn(
         "fixed z-50 flex flex-col items-end gap-4 touch-none",
-        isDragging.current ? "cursor-grabbing" : "cursor-grab"
+        isDraggingState ? "cursor-grabbing" : "cursor-grab"
       )}
     >
       <AnimatePresence>

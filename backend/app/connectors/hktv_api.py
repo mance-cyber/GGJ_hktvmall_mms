@@ -132,7 +132,7 @@ class HKTVApiClient:
             if self._client is None or self._client.is_closed:
                 self._client = httpx.AsyncClient(
                     timeout=self.REQUEST_TIMEOUT,
-                    verify=False,
+                    verify=True,
                 )
         return self._client
 
