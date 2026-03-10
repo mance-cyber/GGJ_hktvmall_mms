@@ -347,8 +347,8 @@ export default function AlertsPage() {
         {/* ========== 警報列表 ========== */}
         <HoloCard className="overflow-hidden" glowColor="cyan">
           {/* 列表頭部 */}
-          <div className="px-6 py-3 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+          <div className="px-3 sm:px-6 py-3 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
+            <div className="flex items-center space-x-3 sm:space-x-4">
               <button onClick={handleSelectAll} className="p-1 hover:bg-slate-200 rounded">
                 <div className={cn(
                   "w-4 h-4 border-2 rounded flex items-center justify-center",
@@ -361,14 +361,14 @@ export default function AlertsPage() {
                   )}
                 </div>
               </button>
-              <span className="text-sm text-slate-600">
+              <span className="text-xs sm:text-sm text-slate-600">
                 {filteredAlerts.length} {t['alerts.alert_count']}
                 {searchQuery && ` (${t['alerts.search_prefix']}: "${searchQuery}")`}
               </span>
             </div>
             {selectedAlerts.size > 0 && (
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-slate-500">{t['alerts.selected_count'].replace('{n}', String(selectedAlerts.size))}</span>
+                <span className="text-xs sm:text-sm text-slate-500">{t['alerts.selected_count'].replace('{n}', String(selectedAlerts.size))}</span>
                 <HoloButton size="sm" variant="ghost">
                   <CheckCheck className="w-4 h-4 mr-1" />
                   {t['alerts.mark_as_read']}
@@ -409,7 +409,7 @@ export default function AlertsPage() {
 
           {/* 空狀態 */}
           {paginatedAlerts.length === 0 && (
-            <div className="px-6 py-16 text-center">
+            <div className="px-4 sm:px-6 py-12 sm:py-16 text-center">
               <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Bell className="w-8 h-8 text-slate-300" />
               </div>
@@ -424,7 +424,7 @@ export default function AlertsPage() {
 
           {/* 分頁 */}
           {totalPages > 1 && (
-            <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
               <span className="text-sm text-slate-500">
                 {t['alerts.page_info'].replace('{current}', String(currentPage)).replace('{total}', String(totalPages)).replace('{count}', String(filteredAlerts.length))}
               </span>
@@ -559,105 +559,216 @@ function AlertCard({
 
   return (
     <div className={cn(
-      "px-6 py-4 flex items-center gap-4 transition-all hover:bg-slate-50/80 group",
+      "px-3 py-3 sm:px-6 sm:py-4 transition-all hover:bg-slate-50/80 group",
       !isRead && "bg-blue-50/30",
       isSelected && "bg-blue-100/50"
     )}>
-      {/* 選擇框 */}
-      <button onClick={onSelect} className="flex-shrink-0">
-        <div className={cn(
-          "w-5 h-5 border-2 rounded flex items-center justify-center transition-colors",
-          isSelected ? "bg-blue-500 border-blue-500" : "border-slate-300 hover:border-slate-400"
-        )}>
-          {isSelected && <Check className="w-3 h-3 text-white" />}
+      {/* Desktop layout */}
+      <div className="hidden sm:flex items-center gap-4">
+        {/* 選擇框 */}
+        <button onClick={onSelect} className="flex-shrink-0">
+          <div className={cn(
+            "w-5 h-5 border-2 rounded flex items-center justify-center transition-colors",
+            isSelected ? "bg-blue-500 border-blue-500" : "border-slate-300 hover:border-slate-400"
+          )}>
+            {isSelected && <Check className="w-3 h-3 text-white" />}
+          </div>
+        </button>
+
+        {/* 圖標 */}
+        <div className={cn("p-2.5 rounded-xl flex-shrink-0", config.bg)}>
+          <Icon className={cn("w-5 h-5", config.color)} />
         </div>
-      </button>
 
-      {/* 圖標 */}
-      <div className={cn("p-2.5 rounded-xl flex-shrink-0", config.bg)}>
-        <Icon className={cn("w-5 h-5", config.color)} />
-      </div>
+        {/* 內容 */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <HoloBadge variant={config.badgeVariant} size="sm">
+              {config.label}
+            </HoloBadge>
+            {!isRead && (
+              <span className="flex items-center text-xs text-blue-600 font-medium">
+                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-1 animate-pulse" />
+                {t['alerts.unread']}
+              </span>
+            )}
+          </div>
 
-      {/* 內容 */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <HoloBadge variant={config.badgeVariant} size="sm">
-            {config.label}
-          </HoloBadge>
-          {!isRead && (
-            <span className="flex items-center text-xs text-blue-600 font-medium">
-              <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-1 animate-pulse" />
-              {t['alerts.unread']}
+          <h3 className="font-semibold text-slate-800 truncate mb-1">
+            {alert.product_name}
+          </h3>
+
+          <div className="flex items-center text-sm text-slate-500 space-x-3">
+            <span className="flex items-center">
+              <Building2 className="w-3.5 h-3.5 mr-1" />
+              {alert.competitor_name}
+            </span>
+            <span className="flex items-center">
+              <Clock className="w-3.5 h-3.5 mr-1" />
+              {new Date(alert.created_at).toLocaleString('zh-HK')}
+            </span>
+          </div>
+        </div>
+
+        {/* 價格變動 */}
+        <div className="flex-shrink-0 text-right min-w-[120px]">
+          <div className="flex items-center justify-end space-x-2 font-mono">
+            <span className="text-slate-400 line-through text-sm">{alert.old_value}</span>
+            <span className="text-slate-800 font-bold">{alert.new_value}</span>
+          </div>
+          {alert.change_percent && (
+            <span className={cn(
+              "text-sm font-bold",
+              Number(alert.change_percent) > 0 ? "text-red-600" : "text-green-600"
+            )}>
+              {Number(alert.change_percent) > 0 ? '+' : ''}{Number(alert.change_percent).toFixed(1)}%
             </span>
           )}
         </div>
 
-        <h3 className="font-semibold text-slate-800 truncate mb-1">
-          {alert.product_name}
-        </h3>
-
-        <div className="flex items-center text-sm text-slate-500 space-x-3">
-          <span className="flex items-center">
-            <Building2 className="w-3.5 h-3.5 mr-1" />
-            {alert.competitor_name}
-          </span>
-          <span className="flex items-center">
-            <Clock className="w-3.5 h-3.5 mr-1" />
-            {new Date(alert.created_at).toLocaleString('zh-HK')}
-          </span>
+        {/* 操作按鈕 */}
+        <div className="flex-shrink-0 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {!isRead && (
+            <HoloButton
+              size="sm"
+              variant="ghost"
+              onClick={onMarkRead}
+              icon={<CheckCheck className="w-4 h-4" />}
+            >
+              {t['alerts.read']}
+            </HoloButton>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-8 px-2">
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem>
+                <Eye className="w-4 h-4 mr-2" />
+                {t['alerts.view_details']}
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <ExternalLink className="w-4 h-4 mr-2" />
+                {t['alerts.go_to_product']}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-slate-500">
+                <Archive className="w-4 h-4 mr-2" />
+                {t['alerts.archive']}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      {/* 價格變動 */}
-      <div className="flex-shrink-0 text-right min-w-[120px]">
-        <div className="flex items-center justify-end space-x-2 font-mono">
-          <span className="text-slate-400 line-through text-sm">{alert.old_value}</span>
-          <span className="text-slate-800 font-bold">{alert.new_value}</span>
-        </div>
-        {alert.change_percent && (
-          <span className={cn(
-            "text-sm font-bold",
-            Number(alert.change_percent) > 0 ? "text-red-600" : "text-green-600"
+      {/* Mobile layout */}
+      <div className="flex sm:hidden gap-3">
+        {/* 選擇框 */}
+        <button onClick={onSelect} className="flex-shrink-0 pt-0.5">
+          <div className={cn(
+            "w-5 h-5 border-2 rounded flex items-center justify-center transition-colors",
+            isSelected ? "bg-blue-500 border-blue-500" : "border-slate-300 hover:border-slate-400"
           )}>
-            {Number(alert.change_percent) > 0 ? '+' : ''}{Number(alert.change_percent).toFixed(1)}%
-          </span>
-        )}
-      </div>
+            {isSelected && <Check className="w-3 h-3 text-white" />}
+          </div>
+        </button>
 
-      {/* 操作按鈕 */}
-      <div className="flex-shrink-0 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        {!isRead && (
-          <HoloButton
-            size="sm"
-            variant="ghost"
-            onClick={onMarkRead}
-            icon={<CheckCheck className="w-4 h-4" />}
-          >
-            {t['alerts.read']}
-          </HoloButton>
-        )}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" variant="ghost" className="h-8 px-2">
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>
-              <Eye className="w-4 h-4 mr-2" />
-              {t['alerts.view_details']}
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <ExternalLink className="w-4 h-4 mr-2" />
-              {t['alerts.go_to_product']}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-slate-500">
-              <Archive className="w-4 h-4 mr-2" />
-              {t['alerts.archive']}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* 圖標 */}
+        <div className={cn("p-2 rounded-lg flex-shrink-0", config.bg)}>
+          <Icon className={cn("w-4 h-4", config.color)} />
+        </div>
+
+        {/* 內容 — 垂直排列 */}
+        <div className="flex-1 min-w-0">
+          {/* 第一行：Badge + 未讀 */}
+          <div className="flex items-center gap-2 mb-1">
+            <HoloBadge variant={config.badgeVariant} size="sm">
+              {config.label}
+            </HoloBadge>
+            {!isRead && (
+              <span className="flex items-center text-xs text-blue-600 font-medium">
+                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-1 animate-pulse" />
+                {t['alerts.unread']}
+              </span>
+            )}
+          </div>
+
+          {/* 第二行：產品名 */}
+          <h3 className="font-semibold text-slate-800 text-sm leading-snug mb-1 line-clamp-2">
+            {alert.product_name}
+          </h3>
+
+          {/* 第三行：商戶名 */}
+          <div className="flex items-center text-xs text-slate-500 mb-1.5">
+            <Building2 className="w-3 h-3 mr-1 flex-shrink-0" />
+            <span className="truncate">{alert.competitor_name}</span>
+          </div>
+
+          {/* 第四行：價格 + 時間 */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 font-mono text-sm">
+              {(alert.old_value != null && alert.new_value != null) ? (
+                <>
+                  <span className="text-slate-400 line-through text-xs">{alert.old_value}</span>
+                  <span className="text-slate-800 font-bold">{alert.new_value}</span>
+                  {alert.change_percent && (
+                    <span className={cn(
+                      "text-xs font-bold",
+                      Number(alert.change_percent) > 0 ? "text-red-600" : "text-green-600"
+                    )}>
+                      {Number(alert.change_percent) > 0 ? '+' : ''}{Number(alert.change_percent).toFixed(1)}%
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="text-slate-800 font-bold text-xs">{alert.new_value ?? '—'}</span>
+              )}
+            </div>
+            <span className="flex items-center text-xs text-slate-400 flex-shrink-0 ml-2">
+              <Clock className="w-3 h-3 mr-1" />
+              {new Date(alert.created_at).toLocaleDateString('zh-HK', { month: 'numeric', day: 'numeric' })}
+              {' '}
+              {new Date(alert.created_at).toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+        </div>
+
+        {/* Mobile 操作按鈕 */}
+        <div className="flex-shrink-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {!isRead && (
+                <>
+                  <DropdownMenuItem onClick={onMarkRead}>
+                    <CheckCheck className="w-4 h-4 mr-2" />
+                    {t['alerts.mark_as_read']}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              <DropdownMenuItem>
+                <Eye className="w-4 h-4 mr-2" />
+                {t['alerts.view_details']}
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <ExternalLink className="w-4 h-4 mr-2" />
+                {t['alerts.go_to_product']}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-slate-500">
+                <Archive className="w-4 h-4 mr-2" />
+                {t['alerts.archive']}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </div>
   )
