@@ -758,6 +758,22 @@ async def list_alerts(
     )
 
 
+@alerts_router.put("/mark-all-read")
+async def mark_all_alerts_read(
+    db: AsyncSession = Depends(get_db),
+):
+    """一鍵標記所有未讀警報為已讀"""
+    from sqlalchemy import update
+    result = await db.execute(
+        update(PriceAlert)
+        .where(PriceAlert.is_read == False)
+        .values(is_read=True)
+    )
+    count = result.rowcount
+    await db.flush()
+    return {"message": f"已標記 {count} 條警報為已讀", "count": count}
+
+
 @alerts_router.put("/{alert_id}/read")
 async def mark_alert_read(
     alert_id: UUID,

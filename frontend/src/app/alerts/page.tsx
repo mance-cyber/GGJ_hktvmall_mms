@@ -86,6 +86,9 @@ export default function AlertsPage() {
     },
   })
 
+  // 全部標記已讀
+  const [markingAllRead, setMarkingAllRead] = useState(false)
+
   // 過濾和搜索
   const filteredAlerts = useMemo(() => {
     if (!alerts?.data) return []
@@ -139,11 +142,15 @@ export default function AlertsPage() {
   }
 
   const handleMarkAllRead = async () => {
-    const unreadAlerts = alerts?.data.filter(a => !a.is_read) || []
-    for (const alert of unreadAlerts) {
-      await api.markAlertRead(alert.id)
+    setMarkingAllRead(true)
+    try {
+      await api.markAllAlertsRead()
+      queryClient.invalidateQueries({ queryKey: ['alerts'] })
+    } catch (err) {
+      console.error('Failed to mark all alerts as read:', err)
+    } finally {
+      setMarkingAllRead(false)
     }
-    queryClient.invalidateQueries({ queryKey: ['alerts'] })
   }
 
   // ========== Loading 骨架屏 ==========
@@ -233,10 +240,11 @@ export default function AlertsPage() {
                 variant="primary"
                 size="sm"
                 onClick={handleMarkAllRead}
-                icon={<CheckCheck className="w-3.5 h-3.5" />}
+                disabled={markingAllRead}
+                icon={markingAllRead ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCheck className="w-3.5 h-3.5" />}
               >
-                <span className="hidden sm:inline">{t['alerts.mark_all_read']}</span>
-                <span className="sm:hidden">{t['alerts.read']}</span>
+                <span className="hidden sm:inline">{markingAllRead ? '處理中...' : t['alerts.mark_all_read']}</span>
+                <span className="sm:hidden">{markingAllRead ? '...' : t['alerts.read']}</span>
               </HoloButton>
             )}
           </div>

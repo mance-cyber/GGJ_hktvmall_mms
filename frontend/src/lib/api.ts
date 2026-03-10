@@ -519,6 +519,9 @@ export const api = {
   markAlertRead: (alertId: string) =>
     fetchAPI<{ message: string }>(`/alerts/${alertId}/read`, { method: 'PUT' }),
 
+  markAllAlertsRead: () =>
+    fetchAPI<{ message: string; count: number }>(`/alerts/mark-all-read`, { method: 'PUT' }),
+
   // =============================================
   // Market Response Center (MRC) API
   // =============================================
