@@ -21,17 +21,6 @@ from app.models.competitor import Competitor, CompetitorProduct
 from app.models.scrape_config import ScrapeConfig
 from app.models.import_job import ImportJob, ImportJobItem
 from app.core.url_security import validate_url_strict, validate_urls_batch, URLSecurityError
-from app.services import (
-    ScrapeExecutor,
-    SmartScrapeExecutor,
-    ScrapeConfig as ScrapeConfigService,
-    ScrapeResult,
-    BatchOptimizer,
-    BatchConfig,
-    BatchProgress,
-    get_smart_scrape_executor,
-    get_batch_optimizer,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -570,107 +559,6 @@ async def get_running_tasks(
         ))
 
     return items
-
-
-# =============================================
-# 抓取預覽測試 API
-# =============================================
-
-@router.post("/preview", response_model=ScrapePreviewResponse)
-async def preview_scrape(
-    request: ScrapePreviewRequest,
-):
-    """
-    預覽抓取結果（不保存到數據庫）
-    用於測試 URL 是否可以正確抓取
-
-    - use_actions: 啟用 Actions 處理動態頁面（滾動、等待等）
-    """
-    import time
-    start_time = time.time()
-
-    # M-05: SSRF 防護 - 驗證 URL
-    try:
-        validate_url_strict(request.url)
-    except URLSecurityError as e:
-        return ScrapePreviewResponse(
-            success=False,
-            url=request.url,
-            error=f"URL 安全驗證失敗: {str(e)}",
-            duration_ms=int((time.time() - start_time) * 1000),
-        )
-
-    try:
-        from app.connectors.firecrawl import get_firecrawl_connector
-        connector = get_firecrawl_connector()
-        info = connector.extract_product_info(request.url, use_actions=request.use_actions)
-
-        duration_ms = int((time.time() - start_time) * 1000)
-
-        return ScrapePreviewResponse(
-            success=True,
-            url=request.url,
-            name=info.name,
-            price=info.price,
-            original_price=info.original_price,
-            discount_percent=info.discount_percent,
-            stock_status=info.stock_status,
-            image_url=info.image_url,
-            sku=info.sku,
-            brand=info.brand,
-            rating=info.rating,
-            review_count=info.review_count,
-            promotion_text=info.promotion_text,
-            description=info.description,
-            raw_data=info.raw_data,
-            duration_ms=duration_ms,
-        )
-
-    except Exception as e:
-        duration_ms = int((time.time() - start_time) * 1000)
-        return ScrapePreviewResponse(
-            success=False,
-            url=request.url,
-            error=str(e),
-            duration_ms=duration_ms,
-        )
-
-
-@router.post("/discover", response_model=DiscoverUrlsResponse)
-async def discover_urls(
-    request: DiscoverUrlsRequest,
-):
-    """
-    發現網站上的商品頁面 URL
-
-    使用 Firecrawl 的 Map 功能快速獲取網站所有 URL，
-    然後根據關鍵詞過濾出可能是商品頁面的 URL。
-
-    - base_url: 網站根 URL
-    - keywords: 過濾關鍵詞（如 ["product", "item"]）
-    """
-    # M-05: SSRF 防護 - 驗證 URL
-    try:
-        validate_url_strict(request.base_url)
-    except URLSecurityError as e:
-        raise HTTPException(status_code=400, detail=f"URL 安全驗證失敗: {str(e)}")
-
-    try:
-        from app.connectors.firecrawl import get_firecrawl_connector
-        connector = get_firecrawl_connector()
-
-        urls = connector.discover_product_urls(
-            request.base_url,
-            keywords=request.keywords
-        )
-
-        return DiscoverUrlsResponse(
-            urls=urls,
-            total=len(urls)
-        )
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 # =============================================

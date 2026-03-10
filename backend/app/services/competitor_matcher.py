@@ -27,7 +27,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.product import Product, ProductCompetitorMapping
 from app.models.competitor import Competitor, CompetitorProduct, PriceSnapshot
-from app.connectors.firecrawl import get_firecrawl_connector, ProductInfo
+# Firecrawl 已被 Algolia 取代，保留 stub 以防止 import error
+try:
+    from app.connectors.firecrawl import get_firecrawl_connector, ProductInfo
+except ImportError:
+    ProductInfo = object
+
+    def get_firecrawl_connector():
+        raise RuntimeError("Firecrawl 已被移除，請使用 Algolia 抓取方案")
 from app.connectors.claude import get_claude_connector
 from app.connectors.hktv_http_client import get_hktv_http_client
 from app.connectors.hktv_api import get_hktv_api_client, HKTVProduct

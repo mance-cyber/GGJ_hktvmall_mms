@@ -255,6 +255,38 @@ async def send_test_price_change_notification():
 
 
 # =============================================
+# 訂閱者管理
+# =============================================
+
+@router.get("/subscribers")
+async def list_subscribers(db: AsyncSession = Depends(get_db)):
+    """列出所有報告訂閱者"""
+    from app.models.notification import ReportSubscriber
+    from sqlalchemy import select
+
+    result = await db.execute(
+        select(ReportSubscriber).order_by(ReportSubscriber.subscribed_at.desc())
+    )
+    subscribers = result.scalars().all()
+
+    return {
+        "total": len(subscribers),
+        "active": sum(1 for s in subscribers if s.is_active),
+        "subscribers": [
+            {
+                "chat_id": s.chat_id,
+                "username": s.username,
+                "first_name": s.first_name,
+                "is_active": s.is_active,
+                "subscribed_at": s.subscribed_at.isoformat() if s.subscribed_at else None,
+                "last_delivered_at": s.last_delivered_at.isoformat() if s.last_delivered_at else None,
+            }
+            for s in subscribers
+        ],
+    }
+
+
+# =============================================
 # Telegram Webhook 處理
 # =============================================
 
@@ -285,6 +317,22 @@ async def telegram_webhook(
     處理來自 Telegram 的 Webhook 更新，包括 Callback Query（按鈕點擊）
     """
     notifier = get_telegram_notifier()
+
+    # 處理普通消息（/start, /subscribe, /stop）
+    if update.message:
+        msg = update.message
+        text = (msg.get("text") or "").strip()
+        chat = msg.get("chat", {})
+        chat_id = str(chat.get("id", ""))
+        from_user = msg.get("from", {})
+
+        if text in ("/start", "/subscribe"):
+            await _handle_subscribe(db, notifier, chat_id, from_user)
+            return {"ok": True, "action": "subscribed"}
+
+        elif text in ("/stop", "/unsubscribe"):
+            await _handle_unsubscribe(db, notifier, chat_id)
+            return {"ok": True, "action": "unsubscribed"}
 
     # 處理 Callback Query（按鈕點擊）
     if update.callback_query:
@@ -323,6 +371,93 @@ async def telegram_webhook(
             return {"ok": False, "error": str(e)}
 
     return {"ok": True}
+
+
+async def _handle_subscribe(
+    db: AsyncSession,
+    notifier: TelegramNotifier,
+    chat_id: str,
+    from_user: dict,
+):
+    """處理 /start 或 /subscribe — 自動訂閱報告"""
+    from app.models.notification import ReportSubscriber
+    from sqlalchemy import select
+
+    result = await db.execute(
+        select(ReportSubscriber).where(ReportSubscriber.chat_id == chat_id)
+    )
+    existing = result.scalar_one_or_none()
+
+    if existing:
+        if not existing.is_active:
+            existing.is_active = True
+            existing.username = from_user.get("username") or existing.username
+            existing.first_name = from_user.get("first_name") or existing.first_name
+            await db.flush()
+            await notifier.send_message(
+                text="✅ 已重新訂閱 GoGoJap 競品報告！\n\n你會收到每日自動報告。\n發送 /stop 取消訂閱。",
+                chat_id=chat_id,
+            )
+        else:
+            await notifier.send_message(
+                text="👋 你已經訂閱咗 GoGoJap 競品報告。\n\n發送 /stop 取消訂閱。",
+                chat_id=chat_id,
+            )
+    else:
+        import uuid
+        from datetime import datetime, timezone
+        sub = ReportSubscriber(
+            id=uuid.uuid4(),
+            chat_id=chat_id,
+            username=from_user.get("username"),
+            first_name=from_user.get("first_name"),
+            is_active=True,
+            subscribed_at=datetime.now(timezone.utc),
+        )
+        db.add(sub)
+        await db.flush()
+        await notifier.send_message(
+            text=(
+                "🎉 訂閱成功！歡迎使用 GoGoJap 競品監測系統。\n\n"
+                "你會收到：\n"
+                "• 每日競品價格報告\n"
+                "• 重要價格變動通知\n\n"
+                "發送 /stop 取消訂閱。"
+            ),
+            chat_id=chat_id,
+        )
+
+    logger.info(f"Subscriber {chat_id} ({from_user.get('username')}) subscribed")
+
+
+async def _handle_unsubscribe(
+    db: AsyncSession,
+    notifier: TelegramNotifier,
+    chat_id: str,
+):
+    """處理 /stop 或 /unsubscribe"""
+    from app.models.notification import ReportSubscriber
+    from sqlalchemy import select
+
+    result = await db.execute(
+        select(ReportSubscriber).where(ReportSubscriber.chat_id == chat_id)
+    )
+    existing = result.scalar_one_or_none()
+
+    if existing and existing.is_active:
+        existing.is_active = False
+        await db.flush()
+        await notifier.send_message(
+            text="🔕 已取消訂閱。之後唔會再收到自動報告。\n\n想重新訂閱可以發送 /start。",
+            chat_id=chat_id,
+        )
+    else:
+        await notifier.send_message(
+            text="你目前冇訂閱。發送 /start 訂閱報告。",
+            chat_id=chat_id,
+        )
+
+    logger.info(f"Subscriber {chat_id} unsubscribed")
 
 
 async def _handle_callback(

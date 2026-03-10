@@ -348,31 +348,71 @@ async def _deliver_report(
     if not channels:
         channels = {"telegram": {"enabled": True}}
 
-    # Telegram 交付
+    # Telegram 交付 — 發送給所有訂閱者
     telegram_config = channels.get("telegram", {})
     telegram_enabled = telegram_config.get("enabled", True) if isinstance(telegram_config, dict) else bool(telegram_config)
 
     if telegram_enabled:
         try:
             notifier = get_telegram_notifier()
-            chat_id = telegram_config.get("chat_id") if isinstance(telegram_config, dict) else None
 
-            # 使用專用的排程報告發送方法
-            result = await notifier.send_scheduled_report(
-                schedule_name=schedule.name,
-                report_type=schedule.report_type,
-                report_content=report_content,
-                chat_id=chat_id
-            )
+            # 從 DB 取所有活躍訂閱者
+            from app.models.notification import ReportSubscriber
+            from app.models.database import async_session_maker as _asm
+            from sqlalchemy import select, update as sql_update
+
+            subscriber_chat_ids = []
+            async with _asm() as sub_db:
+                sub_result = await sub_db.execute(
+                    select(ReportSubscriber.chat_id).where(ReportSubscriber.is_active == True)
+                )
+                subscriber_chat_ids = [row[0] for row in sub_result.all()]
+
+                # 同時加入 config 裡指定的 chat_id（向後兼容）
+                config_chat_id = telegram_config.get("chat_id") if isinstance(telegram_config, dict) else None
+                if config_chat_id and config_chat_id not in subscriber_chat_ids:
+                    subscriber_chat_ids.append(config_chat_id)
+
+                # fallback：如果完全冇訂閱者，用預設 chat_id
+                if not subscriber_chat_ids and notifier.chat_id:
+                    subscriber_chat_ids = [notifier.chat_id]
+
+            sent_count = 0
+            failed_ids = []
+            for cid in subscriber_chat_ids:
+                result = await notifier.send_scheduled_report(
+                    schedule_name=schedule.name,
+                    report_type=schedule.report_type,
+                    report_content=report_content,
+                    chat_id=cid,
+                )
+                if result.get("ok"):
+                    sent_count += 1
+                else:
+                    failed_ids.append(cid)
+
+            # 更新 last_delivered_at
+            if sent_count > 0:
+                async with _asm() as sub_db:
+                    await sub_db.execute(
+                        sql_update(ReportSubscriber)
+                        .where(ReportSubscriber.chat_id.in_(
+                            [c for c in subscriber_chat_ids if c not in failed_ids]
+                        ))
+                        .values(last_delivered_at=datetime.utcnow())
+                    )
+                    await sub_db.commit()
 
             delivery_status["telegram"] = {
-                "sent": result.get("ok", False),
-                "message_id": result.get("result", {}).get("message_id"),
-                "error": result.get("error")
+                "sent": sent_count > 0,
+                "sent_count": sent_count,
+                "total_subscribers": len(subscriber_chat_ids),
+                "failed_ids": failed_ids if failed_ids else None,
             }
 
-            if result.get("ok"):
-                logger.info(f"Telegram 報告已發送: {schedule.name}")
+            logger.info(
+                f"Telegram 報告已發送: {schedule.name} → {sent_count}/{len(subscriber_chat_ids)} 訂閱者"
+            )
 
         except Exception as e:
             logger.error(f"Telegram 交付失敗: {e}")

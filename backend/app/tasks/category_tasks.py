@@ -22,7 +22,6 @@ from app.models.category import (
     CategoryPriceSnapshot,
     CategoryAnalysisReport
 )
-from app.connectors.firecrawl import get_firecrawl_connector
 from app.connectors.hktv_scraper import get_hktv_scraper, HKTVUrlParser
 
 logger = logging.getLogger(__name__)

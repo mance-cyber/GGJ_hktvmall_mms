@@ -20,6 +20,24 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+class ReportSubscriber(Base):
+    """Telegram 報告訂閱者 — 用戶 /start 後自動訂閱"""
+
+    __tablename__ = "report_subscribers"
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    chat_id: Mapped[str] = mapped_column(
+        String(64), unique=True, nullable=False, index=True
+    )
+    username: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    first_name: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    subscribed_at: Mapped[datetime] = mapped_column(default=_utcnow)
+    last_delivered_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+
+
 class Notification(Base):
     """系統通知"""
 

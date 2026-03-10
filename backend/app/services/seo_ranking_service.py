@@ -30,7 +30,12 @@ from app.models.seo_ranking import (
     KeywordType, RankingSource, AlertSeverity
 )
 from app.models.product import Product
-from app.connectors.firecrawl import FirecrawlConnector, ScrapeOptions
+# Firecrawl 已被 Algolia 取代，保留 stub 以防止 import error
+try:
+    from app.connectors.firecrawl import FirecrawlConnector, ScrapeOptions
+except ImportError:
+    FirecrawlConnector = object
+    ScrapeOptions = object
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
