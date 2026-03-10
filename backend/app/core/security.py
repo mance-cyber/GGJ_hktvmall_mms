@@ -12,7 +12,7 @@ from app.config import settings
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60  # 1 小時（縮短降低 token 洩漏風險）
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 小時
 REFRESH_TOKEN_EXPIRE_DAYS = 30   # Refresh token 30 天
 
 
