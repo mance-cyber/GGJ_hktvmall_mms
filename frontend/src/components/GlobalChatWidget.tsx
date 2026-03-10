@@ -9,7 +9,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import { motion, AnimatePresence, useMotionValue } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
@@ -370,6 +370,7 @@ function MiniChatBox({
 
   return (
     <motion.div
+      data-chat-box
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -679,10 +680,71 @@ export function GlobalChatWidget() {
   const [hasUnread, setHasUnread] = useState(false)
   const [attachments, setAttachments] = useState<FileAttachment[]>([])
 
-  // 拖曳狀態 — 整個 container 一齊移動（icon + chat overlay）
-  const dragX = useMotionValue(0)
-  const dragY = useMotionValue(0)
+  // 拖曳狀態 — 手動 pointer event，放手即停，零慣性
+  const containerRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
+  const dragStart = useRef({ x: 0, y: 0, right: 0, bottom: 0 })
+  const [position, setPosition] = useState({ right: 16, bottom: 96 }) // 對應 right-4 bottom-24
+
+  // 桌面版初始位置調整
+  useEffect(() => {
+    const isDesktop = window.matchMedia('(min-width: 640px)').matches
+    if (isDesktop) {
+      setPosition({ right: 24, bottom: 80 }) // sm:right-6 sm:bottom-20
+    }
+  }, [])
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    // 唔好攔截 input/button/a 嘅 click
+    const tag = (e.target as HTMLElement).tagName.toLowerCase()
+    if (['input', 'button', 'a', 'textarea'].includes(tag)) return
+    // 也唔好攔截 chat box 入面嘅操作
+    const chatBox = (e.target as HTMLElement).closest('[data-chat-box]')
+    if (chatBox) return
+
+    isDragging.current = false
+    dragStart.current = {
+      x: e.clientX,
+      y: e.clientY,
+      right: position.right,
+      bottom: position.bottom
+    }
+    const el = e.currentTarget as HTMLElement
+    el.setPointerCapture(e.pointerId)
+  }, [position])
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!e.currentTarget.hasPointerCapture(e.pointerId)) return
+    const dx = e.clientX - dragStart.current.x
+    const dy = e.clientY - dragStart.current.y
+
+    // 移動超過 5px 先算拖曳（避免誤觸）
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      isDragging.current = true
+    }
+
+    if (isDragging.current) {
+      // right 同 bottom 係反方向
+      const newRight = Math.max(0, dragStart.current.right - dx)
+      const newBottom = Math.max(0, dragStart.current.bottom - dy)
+      // 限制唔好拖出畫面
+      const maxRight = window.innerWidth - 80
+      const maxBottom = window.innerHeight - 80
+      setPosition({
+        right: Math.min(newRight, maxRight),
+        bottom: Math.min(newBottom, maxBottom)
+      })
+    }
+  }, [])
+
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    const el = e.currentTarget as HTMLElement
+    if (el.hasPointerCapture(e.pointerId)) {
+      el.releasePointerCapture(e.pointerId)
+    }
+    // 延遲 reset isDragging，讓 onClick 可以判斷
+    setTimeout(() => { isDragging.current = false }, 50)
+  }, [])
 
   // 聲音提醒
   const { soundEnabled, toggleSound, playSound } = useNotificationSound()
@@ -808,16 +870,15 @@ export function GlobalChatWidget() {
   }
 
   return (
-    <motion.div
-      drag
-      dragElastic={0}
-      dragMomentum={false}
-      style={{ x: dragX, y: dragY }}
-      onDragStart={() => { isDragging.current = true }}
-      onDragEnd={() => { setTimeout(() => { isDragging.current = false }, 50) }}
+    <div
+      ref={containerRef}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      style={{ right: position.right, bottom: position.bottom }}
       className={cn(
-        "fixed z-50 flex flex-col items-end gap-4 cursor-grab active:cursor-grabbing",
-        "bottom-24 right-4 sm:bottom-20 sm:right-6"
+        "fixed z-50 flex flex-col items-end gap-4 touch-none",
+        isDragging.current ? "cursor-grabbing" : "cursor-grab"
       )}
     >
       <AnimatePresence>
@@ -848,6 +909,6 @@ export function GlobalChatWidget() {
         onClick={() => { if (!isDragging.current) { isOpen ? handleClose() : handleOpen() } }}
         hasUnread={hasUnread}
       />
-    </motion.div>
+    </div>
   )
 }
