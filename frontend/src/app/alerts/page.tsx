@@ -378,7 +378,7 @@ export default function AlertsPage() {
           </div>
 
           {/* 警報列表 */}
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-slate-300/60">
             <AnimatePresence mode="popLayout">
               {paginatedAlerts.map((alert, index) => (
                 <motion.div
