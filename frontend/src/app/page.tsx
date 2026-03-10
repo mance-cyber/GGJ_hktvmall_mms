@@ -585,9 +585,9 @@ function AlertRow({
             {alert.change_percent && (
               <span className={cn(
                 "font-bold",
-                alert.change_percent > 0 ? 'text-red-500' : 'text-emerald-600'
+                Number(alert.change_percent) > 0 ? 'text-red-500' : 'text-emerald-600'
               )}>
-                {alert.change_percent > 0 ? '+' : ''}{alert.change_percent.toFixed(1)}%
+                {Number(alert.change_percent) > 0 ? '+' : ''}{Number(alert.change_percent).toFixed(1)}%
               </span>
             )}
             <span className="mx-2 text-slate-300">·</span>

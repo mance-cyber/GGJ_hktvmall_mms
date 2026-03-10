@@ -617,9 +617,9 @@ function AlertCard({
         {alert.change_percent && (
           <span className={cn(
             "text-sm font-bold",
-            alert.change_percent > 0 ? "text-red-600" : "text-green-600"
+            Number(alert.change_percent) > 0 ? "text-red-600" : "text-green-600"
           )}>
-            {alert.change_percent > 0 ? '+' : ''}{alert.change_percent.toFixed(1)}%
+            {Number(alert.change_percent) > 0 ? '+' : ''}{Number(alert.change_percent).toFixed(1)}%
           </span>
         )}
       </div>
