@@ -810,8 +810,8 @@ export function GlobalChatWidget() {
   return (
     <motion.div
       drag
-      dragElastic={0.15}
-      dragTransition={{ bounceStiffness: 300, bounceDamping: 20 }}
+      dragElastic={0}
+      dragMomentum={false}
       style={{ x: dragX, y: dragY }}
       onDragStart={() => { isDragging.current = true }}
       onDragEnd={() => { setTimeout(() => { isDragging.current = false }, 50) }}
