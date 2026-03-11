@@ -338,17 +338,17 @@ export function KeywordConfigDialog({
                       target_hktvmall_rank: e.target.value,
                     }))
                   }
-                  placeholder="例如: 5"
+                  placeholder="e.g. 5"
                   className="w-full bg-gray-800/50 border border-cyan-500/30 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
                 />
               </div>
             </div>
           )}
 
-          {/* 標籤（僅單個模式） */}
+          {/* Tags (single mode only) */}
           {mode === "single" && (
             <div>
-              <label className="block text-sm text-gray-400 mb-1">標籤</label>
+              <label className="block text-sm text-gray-400 mb-1">Tags</label>
               <div className="flex gap-2 mb-2 flex-wrap">
                 {formData.tags.map((tag) => (
                   <span
@@ -377,7 +377,7 @@ export function KeywordConfigDialog({
                       handleAddTag();
                     }
                   }}
-                  placeholder="Add標籤"
+                  placeholder="Add tag"
                   className="flex-1 bg-gray-800/50 border border-cyan-500/30 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
                 />
                 <HoloButton type="button" variant="ghost" onClick={handleAddTag}>
@@ -387,16 +387,16 @@ export function KeywordConfigDialog({
             </div>
           )}
 
-          {/* 備註（僅單個模式） */}
+          {/* Notes (single mode only) */}
           {mode === "single" && (
             <div>
-              <label className="block text-sm text-gray-400 mb-1">備註</label>
+              <label className="block text-sm text-gray-400 mb-1">Notes</label>
               <textarea
                 value={formData.notes}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, notes: e.target.value }))
                 }
-                placeholder="Optional備註..."
+                placeholder="Optional notes..."
                 rows={2}
                 className="w-full bg-gray-800/50 border border-cyan-500/30 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 resize-none"
               />
@@ -414,7 +414,7 @@ export function KeywordConfigDialog({
                 : isEditing
                 ? "Save"
                 : mode === "batch"
-                ? "批量Add"
+                ? "Batch Add"
                 : "Add"}
             </HoloButton>
           </div>

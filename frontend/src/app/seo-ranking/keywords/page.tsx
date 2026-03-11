@@ -1,7 +1,7 @@
 "use client";
 
 // =============================================
-// 關鍵詞Managementpage
+// Keyword Management Page
 // =============================================
 
 import { useState } from "react";
@@ -45,7 +45,7 @@ export default function KeywordsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingKeyword, setEditingKeyword] = useState<KeywordConfig | null>(null);
 
-  // Fetch關鍵詞List
+  // Fetch keyword list
   const { data, isLoading, refetch } = useKeywordConfigs({
     search: search || undefined,
     keyword_type: typeFilter || undefined,
@@ -54,10 +54,10 @@ export default function KeywordsPage() {
     page_size: 20,
   });
 
-  // Delete關鍵詞
+  // Delete keyword
   const deleteKeyword = useDeleteKeywordConfig();
 
-  // Update關鍵詞
+  // Update keyword
   const updateKeyword = useUpdateKeywordConfig();
 
   const handleDelete = async (id: string) => {
@@ -113,7 +113,7 @@ export default function KeywordsPage() {
           </div>
         </div>
 
-        {/* ==================== Filter區 ==================== */}
+        {/* ==================== Filter Panel ==================== */}
         <HoloCard className="p-4">
           <div className="flex flex-wrap items-center gap-4">
             {/* Search */}
@@ -131,7 +131,7 @@ export default function KeywordsPage() {
               />
             </div>
 
-            {/* TypeFilter */}
+            {/* Type Filter */}
             <select
               value={typeFilter}
               onChange={(e) => {
@@ -148,7 +148,7 @@ export default function KeywordsPage() {
               <option value="competitor">{t['keywords.type_competitor']}</option>
             </select>
 
-            {/* StateFilter */}
+            {/* Status Filter */}
             <select
               value={activeFilter === undefined ? "" : activeFilter ? "active" : "inactive"}
               onChange={(e) => {
@@ -165,7 +165,7 @@ export default function KeywordsPage() {
           </div>
         </HoloCard>
 
-        {/* ==================== 關鍵詞List ==================== */}
+        {/* ==================== Keyword List ==================== */}
         <HoloCard>
           <HoloPanelHeader
             title={t['keywords.table_title']}
@@ -204,7 +204,7 @@ export default function KeywordsPage() {
                         key={keyword.id}
                         className="group hover:bg-cyan-500/5 transition-colors"
                       >
-                        {/* 關鍵詞 */}
+                        {/* Keyword */}
                         <td className="py-4">
                           <div>
                             <p className="text-white font-medium">{keyword.keyword}</p>
@@ -287,7 +287,7 @@ export default function KeywordsPage() {
               </div>
             )}
 
-            {/* 分頁 */}
+            {/* Pagination */}
             {data && data.total > 20 && (
               <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-800">
                 <p className="text-sm text-gray-500">
@@ -328,7 +328,7 @@ export default function KeywordsPage() {
   );
 }
 
-// ==================== 輔助組items ====================
+// ==================== Helper Components ====================
 
 function KeywordTypeBadge({ type }: { type: string }) {
   const { t } = useLocale();

@@ -556,9 +556,9 @@ export default function SEORankingPage() {
           </div>
         </HoloCard>
 
-        {/* ==================== Alert與任務 ==================== */}
+        {/* ==================== Alerts & Jobs ==================== */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* 最近Alert */}
+          {/* Recent Alerts */}
           <HoloCard>
             <HoloPanelHeader
               title={t['seo_ranking.section_alerts']}
@@ -577,7 +577,7 @@ export default function SEORankingPage() {
             </div>
           </HoloCard>
 
-          {/* 最近任務 */}
+          {/* Recent Jobs */}
           <HoloCard>
             <HoloPanelHeader
               title={t['seo_ranking.section_jobs']}
@@ -590,7 +590,7 @@ export default function SEORankingPage() {
           </HoloCard>
         </div>
 
-        {/* ==================== 最後抓取Time ==================== */}
+        {/* ==================== Last Scrape Time ==================== */}
         {overview?.last_scrape_at && (
           <div className="text-center text-sm text-gray-500">
             {t['seo_ranking.last_scrape']}{" "}

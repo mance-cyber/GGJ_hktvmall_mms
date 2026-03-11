@@ -1,5 +1,5 @@
 // =============================================
-// SEO RankingTrack React Query Hooks
+// SEO Ranking Tracker React Query Hooks
 // =============================================
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -39,11 +39,11 @@ import {
 } from "@/lib/api/seo-ranking";
 
 // =============================================
-// 關鍵詞Configuration Hooks
+// Keyword Configuration Hooks
 // =============================================
 
 /**
- * Get keyword configList
+ * Get keyword config list
  */
 export function useKeywordConfigs(params?: {
   product_id?: string;
@@ -60,7 +60,7 @@ export function useKeywordConfigs(params?: {
 }
 
 /**
- * Fetch單個關鍵詞Configuration
+ * Fetch a single keyword configuration
  */
 export function useKeywordConfig(id: string | null) {
   return useQuery({
@@ -102,7 +102,7 @@ export function useBatchCreateKeywordConfigs() {
 }
 
 /**
- * Update關鍵詞Configuration
+ * Update keyword configuration
  */
 export function useUpdateKeywordConfig() {
   const queryClient = useQueryClient();
@@ -120,7 +120,7 @@ export function useUpdateKeywordConfig() {
 }
 
 /**
- * Delete關鍵詞Configuration
+ * Delete keyword configuration
  */
 export function useDeleteKeywordConfig() {
   const queryClient = useQueryClient();
@@ -135,7 +135,7 @@ export function useDeleteKeywordConfig() {
 }
 
 // =============================================
-// RankingQuery Hooks
+// Ranking Query Hooks
 // =============================================
 
 /**
@@ -157,7 +157,7 @@ export function useRankingHistory(
 }
 
 /**
- * Fetch最新RankingData
+ * Fetch latest ranking data
  */
 export function useLatestRankings(params?: {
   product_id?: string;
@@ -172,11 +172,11 @@ export function useLatestRankings(params?: {
 }
 
 // =============================================
-// 排行榜 Hooks
+// Leaderboard Hooks
 // =============================================
 
 /**
- * FetchRanking排行榜
+ * Fetch ranking leaderboard
  */
 export function useLeaderboard(params?: {
   source?: RankingSource;
@@ -198,7 +198,7 @@ export function useLeaderboard(params?: {
 // =============================================
 
 /**
- * FetchRankingAlert list
+ * Fetch ranking alert list
  */
 export function useRankingAlerts(params?: {
   is_read?: boolean;
@@ -209,12 +209,12 @@ export function useRankingAlerts(params?: {
   return useQuery({
     queryKey: seoRankingKeys.alertsList(params),
     queryFn: () => getAlerts(params),
-    refetchInterval: 60000, // 每minutesAutoRefresh
+    refetchInterval: 60000, // Auto-refresh every minute
   });
 }
 
 /**
- * 標記Alert為已讀
+ * Mark alert as read
  */
 export function useMarkAlertRead() {
   const queryClient = useQueryClient();
@@ -228,7 +228,7 @@ export function useMarkAlertRead() {
 }
 
 /**
- * 解決Alert
+ * Resolve alert
  */
 export function useResolveAlert() {
   const queryClient = useQueryClient();
@@ -248,7 +248,7 @@ export function useResolveAlert() {
 }
 
 /**
- * 批量ProcessingAlert
+ * Batch process alerts
  */
 export function useBatchAlertAction() {
   const queryClient = useQueryClient();
@@ -266,11 +266,11 @@ export function useBatchAlertAction() {
 }
 
 // =============================================
-// 抓取任務 Hooks
+// Scrape Job Hooks
 // =============================================
 
 /**
- * Fetch抓取任務List
+ * Fetch scrape job list
  */
 export function useScrapeJobs(params?: {
   status?: ScrapeJobStatus;
@@ -283,7 +283,7 @@ export function useScrapeJobs(params?: {
 }
 
 /**
- * Fetch單個抓取任務
+ * Fetch a single scrape job
  */
 export function useScrapeJob(id: string | null) {
   return useQuery({
@@ -302,7 +302,7 @@ export function useScrapeJob(id: string | null) {
 }
 
 /**
- * Trigger抓取任務
+ * Trigger scrape job
  */
 export function useTriggerScrape() {
   const queryClient = useQueryClient();
@@ -320,7 +320,7 @@ export function useTriggerScrape() {
 }
 
 // =============================================
-// 儀表板 Hooks
+// Dashboard Hooks
 // =============================================
 
 /**
@@ -333,7 +333,7 @@ export function useSEODashboard(params?: {
   return useQuery({
     queryKey: seoRankingKeys.dashboard(params),
     queryFn: () => getDashboard(params),
-    refetchInterval: 300000, // 每 5 minutesAutoRefresh
+    refetchInterval: 300000, // Auto-refresh every 5 minutes
   });
 }
 
@@ -342,7 +342,7 @@ export function useSEODashboard(params?: {
 // =============================================
 
 /**
- * FetchReportList
+ * Fetch report list
  */
 export function useSEOReports(params?: {
   product_id?: string;
@@ -356,7 +356,7 @@ export function useSEOReports(params?: {
 }
 
 /**
- * Fetch單個Report
+ * Fetch a single report
  */
 export function useSEOReport(id: string | null) {
   return useQuery({
@@ -367,7 +367,7 @@ export function useSEOReport(id: string | null) {
 }
 
 /**
- * GenerateReport
+ * Generate report
  */
 export function useGenerateReport() {
   const queryClient = useQueryClient();

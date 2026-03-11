@@ -457,7 +457,7 @@ export default function ContentHistoryPage() {
                             </div>
                           </td>
 
-                          {/* 語言 */}
+                          {/* Language */}
                           <td className="py-4 px-4">
                             <div className="flex gap-1">
                               {item.languages.map((lang) => (
@@ -472,7 +472,7 @@ export default function ContentHistoryPage() {
                             </div>
                           </td>
 
-                          {/* SEO 分數 */}
+                          {/* SEO Score */}
                           <td className="py-4 px-4">
                             {item.preview_seo_score !== null ? (
                               <span className={cn(
@@ -486,7 +486,7 @@ export default function ContentHistoryPage() {
                             )}
                           </td>
 
-                          {/* 耗時 */}
+                          {/* Duration */}
                           <td className="py-4 px-4">
                             <span className="text-sm text-slate-600">
                               {(item.generation_time_ms / 1000).toFixed(1)}s

@@ -1,14 +1,14 @@
 "use client";
 
 // =============================================
-// 抓取任務List組items
+// Scrape Jobs List Component
 // =============================================
 
 import { Clock, CheckCircle, XCircle, Loader2, PlayCircle } from "lucide-react";
 import { HoloBadge, ProgressRing } from "@/components/ui/future-tech";
 import { RankingScrapeJob } from "@/lib/api/seo-ranking";
 
-// TimeFormat化工具
+// Time formatting utility
 function formatTimeAgo(date: Date): string {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -17,11 +17,11 @@ function formatTimeAgo(date: Date): string {
   const diffHour = Math.floor(diffMin / 60);
   const diffDay = Math.floor(diffHour / 24);
 
-  if (diffSec < 60) return "剛剛";
-  if (diffMin < 60) return `${diffMin} minutes前`;
-  if (diffHour < 24) return `${diffHour} hours前`;
-  if (diffDay < 30) return `${diffDay} 天前`;
-  return date.toLocaleDateString("zh-TW");
+  if (diffSec < 60) return "Just now";
+  if (diffMin < 60) return `${diffMin} min ago`;
+  if (diffHour < 24) return `${diffHour} hr ago`;
+  if (diffDay < 30) return `${diffDay} days ago`;
+  return date.toLocaleDateString("en-US");
 }
 
 interface ScrapeJobsListProps {
@@ -33,7 +33,7 @@ export function ScrapeJobsList({ jobs }: ScrapeJobsListProps) {
     return (
       <div className="text-center py-8 text-gray-500">
         <Clock className="w-8 h-8 mx-auto mb-2 text-gray-600" />
-        <p>暫無抓取任務</p>
+        <p>No scrape jobs available</p>
       </div>
     );
   }
@@ -46,14 +46,14 @@ export function ScrapeJobsList({ jobs }: ScrapeJobsListProps) {
           className="p-3 rounded-lg bg-white border border-slate-200 hover:border-cyan-400 hover:shadow-sm transition-colors"
         >
           <div className="flex items-center gap-3">
-            {/* StateIcon */}
+            {/* Status Icon */}
             <div className="flex-shrink-0">
               <StatusIcon status={job.status} progress={job.progress_percent} />
             </div>
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-              {/* Title行 */}
+              {/* Title Row */}
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-slate-800 font-medium text-sm">
                   {getJobTypeLabel(job.job_type)}
@@ -61,35 +61,35 @@ export function ScrapeJobsList({ jobs }: ScrapeJobsListProps) {
                 <StatusBadge status={job.status} />
               </div>
 
-              {/* 進度信息 */}
+              {/* Progress Info */}
               <div className="flex items-center gap-4 text-xs text-slate-500">
                 <span>
-                  {job.processed_keywords} / {job.total_keywords} 關鍵詞
+                  {job.processed_keywords} / {job.total_keywords} keywords
                 </span>
                 {job.success_rate !== null && (
                   <span className="text-emerald-600">
-                    Success率 {job.success_rate}%
+                    Success rate {job.success_rate}%
                   </span>
                 )}
                 {job.duration_seconds !== null && (
-                  <span>耗時 {formatDuration(job.duration_seconds)}</span>
+                  <span>Duration: {formatDuration(job.duration_seconds)}</span>
                 )}
               </div>
 
-              {/* Error信息 */}
+              {/* Error Info */}
               {job.errors && job.errors.length > 0 && (
                 <p className="text-red-500 text-xs mt-1">
-                  {job.errors.length} 個Error
+                  {job.errors.length} error(s)
                 </p>
               )}
 
               {/* Time */}
               <p className="text-slate-400 text-xs mt-2">
                 {job.completed_at
-                  ? `Complete於 ${formatTimeAgo(new Date(job.completed_at))}`
+                  ? `Completed ${formatTimeAgo(new Date(job.completed_at))}`
                   : job.started_at
-                  ? `Start於 ${formatTimeAgo(new Date(job.started_at))}`
-                  : `建立於 ${formatTimeAgo(new Date(job.created_at))}`}
+                  ? `Started ${formatTimeAgo(new Date(job.started_at))}`
+                  : `Created ${formatTimeAgo(new Date(job.created_at))}`}
               </p>
             </div>
 
@@ -112,7 +112,7 @@ export function ScrapeJobsList({ jobs }: ScrapeJobsListProps) {
   );
 }
 
-// ==================== 輔助組items ====================
+// ==================== Helper Components ====================
 
 function StatusIcon({
   status,
@@ -140,10 +140,10 @@ function StatusBadge({ status }: { status: string }) {
     string,
     { label: string; variant: "default" | "info" | "success" | "warning" | "error" }
   > = {
-    completed: { label: "已Complete", variant: "success" },
+    completed: { label: "Completed", variant: "success" },
     failed: { label: "Failed", variant: "error" },
-    running: { label: "進行中", variant: "info" },
-    pending: { label: "Waiting中", variant: "warning" },
+    running: { label: "In Progress", variant: "info" },
+    pending: { label: "Waiting", variant: "warning" },
   };
 
   const { label, variant } = config[status] || {
@@ -156,26 +156,26 @@ function StatusBadge({ status }: { status: string }) {
 
 function getJobTypeLabel(type: string): string {
   const labels: Record<string, string> = {
-    full: "完整抓取",
-    google_only: "Google 抓取",
-    hktvmall_only: "HKTVmall 抓取",
-    selective: "Select性抓取",
+    full: "Full Scrape",
+    google_only: "Google Scrape",
+    hktvmall_only: "HKTVmall Scrape",
+    selective: "Selective Scrape",
   };
   return labels[type] || type;
 }
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) {
-    return `${seconds}秒`;
+    return `${seconds}s`;
   }
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
   if (minutes < 60) {
     return remainingSeconds > 0
-      ? `${minutes}分${remainingSeconds}秒`
-      : `${minutes}minutes`;
+      ? `${minutes}m ${remainingSeconds}s`
+      : `${minutes}m`;
   }
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
-  return `${hours}hours${remainingMinutes}分`;
+  return `${hours}h ${remainingMinutes}m`;
 }

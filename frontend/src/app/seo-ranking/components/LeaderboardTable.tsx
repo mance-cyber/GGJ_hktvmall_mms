@@ -1,7 +1,7 @@
 "use client";
 
 // =============================================
-// 排行榜Table組items
+// Leaderboard Table Component
 // =============================================
 
 import { TrendingUp, TrendingDown, Minus, ExternalLink } from "lucide-react";
@@ -29,7 +29,7 @@ export function LeaderboardTable({ entries, isLoading, source }: LeaderboardTabl
   if (entries.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
-        <p>暫無RankingData</p>
+        <p>No ranking data available</p>
         <p className="text-sm mt-1">Start tracking keywords to see rankings</p>
       </div>
     );
@@ -41,12 +41,12 @@ export function LeaderboardTable({ entries, isLoading, source }: LeaderboardTabl
         <thead>
           <tr className="text-left text-xs text-slate-500 uppercase tracking-wider border-b border-slate-200">
             <th className="pb-3 pl-2">#</th>
-            <th className="pb-3">關鍵詞</th>
+            <th className="pb-3">Keyword</th>
             <th className="pb-3 text-center">Type</th>
-            <th className="pb-3 text-right">當前Ranking</th>
-            <th className="pb-3 text-right">變化</th>
+            <th className="pb-3 text-right">Current Rank</th>
+            <th className="pb-3 text-right">Change</th>
             <th className="pb-3 text-right">Target</th>
-            <th className="pb-3 text-right">差距</th>
+            <th className="pb-3 text-right">Gap</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -55,12 +55,12 @@ export function LeaderboardTable({ entries, isLoading, source }: LeaderboardTabl
               key={entry.keyword_config_id}
               className="group hover:bg-cyan-50/50 transition-colors"
             >
-              {/* Ranking位置 */}
+              {/* Rank Position */}
               <td className="py-3 pl-2">
                 <span className="text-slate-400 text-sm">{entry.rank}</span>
               </td>
 
-              {/* 關鍵詞 */}
+              {/* Keyword */}
               <td className="py-3">
                 <Link
                   href={`/seo-ranking/keywords/${entry.keyword_config_id}`}
@@ -76,7 +76,7 @@ export function LeaderboardTable({ entries, isLoading, source }: LeaderboardTabl
                 <KeywordTypeBadge type={entry.keyword_type} />
               </td>
 
-              {/* 當前Ranking */}
+              {/* Current Rank */}
               <td className="py-3 text-right">
                 {entry.current_rank ? (
                   <span className={getRankColor(entry.current_rank)}>
@@ -87,12 +87,12 @@ export function LeaderboardTable({ entries, isLoading, source }: LeaderboardTabl
                 )}
               </td>
 
-              {/* Ranking變化 */}
+              {/* Rank Change */}
               <td className="py-3 text-right">
                 <RankChange change={entry.rank_change} />
               </td>
 
-              {/* TargetRanking */}
+              {/* Target Rank */}
               <td className="py-3 text-right">
                 {entry.target_rank ? (
                   <span className="text-purple-600 font-medium">#{entry.target_rank}</span>
@@ -101,7 +101,7 @@ export function LeaderboardTable({ entries, isLoading, source }: LeaderboardTabl
                 )}
               </td>
 
-              {/* Target差距 */}
+              {/* Target Gap */}
               <td className="py-3 text-right">
                 {entry.target_gap !== null ? (
                   <span
@@ -109,7 +109,7 @@ export function LeaderboardTable({ entries, isLoading, source }: LeaderboardTabl
                       entry.target_gap <= 0 ? "text-emerald-600 font-medium" : "text-amber-600"
                     }
                   >
-                    {entry.target_gap <= 0 ? "已達成" : `還差 ${entry.target_gap}`}
+                    {entry.target_gap <= 0 ? "Achieved" : `${entry.target_gap} to go`}
                   </span>
                 ) : (
                   <span className="text-slate-400">-</span>
@@ -123,14 +123,14 @@ export function LeaderboardTable({ entries, isLoading, source }: LeaderboardTabl
   );
 }
 
-// ==================== 輔助組items ====================
+// ==================== Helper Components ====================
 
 function KeywordTypeBadge({ type }: { type: string }) {
   const config: Record<string, { label: string; variant: "default" | "info" | "success" | "warning" | "error" }> = {
-    primary: { label: "主要", variant: "info" },
-    secondary: { label: "次要", variant: "default" },
-    long_tail: { label: "長尾", variant: "success" },
-    brand: { label: "品牌", variant: "warning" },
+    primary: { label: "Primary", variant: "info" },
+    secondary: { label: "Secondary", variant: "default" },
+    long_tail: { label: "Long-tail", variant: "success" },
+    brand: { label: "Brand", variant: "warning" },
     competitor: { label: "Competitor", variant: "error" },
   };
 

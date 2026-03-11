@@ -60,50 +60,50 @@ export default function DesignSystemPage() {
               <span className="text-sm font-medium text-cyan-700">Future Tech Design System</span>
             </motion.div>
             <h1 className="text-4xl font-bold text-slate-800 mb-2">
-              未來科技感組items庫
+              Futuristic UI Component Library
             </h1>
             <p className="text-slate-500 max-w-xl mx-auto">
-              淺色系、專業感、豐富Animation的 React 組items，打造沉浸式科技體驗
+              Light-theme, professional-grade React components with rich animations for an immersive tech experience
             </p>
           </div>
 
-          <TechDivider label="State指示器" />
+          <TechDivider label="Status Indicators" />
 
-          {/* ========== State指示器 ========== */}
+          {/* ========== Status Indicators ========== */}
           <HoloCard className="p-6">
             <HoloPanelHeader
-              title="SystemState監控"
-              subtitle="即時Monitor各服務Running狀況"
+              title="System Status Monitor"
+              subtitle="Real-time monitoring of all service statuses"
               icon={<Activity className="w-5 h-5" />}
             />
             <div className="p-6">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-slate-500">API 服務</h4>
+                  <h4 className="text-sm font-medium text-slate-500">API Service</h4>
                   <PulseStatus status="online" size="md" />
                 </div>
                 <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-slate-500">Data庫</h4>
+                  <h4 className="text-sm font-medium text-slate-500">Database</h4>
                   <PulseStatus status="online" label="PostgreSQL" size="md" />
                 </div>
                 <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-slate-500">AI 引擎</h4>
+                  <h4 className="text-sm font-medium text-slate-500">AI Engine</h4>
                   <PulseStatus status="processing" size="md" />
                 </div>
                 <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-slate-500">備份服務</h4>
-                  <PulseStatus status="warning" label="Need注意" size="md" />
+                  <h4 className="text-sm font-medium text-slate-500">Backup Service</h4>
+                  <PulseStatus status="warning" label="Needs Attention" size="md" />
                 </div>
               </div>
             </div>
           </HoloCard>
 
-          <TechDivider label="Data指標" />
+          <TechDivider label="Data Metrics" />
 
-          {/* ========== Data指標Card ========== */}
+          {/* ========== Data Metrics Cards ========== */}
           <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <DataMetric
-              label="總營收"
+              label="Total Revenue"
               value={1258430}
               prefix="$"
               trend={12.5}
@@ -111,21 +111,21 @@ export default function DesignSystemPage() {
               icon={<TrendingUp className="w-5 h-5 text-cyan-500" />}
             />
             <DataMetric
-              label="活躍用戶"
+              label="Active Users"
               value={3847}
               trend={8.2}
               color="blue"
               icon={<Users className="w-5 h-5 text-blue-500" />}
             />
             <DataMetric
-              label="productsQuantity"
+              label="Product Count"
               value={12458}
               trend={-2.1}
               color="purple"
               icon={<Package className="w-5 h-5 text-violet-500" />}
             />
             <DataMetric
-              label="System負載"
+              label="System Load"
               value={67}
               suffix="%"
               color="green"
@@ -133,15 +133,15 @@ export default function DesignSystemPage() {
             />
           </StaggerContainer>
 
-          <TechDivider label="全息Card" />
+          <TechDivider label="Holographic Cards" />
 
-          {/* ========== 全息Card展示 ========== */}
+          {/* ========== Holographic Card showcase ========== */}
           <div className="grid md:grid-cols-2 gap-6">
             <HoloCard glowColor="cyan" scanLine className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-800">實時DataAnalysis</h3>
-                  <p className="text-sm text-slate-500">AI 驅動的智能Insight</p>
+                  <h3 className="text-lg font-semibold text-slate-800">Real-time Data Analysis</h3>
+                  <p className="text-sm text-slate-500">AI-powered Intelligent Insights</p>
                 </div>
                 <div className="p-2 rounded-xl bg-cyan-50">
                   <BarChart3 className="w-6 h-6 text-cyan-500" />
@@ -149,7 +149,7 @@ export default function DesignSystemPage() {
               </div>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-600">Processing進度</span>
+                  <span className="text-sm text-slate-600">Processing Progress</span>
                   <ProgressRing progress={78} size={50} color="cyan" />
                 </div>
                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -166,8 +166,8 @@ export default function DesignSystemPage() {
             <HoloCard glowColor="purple" className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-800">Security防護中心</h3>
-                  <p className="text-sm text-slate-500">全方位Security監控</p>
+                  <h3 className="text-lg font-semibold text-slate-800">Security Center</h3>
+                  <p className="text-sm text-slate-500">Comprehensive Security Monitoring</p>
                 </div>
                 <div className="p-2 rounded-xl bg-violet-50">
                   <Shield className="w-6 h-6 text-violet-500" />
@@ -176,35 +176,35 @@ export default function DesignSystemPage() {
               <div className="grid grid-cols-2 gap-4 mt-4">
                 <div className="p-3 rounded-xl bg-slate-50">
                   <div className="text-2xl font-bold text-slate-800">99.9%</div>
-                  <div className="text-xs text-slate-500">正常RunningTime</div>
+                  <div className="text-xs text-slate-500">Uptime</div>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-50">
                   <div className="text-2xl font-bold text-emerald-600">0</div>
-                  <div className="text-xs text-slate-500">Security事items</div>
+                  <div className="text-xs text-slate-500">Security Incidents</div>
                 </div>
               </div>
             </HoloCard>
           </div>
 
-          <TechDivider label="button與標籤" />
+          <TechDivider label="Buttons & Badges" />
 
-          {/* ========== button展示 ========== */}
+          {/* ========== Buttons & Badges showcase ========== */}
           <HoloCard className="p-6">
-            <h3 className="text-lg font-semibold text-slate-800 mb-6">互動元素</h3>
+            <h3 className="text-lg font-semibold text-slate-800 mb-6">Interactive Elements</h3>
 
             <div className="space-y-6">
-              {/* button */}
+              {/* Buttons */}
               <div>
-                <h4 className="text-sm font-medium text-slate-500 mb-3">buttonStyle</h4>
+                <h4 className="text-sm font-medium text-slate-500 mb-3">Button Styles</h4>
                 <div className="flex flex-wrap gap-3">
                   <HoloButton variant="primary" icon={<Zap className="w-4 h-4" />}>
-                    主要button
+                    Primary
                   </HoloButton>
                   <HoloButton variant="secondary" icon={<Settings className="w-4 h-4" />}>
-                    次要button
+                    Secondary
                   </HoloButton>
                   <HoloButton variant="ghost">
-                    幽靈button
+                    Ghost
                   </HoloButton>
                   <HoloButton
                     variant="primary"
@@ -214,56 +214,56 @@ export default function DesignSystemPage() {
                       setTimeout(() => setLoading(false), 2000)
                     }}
                   >
-                    {loading ? 'Processing...' : '點擊Loading'}
+                    {loading ? 'Processing...' : 'Click to Load'}
                   </HoloButton>
                 </div>
               </div>
 
-              {/* 標籤 */}
+              {/* Badges */}
               <div>
-                <h4 className="text-sm font-medium text-slate-500 mb-3">標籤Style</h4>
+                <h4 className="text-sm font-medium text-slate-500 mb-3">Badge Styles</h4>
                 <div className="flex flex-wrap gap-2">
                   <HoloBadge variant="default">Default</HoloBadge>
                   <HoloBadge variant="success">
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
                     Success
                   </HoloBadge>
-                  <HoloBadge variant="warning">警告</HoloBadge>
+                  <HoloBadge variant="warning">Warning</HoloBadge>
                   <HoloBadge variant="error">Error</HoloBadge>
                   <HoloBadge variant="info" pulse>
                     <RefreshCw className="w-3 h-3 animate-spin" />
-                    Sync中
+                    Syncing
                   </HoloBadge>
                 </div>
               </div>
 
-              {/* 工具提示 */}
+              {/* Tooltips */}
               <div>
-                <h4 className="text-sm font-medium text-slate-500 mb-3">工具提示</h4>
+                <h4 className="text-sm font-medium text-slate-500 mb-3">Tooltips</h4>
                 <div className="flex gap-4">
-                  <HoloTooltip content="這是頂部提示" position="top">
-                    <HoloButton variant="secondary" size="sm">頂部</HoloButton>
+                  <HoloTooltip content="Top tooltip" position="top">
+                    <HoloButton variant="secondary" size="sm">Top</HoloButton>
                   </HoloTooltip>
-                  <HoloTooltip content="這是底部提示" position="bottom">
-                    <HoloButton variant="secondary" size="sm">底部</HoloButton>
+                  <HoloTooltip content="Bottom tooltip" position="bottom">
+                    <HoloButton variant="secondary" size="sm">Bottom</HoloButton>
                   </HoloTooltip>
-                  <HoloTooltip content="這是右側提示" position="right">
-                    <HoloButton variant="secondary" size="sm">右側</HoloButton>
+                  <HoloTooltip content="Right tooltip" position="right">
+                    <HoloButton variant="secondary" size="sm">Right</HoloButton>
                   </HoloTooltip>
                 </div>
               </div>
             </div>
           </HoloCard>
 
-          <TechDivider label="進度指示器" />
+          <TechDivider label="Progress Indicators" />
 
-          {/* ========== 進度環展示 ========== */}
+          {/* ========== Progress ring showcase ========== */}
           <HoloCard className="p-6">
-            <h3 className="text-lg font-semibold text-slate-800 mb-6">進度展示</h3>
+            <h3 className="text-lg font-semibold text-slate-800 mb-6">Progress Display</h3>
             <div className="flex justify-around items-center">
               <div className="text-center">
                 <ProgressRing progress={25} color="cyan" size={80} />
-                <p className="mt-2 text-sm text-slate-500">DataSync</p>
+                <p className="mt-2 text-sm text-slate-500">Data Sync</p>
               </div>
               <div className="text-center">
                 <ProgressRing progress={68} color="blue" size={80} />
@@ -271,18 +271,18 @@ export default function DesignSystemPage() {
               </div>
               <div className="text-center">
                 <ProgressRing progress={92} color="green" size={80} />
-                <p className="mt-2 text-sm text-slate-500">Save空間</p>
+                <p className="mt-2 text-sm text-slate-500">Storage</p>
               </div>
               <div className="text-center">
                 <ProgressRing progress={45} color="purple" size={80} />
-                <p className="mt-2 text-sm text-slate-500">任務Complete</p>
+                <p className="mt-2 text-sm text-slate-500">Task Completion</p>
               </div>
             </div>
           </HoloCard>
 
           <TechDivider label="Skeleton" />
 
-          {/* ========== Skeleton展示 ========== */}
+          {/* ========== Skeleton Showcase ========== */}
           <HoloCard className="p-6">
             <h3 className="text-lg font-semibold text-slate-800 mb-6">Loading state</h3>
             <div className="space-y-4">
@@ -302,27 +302,27 @@ export default function DesignSystemPage() {
             </div>
           </HoloCard>
 
-          <TechDivider label="完整示例" />
+          <TechDivider label="Full Example" />
 
-          {/* ========== 完整面板示例 ========== */}
+          {/* ========== Full panel example ========== */}
           <HoloCard glowColor="blue" scanLine>
             <HoloPanelHeader
-              title="System控制面板"
-              subtitle="一站式Management所有服務"
+              title="System Control Panel"
+              subtitle="One-stop management for all services"
               icon={<Database className="w-5 h-5" />}
               action={
                 <HoloButton variant="secondary" size="sm" icon={<ChevronRight className="w-4 h-4" />}>
-                  查看All
+                  View All
                 </HoloButton>
               }
             />
             <div className="p-6">
               <div className="grid md:grid-cols-3 gap-6">
-                {/* 服務Card */}
+                {/* Service Cards */}
                 {[
                   { name: 'API Gateway', status: 'online', metric: '12.3k/s', icon: Wifi },
                   { name: 'Database', status: 'online', metric: '98%', icon: Database },
-                  { name: 'AI Engine', status: 'processing', metric: 'Processing中', icon: Cpu },
+                  { name: 'AI Engine', status: 'processing', metric: 'Processing', icon: Cpu },
                 ].map((service) => (
                   <motion.div
                     key={service.name}
@@ -341,26 +341,26 @@ export default function DesignSystemPage() {
             </div>
           </HoloCard>
 
-          {/* ========== Design說明 ========== */}
+          {/* ========== Design philosophy ========== */}
           <HoloCard className="p-6 bg-gradient-to-br from-cyan-50/50 to-blue-50/50">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">Design理念</h3>
+            <h3 className="text-lg font-semibold text-slate-800 mb-4">Design Philosophy</h3>
             <div className="grid md:grid-cols-2 gap-6 text-sm text-slate-600">
               <div className="space-y-2">
-                <h4 className="font-medium text-slate-700">🎨 視覺風格</h4>
+                <h4 className="font-medium text-slate-700">🎨 Visual Style</h4>
                 <ul className="space-y-1 text-slate-500">
-                  <li>• 淺色系背景，減少視覺疲勞</li>
-                  <li>• 青-藍色調，傳達科技與專業感</li>
+                  <li>• Light background to reduce visual fatigue</li>
+                  <li>• Cyan-blue tones conveying a tech and professional feel</li>
                   <li>• Glassmorphism effect, adds depth</li>
-                  <li>• 微妙漸變，Avoid過於花哨</li>
+                  <li>• Subtle gradients, avoiding excessive ornamentation</li>
                 </ul>
               </div>
               <div className="space-y-2">
-                <h4 className="font-medium text-slate-700">✨ 動效Design</h4>
+                <h4 className="font-medium text-slate-700">✨ Animation Design</h4>
                 <ul className="space-y-1 text-slate-500">
                   <li>• Page entrance animations, enhance experience</li>
-                  <li>• Data計數Animation，吸引注意</li>
-                  <li>• 懸停光效，增強互動感</li>
-                  <li>• 脈衝State指示，傳達即時性</li>
+                  <li>• Data count animations to capture attention</li>
+                  <li>• Hover glow effects to enhance interactivity</li>
+                  <li>• Pulse status indicators for real-time feedback</li>
                 </ul>
               </div>
             </div>
