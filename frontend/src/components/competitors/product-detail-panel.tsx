@@ -103,7 +103,7 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
             {!isWeCheapest && cheapestPrice && (
               <>
                 <span className="text-gray-200">|</span>
-                <span className="text-xs text-gray-400">最低價差</span>
+                <span className="text-xs text-gray-400">Lowest Price Gap</span>
                 <span className={cn(
                   'font-mono font-semibold text-sm',
                   priceDiffPct > 20 ? 'text-red-500' : priceDiffPct > 5 ? 'text-amber-500' : 'text-gray-600'
@@ -118,7 +118,7 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
             )}
             {isWeCheapest && (
               <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">
-                最低價 🏆
+                Lowest Price 🏆
               </span>
             )}
           </div>
@@ -139,7 +139,7 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
         <div className="p-3 sm:p-4 border-b border-gray-100">
           <div className="flex items-center gap-1.5 mb-3">
             <TrendingUp className="w-3.5 h-3.5 text-teal-500" />
-            <span className="text-xs font-medium text-gray-600">30 日PriceTrend</span>
+            <span className="text-xs font-medium text-gray-600">30-Day Price Trend</span>
           </div>
 
           {historyLoading ? (
@@ -148,13 +148,13 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
             </div>
           ) : chartData.length === 0 || !history?.series.length ? (
             <div className="h-44 flex items-center justify-center">
-              <p className="text-xs text-gray-400">未有足夠HistoryData</p>
+              <p className="text-xs text-gray-400">Not enough historical data</p>
             </div>
           ) : (
             <>
               {history?.our_price && (
                 <div className="mb-2 inline-flex items-center gap-1.5 bg-teal-50 border border-teal-200 rounded-lg px-2.5 py-1">
-                  <span className="text-[10px] text-teal-500">現售</span>
+                  <span className="text-[10px] text-teal-500">Current</span>
                   <span className="font-mono font-bold text-teal-700 text-xs">${history.our_price.toFixed(0)}</span>
                 </div>
               )}
@@ -185,10 +185,10 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
                 </LineChart>
               </ResponsiveContainer>
 
-              {/* "查看 30 日Trend" label below chart */}
+              {/* "30-Day Trend" label below chart */}
               <div className="mt-1.5 text-center">
                 <span className="text-[10px] text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">
-                  查看 30 日Trend
+                  30-Day Trend
                 </span>
               </div>
             </>
@@ -198,23 +198,23 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
         {/* Competitor Table */}
         <div className="p-3 sm:p-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-gray-600">CompetitorPrice ({total_competitors}間)</span>
+            <span className="text-xs font-medium text-gray-600">Competitor Prices ({total_competitors} merchants)</span>
             <span className="text-[10px] text-gray-400">Ranking {our_price_rank}/{total_competitors}</span>
           </div>
 
           {competitors.length === 0 ? (
-            <p className="text-xs text-gray-400 text-center py-6">未有CompetitorPair</p>
+            <p className="text-xs text-gray-400 text-center py-6">No competitor pairs yet</p>
           ) : (
             <div className="overflow-x-auto -mx-1">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-gray-100">
-                    <th className="text-left text-[10px] text-gray-400 font-normal py-1.5 px-2">merchants</th>
-                    <th className="text-left text-[10px] text-gray-400 font-normal py-1.5 px-2">CompetitorProduct</th>
-                    <th className="text-right text-[10px] text-gray-400 font-normal py-1.5 px-2">售價</th>
-                    <th className="text-center text-[10px] text-gray-400 font-normal py-1.5 px-2 hidden sm:table-cell">7天Trend</th>
-                    <th className="text-center text-[10px] text-gray-400 font-normal py-1.5 px-2">庫存</th>
-                    <th className="text-right text-[10px] text-gray-400 font-normal py-1.5 px-2">連結</th>
+                    <th className="text-left text-[10px] text-gray-400 font-normal py-1.5 px-2">Merchant</th>
+                    <th className="text-left text-[10px] text-gray-400 font-normal py-1.5 px-2">Competitor Product</th>
+                    <th className="text-right text-[10px] text-gray-400 font-normal py-1.5 px-2">Price</th>
+                    <th className="text-center text-[10px] text-gray-400 font-normal py-1.5 px-2 hidden sm:table-cell">7-Day Trend</th>
+                    <th className="text-center text-[10px] text-gray-400 font-normal py-1.5 px-2">Stock</th>
+                    <th className="text-right text-[10px] text-gray-400 font-normal py-1.5 px-2">Link</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -284,7 +284,7 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
                           )}>
                             {comp.stock_status === 'out_of_stock' ? 'Out of stock' :
                              comp.stock_status === 'in_stock'
-                               ? (comp.stock_level !== null && comp.stock_level !== undefined ? `${comp.stock_level}items` : 'In stock')
+                               ? (comp.stock_level !== null && comp.stock_level !== undefined ? `${comp.stock_level} items` : 'In stock')
                                : '-'}
                           </span>
                         </td>

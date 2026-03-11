@@ -22,14 +22,14 @@ import {
   HoloBadge,
 } from '@/components/ui/future-tech'
 
-// 平台Option
+// Platform options
 const PLATFORMS = [
   { value: 'hktvmall', label: 'HKTVmall' },
   { value: 'watsons', label: 'Watsons' },
   { value: 'mannings', label: 'Mannings' },
   { value: 'parknshop', label: "PARKnSHOP" },
   { value: 'ztore', label: 'Ztore' },
-  { value: 'other', label: '其他' },
+  { value: 'other', label: 'Other' },
 ]
 
 export function CompetitorCard({
@@ -57,7 +57,7 @@ export function CompetitorCard({
       )}
     >
       <div className="p-3 sm:p-5 flex-1 flex flex-col">
-        {/* 頭部：Icon + Name + State */}
+        {/* Header: Icon + Name + Status */}
         <div className="flex items-start justify-between gap-2 sm:gap-3 mb-3 sm:mb-4">
           <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
             <div className={cn(
@@ -82,8 +82,8 @@ export function CompetitorCard({
             size="sm"
             pulse={competitor.is_active}
           >
-            <span className="hidden sm:inline">{competitor.is_active ? 'Monitor中' : '已Pause'}</span>
-            <span className="sm:hidden">{competitor.is_active ? 'Monitor' : 'Pause'}</span>
+            <span className="hidden sm:inline">{competitor.is_active ? 'Monitoring' : 'Paused'}</span>
+            <span className="sm:hidden">{competitor.is_active ? 'Monitor' : 'Paused'}</span>
           </HoloBadge>
         </div>
 
@@ -94,34 +94,34 @@ export function CompetitorCard({
               {competitor.notes}
             </p>
           ) : (
-            <p className="text-xs sm:text-sm text-slate-400 italic">暫無備註</p>
+            <p className="text-xs sm:text-sm text-slate-400 italic">No notes yet</p>
           )}
         </div>
 
-        {/* Data網格 */}
+        {/* Data grid */}
         <div className="grid grid-cols-2 gap-2 sm:gap-3">
           <div className="bg-gradient-to-br from-slate-50 to-white rounded-lg sm:rounded-xl p-2 sm:p-3 border border-slate-100/80">
             <div className="flex items-center text-[10px] sm:text-xs text-slate-500 mb-0.5 sm:mb-1">
               <Activity className="w-3 h-3 mr-1 text-cyan-500" />
-              Monitorproducts
+              Monitored Products
             </div>
             <div className="text-lg sm:text-xl font-bold text-slate-800">{competitor.product_count}</div>
           </div>
           <div className="bg-gradient-to-br from-slate-50 to-white rounded-lg sm:rounded-xl p-2 sm:p-3 border border-slate-100/80">
             <div className="flex items-center text-[10px] sm:text-xs text-slate-500 mb-0.5 sm:mb-1">
               <Clock className="w-3 h-3 mr-1 text-cyan-500" />
-              最後Update
+              Last Updated
             </div>
             <div className="text-xs sm:text-sm font-semibold text-slate-800 pt-0.5 sm:pt-1">
               {competitor.last_scraped_at
-                ? new Date(competitor.last_scraped_at).toLocaleDateString('zh-HK')
-                : '尚未抓取'}
+                ? new Date(competitor.last_scraped_at).toLocaleDateString('en-HK')
+                : 'Not yet scraped'}
             </div>
           </div>
         </div>
       </div>
 
-      {/* 底部OperationBar */}
+      {/* Bottom action bar */}
       <div className="px-3 sm:px-5 py-2 sm:py-3 bg-gradient-to-r from-slate-50/80 to-white/80 border-t border-slate-100/60 flex items-center justify-between">
         <div className="flex items-center space-x-1">
           <HoloButton
@@ -132,7 +132,7 @@ export function CompetitorCard({
             icon={isScraping ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 text-amber-500" />}
             className={cn(isScraping && "text-cyan-600 bg-cyan-50")}
           >
-            <span className="sr-only">抓取</span>
+            <span className="sr-only">Scrape</span>
           </HoloButton>
           <HoloButton
             size="sm"

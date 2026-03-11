@@ -40,7 +40,7 @@ export function PriceHistoryModal({ productId, productName, onClose }: PriceHist
             <TrendingUp className="w-4 h-4 text-teal-500" />
             <div>
               <h3 className="font-semibold text-gray-800 text-sm sm:text-base">{productName}</h3>
-              <p className="text-xs text-gray-400">過去 30 日CompetitorPriceTrend</p>
+              <p className="text-xs text-gray-400">Competitor Price Trends Over Last 30 Days</p>
             </div>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1">
@@ -56,14 +56,14 @@ export function PriceHistoryModal({ productId, productName, onClose }: PriceHist
             </div>
           ) : chartData.length === 0 || !data?.series.length ? (
             <div className="h-64 flex items-center justify-center">
-              <p className="text-sm text-gray-400">未有足夠HistoryData</p>
+              <p className="text-sm text-gray-400">Not enough historical data</p>
             </div>
           ) : (
             <>
               {/* Our price reference */}
               {data?.our_price && (
                 <div className="mb-3 inline-flex items-center gap-2 bg-teal-50 border border-teal-200 rounded-lg px-3 py-1.5">
-                  <span className="text-xs text-teal-600">GoGoJap 現時售價：</span>
+                  <span className="text-xs text-teal-600">GoGoJap current price:</span>
                   <span className="font-mono font-bold text-teal-700">${data.our_price.toFixed(0)}</span>
                 </div>
               )}

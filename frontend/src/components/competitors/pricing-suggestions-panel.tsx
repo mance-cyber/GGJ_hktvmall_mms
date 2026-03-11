@@ -7,15 +7,15 @@ import { cn } from '@/lib/utils'
 import { useState } from 'react'
 
 const priorityConfig = {
-  high: { label: '🔴 高', bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700' },
-  medium: { label: '🟡 中', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
-  low: { label: '🟢 低', bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700' },
+  high: { label: '🔴 High', bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700' },
+  medium: { label: '🟡 Medium', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
+  low: { label: '🟢 Low', bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700' },
 }
 
 const actionConfig = {
-  lower: { icon: TrendingDown, label: 'suggestions降價', color: 'text-red-600', bg: 'bg-red-50' },
-  raise: { icon: TrendingUp, label: '可考慮加價', color: 'text-green-600', bg: 'bg-green-50' },
-  maintain: { icon: Minus, label: '維持現價', color: 'text-gray-600', bg: 'bg-gray-50' },
+  lower: { icon: TrendingDown, label: 'Suggest price cut', color: 'text-red-600', bg: 'bg-red-50' },
+  raise: { icon: TrendingUp, label: 'Consider raising price', color: 'text-green-600', bg: 'bg-green-50' },
+  maintain: { icon: Minus, label: 'Maintain current price', color: 'text-gray-600', bg: 'bg-gray-50' },
 }
 
 export function PricingSuggestionsPanel() {
@@ -34,7 +34,7 @@ export function PricingSuggestionsPanel() {
     return (
       <div className="flex items-center justify-center py-16">
         <Loader2 className="w-5 h-5 text-teal-500 animate-spin" />
-        <span className="text-sm text-gray-400 ml-2">Analysis緊...</span>
+        <span className="text-sm text-gray-400 ml-2">Analyzing...</span>
       </div>
     )
   }
@@ -43,8 +43,8 @@ export function PricingSuggestionsPanel() {
     return (
       <div className="text-center py-16 text-gray-400">
         <CheckCircle2 className="w-10 h-10 mx-auto mb-3 opacity-30" />
-        <p className="text-sm">暫無Pricingsuggestions</p>
-        <p className="text-xs mt-1">所有productsPricing合理 👍</p>
+        <p className="text-sm">No pricing suggestions</p>
+        <p className="text-xs mt-1">All products are reasonably priced 👍</p>
       </div>
     )
   }
@@ -55,9 +55,9 @@ export function PricingSuggestionsPanel() {
       <div className="flex items-center gap-3 bg-white rounded-xl border border-gray-200 shadow-sm p-3">
         <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
         <p className="text-sm text-gray-600">
-          共 <span className="font-bold">{suggestions.length}</span> 項suggestions
-          {highCount > 0 && <span className="text-red-600 font-semibold ml-2">🔴 {highCount} 項Need留意</span>}
-          {mediumCount > 0 && <span className="text-amber-600 font-semibold ml-2">🟡 {mediumCount} 項可Optimize</span>}
+          Total: <span className="font-bold">{suggestions.length}</span> suggestions
+          {highCount > 0 && <span className="text-red-600 font-semibold ml-2">🔴 {highCount} require attention</span>}
+          {mediumCount > 0 && <span className="text-amber-600 font-semibold ml-2">🟡 {mediumCount} can be optimized</span>}
         </p>
       </div>
 
@@ -98,15 +98,15 @@ export function PricingSuggestionsPanel() {
             {/* Price comparison */}
             <div className="grid grid-cols-3 gap-2 text-center text-[10px] sm:text-xs mb-3">
               <div className="bg-white/60 rounded-lg px-2 py-1.5 border border-white">
-                <div className="text-gray-400">現價</div>
+                <div className="text-gray-400">Current Price</div>
                 <div className="font-mono font-bold text-gray-800">${s.our_price.toFixed(0)}</div>
               </div>
               <div className="bg-white/60 rounded-lg px-2 py-1.5 border border-white">
-                <div className="text-gray-400">最平Competitor</div>
+                <div className="text-gray-400">Cheapest Competitor</div>
                 <div className="font-mono font-bold text-gray-800">${s.cheapest_competitor_price.toFixed(0)}</div>
               </div>
               <div className="bg-white/60 rounded-lg px-2 py-1.5 border border-white">
-                <div className="text-gray-400">suggestions價</div>
+                <div className="text-gray-400">Suggested Price</div>
                 <div className={cn('font-mono font-bold', s.suggested_price ? aCfg.color : 'text-gray-400')}>
                   {s.suggested_price ? `$${s.suggested_price.toFixed(0)}` : '—'}
                 </div>
@@ -115,9 +115,9 @@ export function PricingSuggestionsPanel() {
 
             {/* Stats row */}
             <div className="flex items-center gap-3 text-[10px] text-gray-400 mb-2">
-              <span>差價 {s.price_diff_pct > 0 ? '+' : ''}{s.price_diff_pct.toFixed(1)}%</span>
+              <span>Price Gap {s.price_diff_pct > 0 ? '+' : ''}{s.price_diff_pct.toFixed(1)}%</span>
               <span>·</span>
-              <span>{s.cheaper_count}/{s.total_competitors} 間更平</span>
+              <span>{s.cheaper_count}/{s.total_competitors} cheaper</span>
               <span>·</span>
               <span>{s.stockout_pct.toFixed(0)}% Out of stock</span>
             </div>
@@ -131,7 +131,7 @@ export function PricingSuggestionsPanel() {
                 <XCircle className="w-3 h-3" /> Ignore
               </button>
               <button className="flex-1 flex items-center justify-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-teal-500 text-white hover:bg-teal-600 transition-colors">
-                <CheckCircle2 className="w-3 h-3" /> 採納
+                <CheckCircle2 className="w-3 h-3" /> Accept
               </button>
             </div>
           </div>

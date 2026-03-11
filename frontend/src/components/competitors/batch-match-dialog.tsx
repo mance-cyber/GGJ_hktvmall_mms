@@ -87,7 +87,7 @@ export function BatchMatchDialog({
     setBatchSummary(null)
   }, [])
 
-  // SSE 批量Match
+  // SSE Batch Match
   const handleBatchMatch = useCallback(async () => {
     const limit = parseInt(batchLimit)
     const categoryMain = batchCategory === 'all' ? undefined : batchCategory
@@ -114,7 +114,7 @@ export function BatchMatchDialog({
       }
 
       const reader = response.body?.getReader()
-      if (!reader) throw new Error('無法讀取串流')
+      if (!reader) throw new Error('Unable to read stream')
 
       const decoder = new TextDecoder()
       let buffer = ''
@@ -153,14 +153,14 @@ export function BatchMatchDialog({
               } else if (currentEvent === 'done') {
                 setBatchSummary(data)
                 setBatchPhase('done')
-                // Refresh相關Query
+                // Refresh related queries
                 for (const key of invalidateKeys) {
                   queryClient.invalidateQueries({ queryKey: key })
                 }
                 queryClient.invalidateQueries({ queryKey: ['competitors'] })
               }
             } catch {
-              // Ignore JSON ParseFailed
+              // Ignore JSON parse errors
             }
             currentEvent = ''
           }
@@ -169,7 +169,7 @@ export function BatchMatchDialog({
     } catch (err: any) {
       if (err.name === 'AbortError') return
       toast({
-        title: '批量MatchFailed',
+        title: 'Batch Match Failed',
         description: err.message,
         variant: 'destructive',
       })
@@ -192,83 +192,83 @@ export function BatchMatchDialog({
       <DialogTrigger asChild>
         {trigger || (
           <HoloButton variant="primary" size="sm" icon={<Bot className="w-4 h-4" />}>
-            <span className="hidden sm:inline">批量Match</span>
+            <span className="hidden sm:inline">Batch Match</span>
             <span className="sm:hidden">Match</span>
           </HoloButton>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>批量CompetitorMatch</DialogTitle>
+          <DialogTitle>Batch Competitor Match</DialogTitle>
           <DialogDescription>
-            AutoSearchCompetitor平台上的競爭products，並使用 AI 智能判斷whether為同級products
+            Automatically search competitor platforms for rival products and use AI to determine product equivalence
           </DialogDescription>
         </DialogHeader>
 
-        {/* Settings區：idle 時Display */}
+        {/* Settings area: displayed when idle */}
         {batchPhase === 'idle' && (
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">ProcessingQuantity</label>
+              <label className="text-sm font-medium">Processing Quantity</label>
               <Select value={batchLimit} onValueChange={setBatchLimit}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="10">10 個products（Test）</SelectItem>
-                  <SelectItem value="20">20 個products</SelectItem>
-                  <SelectItem value="30">30 個products</SelectItem>
-                  <SelectItem value="50">50 個products</SelectItem>
+                  <SelectItem value="10">10 products (Test)</SelectItem>
+                  <SelectItem value="20">20 products</SelectItem>
+                  <SelectItem value="30">30 products</SelectItem>
+                  <SelectItem value="50">50 products</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Target平台</label>
+              <label className="text-sm font-medium">Target Platform</label>
               <Select value={batchPlatform} onValueChange={setBatchPlatform}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="hktvmall">HKTVmall</SelectItem>
-                  <SelectItem value="wellcome">惠康 Wellcome</SelectItem>
+                  <SelectItem value="wellcome">Wellcome</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">分類Filter（Optional）</label>
+              <label className="text-sm font-medium">Category Filter (Optional)</label>
               <Select value={batchCategory} onValueChange={setBatchCategory}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select分類" />
+                  <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All分類</SelectItem>
-                  <SelectItem value="鮮魚">鮮魚</SelectItem>
-                  <SelectItem value="貝類">貝類</SelectItem>
-                  <SelectItem value="蟹類">蟹類</SelectItem>
-                  <SelectItem value="其他海鮮">其他海鮮</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="鮮魚">Fresh Fish</SelectItem>
+                  <SelectItem value="貝類">Shellfish</SelectItem>
+                  <SelectItem value="蟹類">Crab</SelectItem>
+                  <SelectItem value="其他海鮮">Other Seafood</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="rounded-lg bg-blue-50 p-3 text-sm text-blue-700">
-              <p className="font-medium mb-1">預估Cost</p>
+              <p className="font-medium mb-1">Estimated Cost</p>
               <p className="text-xs">
-                {parseInt(batchLimit)} 個products ≈ ¥{(parseInt(batchLimit) * 0.04).toFixed(2)} (Claude API)
-                {batchPlatform === 'hktvmall' && <><br />+ Firecrawl API 額度</>}
-                {batchPlatform === 'wellcome' && <><br />惠康使用 JSON-LD 提取，零額外Cost</>}
+                {parseInt(batchLimit)} products ≈ ¥{(parseInt(batchLimit) * 0.04).toFixed(2)} (Claude API)
+                {batchPlatform === 'hktvmall' && <><br />+ Firecrawl API credits</>}
+                {batchPlatform === 'wellcome' && <><br />Wellcome uses JSON-LD extraction, zero extra cost</>}
               </p>
             </div>
             <div className="rounded-lg bg-yellow-50 p-3 text-sm text-yellow-700">
-              <p className="font-medium mb-1">注意事項</p>
+              <p className="font-medium mb-1">Important Notes</p>
               <p className="text-xs">
                 • Only process products without competitor matches<br />
-                • 執行Time約 {Math.ceil(parseInt(batchLimit) / 5)} minutes<br />
-                • suggestions先執行 10 個productsTest
+                • Estimated time: ~{Math.ceil(parseInt(batchLimit) / 5)} minutes<br />
+                • We suggest testing with 10 products first
               </p>
             </div>
           </div>
         )}
 
-        {/* 進度區：processing / done 時Display */}
+        {/* Progress area: displayed when processing/done */}
         {(batchPhase === 'processing' || batchPhase === 'done') && (
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -277,12 +277,12 @@ export function BatchMatchDialog({
                   {batchPhase === 'processing' ? (
                     <span className="flex items-center gap-1.5">
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      currentlySearch: {batchCurrentName}
+                      Currently searching: {batchCurrentName}
                     </span>
                   ) : (
                     <span className="flex items-center gap-1.5 text-green-600">
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      MatchComplete
+                      Match Complete
                     </span>
                   )}
                 </span>
@@ -298,7 +298,7 @@ export function BatchMatchDialog({
             <div className="max-h-[280px] overflow-y-auto rounded-lg border bg-slate-50/50 divide-y divide-slate-100">
               {batchResults.length === 0 && batchPhase === 'processing' && !batchCurrentName && (
                 <div className="p-4 text-center text-sm text-muted-foreground">
-                  Waiting第一個Result...
+                  Waiting for first result...
                 </div>
               )}
               {batchResults.map((item, idx) => (
@@ -325,13 +325,13 @@ export function BatchMatchDialog({
                       </span>
                     ) : (
                       <span className="text-xs text-muted-foreground">
-                        {item.candidates > 0 ? `找到 ${item.candidates} 個候選，但無Match` : '未找到Match'}
+                        {item.candidates > 0 ? `Found ${item.candidates} candidates, but no match` : 'No match found'}
                       </span>
                     )}
                   </div>
                 </div>
               ))}
-              {/* 當前currentlyProcessing的項目（脈衝Animation） */}
+              {/* Currently processing item (pulse animation) */}
               {batchPhase === 'processing' && batchCurrentName && (
                 <div className="px-3 py-2 text-sm flex items-start gap-2 animate-pulse bg-blue-50/60">
                   <Loader2 className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0 animate-spin" />
@@ -339,7 +339,7 @@ export function BatchMatchDialog({
                     <span className="font-medium text-blue-700 truncate block">
                       {batchCurrentName}
                     </span>
-                    <span className="text-xs text-blue-500">SearchCompetitor中...</span>
+                    <span className="text-xs text-blue-500">Searching competitors...</span>
                   </div>
                 </div>
               )}
@@ -348,11 +348,11 @@ export function BatchMatchDialog({
 
             {batchPhase === 'done' && batchSummary && (
               <div className="rounded-lg bg-green-50 border border-green-200 p-3 text-sm text-green-700">
-                <p className="font-medium mb-1">MatchComplete</p>
+                <p className="font-medium mb-1">Match Complete</p>
                 <div className="flex gap-4 text-xs">
-                  <span>Processing {batchSummary.processed} 個</span>
-                  <span>候選 {batchSummary.total_candidates} 個</span>
-                  <span className="font-medium">Match {batchSummary.total_matches} 個</span>
+                  <span>Processed: {batchSummary.processed}</span>
+                  <span>Candidates: {batchSummary.total_candidates}</span>
+                  <span className="font-medium">Matched: {batchSummary.total_matches}</span>
                 </div>
               </div>
             )}
@@ -367,7 +367,7 @@ export function BatchMatchDialog({
               </Button>
               <Button onClick={handleBatchMatch}>
                 <Play className="mr-2 h-4 w-4" />
-                StartMatch
+                Start Match
               </Button>
             </>
           )}
@@ -376,7 +376,7 @@ export function BatchMatchDialog({
               abortRef.current?.abort()
               setBatchPhase('done')
             }}>
-              Stopped
+              Stop
             </Button>
           )}
           {batchPhase === 'done' && (

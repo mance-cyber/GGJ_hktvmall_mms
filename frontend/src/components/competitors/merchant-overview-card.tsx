@@ -42,7 +42,7 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
             <Package className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             <span>{competitor.total_products}</span>
             {competitor.overlap_products > 0 && (
-              <span className="hidden sm:inline text-teal-500">({competitor.overlap_products} 重疊)</span>
+              <span className="hidden sm:inline text-teal-500">({competitor.overlap_products} overlap)</span>
             )}
           </div>
 
@@ -111,19 +111,19 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-3 sm:mb-4">
                 <div className="text-center p-2 rounded-lg bg-gray-50">
                   <div className="text-base sm:text-lg font-bold text-gray-700">{competitor.total_products}</div>
-                  <div className="text-[10px] sm:text-xs text-gray-400">總products</div>
+                  <div className="text-[10px] sm:text-xs text-gray-400">Total Products</div>
                 </div>
                 <div className="text-center p-2 rounded-lg bg-teal-50">
                   <div className="text-base sm:text-lg font-bold text-teal-600">{competitor.fresh_products}</div>
-                  <div className="text-[10px] sm:text-xs text-gray-400">生鮮品</div>
+                  <div className="text-[10px] sm:text-xs text-gray-400">Fresh Products</div>
                 </div>
                 <div className="text-center p-2 rounded-lg bg-amber-50">
                   <div className="text-base sm:text-lg font-bold text-amber-600">{competitor.overlap_products}</div>
-                  <div className="text-[10px] sm:text-xs text-gray-400">與我重疊</div>
+                  <div className="text-[10px] sm:text-xs text-gray-400">Overlap</div>
                 </div>
                 <div className="text-center p-2 rounded-lg bg-purple-50">
                   <div className="text-base sm:text-lg font-bold text-purple-600">{competitor.unique_products}</div>
-                  <div className="text-[10px] sm:text-xs text-gray-400">獨有products</div>
+                  <div className="text-[10px] sm:text-xs text-gray-400">Unique Products</div>
                 </div>
               </div>
 
@@ -131,15 +131,15 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
                 <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-3 sm:mb-4 text-[10px] sm:text-xs">
                   <span className="flex items-center gap-1 text-emerald-500">
                     <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                    佢貴: {price_comparison.expensive_count}
+                    They're more expensive: {price_comparison.expensive_count}
                   </span>
                   <span className="flex items-center gap-1 text-gray-400">
                     <span className="w-2 h-2 rounded-full bg-gray-300" />
-                    差不多: {price_comparison.same_count}
+                    Similar: {price_comparison.same_count}
                   </span>
                   <span className="flex items-center gap-1 text-red-500">
                     <span className="w-2 h-2 rounded-full bg-red-400" />
-                    佢平: {price_comparison.cheaper_count}
+                    They're cheaper: {price_comparison.cheaper_count}
                   </span>
                 </div>
               )}
@@ -148,7 +148,7 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
                 <div>
                   <h4 className="text-[10px] sm:text-xs text-gray-400 mb-2 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" />
-                    最近 7 日變動
+                    Changes in Last 7 Days
                   </h4>
                   <div className="space-y-1.5">
                     {recent_changes.map((change, i) => (
@@ -177,7 +177,7 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
 
               {recent_changes.length === 0 && totalCompared === 0 && (
                 <p className="text-xs sm:text-sm text-gray-400 text-center py-2">
-                  暫無CompareData
+                  No comparison data yet
                 </p>
               )}
             </div>

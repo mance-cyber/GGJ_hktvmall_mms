@@ -21,15 +21,15 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-// 平台Option
+// Platform options
 const PLATFORMS = [
   { value: 'hktvmall', label: 'HKTVmall' },
-  { value: 'wellcome', label: '惠康 Wellcome' },
+  { value: 'wellcome', label: 'Wellcome' },
   { value: 'watsons', label: 'Watsons' },
   { value: 'mannings', label: 'Mannings' },
   { value: 'parknshop', label: "PARKnSHOP" },
   { value: 'ztore', label: 'Ztore' },
-  { value: 'other', label: '其他' },
+  { value: 'other', label: 'Other' },
 ]
 
 export function CompetitorFormDialog({
@@ -80,13 +80,13 @@ export function CompetitorFormDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="platform">平台 <span className="text-destructive">*</span></Label>
+              <Label htmlFor="platform">Platform <span className="text-destructive">*</span></Label>
               <Select
                 value={formData.platform}
                 onValueChange={(value) => setFormData({ ...formData, platform: value })}
               >
                 <SelectTrigger className="bg-white/50">
-                  <SelectValue placeholder="Select平台" />
+                  <SelectValue placeholder="Select platform" />
                 </SelectTrigger>
                 <SelectContent>
                   {PLATFORMS.map((platform) => (
@@ -99,7 +99,7 @@ export function CompetitorFormDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="url">網站 URL</Label>
+              <Label htmlFor="url">Website URL</Label>
               <Input
                 id="url"
                 type="url"
@@ -111,12 +111,12 @@ export function CompetitorFormDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="notes">備註</Label>
+              <Label htmlFor="notes">Notes</Label>
               <Textarea
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="關於此競爭Competitor的備註..."
+                placeholder="Notes about this competitor..."
                 className="bg-white/50 min-h-[100px]"
               />
             </div>
@@ -140,7 +140,7 @@ export function CompetitorFormDialog({
               ) : (
                 <Check className="w-4 h-4 mr-2" />
               )}
-              {initialData ? 'Save修改' : '立即Add'}
+              {initialData ? 'Save Changes' : 'Add Now'}
             </Button>
           </div>
         </form>

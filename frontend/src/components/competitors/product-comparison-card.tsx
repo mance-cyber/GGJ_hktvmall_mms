@@ -42,16 +42,16 @@ export function ProductComparisonCard({ data, selected, onClick }: ProductCompar
 
   // Stock label with quantity
   const stockLabel = outOfStockCount > 0 && inStockCount === 0
-    ? '已退車'
+    ? 'Delisted'
     : outOfStockCount > 0
-      ? `${inStockCount}有/${outOfStockCount}缺`
+      ? `${inStockCount} in stock/${outOfStockCount} out`
       : inStockCount > 0
         ? (knownStockLevels.length > 0
           ? (knownStockLevels.length === 1
-            ? `庫存 ${knownStockLevels[0]}`
-            : `庫存 ${minStockLevel}-${maxStockLevel}`)
+            ? `Stock: ${knownStockLevels[0]}`
+            : `Stock: ${minStockLevel}-${maxStockLevel}`)
           : 'In stock')
-        : '無資料'
+        : 'No data'
 
   return (
     <button
@@ -94,9 +94,9 @@ export function ProductComparisonCard({ data, selected, onClick }: ProductCompar
             </div>
           </div>
 
-          {/* 最低競手價 + 價差 */}
+          {/* Lowest competitor price + gap */}
           <div>
-            <div className="text-[10px] text-gray-400 mb-0.5">最低競手Price</div>
+            <div className="text-[10px] text-gray-400 mb-0.5">Lowest Competitor Price</div>
             <div className="flex items-baseline gap-1.5">
               {cheapestPrice ? (
                 <>
@@ -123,9 +123,9 @@ export function ProductComparisonCard({ data, selected, onClick }: ProductCompar
             </div>
           </div>
 
-          {/* 便宜競比數 */}
+          {/* Cheaper competitor count */}
           <div>
-            <div className="text-[10px] text-gray-400 mb-0.5">便宜競比數</div>
+            <div className="text-[10px] text-gray-400 mb-0.5">Cheaper Competitors</div>
             <div className={cn(
               'font-semibold',
               cheaperCount > 0 ? 'text-red-500' : 'text-emerald-500'
@@ -154,9 +154,9 @@ export function ProductComparisonCard({ data, selected, onClick }: ProductCompar
             </div>
           </div>
 
-          {/* 股貨State */}
+          {/* Stock status */}
           <div>
-            <div className="text-[10px] text-gray-400 mb-0.5">庫存</div>
+            <div className="text-[10px] text-gray-400 mb-0.5">Stock</div>
             <div className={cn(
               'font-medium text-[11px]',
               outOfStockCount > 0 && inStockCount === 0 ? 'text-red-500' :

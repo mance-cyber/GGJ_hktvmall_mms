@@ -1,7 +1,7 @@
 'use client'
 
 // =============================================
-// Sidebar - Future Tech 風格Sidebar
+// Sidebar - Future Tech Style Sidebar
 // =============================================
 
 import { useState, useEffect, useMemo } from 'react'
@@ -43,7 +43,7 @@ import { LocaleToggle } from '@/components/LocaleToggle'
 import type { TranslationDict } from '@/i18n/types'
 
 // =============================================
-// Navigation項目Type definitions
+// Navigation item type definitions
 // =============================================
 
 interface NavItem {
@@ -72,7 +72,7 @@ interface NavGroup {
 }
 
 // =============================================
-// 分類顏色Theme
+// Category color themes
 // =============================================
 
 const categoryColors = {
@@ -133,7 +133,7 @@ const categoryColors = {
 }
 
 // =============================================
-// NavigationConfiguration - 按Feature分組（含Permission和顏色）
+// Navigation configuration - grouped by feature (with permissions and colors)
 // =============================================
 
 function getNavigationGroups(t: TranslationDict): NavGroup[] {
@@ -279,7 +279,7 @@ function getNavigationGroups(t: TranslationDict): NavGroup[] {
 }
 
 // =============================================
-// 主組items
+// Main component
 // =============================================
 
 export function Sidebar() {
@@ -289,7 +289,7 @@ export function Sidebar() {
   const { role, hasAnyPermission } = usePermissions()
   const { t } = useLocale()
 
-  // FetchUnreadAlert數
+  // Fetch unread alert count
   const { data: alerts } = useQuery({
     queryKey: ['alerts-count'],
     queryFn: () => api.getAlerts(false, undefined, 1),
@@ -297,7 +297,7 @@ export function Sidebar() {
   })
   const unreadCount = alerts?.unread_count || 0
 
-  // Filter有Permission的Navigation組和項目
+  // Filter navigation groups and items by permission
   const filteredNavGroups = useMemo(() => {
     return getNavigationGroups(t)
       .filter((group) => {
@@ -321,7 +321,7 @@ export function Sidebar() {
     setIsMobileOpen(false)
   }, [pathname])
 
-  // 移動端Menubutton
+  // Mobile menu button
   const MobileMenuButton = () => (
     <button
       type="button"
@@ -339,7 +339,7 @@ export function Sidebar() {
   // SidebarContent
   const SidebarContent = () => (
     <div className="h-full rounded-2xl glass-sidebar p-6 relative overflow-hidden flex flex-col">
-      {/* 全息邊緣Effect */}
+      {/* Holographic edge effect */}
       <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-100/20 via-transparent to-purple-100/20 pointer-events-none" />
 
       {/* Logo */}
@@ -374,7 +374,7 @@ export function Sidebar() {
                 `border ${colors.border}`
               )}
             >
-              {/* 分類Title */}
+              {/* Category title */}
               <div className={cn("text-[10px] uppercase tracking-widest mb-2.5 px-2 font-bold flex items-center gap-2", colors.accent)}>
                 <div className={cn("h-px flex-1 bg-gradient-to-r opacity-30", colors.indicator)} />
                 <span>{group.title}</span>
@@ -411,14 +411,14 @@ export function Sidebar() {
                         {item.name}
                       </span>
 
-                      {/* UnreadAlert徽章 */}
+                      {/* Unread alert badge */}
                       {showBadge && (
                         <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full animate-pulse-glow">
                           {unreadCount > 99 ? '99+' : unreadCount}
                         </span>
                       )}
 
-                      {/* Active 指示器 */}
+                      {/* Active indicator */}
                       {isActive && (
                         <div className={cn("absolute right-0 top-1/2 -translate-y-1/2 w-0.5 h-6 rounded-l-full bg-gradient-to-b", colors.indicator)} />
                       )}
@@ -431,7 +431,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* 語言切換 */}
+      {/* Language toggle */}
       <div className="mt-3 px-1">
         <LocaleToggle />
       </div>
@@ -470,19 +470,19 @@ export function Sidebar() {
 
   return (
     <>
-      {/* 移動端Menubutton */}
+      {/* Mobile menu button */}
       <MobileMenuButton />
 
-      {/* 桌面端Sidebar */}
+      {/* Desktop sidebar */}
       <div className="hidden lg:block lg:fixed lg:inset-y-0 lg:left-0 lg:w-72 lg:p-6 z-20">
         <SidebarContent />
       </div>
 
-      {/* 移動端Sidebar */}
+      {/* Mobile sidebar */}
       <AnimatePresence>
         {isMobileOpen && (
           <>
-            {/* 遮罩層 */}
+            {/* Overlay */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -509,7 +509,7 @@ export function Sidebar() {
 }
 
 // =============================================
-// 輔助組items：移動端底部Navigation
+// Helper component: Mobile bottom navigation
 // =============================================
 
 export function MobileBottomNav() {
@@ -523,14 +523,14 @@ export function MobileBottomNav() {
   })
   const unreadCount = alerts?.unread_count || 0
 
-  // 主Navigation項目（Display在底部Bar）
+  // Main nav items (displayed in bottom bar)
   const quickNav = [
     { name: t['mobile.home'], href: '/', icon: LayoutDashboard },
     { name: t['mobile.alerts'], href: '/alerts', icon: Bell, badge: unreadCount },
     { name: t['mobile.ai'], href: '/agent', icon: MessageSquare },
   ]
 
-  // 更多Menu項目
+  // More menu items
   const moreItems = [
     { name: t['mobile.competitor_monitor'], href: '/competitors', icon: Eye },
     { name: t['mobile.product_library'], href: '/products', icon: Package },
@@ -539,14 +539,14 @@ export function MobileBottomNav() {
     { name: t['mobile.settings'], href: '/settings', icon: Settings },
   ]
 
-  // Check更多Menu中whether有當前page
+  // Check if current page is in the more menu
   const isMoreActive = moreItems.some(
     item => pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
   )
 
   return (
     <>
-      {/* 更多Menu彈出層 */}
+      {/* More menu popup */}
       <AnimatePresence>
         {showMore && (
           <>
@@ -611,7 +611,7 @@ export function MobileBottomNav() {
               >
                 <item.icon className={cn("w-5 h-5", isActive && "scale-110")} />
                 <span className="text-[10px] mt-1 font-medium">{item.name}</span>
-                {/* Unread徽章 */}
+                {/* Unread badge */}
                 {item.badge && item.badge > 0 && (
                   <span className="absolute -top-0.5 right-2 min-w-[18px] h-[18px] flex items-center justify-center px-1 bg-red-500 text-white text-[10px] font-bold rounded-full">
                     {item.badge > 99 ? '99+' : item.badge}
@@ -621,7 +621,7 @@ export function MobileBottomNav() {
             )
           })}
 
-          {/* 更多button */}
+          {/* More button */}
           <button
             type="button"
             onClick={() => setShowMore(!showMore)}

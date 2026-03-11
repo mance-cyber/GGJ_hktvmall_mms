@@ -79,7 +79,7 @@ type SortField = 'name' | 'price' | 'price_change' | 'last_scraped'
 type SortOrder = 'asc' | 'desc'
 
 // =============================================
-// Main page組items
+// Main page component
 // =============================================
 
 export default function CompetitorDetailPage() {
@@ -264,7 +264,7 @@ export default function CompetitorDetailPage() {
 
   // ========== Rendering ==========
 
-  // Loading State - 使用 HoloSkeleton
+  // Loading State - using HoloSkeleton
   if (isLoading) {
     return (
       <PageTransition>
@@ -340,14 +340,14 @@ export default function CompetitorDetailPage() {
               <span className="text-slate-300">|</span>
               <span className="text-muted-foreground flex items-center">
                 <Package className="w-4 h-4 mr-1 text-cyan-500" />
-                {products?.total || 0} 個Monitorproducts
+                {products?.total || 0} monitored products
               </span>
               {competitor?.last_scraped_at && (
                 <>
                   <span className="text-slate-300">|</span>
                   <span className="text-muted-foreground flex items-center text-sm">
                     <Clock className="w-3.5 h-3.5 mr-1 text-cyan-500" />
-                    最後Update: {new Date(competitor.last_scraped_at).toLocaleString('zh-HK')}
+                    Last updated: {new Date(competitor.last_scraped_at).toLocaleString('en-HK')}
                   </span>
                 </>
               )}
@@ -361,7 +361,7 @@ export default function CompetitorDetailPage() {
               loading={scrapeMutation.isPending}
               icon={scrapeMutation.isPending ? undefined : <Zap className="w-4 h-4 text-amber-500" />}
             >
-              立即抓取
+              Scrape Now
             </HoloButton>
             <HoloButton
               variant="ghost"
@@ -376,14 +376,14 @@ export default function CompetitorDetailPage() {
               icon={<FileSpreadsheet className="w-4 h-4 text-emerald-500" />}
               className="border-emerald-200 hover:border-emerald-300"
             >
-              批量Import
+              Batch Import
             </HoloButton>
             <HoloButton
               variant="primary"
               onClick={() => setShowAddForm(true)}
               icon={<Plus className="w-4 h-4" />}
             >
-              Addproducts
+              Add Product
             </HoloButton>
           </div>
         </div>
@@ -393,13 +393,13 @@ export default function CompetitorDetailPage() {
       {stats && (
         <StaggerContainer className="grid grid-cols-4 gap-4" staggerDelay={0.08}>
           <DataMetric
-            label="In stockproducts"
+            label="In Stock Products"
             value={stats.inStock}
             icon={<Package className="w-5 h-5 text-emerald-500" />}
             color="green"
           />
           <DataMetric
-            label="Out of stockproducts"
+            label="Out of Stock Products"
             value={stats.outOfStock}
             icon={<Package className="w-5 h-5 text-amber-500" />}
             color="orange"
@@ -421,7 +421,7 @@ export default function CompetitorDetailPage() {
 
       {/* ========== Main content area ========== */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 左側：Product list */}
+        {/* Left: Product list */}
         <div className="lg:col-span-2 space-y-4">
           {/* Search and filter bar */}
           <div className="flex items-center space-x-3">
@@ -489,7 +489,7 @@ export default function CompetitorDetailPage() {
             </DropdownMenu>
           </div>
 
-          {/* Batch operationsBar */}
+          {/* Batch operations bar */}
           <AnimatePresence>
             {selectedProducts.size > 0 && (
               <motion.div
@@ -499,7 +499,7 @@ export default function CompetitorDetailPage() {
                 className="flex items-center justify-between bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl px-4 py-3 border border-cyan-200/60 shadow-sm"
               >
                 <span className="text-sm font-medium text-cyan-700">
-                  Selected擇 {selectedProducts.size} 個products
+                  Selected {selectedProducts.size} products
                 </span>
                 <div className="flex items-center space-x-2">
                   <HoloButton size="sm" variant="ghost" onClick={() => setSelectedProducts(new Set())}>
@@ -518,7 +518,7 @@ export default function CompetitorDetailPage() {
             )}
           </AnimatePresence>
 
-          {/* Product list - 使用 HoloCard */}
+          {/* Product list - using HoloCard */}
           <HoloCard glowColor="cyan" className="overflow-hidden">
             {/* List header */}
             <div className="px-4 py-3 bg-gradient-to-r from-slate-50/80 to-white/80 border-b border-slate-100/80 flex items-center">
@@ -533,7 +533,7 @@ export default function CompetitorDetailPage() {
                 )}
               </button>
               <span className="text-xs font-medium text-slate-500">
-                {sortedProducts.length} 個products
+                {sortedProducts.length} products
               </span>
             </div>
 
@@ -560,23 +560,23 @@ export default function CompetitorDetailPage() {
               </AnimatePresence>
             </div>
 
-            {/* 空State */}
+            {/* Empty state */}
             {sortedProducts.length === 0 && (
               <div className="px-6 py-16 text-center">
                 <div className="w-16 h-16 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-cyan-100/50">
                   <Package className="w-8 h-8 text-cyan-400" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900">尚無Monitorproducts</h3>
-                <p className="text-muted-foreground mt-1">點擊右上角「Addproducts」StartMonitor</p>
+                <h3 className="text-lg font-medium text-gray-900">No monitored products yet</h3>
+                <p className="text-muted-foreground mt-1">Click "Add Product" in the top right to start monitoring</p>
               </div>
             )}
           </HoloCard>
 
-          {/* 分頁 */}
+          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-2">
               <div className="text-sm text-muted-foreground">
-                第 {page} / {totalPages} 頁
+                Page {page} / {totalPages}
               </div>
               <div className="flex items-center space-x-2">
                 <HoloButton
@@ -586,7 +586,7 @@ export default function CompetitorDetailPage() {
                   disabled={page <= 1}
                   icon={<ChevronLeft className="w-4 h-4" />}
                 >
-                  上一頁
+                  Previous
                 </HoloButton>
                 <HoloButton
                   variant="secondary"
@@ -595,7 +595,7 @@ export default function CompetitorDetailPage() {
                   disabled={page >= totalPages}
                   icon={<ChevronRight className="w-4 h-4" />}
                 >
-                  下一頁
+                  Next
                 </HoloButton>
               </div>
             </div>
@@ -606,7 +606,7 @@ export default function CompetitorDetailPage() {
         <div className="lg:col-span-1">
           <HoloCard glowColor="blue" className="sticky top-6 overflow-hidden">
             <HoloPanelHeader
-              title="Price走勢Analysis"
+              title="Price Trend Analysis"
               icon={<LineChart className="w-5 h-5" />}
             />
 
@@ -616,7 +616,7 @@ export default function CompetitorDetailPage() {
                   <div className="w-16 h-16 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-cyan-100/50 animate-pulse">
                     <LineChart className="w-8 h-8 text-cyan-400" />
                   </div>
-                  <h3 className="text-base font-medium text-gray-900">尚未Selectproducts</h3>
+                  <h3 className="text-base font-medium text-gray-900">No product selected</h3>
                   <p className="text-sm text-muted-foreground mt-1">
                     Click a product in the left list<br/>View detailed price history and analysis
                   </p>
@@ -627,7 +627,7 @@ export default function CompetitorDetailPage() {
                     <div className="absolute inset-0 bg-cyan-500/20 blur-xl rounded-full animate-pulse" />
                     <RefreshCw className="relative w-8 h-8 animate-spin text-cyan-500" />
                   </div>
-                  <span className="text-sm text-muted-foreground">currentlyAnalysisData...</span>
+                  <span className="text-sm text-muted-foreground">Analyzing data...</span>
                 </div>
               ) : priceHistory ? (
                 <motion.div
@@ -636,7 +636,7 @@ export default function CompetitorDetailPage() {
                   transition={{ duration: 0.4 }}
                   className="space-y-6"
                 >
-                  {/* products信息 */}
+                  {/* Product info */}
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900 leading-relaxed mb-2">
                       {priceHistory.product.name}
@@ -650,7 +650,7 @@ export default function CompetitorDetailPage() {
                           className="inline-flex items-center text-xs text-cyan-600 hover:text-cyan-700 bg-cyan-50 px-2.5 py-1 rounded-lg transition-colors hover:bg-cyan-100"
                         >
                           <ExternalLink className="w-3 h-3 mr-1" />
-                          訪問productspage
+                          Visit product page
                         </a>
                       )}
                       <HoloBadge
@@ -662,10 +662,10 @@ export default function CompetitorDetailPage() {
                     </div>
                   </div>
 
-                  {/* PriceCard */}
+                  {/* Price cards */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-gradient-to-br from-slate-50 to-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                      <div className="text-xs text-muted-foreground mb-1">當前Price</div>
+                      <div className="text-xs text-muted-foreground mb-1">Current Price</div>
                       <div className="text-xl font-bold text-gray-900">
                         ${priceHistory.product.current_price ? Number(priceHistory.product.current_price).toFixed(2) : '-'}
                       </div>
@@ -687,23 +687,23 @@ export default function CompetitorDetailPage() {
                     </div>
                   </div>
 
-                  {/* 最後抓取Time */}
+                  {/* Last scrape time */}
                   {priceHistory.product.last_scraped_at && (
                     <div className="flex items-center text-xs text-slate-500 bg-gradient-to-r from-slate-50 to-white rounded-xl px-3 py-2 border border-slate-100">
                       <Clock className="w-3.5 h-3.5 mr-2 text-cyan-500" />
-                      最後Update: {new Date(priceHistory.product.last_scraped_at).toLocaleString('zh-HK')}
+                      Last updated: {new Date(priceHistory.product.last_scraped_at).toLocaleString('en-HK')}
                     </div>
                   )}
 
-                  {/* PriceTime軸 */}
+                  {/* Price timeline */}
                   <div>
                     <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center">
                       <History className="w-3 h-3 mr-1 text-cyan-500" />
-                      HistoryRecord (30天)
+                      History (30 days)
                     </h4>
                     <div className="relative border-l-2 border-cyan-200 ml-2 space-y-4 pb-2 max-h-[300px] overflow-y-auto">
                       {priceHistory.history.length === 0 ? (
-                        <p className="text-sm text-muted-foreground pl-4 py-2">暫無PriceRecord</p>
+                        <p className="text-sm text-muted-foreground pl-4 py-2">No price records yet</p>
                       ) : (
                         priceHistory.history.map((snapshot, idx) => (
                           <motion.div
@@ -723,7 +723,7 @@ export default function CompetitorDetailPage() {
                                   ${snapshot.price ? Number(snapshot.price).toFixed(2) : '-'}
                                 </span>
                                 <span className="text-xs text-muted-foreground">
-                                  {new Date(snapshot.scraped_at).toLocaleDateString('zh-HK')}
+                                  {new Date(snapshot.scraped_at).toLocaleDateString('en-HK')}
                                 </span>
                               </div>
                               {snapshot.discount_percent && snapshot.discount_percent > 0 && (
@@ -744,7 +744,7 @@ export default function CompetitorDetailPage() {
         </div>
       </div>
 
-      {/* ========== AddproductsPopup ========== */}
+      {/* ========== Add Product Dialog ========== */}
       <AddProductDialog
         open={showAddForm}
         onOpenChange={setShowAddForm}
@@ -752,7 +752,7 @@ export default function CompetitorDetailPage() {
         isLoading={addProductMutation.isPending}
       />
 
-      {/* ========== EditproductsPopup ========== */}
+      {/* ========== Edit Product Dialog ========== */}
       <EditProductDialog
         product={editingProduct}
         onOpenChange={(open) => { if (!open) setEditingProduct(null) }}
@@ -762,7 +762,7 @@ export default function CompetitorDetailPage() {
         isLoading={updateProductMutation.isPending}
       />
 
-      {/* ========== 批量ImportPopup ========== */}
+      {/* ========== Batch Import Dialog ========== */}
       <BulkImportDialog
         open={showBulkImport}
         onOpenChange={setShowBulkImport}
@@ -811,7 +811,7 @@ function ProductRow({
           : "hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-white border-l-transparent hover:border-l-cyan-300"
       )}
     >
-      {/* 複選框 */}
+      {/* Checkbox */}
       <button
         onClick={(e) => { e.stopPropagation(); onToggleCheck(); }}
         className="p-1.5 hover:bg-cyan-100 rounded-lg mr-3 transition-colors"
@@ -823,7 +823,7 @@ function ProductRow({
         )}
       </button>
 
-      {/* products信息 */}
+      {/* Product info */}
       <div
         className="flex items-center space-x-4 flex-1 min-w-0"
         onClick={onSelect}
@@ -857,14 +857,14 @@ function ProductRow({
             {product.last_scraped_at && (
               <span className="text-xs text-slate-400 flex items-center">
                 <Clock className="w-3 h-3 mr-1" />
-                {new Date(product.last_scraped_at).toLocaleDateString('zh-HK')}
+                {new Date(product.last_scraped_at).toLocaleDateString('en-HK')}
               </span>
             )}
           </div>
         </div>
       </div>
 
-      {/* Price和State */}
+      {/* Price and status */}
       <div className="flex items-center space-x-4">
         <div className="text-right min-w-[80px]">
           <p className="text-sm font-bold text-gray-900 font-mono">
@@ -894,7 +894,7 @@ function ProductRow({
           {product.stock_status === 'in_stock' ? 'In stock' : product.stock_status === 'out_of_stock' ? 'Out of stock' : 'Unknown'}
         </HoloBadge>
 
-        {/* 更多Operation */}
+        {/* More actions */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-slate-100 transition-all">
@@ -904,7 +904,7 @@ function ProductRow({
           <DropdownMenuContent align="end" className="bg-white/95 backdrop-blur-xl border-slate-200/80">
             <DropdownMenuItem className="flex items-center" onClick={onEdit}>
               <Pencil className="w-4 h-4 mr-2 text-blue-500" />
-              Editproducts
+              Edit Product
             </DropdownMenuItem>
             <DropdownMenuItem className="flex items-center" onClick={() => window.open(product.url, '_blank')}>
               <ExternalLink className="w-4 h-4 mr-2 text-cyan-500" />
@@ -913,7 +913,7 @@ function ProductRow({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-red-600 flex items-center"
-              onClick={() => { if (confirm(`OKDelete「${product.name}」？`)) onDelete() }}
+              onClick={() => { if (confirm(`Are you sure you want to delete "${product.name}"?`)) onDelete() }}
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Delete
@@ -952,10 +952,10 @@ function AddProductDialog({
       <DialogContent className="sm:max-w-[500px] bg-white/95 backdrop-blur-xl border-slate-200/80 shadow-2xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-            AddMonitorproducts
+            Add Monitored Product
           </DialogTitle>
           <DialogDescription>
-            Inputproducts鏈接，System將Auto抓取Price和庫存信息。
+            Enter a product URL. The system will automatically scrape price and stock information.
           </DialogDescription>
         </DialogHeader>
 
@@ -963,7 +963,7 @@ function AddProductDialog({
           <div className="space-y-4">
             <div className="grid gap-2">
               <Label htmlFor="product-url" className="text-slate-700">
-                products URL <span className="text-red-500">*</span>
+                Product URL <span className="text-red-500">*</span>
               </Label>
               <div className="relative">
                 <ShoppingCart className="absolute left-3 top-3 h-4 w-4 text-cyan-500" />
@@ -980,23 +980,23 @@ function AddProductDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="product-name" className="text-slate-700">CustomName（Optional）</Label>
+              <Label htmlFor="product-name" className="text-slate-700">Custom Name (Optional)</Label>
               <Input
                 id="product-name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="留空則使用Auto抓取的Name"
+                placeholder="Leave blank to use the auto-scraped name"
                 className="bg-white/70 backdrop-blur-sm border-slate-200/80 focus:border-cyan-300 focus:ring-cyan-200/50"
               />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="product-category" className="text-slate-700">分類標籤（Optional）</Label>
+              <Label htmlFor="product-category" className="text-slate-700">Category Tag (Optional)</Label>
               <Input
                 id="product-category"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                placeholder="例如：飲品 / 保健品"
+                placeholder="e.g.: Beverages / Health Products"
                 className="bg-white/70 backdrop-blur-sm border-slate-200/80 focus:border-cyan-300 focus:ring-cyan-200/50"
               />
             </div>
@@ -1016,7 +1016,7 @@ function AddProductDialog({
               loading={isLoading}
               icon={!isLoading ? <Check className="w-4 h-4" /> : undefined}
             >
-              StartMonitor
+              Start Monitoring
             </HoloButton>
           </div>
         </form>
@@ -1027,7 +1027,7 @@ function AddProductDialog({
 
 
 // =============================================
-// EditproductsDialog
+// Edit Product Dialog
 // =============================================
 
 function EditProductDialog({
@@ -1045,7 +1045,7 @@ function EditProductDialog({
   const [error, setError] = useState('')
   const open = !!product
 
-  // 當 product 變更時Sync表單
+  // Sync form when product changes
   useEffect(() => {
     if (product) {
       setFormData({
@@ -1061,9 +1061,9 @@ function EditProductDialog({
     e.preventDefault()
     setError('')
 
-    // HKTVmall URL FormatValidate
+    // HKTVmall URL format validation
     if (formData.url.includes('hktvmall.com') && !/\/p\/[A-Z]\d{7,}[A-Za-z0-9_-]*/i.test(formData.url)) {
-      setError('HKTVmall URL RequiredInclude /p/{SKU} Format, e.g.: .../p/H0340001 or .../p/B1600001_S_F03A-00')
+      setError('HKTVmall URL must include /p/{SKU} format, e.g.: .../p/H0340001 or .../p/B1600001_S_F03A-00')
       return
     }
 
@@ -1084,10 +1084,10 @@ function EditProductDialog({
       <DialogContent className="sm:max-w-[500px] bg-white/95 backdrop-blur-xl border-slate-200/80 shadow-2xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-            Editproducts
+            Edit Product
           </DialogTitle>
           <DialogDescription>
-            {"修改products URL、Name或分類。HKTVmall URL RequiredInclude /p/H{SKU} Format。"}
+            {"Edit product URL, name, or category. HKTVmall URLs must include /p/H{SKU} format."}
           </DialogDescription>
         </DialogHeader>
 
@@ -1095,7 +1095,7 @@ function EditProductDialog({
           <div className="space-y-4">
             <div className="grid gap-2">
               <Label htmlFor="edit-url" className="text-slate-700">
-                products URL <span className="text-red-500">*</span>
+                Product URL <span className="text-red-500">*</span>
               </Label>
               <div className="relative">
                 <ShoppingCart className="absolute left-3 top-3 h-4 w-4 text-cyan-500" />
@@ -1113,7 +1113,7 @@ function EditProductDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="edit-name" className="text-slate-700">productsName</Label>
+              <Label htmlFor="edit-name" className="text-slate-700">Product Name</Label>
               <Input
                 id="edit-name"
                 value={formData.name}
@@ -1123,12 +1123,12 @@ function EditProductDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="edit-category" className="text-slate-700">分類標籤</Label>
+              <Label htmlFor="edit-category" className="text-slate-700">Category Tag</Label>
               <Input
                 id="edit-category"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                placeholder="例如：飲品 / 保健品"
+                placeholder="e.g.: Beverages / Health Products"
                 className="bg-white/70 backdrop-blur-sm border-slate-200/80 focus:border-cyan-300 focus:ring-cyan-200/50"
               />
             </div>

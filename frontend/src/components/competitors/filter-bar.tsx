@@ -21,16 +21,16 @@ interface FilterBarProps {
 }
 
 const SORT_OPTIONS_PRODUCTS: { key: SortKey; label: string }[] = [
-  { key: 'threat', label: '威脅程度' },
-  { key: 'price_diff', label: '價差 %' },
+  { key: 'threat', label: 'Threat Level' },
+  { key: 'price_diff', label: 'Price Gap %' },
   { key: 'rank', label: 'Ranking' },
-  { key: 'competitors', label: 'Competitor數' },
+  { key: 'competitors', label: 'Competitors' },
   { key: 'name', label: 'Name' },
 ]
 
 const SORT_OPTIONS_MERCHANTS: { key: SortKey; label: string }[] = [
-  { key: 'threat', label: '威脅程度' },
-  { key: 'competitors', label: 'products數' },
+  { key: 'threat', label: 'Threat Level' },
+  { key: 'competitors', label: 'Products' },
   { key: 'name', label: 'Name' },
 ]
 
@@ -63,7 +63,7 @@ export function FilterBar({
             type="text"
             value={search}
             onChange={e => onSearchChange(e.target.value)}
-            placeholder={mode === 'products' ? 'Searchproducts...' : 'Searchmerchants...'}
+            placeholder={mode === 'products' ? 'Search products...' : 'Search merchants...'}
             className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300 focus:border-teal-400"
           />
         </div>
@@ -75,7 +75,7 @@ export function FilterBar({
             onChange={e => onCategoryChange(e.target.value)}
             className="shrink-0 px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300 text-gray-600 bg-white"
           >
-            <option value="">All分類</option>
+            <option value="">All Categories</option>
             {categories.map(c => (
               <option key={c} value={c}>{c}</option>
             ))}
@@ -109,7 +109,7 @@ export function FilterBar({
         </div>
 
         <span className="shrink-0 text-[10px] sm:text-xs text-gray-400">
-          {resultCount === totalCount ? `共 ${totalCount}` : `${resultCount}/${totalCount}`}
+          {resultCount === totalCount ? `Total: ${totalCount}` : `${resultCount}/${totalCount}`}
         </span>
       </div>
     </div>

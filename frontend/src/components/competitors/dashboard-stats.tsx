@@ -60,26 +60,26 @@ export function DashboardStats({ summary, isLoading }: DashboardStatsProps) {
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
       <StatCard
         icon={Building2}
-        label="Trackmerchants"
+        label="Tracked Merchants"
         value={summary.total_competitors}
         color="teal"
       />
       <StatCard
         icon={Package}
-        label="Competitorproducts"
+        label="Competitor Products"
         value={summary.total_tracked_products}
-        sub={`已Pair ${summary.mapped_competitors}`}
+        sub={`${summary.mapped_competitors} paired`}
         color="blue"
       />
       <StatCard
         icon={Target}
-        label="自家products"
+        label="Own Products"
         value={summary.our_products}
         color="purple"
       />
       <StatCard
         icon={TrendingUp}
-        label="我哋最平"
+        label="We Are Cheapest"
         value={`${summary.we_are_cheapest_pct}%`}
         color="emerald"
       />
@@ -91,9 +91,9 @@ export function DashboardStats({ summary, isLoading }: DashboardStatsProps) {
       />
       <StatCard
         icon={Clock}
-        label="平均價差"
+        label="Avg. Price Gap"
         value={`${summary.avg_price_diff_pct > 0 ? '+' : ''}${summary.avg_price_diff_pct}%`}
-        sub={summary.last_scan ? `掃描: ${new Date(summary.last_scan).toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit' })}` : '未掃描'}
+        sub={summary.last_scan ? `Scan: ${new Date(summary.last_scan).toLocaleTimeString('en-HK', { hour: '2-digit', minute: '2-digit' })}` : 'Not scanned'}
         color={summary.avg_price_diff_pct > 0 ? 'emerald' : 'red'}
       />
     </div>
