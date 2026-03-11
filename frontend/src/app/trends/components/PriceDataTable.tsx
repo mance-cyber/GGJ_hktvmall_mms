@@ -1,5 +1,5 @@
 // =============================================
-// 價格數據表格組件
+// PriceDataTable組items
 // =============================================
 
 'use client'
@@ -30,7 +30,7 @@ interface PriceDataTableProps {
 type SortField = 'date' | 'own' | string
 type SortDirection = 'asc' | 'desc'
 
-// 表格行類型
+// Table行Type
 interface TableRow {
   date: string
   own?: PriceDataPoint | null
@@ -45,12 +45,12 @@ export function PriceDataTable({
   const [sortField, setSortField] = useState<SortField>('date')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
 
-  // 處理表格數據
+  // ProcessingTableData
   const tableData = useMemo((): TableRow[] => {
-    // 收集所有唯一日期
+    // 收集所有唯一Date
     const dateMap = new Map<string, Record<string, PriceDataPoint | null>>()
 
-    // 處理自家產品數據
+    // Processing自家ProductData
     if (trends.own) {
       trends.own.forEach((point) => {
         const dateKey = new Date(point.date).toISOString().split('T')[0]
@@ -61,7 +61,7 @@ export function PriceDataTable({
       })
     }
 
-    // 處理競爭對手數據
+    // Processing競爭CompetitorData
     competitors.forEach((comp) => {
       const compTrends = trends[comp.id]
       if (compTrends) {
@@ -75,13 +75,13 @@ export function PriceDataTable({
       }
     })
 
-    // 轉換為數組並排序
+    // Convert為數組並Sort
     const rows: TableRow[] = Array.from(dateMap.entries()).map(([date, data]) => ({
       date,
       ...data,
     }))
 
-    // 排序
+    // Sort
     rows.sort((a, b) => {
       let comparison = 0
 
@@ -101,7 +101,7 @@ export function PriceDataTable({
     return rows
   }, [trends, competitors, sortField, sortDirection])
 
-  // 處理排序
+  // ProcessingSort
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
@@ -111,7 +111,7 @@ export function PriceDataTable({
     }
   }
 
-  // 排序指示器
+  // Sort指示器
   const SortIndicator = ({ field }: { field: SortField }) => {
     if (sortField !== field) {
       return <ChevronDown className="w-4 h-4 text-gray-300" />
@@ -123,7 +123,7 @@ export function PriceDataTable({
     )
   }
 
-  // 格式化日期
+  // Format化Date
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('zh-HK', {
       year: 'numeric',
@@ -132,13 +132,13 @@ export function PriceDataTable({
     })
   }
 
-  // 格式化價格
+  // Format化Price
   const formatPrice = (price: number | null) => {
     if (price === null) return '--'
     return `$${Number(price).toLocaleString()}`
   }
 
-  // 渲染價格單元格
+  // RenderingPrice單元格
   const PriceCell = ({
     point,
     color,
@@ -161,12 +161,12 @@ export function PriceDataTable({
           {formatPrice(point.price)}
         </span>
 
-        {/* 狀態標籤 */}
+        {/* Status label */}
         <div className="flex items-center gap-1">
           {isOutOfStock && (
             <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs bg-red-100 text-red-600">
               <AlertTriangle className="w-3 h-3" />
-              缺貨
+              Out of stock
             </span>
           )}
           {hasPromotion && (
@@ -188,10 +188,10 @@ export function PriceDataTable({
     )
   }
 
-  // 如果沒有數據
+  // 如果沒有Data
   if (tableData.length === 0) {
     return (
-      <div className="py-12 text-center text-gray-500">暫無價格數據</div>
+      <div className="py-12 text-center text-gray-500">暫無PriceData</div>
     )
   }
 
@@ -200,18 +200,18 @@ export function PriceDataTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-200">
-            {/* 日期列 */}
+            {/* Date列 */}
             <th className="text-left py-3 px-4">
               <button
                 onClick={() => handleSort('date')}
                 className="flex items-center gap-1 font-medium text-gray-700 hover:text-gray-900"
               >
-                日期
+                Date
                 <SortIndicator field="date" />
               </button>
             </th>
 
-            {/* 自家產品列 */}
+            {/* 自家Product列 */}
             <th className="text-left py-3 px-4">
               <button
                 onClick={() => handleSort('own')}
@@ -227,7 +227,7 @@ export function PriceDataTable({
               </button>
             </th>
 
-            {/* 競爭對手列 */}
+            {/* 競爭Competitor列 */}
             {competitors.map((comp, index) => (
               <th key={comp.id} className="text-left py-3 px-4">
                 <button
@@ -254,12 +254,12 @@ export function PriceDataTable({
                 rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
               }`}
             >
-              {/* 日期 */}
+              {/* Date */}
               <td className="py-3 px-4 text-gray-600">
                 {formatDate(row.date)}
               </td>
 
-              {/* 自家產品價格 */}
+              {/* 自家ProductPrice */}
               <td className="py-3 px-4">
                 <PriceCell
                   point={row.own as PriceDataPoint | null}
@@ -267,7 +267,7 @@ export function PriceDataTable({
                 />
               </td>
 
-              {/* 競爭對手價格 */}
+              {/* 競爭CompetitorPrice */}
               {competitors.map((comp, index) => (
                 <td key={comp.id} className="py-3 px-4">
                   <PriceCell
@@ -281,11 +281,11 @@ export function PriceDataTable({
         </tbody>
       </table>
 
-      {/* 表格底部統計 */}
+      {/* Table底部統計 */}
       <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between text-sm text-gray-500">
-        <span>共 {tableData.length} 條記錄</span>
+        <span>共 {tableData.length} 條Record</span>
         <span>
-          顯示 {ownProduct.name} 與 {competitors.length} 個競爭對手的價格對比
+          Display {ownProduct.name} 與 {competitors.length} 個競爭Competitor的Price對比
         </span>
       </div>
     </div>

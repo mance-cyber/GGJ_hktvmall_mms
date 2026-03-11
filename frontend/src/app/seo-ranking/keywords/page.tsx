@@ -1,7 +1,7 @@
 "use client";
 
 // =============================================
-// 關鍵詞管理頁面
+// 關鍵詞Managementpage
 // =============================================
 
 import { useState } from "react";
@@ -45,7 +45,7 @@ export default function KeywordsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingKeyword, setEditingKeyword] = useState<KeywordConfig | null>(null);
 
-  // 獲取關鍵詞列表
+  // Fetch關鍵詞List
   const { data, isLoading, refetch } = useKeywordConfigs({
     search: search || undefined,
     keyword_type: typeFilter || undefined,
@@ -54,10 +54,10 @@ export default function KeywordsPage() {
     page_size: 20,
   });
 
-  // 刪除關鍵詞
+  // Delete關鍵詞
   const deleteKeyword = useDeleteKeywordConfig();
 
-  // 更新關鍵詞
+  // Update關鍵詞
   const updateKeyword = useUpdateKeywordConfig();
 
   const handleDelete = async (id: string) => {
@@ -91,7 +91,7 @@ export default function KeywordsPage() {
   return (
     <PageTransition>
       <div className="space-y-6 p-6">
-        {/* ==================== 頁面標題 ==================== */}
+        {/* ==================== Page title ==================== */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -113,10 +113,10 @@ export default function KeywordsPage() {
           </div>
         </div>
 
-        {/* ==================== 篩選區 ==================== */}
+        {/* ==================== Filter區 ==================== */}
         <HoloCard className="p-4">
           <div className="flex flex-wrap items-center gap-4">
-            {/* 搜尋 */}
+            {/* Search */}
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
               <input
@@ -131,7 +131,7 @@ export default function KeywordsPage() {
               />
             </div>
 
-            {/* 類型篩選 */}
+            {/* TypeFilter */}
             <select
               value={typeFilter}
               onChange={(e) => {
@@ -148,7 +148,7 @@ export default function KeywordsPage() {
               <option value="competitor">{t['keywords.type_competitor']}</option>
             </select>
 
-            {/* 狀態篩選 */}
+            {/* StateFilter */}
             <select
               value={activeFilter === undefined ? "" : activeFilter ? "active" : "inactive"}
               onChange={(e) => {
@@ -165,7 +165,7 @@ export default function KeywordsPage() {
           </div>
         </HoloCard>
 
-        {/* ==================== 關鍵詞列表 ==================== */}
+        {/* ==================== 關鍵詞List ==================== */}
         <HoloCard>
           <HoloPanelHeader
             title={t['keywords.table_title']}
@@ -223,12 +223,12 @@ export default function KeywordsPage() {
                           </div>
                         </td>
 
-                        {/* 類型 */}
+                        {/* Type */}
                         <td className="py-4">
                           <KeywordTypeBadge type={keyword.keyword_type} />
                         </td>
 
-                        {/* Google 排名 */}
+                        {/* Google Ranking */}
                         <td className="py-4 text-center">
                           <RankDisplay
                             rank={keyword.latest_google_rank}
@@ -237,7 +237,7 @@ export default function KeywordsPage() {
                           />
                         </td>
 
-                        {/* HKTVmall 排名 */}
+                        {/* HKTVmall Ranking */}
                         <td className="py-4 text-center">
                           <RankDisplay
                             rank={keyword.latest_hktvmall_rank}
@@ -246,7 +246,7 @@ export default function KeywordsPage() {
                           />
                         </td>
 
-                        {/* 狀態 */}
+                        {/* State */}
                         <td className="py-4 text-center">
                           <button
                             onClick={() => handleToggleActive(keyword)}
@@ -260,7 +260,7 @@ export default function KeywordsPage() {
                           </button>
                         </td>
 
-                        {/* 操作 */}
+                        {/* Operation */}
                         <td className="py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <button
@@ -317,7 +317,7 @@ export default function KeywordsPage() {
           </div>
         </HoloCard>
 
-        {/* 新增/編輯對話框 */}
+        {/* Add/EditDialog */}
         <KeywordConfigDialog
           isOpen={isDialogOpen}
           onClose={handleDialogClose}
@@ -328,7 +328,7 @@ export default function KeywordsPage() {
   );
 }
 
-// ==================== 輔助組件 ====================
+// ==================== 輔助組items ====================
 
 function KeywordTypeBadge({ type }: { type: string }) {
   const { t } = useLocale();

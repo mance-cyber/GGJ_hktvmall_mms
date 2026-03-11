@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
 
   const checkUser = async () => {
-    // 使用安全 token 管理器
+    // 使用Security token Management器
     const token = getToken()
     if (!token) {
       setLoading(false)
@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      // Token 過期檢查已由 secure-token 模組處理
+      // Token ExpiredCheck已由 secure-token 模組Processing
       const decoded: any = jwtDecode(token)
       if (decoded.exp * 1000 < Date.now()) {
         throw new Error("Token expired")
@@ -69,20 +69,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (data: any) => {
     const res = await authApi.login(data)
-    // 使用安全 token 管理器
+    // 使用Security token Management器
     setTokenFromJWT(res.access_token)
     await checkUser()
   }
 
   const loginGoogle = async (credential: string) => {
     const res = await authApi.loginGoogle(credential)
-    // 使用安全 token 管理器
+    // 使用Security token Management器
     setTokenFromJWT(res.access_token)
     await checkUser()
   }
 
   const logout = () => {
-    // 使用安全 token 管理器
+    // 使用Security token Management器
     clearToken()
     setUser(null)
     router.push("/login")

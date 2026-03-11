@@ -60,20 +60,20 @@ export function DashboardStats({ summary, isLoading }: DashboardStatsProps) {
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
       <StatCard
         icon={Building2}
-        label="追蹤商戶"
+        label="Trackmerchants"
         value={summary.total_competitors}
         color="teal"
       />
       <StatCard
         icon={Package}
-        label="競品商品"
+        label="Competitorproducts"
         value={summary.total_tracked_products}
-        sub={`已配對 ${summary.mapped_competitors}`}
+        sub={`已Pair ${summary.mapped_competitors}`}
         color="blue"
       />
       <StatCard
         icon={Target}
-        label="自家商品"
+        label="自家products"
         value={summary.our_products}
         color="purple"
       />
@@ -85,7 +85,7 @@ export function DashboardStats({ summary, isLoading }: DashboardStatsProps) {
       />
       <StatCard
         icon={AlertTriangle}
-        label="24h 警報"
+        label="24h Alert"
         value={summary.price_alerts_24h}
         color={summary.price_alerts_24h > 0 ? 'amber' : 'teal'}
       />

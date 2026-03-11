@@ -1,5 +1,5 @@
 // =============================================
-// 圖片生成結果頁面
+// Image Generation Results Page
 // =============================================
 
 'use client'
@@ -35,7 +35,7 @@ export default function ImageGenerationResultPage({
   const [inputImageUrls, setInputImageUrls] = useState<Record<string, string>>({})
   const [showAnalysis, setShowAnalysis] = useState<Record<string, boolean>>({})
 
-  // 獲取輸入圖片的預簽名 URL
+  // Fetch presigned URLs for input images URL
   const fetchInputImageUrls = useCallback(async (images: InputImage[]) => {
     const urls: Record<string, string> = {}
     for (const image of images) {
@@ -54,16 +54,16 @@ export default function ImageGenerationResultPage({
     }
   }, [inputImageUrls])
 
-  // 獲取任務狀態
+  // Fetch任務State
   const fetchTaskStatus = async () => {
     try {
       const data = await getTaskStatus(params.taskId)
       setTask(data)
       setError(null)
 
-      // 如果任務還在處理中，繼續輪詢
+      // If task is still processing, continue polling
       if (data.status === 'processing' || data.status === 'pending' || data.status === 'analyzing') {
-        setTimeout(fetchTaskStatus, 2000) // 每 2 秒輪詢一次
+        setTimeout(fetchTaskStatus, 2000) // Poll every 2 seconds
       }
     } catch (err: any) {
       console.error('Failed to fetch task status:', err)
@@ -77,14 +77,14 @@ export default function ImageGenerationResultPage({
     fetchTaskStatus()
   }, [params.taskId])
 
-  // 當任務數據加載後，獲取輸入圖片的預簽名 URL
+  // After task data loads, fetch presigned URLs for input images URL
   useEffect(() => {
     if (task?.input_images && task.input_images.length > 0) {
       fetchInputImageUrls(task.input_images)
     }
   }, [task?.input_images, fetchInputImageUrls])
 
-  // 渲染進度條
+  // Rendering進度條
   const renderProgressBar = () => {
     if (!task) return null
 
@@ -138,7 +138,7 @@ export default function ImageGenerationResultPage({
     )
   }
 
-  // 渲染狀態指示器
+  // RenderingState指示器
   const renderStatusIndicator = () => {
     if (!task) return null
 
@@ -206,7 +206,7 @@ export default function ImageGenerationResultPage({
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
-      {/* 標題 */}
+      {/* Title */}
       <div className="mb-6 flex items-center gap-4">
         <button
           onClick={() => router.push('/image-generation/upload')}
@@ -225,10 +225,10 @@ export default function ImageGenerationResultPage({
       {/* 進度條 */}
       {renderProgressBar()}
 
-      {/* 狀態指示器 */}
+      {/* State指示器 */}
       {renderStatusIndicator()}
 
-      {/* 輸入圖片和 AI 分析結果 */}
+      {/* Input images and AI analysis results */}
       {task.input_images.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
@@ -238,7 +238,7 @@ export default function ImageGenerationResultPage({
             {task.input_images.map((image) => (
               <div key={image.id} className="border border-gray-200 rounded-lg overflow-hidden">
                 <div className="flex flex-col md:flex-row">
-                  {/* 圖片預覽 */}
+                  {/* Image預覽 */}
                   <div className="relative w-full md:w-48 h-48 flex-shrink-0 bg-gray-100">
                     {inputImageUrls[image.id] ? (
                       <Image
@@ -255,7 +255,7 @@ export default function ImageGenerationResultPage({
                     )}
                   </div>
 
-                  {/* 圖片信息和分析結果 */}
+                  {/* Image info and analysis results */}
                   <div className="flex-1 p-4">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="font-medium text-gray-900 truncate">{image.file_name}</h3>
@@ -267,10 +267,10 @@ export default function ImageGenerationResultPage({
                       )}
                     </div>
 
-                    {/* AI 分析結果摘要 */}
+                    {/* AI AnalysisResult摘要 */}
                     {image.analysis_result && (
                       <div className="mt-3">
-                        {/* 產品類型 */}
+                        {/* ProductType */}
                         {image.analysis_result.product_type && (
                           <p className="text-sm text-gray-600 mb-2">
                             <span className="font-medium">{t['image_gen.results_product_type']}</span>
@@ -278,7 +278,7 @@ export default function ImageGenerationResultPage({
                           </p>
                         )}
 
-                        {/* 視覺描述 */}
+                        {/* 視覺Description */}
                         {image.analysis_result.visual_description && (
                           <p className="text-sm text-gray-600 mb-2">
                             <span className="font-medium">{t['image_gen.results_ai_description']}</span>
@@ -319,7 +319,7 @@ export default function ImageGenerationResultPage({
                       </div>
                     )}
 
-                    {/* 分析中狀態 */}
+                    {/* Analysis中State */}
                     {task.status === 'analyzing' && !image.analysis_result && (
                       <div className="mt-3 flex items-center gap-2 text-sm text-purple-600">
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -334,7 +334,7 @@ export default function ImageGenerationResultPage({
         </div>
       )}
 
-      {/* 輸出圖片 */}
+      {/* OutputImage */}
       {task.status === 'completed' && task.output_images.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
@@ -344,7 +344,7 @@ export default function ImageGenerationResultPage({
         </div>
       )}
 
-      {/* 處理中提示 */}
+      {/* Processing中提示 */}
       {task.status === 'analyzing' && (
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 text-center">
           <Brain className="w-12 h-12 text-purple-600 mx-auto mb-3 animate-pulse" />

@@ -47,9 +47,9 @@ export function ModelCombobox({
   onValueChange,
   fetchedModels = [],
   presetModels = [],
-  placeholder = "選擇模型...",
-  searchPlaceholder = "搜尋模型...",
-  emptyText = "找不到符合的模型",
+  placeholder = "SelectModel...",
+  searchPlaceholder = "SearchModel...",
+  emptyText = "找不到符合的Model",
   className,
 }: ModelComboboxProps) {
   const [open, setOpen] = React.useState(false)
@@ -92,7 +92,7 @@ export function ModelCombobox({
             {fetchedModels.length > 0 && (
               <CommandGroup heading={
                 <span className="text-green-600">
-                  ✓ API 可用模型 ({fetchedModels.length})
+                  ✓ API 可用Model ({fetchedModels.length})
                 </span>
               }>
                 {fetchedModels.map((model) => (
@@ -123,7 +123,7 @@ export function ModelCombobox({
             )}
             
             {presetModels.length > 0 && (
-              <CommandGroup heading="預設模型">
+              <CommandGroup heading="DefaultModel">
                 {presetModels.map((model) => (
                   <CommandItem
                     key={`preset-${model.id}`}

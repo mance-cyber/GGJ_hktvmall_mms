@@ -7,7 +7,7 @@ import {
   hasValidToken,
 } from "@/lib/secure-token";
 
-// ==================== API 客戶端配置 ====================
+// ==================== API 客戶端Configuration ====================
 
 /**
  * API 基礎 URL
@@ -16,11 +16,11 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 /**
- * 請求超時時間（毫秒）
+ * RequestTimeoutTime（毫秒）
  */
 const REQUEST_TIMEOUT = 30000;
 
-// ==================== Axios 實例創建 ====================
+// ==================== Axios 實例Create ====================
 
 /**
  * 主要 API 客戶端實例
@@ -34,18 +34,18 @@ export const apiClient: AxiosInstance = axios.create({
   },
 });
 
-// ==================== 認證 Token 管理 ====================
-// 使用安全 Token 管理器（sessionStorage + 內存緩存）
+// ==================== Authentication Token Management ====================
+// Use secure token manager (sessionStorage + memory cache)
 
 /**
- * 從安全存儲獲取 Token
+ * 從Security存儲Fetch Token
  */
 function getAuthToken(): string | null {
   return getToken();
 }
 
 /**
- * 儲存 Token 到安全存儲
+ * Save token to secure storage
  * @param token - JWT token
  */
 export function setAuthToken(token: string): void {
@@ -53,23 +53,23 @@ export function setAuthToken(token: string): void {
 }
 
 /**
- * 清除安全存儲的 Token
+ * ClearSecurity存儲的 Token
  */
 export function clearAuthToken(): void {
   clearToken();
 }
 
 /**
- * 檢查是否有有效的 Token
+ * Checkwhether有Valid的 Token
  */
 export function hasAuthToken(): boolean {
   return hasValidToken();
 }
 
-// ==================== 請求攔截器 ====================
+// ==================== RequestIntercept器 ====================
 
 /**
- * 請求攔截器：自動添加認證 Token
+ * Request interceptor: auto-add authentication Token
  */
 apiClient.interceptors.request.use(
   (config) => {
@@ -79,7 +79,7 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // 記錄請求（僅開發環境）
+    // RecordRequest（僅DevelopmentEnvironment）
     if (process.env.NODE_ENV === "development") {
       console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
     }
@@ -92,26 +92,26 @@ apiClient.interceptors.request.use(
   }
 );
 
-// ==================== 響應攔截器 ====================
+// ==================== ResponseIntercept器 ====================
 
 /**
- * 響應攔截器：統一處理錯誤與數據格式
+ * Response interceptor: unified error handling and data formatting
  */
 apiClient.interceptors.response.use(
   (response) => {
-    // 記錄響應（僅開發環境）
+    // RecordResponse（僅DevelopmentEnvironment）
     if (process.env.NODE_ENV === "development") {
       console.log(`[API Response] ${response.config.url}`, response.data);
     }
 
-    // 直接返回 data 部分
+    // Return data part directly
     return response.data;
   },
   (error: AxiosError<ApiError>) => {
-    // 統一錯誤處理
+    // UnifiedErrorProcessing
     const errorMessage = handleApiError(error);
 
-    // 記錄錯誤
+    // RecordError
     console.error("[API Error]", {
       url: error.config?.url,
       method: error.config?.method,
@@ -124,70 +124,70 @@ apiClient.interceptors.response.use(
   }
 );
 
-// ==================== 錯誤處理 ====================
+// ==================== ErrorProcessing ====================
 
 /**
- * 處理 API 錯誤
- * @param error - Axios 錯誤物件
- * @returns 錯誤訊息
+ * Processing API Error
+ * @param error - Axios Error物items
+ * @returns Error訊息
  */
 function handleApiError(error: AxiosError<ApiError>): string {
-  // 網路錯誤
+  // 網路Error
   if (!error.response) {
     if (error.code === "ECONNABORTED") {
-      return "請求超時，請稍後再試";
+      return "RequestTimeout，請稍後再試";
     }
-    return "網路連線異常，請檢查您的網路設定";
+    return "Network connection error, please check your networkSettings";
   }
 
-  // HTTP 狀態碼錯誤
+  // HTTP State碼Error
   const status = error.response.status;
   const errorData = error.response.data;
 
   switch (status) {
     case 400:
-      return errorData?.message || "請求參數錯誤";
+      return errorData?.message || "RequestParameterError";
 
     case 401:
-      // 未授權，清除 Token 並重定向到登入頁
+      // Unauthorized, clear token and redirect to login頁
       clearAuthToken();
       if (typeof window !== "undefined") {
         window.location.href = "/login";
       }
-      return "登入已過期，請重新登入";
+      return "Login已Expired，請Re-Login";
 
     case 403:
-      return "您沒有權限執行此操作";
+      return "您沒有Permission執行此Operation";
 
     case 404:
-      return errorData?.message || "請求的資源不存在";
+      return errorData?.message || "Request的資源不存在";
 
     case 409:
-      return errorData?.message || "資料衝突，請重新整理後再試";
+      return errorData?.message || "資料衝突，請Re-整理後再試";
 
     case 422:
-      return errorData?.message || "資料驗證失敗";
+      return errorData?.message || "資料ValidateFailed";
 
     case 429:
-      return "請求過於頻繁，請稍後再試";
+      return "Too many requests, please try again later";
 
     case 500:
-      return "伺服器錯誤，請稍後再試";
+      return "ServerError，請稍後再試";
 
     case 502:
     case 503:
     case 504:
-      return "服務暫時無法使用，請稍後再試";
+      return "Service temporarily unavailable, please try again later";
 
     default:
-      return errorData?.message || "發生未知錯誤";
+      return errorData?.message || "occurredUnknownError";
   }
 }
 
-// ==================== 通用請求方法 ====================
+// ==================== 通用RequestMethod ====================
 
 /**
- * GET 請求
+ * GET Request
  */
 export async function get<T>(
   url: string,
@@ -197,7 +197,7 @@ export async function get<T>(
 }
 
 /**
- * POST 請求
+ * POST Request
  */
 export async function post<T, D = any>(
   url: string,
@@ -208,7 +208,7 @@ export async function post<T, D = any>(
 }
 
 /**
- * PUT 請求
+ * PUT Request
  */
 export async function put<T, D = any>(
   url: string,
@@ -219,7 +219,7 @@ export async function put<T, D = any>(
 }
 
 /**
- * PATCH 請求
+ * PATCH Request
  */
 export async function patch<T, D = any>(
   url: string,
@@ -230,7 +230,7 @@ export async function patch<T, D = any>(
 }
 
 /**
- * DELETE 請求
+ * DELETE Request
  */
 export async function del<T>(
   url: string,
@@ -239,10 +239,10 @@ export async function del<T>(
   return apiClient.delete<any, T>(url, config);
 }
 
-// ==================== 檔案上傳 ====================
+// ==================== 檔案Upload ====================
 
 /**
- * 上傳檔案
+ * Upload檔案
  */
 export async function uploadFile(
   url: string,
@@ -267,17 +267,17 @@ export async function uploadFile(
   });
 }
 
-// ==================== 檔案下載 ====================
+// ==================== 檔案Download ====================
 
 /**
- * 下載檔案
+ * Download檔案
  */
 export async function downloadFile(
   url: string,
   filename: string
 ): Promise<void> {
   try {
-    // 使用原始 axios 實例以獲取完整響應，繞過響應攔截器
+    // Use raw axios instance for full response, bypass response interceptor
     const response = await axios.get(API_BASE_URL + url, {
       responseType: "blob",
       headers: {
@@ -285,18 +285,18 @@ export async function downloadFile(
       },
     });
 
-    // 建立下載連結
+    // Create download link
     const blob = new Blob([response.data]);
     const downloadUrl = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = downloadUrl;
     link.download = filename;
 
-    // 觸發下載
+    // TriggerDownload
     document.body.appendChild(link);
     link.click();
 
-    // 清理
+    // Clean up
     document.body.removeChild(link);
     window.URL.revokeObjectURL(downloadUrl);
   } catch (error) {
@@ -305,26 +305,26 @@ export async function downloadFile(
   }
 }
 
-// ==================== 請求取消 ====================
+// ==================== RequestCancel ====================
 
 /**
- * 建立可取消的請求
+ * Create cancellable request
  */
 export function createCancelToken() {
   return axios.CancelToken.source();
 }
 
 /**
- * 判斷是否為取消錯誤
+ * Determine if cancellation error
  */
 export function isCancelError(error: any): boolean {
   return axios.isCancel(error);
 }
 
-// ==================== 工具函數 ====================
+// ==================== 工具Function ====================
 
 /**
- * 建立查詢字串
+ * 建立QueryString
  */
 export function buildQueryString(params: Record<string, any>): string {
   const filteredParams = Object.entries(params).reduce((acc, [key, value]) => {
@@ -339,7 +339,7 @@ export function buildQueryString(params: Record<string, any>): string {
 }
 
 /**
- * 建立完整 URL（含查詢字串）
+ * 建立完整 URL（含QueryString）
  */
 export function buildUrl(
   path: string,
@@ -351,10 +351,10 @@ export function buildUrl(
   return queryString ? `${path}?${queryString}` : path;
 }
 
-// ==================== 健康檢查 ====================
+// ==================== 健康Check ====================
 
 /**
- * 檢查 API 服務是否可用
+ * Check if API service is available
  */
 export async function checkApiHealth(): Promise<boolean> {
   try {
@@ -366,7 +366,7 @@ export async function checkApiHealth(): Promise<boolean> {
 }
 
 /**
- * 獲取 API 版本資訊
+ * Fetch API VersionInformation
  */
 export async function getApiVersion(): Promise<{
   version: string;

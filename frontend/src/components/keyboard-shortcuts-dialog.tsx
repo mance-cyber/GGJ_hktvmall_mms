@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Keyboard } from 'lucide-react'
 
 // =============================================
-// 類型定義
+// Type definitions
 // =============================================
 
 interface KeyboardShortcutsDialogProps {
@@ -27,25 +27,25 @@ interface ShortcutItem {
 
 const shortcutGroups = [
   {
-    title: '導航',
+    title: 'Navigation',
     shortcuts: [
       { key: 'G', ctrl: true, description: '前往儀表板' },
-      { key: 'A', ctrl: true, description: '前往警報中心' },
-      { key: 'C', ctrl: true, shift: true, description: '前往競品監測' },
+      { key: 'A', ctrl: true, description: '前往Alert中心' },
+      { key: 'C', ctrl: true, shift: true, description: '前往CompetitorMonitor' },
     ]
   },
   {
-    title: '操作',
+    title: 'Operation',
     shortcuts: [
-      { key: '/', description: '聚焦搜索框' },
-      { key: '?', shift: true, description: '顯示此幫助' },
-      { key: 'Esc', description: '關閉彈窗' },
+      { key: '/', description: '聚焦Search box' },
+      { key: '?', shift: true, description: 'Display此幫助' },
+      { key: 'Esc', description: 'ClosePopup' },
     ]
   },
 ]
 
 // =============================================
-// 按鍵渲染組件
+// 按鍵Rendering組items
 // =============================================
 
 function KeyBadge({ children }: { children: React.ReactNode }) {
@@ -83,11 +83,11 @@ function ShortcutKeys({ shortcut }: { shortcut: ShortcutItem }) {
 }
 
 // =============================================
-// 主組件
+// 主組items
 // =============================================
 
 export function KeyboardShortcutsDialog({ open, onClose }: KeyboardShortcutsDialogProps) {
-  // ESC 關閉
+  // ESC Close
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       onClose()
@@ -119,7 +119,7 @@ export function KeyboardShortcutsDialog({ open, onClose }: KeyboardShortcutsDial
             onClick={onClose}
           />
 
-          {/* 對話框 */}
+          {/* Dialog */}
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -129,14 +129,14 @@ export function KeyboardShortcutsDialog({ open, onClose }: KeyboardShortcutsDial
               className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* 標題欄 */}
+              {/* TitleBar */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-blue-100 rounded-lg">
                     <Keyboard className="w-5 h-5 text-blue-600" />
                   </div>
                   <h2 className="text-lg font-semibold text-gray-900">
-                    鍵盤快捷鍵
+                    Keyboard shortcuts
                   </h2>
                 </div>
                 <button
@@ -147,7 +147,7 @@ export function KeyboardShortcutsDialog({ open, onClose }: KeyboardShortcutsDial
                 </button>
               </div>
 
-              {/* 快捷鍵列表 */}
+              {/* 快捷鍵List */}
               <div className="px-6 py-4 space-y-6 max-h-[60vh] overflow-y-auto">
                 {shortcutGroups.map((group) => (
                   <div key={group.title}>
@@ -174,7 +174,7 @@ export function KeyboardShortcutsDialog({ open, onClose }: KeyboardShortcutsDial
               {/* 底部提示 */}
               <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
                 <p className="text-xs text-gray-500 text-center">
-                  按 <KeyBadge>Esc</KeyBadge> 關閉此視窗
+                  Press <KeyBadge>Esc</KeyBadge> to close this window
                 </p>
               </div>
             </motion.div>

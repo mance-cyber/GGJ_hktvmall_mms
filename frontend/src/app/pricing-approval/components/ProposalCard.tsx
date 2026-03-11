@@ -1,5 +1,5 @@
 // =============================================
-// 單個提案卡片組件
+// Individual Proposal Card Component
 // =============================================
 
 'use client'
@@ -12,7 +12,7 @@ import type { PriceProposal, SourceType } from '@/lib/api/pricing'
 import { calculatePriceChangePercent } from '@/lib/api/pricing'
 
 // =============================================
-// 來源類型徽章
+// Source Type Badge
 // =============================================
 
 interface SourceBadgeProps {
@@ -23,17 +23,17 @@ interface SourceBadgeProps {
 function SourceBadge({ sourceType, conversationId }: SourceBadgeProps) {
   const config: Record<SourceType, { label: string; icon: React.ReactNode; variant: 'default' | 'info' | 'warning' }> = {
     manual: {
-      label: '手動',
+      label: 'Manual',
       icon: <User className="w-3 h-3" />,
       variant: 'info',
     },
     ai_suggestion: {
-      label: 'AI 建議',
+      label: 'AI Suggestion',
       icon: <Bot className="w-3 h-3" />,
       variant: 'default',
     },
     auto_alert: {
-      label: '自動告警',
+      label: 'Auto Alert',
       icon: <AlertTriangle className="w-3 h-3" />,
       variant: 'warning',
     },
@@ -50,7 +50,7 @@ function SourceBadge({ sourceType, conversationId }: SourceBadgeProps) {
 }
 
 // =============================================
-// 對話連結組件
+// Conversation Link Component
 // =============================================
 
 interface ConversationLinkProps {
@@ -64,7 +64,7 @@ function ConversationLink({ conversationId }: ConversationLinkProps) {
       className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline"
     >
       <MessageSquare className="w-3 h-3" />
-      查看對話
+      View Conversation
     </Link>
   )
 }
@@ -96,7 +96,7 @@ export function ProposalCard({
   const changeColor = isDecrease ? 'text-green-600' : 'text-red-600'
   const changeBg = isDecrease ? 'bg-green-100' : 'bg-red-100'
 
-  // 格式化相對時間
+  // Format relative time
   const formatRelativeTime = (dateStr: string) => {
     const date = new Date(dateStr)
     const now = new Date()
@@ -105,12 +105,12 @@ export function ProposalCard({
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
-    if (diffMins < 60) return `${diffMins} 分鐘前`
-    if (diffHours < 24) return `${diffHours} 小時前`
-    return `${diffDays} 天前`
+    if (diffMins < 60) return `${diffMins} min ago`
+    if (diffHours < 24) return `${diffHours} hr ago`
+    return `${diffDays} days ago`
   }
 
-  // 格式化價格
+  // Format price
   const formatPrice = (price: number) => {
     return `$${price.toLocaleString('zh-HK', { minimumFractionDigits: 0 })}`
   }
@@ -126,26 +126,26 @@ export function ProposalCard({
           />
         </div>
 
-        {/* 內容 */}
+        {/* Content */}
         <div className="flex-1 min-w-0">
-          {/* 產品信息 */}
+          {/* Product Info */}
           <div className="flex items-center gap-2 mb-2">
             <h3 className="font-medium text-gray-900 truncate">
-              {proposal.product_name || '未知產品'}
+              {proposal.product_name || 'Unknown Product'}
             </h3>
             {proposal.product_sku && (
               <HoloBadge variant="default" size="sm">
                 {proposal.product_sku}
               </HoloBadge>
             )}
-            {/* 來源類型徽章 */}
+            {/* Source Type Badge */}
             <SourceBadge
               sourceType={proposal.source_type || 'manual'}
               conversationId={proposal.source_conversation_id}
             />
           </div>
 
-          {/* 價格變化 */}
+          {/* Price Change */}
           <div className="flex items-center gap-2 mb-3">
             <span className="text-lg font-semibold text-gray-700">
               {formatPrice(proposal.current_price)}
@@ -159,27 +159,27 @@ export function ProposalCard({
             </span>
           </div>
 
-          {/* AI 理由 */}
+          {/* AI Reasoning */}
           {proposal.reason && (
             <p className="text-sm text-gray-600 mb-2 line-clamp-2">
               {proposal.reason}
             </p>
           )}
 
-          {/* 元信息 */}
+          {/* Meta Info */}
           <div className="flex items-center gap-4 text-xs text-gray-500">
-            <span>建議時間: {formatRelativeTime(proposal.created_at)}</span>
+            <span>Suggested: {formatRelativeTime(proposal.created_at)}</span>
             {proposal.ai_model_used && (
-              <span>模型: {proposal.ai_model_used}</span>
+              <span>Model: {proposal.ai_model_used}</span>
             )}
-            {/* 對話連結 */}
+            {/* Conversation Link */}
             {proposal.source_conversation_id && (
               <ConversationLink conversationId={proposal.source_conversation_id} />
             )}
           </div>
         </div>
 
-        {/* 操作按鈕 */}
+        {/* Action buttons */}
         <div className="flex items-center gap-2 flex-shrink-0">
           <HoloButton
             variant="primary"
@@ -189,7 +189,7 @@ export function ProposalCard({
             className="bg-green-500 hover:bg-green-600 text-white"
           >
             <Check className="w-4 h-4 mr-1" />
-            批准
+            Approve
           </HoloButton>
           <HoloButton
             variant="secondary"
@@ -199,7 +199,7 @@ export function ProposalCard({
             className="hover:bg-red-50 hover:text-red-600 hover:border-red-200"
           >
             <X className="w-4 h-4 mr-1" />
-            拒絕
+            Reject
           </HoloButton>
         </div>
       </div>

@@ -64,7 +64,7 @@ interface TeamStatus {
 }
 
 // =============================================
-// Agent 圖標映射
+// Agent icon mapping
 // =============================================
 
 const AGENT_ICONS: Record<string, typeof Bot> = {
@@ -139,7 +139,7 @@ function AgentCard({
         </Button>
       </div>
 
-      {/* 狀態標籤 */}
+      {/* Status label */}
       <div className="flex items-center gap-2 mb-3">
         <Badge variant={agent.enabled ? 'default' : 'secondary'} className={cn(
           'text-xs',
@@ -156,7 +156,7 @@ function AgentCard({
         )}
       </div>
 
-      {/* 訂閱的事件 */}
+      {/* Subscribed events */}
       <div className="space-y-1">
         <span className="text-xs text-slate-400">{t['agent_team.label_subscriptions']}</span>
         <div className="flex flex-wrap gap-1">
@@ -168,7 +168,7 @@ function AgentCard({
         </div>
       </div>
 
-      {/* 擴展信息 */}
+      {/* Extended info */}
       {agent.rules && (
         <div className="mt-3 pt-3 border-t border-slate-100">
           <span className="text-xs text-slate-400">{t['agent_team.label_pricing_rules']}</span>

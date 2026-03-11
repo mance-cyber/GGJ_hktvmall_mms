@@ -55,13 +55,13 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // 預覽模式狀態
+  // 預覽模式State
   const [previewMode, setPreviewMode] = useState(false)
   const [previewData, setPreviewData] = useState<PreviewScrapeResponse | null>(null)
   const [selectedPreviewIndices, setSelectedPreviewIndices] = useState<Set<number>>(new Set())
   const [isConfirming, setIsConfirming] = useState(false)
 
-  // 智能抓取狀態
+  // 智能抓取State
   const [isSmartScraping, setIsSmartScraping] = useState(false)
   const [smartScrapeResult, setSmartScrapeResult] = useState<{
     success: boolean
@@ -103,17 +103,17 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
     onSuccess: (data) => {
       setPreviewData(data)
       setPreviewMode(true)
-      // 默認全選
+      // Default select all
       setSelectedPreviewIndices(new Set(data.products.map((_, i) => i)))
       setIsScraping(false)
     },
     onError: () => {
       setIsScraping(false)
-      alert('抓取失敗，請稍後重試')
+      alert('抓取Failed，請稍後Retry')
     },
   })
 
-  // 智能抓取 mutation（優化版，節省 API 配額）
+  // 智能抓取 mutation（Optimize版，Savings API Quota）
   const smartScrapeMutation = useMutation({
     mutationFn: () => api.smartScrape(params.id, { max_new_products: 10, max_updates: 20 }),
     onSuccess: (data) => {
@@ -126,11 +126,11 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
     },
     onError: (error) => {
       setIsSmartScraping(false)
-      alert(`智能抓取失敗: ${error}`)
+      alert(`智能抓取Failed: ${error}`)
     },
   })
 
-  // 確認保存 mutation
+  // ConfirmSave mutation
   const confirmMutation = useMutation({
     mutationFn: () => {
       if (!previewData) return Promise.reject('No preview data')
@@ -145,15 +145,15 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
       setPreviewData(null)
       setSelectedPreviewIndices(new Set())
       setIsConfirming(false)
-      alert(`成功保存 ${data.saved_count} 個商品`)
+      alert(`Successfully saved ${data.saved_count} 個products`)
     },
     onError: () => {
       setIsConfirming(false)
-      alert('保存失敗，請稍後重試')
+      alert('Save failed, please try again later')
     },
   })
 
-  // 刪除單個商品
+  // Delete single product
   const deleteProductMutation = useMutation({
     mutationFn: (productId: string) => api.deleteProduct(params.id, productId),
     onSuccess: () => {
@@ -162,7 +162,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
     },
   })
 
-  // 批量刪除
+  // Batch delete
   const bulkDeleteMutation = useMutation({
     mutationFn: (productIds: string[]) => api.bulkDeleteProducts(params.id, productIds),
     onSuccess: (data) => {
@@ -170,15 +170,15 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
       queryClient.invalidateQueries({ queryKey: ['category-stats', params.id] })
       setSelectedProducts(new Set())
       setIsDeleting(false)
-      alert(`成功刪除 ${data.deleted_count} 個商品`)
+      alert(`Successfully deleted ${data.deleted_count} 個products`)
     },
     onError: () => {
       setIsDeleting(false)
-      alert('刪除失敗')
+      alert('Delete failed')
     },
   })
 
-  // 切換商品選擇
+  // Toggle product selection
   const toggleProductSelection = (productId: string) => {
     const newSet = new Set(selectedProducts)
     if (newSet.has(productId)) {
@@ -189,7 +189,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
     setSelectedProducts(newSet)
   }
 
-  // 全選/取消全選
+  // Select all / Deselect all
   const toggleSelectAll = () => {
     if (products?.items) {
       if (selectedProducts.size === products.items.length) {
@@ -200,7 +200,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
     }
   }
 
-  // 切換預覽商品選擇
+  // Toggle preview product selection
   const togglePreviewSelection = (index: number) => {
     const newSet = new Set(selectedPreviewIndices)
     if (newSet.has(index)) {
@@ -211,7 +211,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
     setSelectedPreviewIndices(newSet)
   }
 
-  // 預覽全選/取消全選
+  // 預覽Select all / Deselect all
   const togglePreviewSelectAll = () => {
     if (previewData) {
       if (selectedPreviewIndices.size === previewData.products.length) {
@@ -222,7 +222,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
     }
   }
 
-  // 取消預覽
+  // Cancel preview
   const cancelPreview = () => {
     if (previewData) {
       api.cancelPreview(params.id, previewData.preview_id)
@@ -232,12 +232,12 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
     setSelectedPreviewIndices(new Set())
   }
 
-  // ==================== 加載狀態 ====================
+  // ==================== Loading state ====================
   if (categoryLoading) {
     return (
       <PageTransition>
         <div className="space-y-6">
-          {/* 標題骨架屏 */}
+          {/* TitleSkeleton */}
           <div className="flex items-center space-x-4">
             <HoloSkeleton width={40} height={40} variant="circular" />
             <div className="space-y-2">
@@ -245,7 +245,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
               <HoloSkeleton width={150} height={16} />
             </div>
           </div>
-          {/* 統計卡片骨架屏 */}
+          {/* 統計CardSkeleton */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map((i) => (
               <HoloCard key={i} className="p-6">
@@ -260,7 +260,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
               </HoloCard>
             ))}
           </div>
-          {/* 圖表骨架屏 */}
+          {/* ChartSkeleton */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <HoloCard className="p-6">
               <HoloSkeleton width={120} height={24} className="mb-4" />
@@ -276,12 +276,12 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
     )
   }
 
-  // ==================== 預覽審核界面 ====================
+  // ==================== Preview review interface ====================
   if (previewMode && previewData) {
     return (
       <PageTransition>
         <div className="space-y-6">
-          {/* 預覽標題 */}
+          {/* Preview title */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <HoloButton
@@ -324,7 +324,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
             </div>
           </div>
 
-          {/* 錯誤提示 */}
+          {/* Error hint */}
           {previewData.errors.length > 0 && (
             <HoloCard glowColor="purple" className="p-4 bg-amber-50/80">
               <div className="flex items-start">
@@ -336,7 +336,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
                       <li key={i}>{err}</li>
                     ))}
                     {previewData.errors.length > 3 && (
-                      <li>還有 {previewData.errors.length - 3} 個錯誤...</li>
+                      <li>And {previewData.errors.length - 3} more errors...</li>
                     )}
                   </ul>
                 </div>
@@ -344,7 +344,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
             </HoloCard>
           )}
 
-          {/* 預覽商品列表 */}
+          {/* Preview product list */}
           <HoloCard glowColor="cyan">
             <HoloPanelHeader
               title={`${t['category_detail.pending_products']} (${previewData.products.length})`}
@@ -416,11 +416,11 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
     )
   }
 
-  // ==================== 主頁面 ====================
+  // ==================== Main page ====================
   return (
     <PageTransition>
       <div className="space-y-6">
-        {/* 頁面標題 */}
+        {/* Page title */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Link
@@ -476,7 +476,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
           </div>
         </div>
 
-        {/* 智能抓取結果通知 */}
+        {/* 智能抓取ResultNotification */}
         {smartScrapeResult && (
           <HoloCard
             glowColor={smartScrapeResult.success ? 'green' : 'purple'}
@@ -511,7 +511,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
           </HoloCard>
         )}
 
-        {/* 統計卡片 */}
+        {/* 統計Card */}
         <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <DataMetric
             label={t['category_detail.total_products']}
@@ -545,9 +545,9 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
           />
         </StaggerContainer>
 
-        {/* 圖表區域 */}
+        {/* Chart area */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* 價格分佈 */}
+          {/* Price distribution */}
           <HoloCard glowColor="blue">
             <HoloPanelHeader
               title={t['category_detail.price_distribution']}
@@ -588,7 +588,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
             </div>
           </HoloCard>
 
-          {/* 品牌比較 */}
+          {/* Brand comparison */}
           <HoloCard glowColor="green">
             <HoloPanelHeader
               title={t['category_detail.brand_comparison']}
@@ -630,7 +630,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
           </HoloCard>
         </div>
 
-        {/* 最優惠商品 */}
+        {/* Best deals */}
         {overview?.top_deals && overview.top_deals.length > 0 && (
           <HoloCard glowColor="purple">
             <HoloPanelHeader
@@ -677,7 +677,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
           </HoloCard>
         )}
 
-        {/* 商品價格歷史 */}
+        {/* Product price history */}
         {selectedProduct && priceHistory && (
           <HoloCard glowColor="cyan" scanLine>
             <HoloPanelHeader
@@ -737,7 +737,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
           </HoloCard>
         )}
 
-        {/* 商品列表 */}
+        {/* Product list */}
         <HoloCard glowColor="cyan">
           <HoloPanelHeader
             title={t['category_detail.product_list']}

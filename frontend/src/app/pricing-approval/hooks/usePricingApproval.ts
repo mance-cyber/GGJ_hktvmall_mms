@@ -1,5 +1,5 @@
 // =============================================
-// 改價審批 React Query Hooks
+// Pricing Approval React Query Hooks
 // =============================================
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -14,18 +14,18 @@ import {
 const QUERY_KEY = 'pending-proposals'
 
 /**
- * 獲取待審批提案列表
+ * Fetch pending proposal list
  */
 export function usePendingProposals() {
   return useQuery({
     queryKey: [QUERY_KEY],
     queryFn: getPendingProposals,
-    staleTime: 30 * 1000, // 30 秒內不重新請求
+    staleTime: 30 * 1000, // Don't re-fetch within 30 seconds
   })
 }
 
 /**
- * 批准提案 mutation
+ * Approve proposal mutation
  */
 export function useApproveProposal() {
   const queryClient = useQueryClient()
@@ -39,7 +39,7 @@ export function useApproveProposal() {
 }
 
 /**
- * 拒絕提案 mutation
+ * Reject proposal mutation
  */
 export function useRejectProposal() {
   const queryClient = useQueryClient()
@@ -53,7 +53,7 @@ export function useRejectProposal() {
 }
 
 /**
- * 觸發 AI 分析 mutation
+ * Trigger AI Analysis mutation
  */
 export function useTriggerAIAnalysis() {
   const queryClient = useQueryClient()
@@ -67,7 +67,7 @@ export function useTriggerAIAnalysis() {
 }
 
 /**
- * 批量批准提案
+ * Batch approve proposals
  */
 export function useBatchApprove() {
   const queryClient = useQueryClient()
@@ -90,7 +90,7 @@ export function useBatchApprove() {
 }
 
 /**
- * 批量拒絕提案
+ * Batch reject proposals
  */
 export function useBatchReject() {
   const queryClient = useQueryClient()

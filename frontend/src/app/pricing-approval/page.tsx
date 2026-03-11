@@ -1,5 +1,5 @@
 // =============================================
-// 改價審批中心頁面
+// Pricing Approval Center Page
 // =============================================
 
 'use client'
@@ -26,7 +26,7 @@ export default function PricingApprovalPage() {
   const { toast } = useToast()
   const { t } = useLocale()
 
-  // 數據查詢
+  // Data queries
   const { data: proposals = [], isLoading, refetch } = usePendingProposals()
 
   // Mutations
@@ -36,14 +36,14 @@ export default function PricingApprovalPage() {
   const batchReject = useBatchReject()
   const triggerAI = useTriggerAIAnalysis()
 
-  // 選擇狀態
+  // Selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
-  // 審批對話框狀態
+  // Approval dialog state
   const [dialogProposal, setDialogProposal] = useState<PriceProposal | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
 
-  // 選擇處理
+  // Selection handling
   const handleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
       const newSet = new Set(prev)
@@ -64,7 +64,7 @@ export default function PricingApprovalPage() {
     }
   }, [proposals, selectedIds.size])
 
-  // 單個批准
+  // Single approve
   const handleApprove = useCallback((id: string) => {
     const proposal = proposals.find((p) => p.id === id)
     if (proposal) {
@@ -73,7 +73,7 @@ export default function PricingApprovalPage() {
     }
   }, [proposals])
 
-  // 確認批准（從對話框）
+  // Confirm approval (from dialog)
   const handleConfirmApprove = useCallback(async (finalPrice?: number) => {
     if (!dialogProposal) return
 
@@ -98,7 +98,7 @@ export default function PricingApprovalPage() {
     }
   }, [dialogProposal, approveProposal, toast, t])
 
-  // 單個拒絕
+  // Single reject
   const handleReject = useCallback(async (id: string) => {
     const proposal = proposals.find((p) => p.id === id)
     if (!proposal) return
@@ -123,7 +123,7 @@ export default function PricingApprovalPage() {
     }
   }, [proposals, rejectProposal, toast, t])
 
-  // 批量批准
+  // Batch approve
   const handleBatchApprove = useCallback(async () => {
     if (selectedIds.size === 0) return
 
@@ -143,7 +143,7 @@ export default function PricingApprovalPage() {
     }
   }, [selectedIds, batchApprove, toast, t])
 
-  // 批量拒絕
+  // Batch reject
   const handleBatchReject = useCallback(async () => {
     if (selectedIds.size === 0) return
 
@@ -163,7 +163,7 @@ export default function PricingApprovalPage() {
     }
   }, [selectedIds, batchReject, toast, t])
 
-  // 觸發 AI 分析
+  // Trigger AI Analysis
   const handleTriggerAI = useCallback(async () => {
     try {
       const result = await triggerAI.mutateAsync()
@@ -180,8 +180,8 @@ export default function PricingApprovalPage() {
     }
   }, [triggerAI, toast, t])
 
-  // 統計數據 - 暫時只顯示 pending 數量
-  // TODO: 從後端獲取完整統計
+  // Statistics - currently only displaying pending count
+  // TODO: Fetch complete statistics from backend
   const stats = {
     pending: proposals.length,
     approved: 0,
@@ -191,7 +191,7 @@ export default function PricingApprovalPage() {
 
   return (
     <div className="space-y-6">
-      {/* 頁面標題 */}
+      {/* Page title */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{t['pricing.title']}</h1>
@@ -221,10 +221,10 @@ export default function PricingApprovalPage() {
         </div>
       </div>
 
-      {/* 統計卡片 */}
+      {/* Statistics Cards */}
       <ProposalStats {...stats} />
 
-      {/* 提案列表 */}
+      {/* Proposal List */}
       <HoloCard className="p-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
@@ -248,7 +248,7 @@ export default function PricingApprovalPage() {
         )}
       </HoloCard>
 
-      {/* 批准確認對話框 */}
+      {/* Approval Confirmation Dialog */}
       <ApprovalDialog
         proposal={dialogProposal}
         open={dialogOpen}

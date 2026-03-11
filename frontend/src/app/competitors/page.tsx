@@ -35,10 +35,10 @@ function getThreatLevel(item: ProductComparison): ThreatLevel {
 }
 
 const THREAT_GROUPS: { key: ThreatLevel; label: string; color: string; badge: string }[] = [
-  { key: 'danger',   label: '高威脅 · 價差 >20%',     color: 'border-red-200 bg-red-50/60',     badge: 'bg-red-100 text-red-700 border-red-200' },
-  { key: 'warning',  label: '注意 · 價差 5-20%',       color: 'border-amber-200 bg-amber-50/60', badge: 'bg-amber-100 text-amber-700 border-amber-200' },
-  { key: 'normal',   label: '正常範圍',                color: 'border-gray-200 bg-gray-50/60',   badge: 'bg-gray-100 text-gray-600 border-gray-200' },
-  { key: 'cheapest', label: '我哋最平 🏆',             color: 'border-emerald-200 bg-emerald-50/60', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+  { key: 'danger',   label: 'High Threat · Price gap >20%',     color: 'border-red-200 bg-red-50/60',     badge: 'bg-red-100 text-red-700 border-red-200' },
+  { key: 'warning',  label: 'Warning · Price gap 5-20%',       color: 'border-amber-200 bg-amber-50/60', badge: 'bg-amber-100 text-amber-700 border-amber-200' },
+  { key: 'normal',   label: 'Normal range',                color: 'border-gray-200 bg-gray-50/60',   badge: 'bg-gray-100 text-gray-600 border-gray-200' },
+  { key: 'cheapest', label: 'We are cheapest 🏆',             color: 'border-emerald-200 bg-emerald-50/60', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
 ]
 
 export default function CompetitorsPage() {
@@ -222,10 +222,10 @@ export default function CompetitorsPage() {
         <div className="flex items-start sm:items-center justify-between gap-2">
           <div className="min-w-0">
             <h1 className="text-lg sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
-              <span className="text-teal-500">⚔️</span> 競品監測
+              <span className="text-teal-500">⚔️</span> Competitor Monitor
             </h1>
             <p className="text-xs sm:text-sm text-gray-400 mt-0.5">
-              {summary?.total_competitors || '...'} 商戶 · {summary?.total_tracked_products || '...'} 商品
+              {summary?.total_competitors || '...'} merchants · {summary?.total_tracked_products || '...'} products
             </p>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
@@ -234,10 +234,10 @@ export default function CompetitorsPage() {
               href="/api/v1/competitors/comparison/export"
               download
               className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300 transition-colors"
-              title="匯出 CSV"
+              title="Export CSV"
             >
               <Download className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">匯出</span>
+              <span className="hidden sm:inline">Export</span>
             </a>
             <Button
               variant="outline"
@@ -246,7 +246,7 @@ export default function CompetitorsPage() {
               className="border-teal-200 text-teal-600 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300"
             >
               <RefreshCw className="w-4 h-4 sm:mr-1.5" />
-              <span className="hidden sm:inline">刷新</span>
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
           </div>
         </div>
@@ -265,7 +265,7 @@ export default function CompetitorsPage() {
               )}
             >
               <Package className="w-4 h-4" />
-              商品
+              products
             </button>
             <button
               onClick={() => handleViewChange('merchants')}
@@ -275,7 +275,7 @@ export default function CompetitorsPage() {
               )}
             >
               <Building2 className="w-4 h-4" />
-              商戶
+              merchants
             </button>
             <button
               onClick={() => handleViewChange('suggestions')}
@@ -285,7 +285,7 @@ export default function CompetitorsPage() {
               )}
             >
               <Lightbulb className="w-4 h-4" />
-              建議
+              suggestions
             </button>
           </div>
 
@@ -299,7 +299,7 @@ export default function CompetitorsPage() {
                 )}
               >
                 <Target className="w-3.5 h-3.5 shrink-0" />
-                自家競品
+                Own competitors
               </button>
               <button
                 onClick={() => setScope('all')}
@@ -309,7 +309,7 @@ export default function CompetitorsPage() {
                 )}
               >
                 <Globe className="w-3.5 h-3.5 shrink-0" />
-                全部生鮮
+                All fresh food
               </button>
             </div>
           )}
@@ -362,7 +362,7 @@ export default function CompetitorsPage() {
                 ) : filteredProducts.length === 0 ? (
                   <div className="text-center py-16 sm:py-20 text-gray-400">
                     <Package className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-30" />
-                    <p className="text-sm">{search || categoryFilter ? '冇符合條件嘅商品' : '未有商品比較數據'}</p>
+                    <p className="text-sm">{search || categoryFilter ? 'No products matching the criteria' : 'No product comparison data yet'}</p>
                   </div>
                 ) : (
                   THREAT_GROUPS.map(group => {
@@ -386,7 +386,7 @@ export default function CompetitorsPage() {
                           )}>
                             {group.label}
                           </span>
-                          <span className="text-[10px] text-gray-400 ml-auto">{items.length} 件</span>
+                          <span className="text-[10px] text-gray-400 ml-auto">{items.length} items</span>
                         </button>
 
                         {/* Group Items */}
@@ -478,7 +478,7 @@ export default function CompetitorsPage() {
               ) : filteredMerchants.length === 0 ? (
                 <div className="text-center py-16 sm:py-20 text-gray-400">
                   <Building2 className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">{search ? '冇符合條件嘅商戶' : '未有商戶數據'}</p>
+                  <p className="text-sm">{search ? 'No merchants matching the criteria' : 'No merchant data yet'}</p>
                 </div>
               ) : (
                 filteredMerchants.map((item) => (

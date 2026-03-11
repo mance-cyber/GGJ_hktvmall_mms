@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/future-tech'
 
 // =============================================
-// 表格行動畫變體
+// Table row animation variants
 // =============================================
 const tableRowVariants = {
   initial: { opacity: 0, x: -20 },
@@ -41,26 +41,26 @@ const tableRowVariants = {
 }
 
 // =============================================
-// 載入骨架組件
+// Loading skeleton component
 // =============================================
 function LoadingSkeleton() {
   return (
     <PageTransition>
       <div className="space-y-3 sm:space-y-6">
-        {/* 標題骨架 */}
+        {/* Title skeleton */}
         <div className="flex items-center justify-between">
           <HoloSkeleton width={120} height={28} />
           <HoloSkeleton width={70} height={32} />
         </div>
 
-        {/* 手機版卡片骨架 */}
+        {/* Mobile card skeleton */}
         <div className="sm:hidden space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
             <HoloSkeleton key={i} variant="rectangular" height={80} />
           ))}
         </div>
 
-        {/* 桌面版表格骨架 */}
+        {/* Desktop table skeleton */}
         <div className="hidden sm:block">
           <HoloCard>
             <div className="p-4 border-b border-slate-100/80">
@@ -87,7 +87,7 @@ function LoadingSkeleton() {
 }
 
 // =============================================
-// 錯誤狀態組件
+// Error state component
 // =============================================
 function ErrorState() {
   const { t } = useLocale()
@@ -111,7 +111,7 @@ function ErrorState() {
 }
 
 // =============================================
-// 空狀態組件
+// Empty state component
 // =============================================
 function EmptyState() {
   const { t } = useLocale()
@@ -132,7 +132,7 @@ function EmptyState() {
 }
 
 // =============================================
-// 主頁面組件
+// Main page component
 // =============================================
 export default function CategoriesPage() {
   const { t } = useLocale()
@@ -160,12 +160,12 @@ export default function CategoriesPage() {
     scrapeMutation.mutate(categoryId)
   }
 
-  // 載入狀態
+  // Loading state
   if (isLoading) {
     return <LoadingSkeleton />
   }
 
-  // 錯誤狀態
+  // ErrorState
   if (error) {
     return <ErrorState />
   }
@@ -173,7 +173,7 @@ export default function CategoriesPage() {
   return (
     <PageTransition>
       <div className="space-y-3 sm:space-y-6">
-        {/* ==================== 頁面標題 ==================== */}
+        {/* ==================== Page title ==================== */}
         <div className="flex items-center justify-between">
           <h1 className="page-title">{t['categories.title']}</h1>
           <HoloButton
@@ -186,7 +186,7 @@ export default function CategoriesPage() {
           </HoloButton>
         </div>
 
-        {/* ==================== 手機版卡片視圖 ==================== */}
+        {/* ==================== Mobile card view ==================== */}
         <div className="sm:hidden space-y-2">
           {categories?.items.map((category, index) => (
             <motion.div
@@ -251,7 +251,7 @@ export default function CategoriesPage() {
           {(!categories?.items || categories.items.length === 0) && <EmptyState />}
         </div>
 
-        {/* ==================== 桌面版類別表格 ==================== */}
+        {/* ==================== Desktop category table ==================== */}
         <div className="hidden sm:block">
           <HoloCard glowColor="cyan" scanLine>
             <HoloPanelHeader

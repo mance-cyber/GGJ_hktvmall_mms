@@ -11,13 +11,13 @@ import { KeyboardShortcutsDialog } from '@/components/keyboard-shortcuts-dialog'
 import { useGlobalShortcuts } from '@/hooks/use-keyboard-shortcuts'
 
 // =============================================
-// 全局快捷鍵啟用器（需要在 Provider 內部使用）
+// Global keyboard shortcuts enabler (must be used inside Provider)
 // =============================================
 
 function GlobalShortcutsProvider({ children }: { children: React.ReactNode }) {
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false)
   
-  // 啟用全局快捷鍵
+  // Enable全局快捷鍵
   useGlobalShortcuts(() => setShowShortcutsHelp(true))
 
   return (

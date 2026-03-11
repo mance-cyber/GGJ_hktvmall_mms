@@ -12,7 +12,7 @@ export default function QuotaDisplay({ compact = false }: QuotaDisplayProps) {
   const { data: quota, isLoading, error, refetch } = useQuery({
     queryKey: ['quota-usage'],
     queryFn: () => api.getQuotaUsage(),
-    refetchInterval: 60000, // 每分鐘刷新
+    refetchInterval: 60000, // 每minutesRefresh
   })
 
   if (isLoading || !quota) {
@@ -21,14 +21,14 @@ export default function QuotaDisplay({ compact = false }: QuotaDisplayProps) {
     )
   }
 
-  // 計算剩餘百分比
+  // Calculate剩餘Percentage
   const remainingPercent = quota.plan_credits > 0
     ? Math.round((quota.remaining_credits / quota.plan_credits) * 100)
     : 0
 
   const usagePercent = Math.round(quota.usage_percent)
 
-  // 格式化日期
+  // Format化Date
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return 'N/A'
     const date = new Date(dateStr)
@@ -58,28 +58,28 @@ export default function QuotaDisplay({ compact = false }: QuotaDisplayProps) {
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-medium text-gray-900 flex items-center gap-2">
           <Zap className="w-5 h-5 text-blue-500" />
-          Firecrawl API 配額
+          Firecrawl API Quota
         </h3>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => refetch()}
             className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-            title="刷新配額"
-            aria-label="刷新配額"
+            title="RefreshQuota"
+            aria-label="RefreshQuota"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
           {quota.is_critical && (
             <span className="flex items-center gap-1 text-xs text-red-600 bg-red-50 px-2 py-1 rounded-full">
               <AlertCircle className="w-3 h-3" />
-              配額不足
+              Quota不足
             </span>
           )}
         </div>
       </div>
 
-      {/* 錯誤信息 */}
+      {/* Error信息 */}
       {quota.error_message && (
         <div className="mb-3 p-2 bg-red-50 text-red-700 text-sm rounded-lg flex items-start gap-2">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -110,7 +110,7 @@ export default function QuotaDisplay({ compact = false }: QuotaDisplayProps) {
         <div className="bg-gray-50 rounded-lg p-2">
           <div className="text-gray-500 flex items-center gap-1">
             <TrendingUp className="w-3 h-3" />
-            剩餘配額
+            剩餘Quota
           </div>
           <div className={`font-medium ${
             quota.is_critical ? 'text-red-600' :
@@ -162,8 +162,8 @@ export default function QuotaDisplay({ compact = false }: QuotaDisplayProps) {
             <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <div>
               {quota.is_critical
-                ? '配額即將用盡，請升級計劃以繼續使用。'
-                : '配額偏低，建議使用智能抓取以節省消耗。'}
+                ? 'Quota nearly exhausted, please upgrade your plan to continue.'
+                : 'Quota偏低，suggestions使用智能抓取以Savings消耗。'}
               <a
                 href="https://firecrawl.dev/pricing"
                 target="_blank"

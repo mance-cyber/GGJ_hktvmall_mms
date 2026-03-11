@@ -1,5 +1,5 @@
 // =============================================
-// ROI 趨勢圖表組件
+// ROI Trend Chart Component
 // =============================================
 
 'use client'
@@ -22,18 +22,18 @@ interface ROITrendChartProps {
   days?: number
 }
 
-// 圖表顏色配置
+// Chart color configuration
 const CHART_COLORS = {
-  cumulative: '#22c55e',   // 綠色 - 累計價值
-  ai_pricing: '#8b5cf6',   // 紫色 - AI 定價
-  monitoring: '#06b6d4',   // 青色 - 競品監測
-  risk: '#f59e0b',         // 橙色 - 風險規避
+  cumulative: '#22c55e',   // Green - Cumulative Value
+  ai_pricing: '#8b5cf6',   // Purple - AI Pricing
+  monitoring: '#06b6d4',   // Cyan - Competitor Monitoring
+  risk: '#f59e0b',         // Orange - Risk Avoidance
 }
 
 export function ROITrendChart({ days = 30 }: ROITrendChartProps) {
   const { data, isLoading, error } = useROITrends(days)
 
-  // 可見性狀態
+  // Visibility state
   const [visibleLines, setVisibleLines] = useState({
     cumulative: true,
     ai_pricing: true,
@@ -41,12 +41,12 @@ export function ROITrendChart({ days = 30 }: ROITrendChartProps) {
     risk_avoidance: false,
   })
 
-  // 切換可見性
+  // Toggle visibility
   const toggleVisibility = (key: keyof typeof visibleLines) => {
     setVisibleLines((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
-  // 處理圖表數據
+  // Process chart data
   const chartData = useMemo(() => {
     if (!data?.trends) return []
 
@@ -62,7 +62,7 @@ export function ROITrendChart({ days = 30 }: ROITrendChartProps) {
     }))
   }, [data])
 
-  // 自定義 Tooltip
+  // Custom Tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null
 
@@ -101,7 +101,7 @@ export function ROITrendChart({ days = 30 }: ROITrendChartProps) {
   if (error) {
     return (
       <div className="h-[400px] flex items-center justify-center text-red-500">
-        載入失敗
+        LoadFailed
       </div>
     )
   }
@@ -109,22 +109,22 @@ export function ROITrendChart({ days = 30 }: ROITrendChartProps) {
   if (chartData.length === 0) {
     return (
       <div className="h-[400px] flex items-center justify-center text-gray-500">
-        暫無趨勢數據
+        No trend data available
       </div>
     )
   }
 
-  // 數據線配置
+  // Line data configuration
   const lines = [
-    { key: 'cumulative', name: '累計價值', color: CHART_COLORS.cumulative, strokeWidth: 3 },
-    { key: 'ai_pricing', name: 'AI 定價貢獻', color: CHART_COLORS.ai_pricing, strokeWidth: 2 },
-    { key: 'monitoring', name: '競品監測價值', color: CHART_COLORS.monitoring, strokeWidth: 2 },
-    { key: 'risk_avoidance', name: '風險規避', color: CHART_COLORS.risk, strokeWidth: 2, strokeDasharray: '5 5' },
+    { key: 'cumulative', name: 'Cumulative Value', color: CHART_COLORS.cumulative, strokeWidth: 3 },
+    { key: 'ai_pricing', name: 'AI Pricing Contribution', color: CHART_COLORS.ai_pricing, strokeWidth: 2 },
+    { key: 'monitoring', name: 'Competitor Monitor Value', color: CHART_COLORS.monitoring, strokeWidth: 2 },
+    { key: 'risk_avoidance', name: 'Risk Avoidance', color: CHART_COLORS.risk, strokeWidth: 2, strokeDasharray: '5 5' },
   ]
 
   return (
     <div>
-      {/* 圖表 */}
+      {/* Chart */}
       <div className="h-[400px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
@@ -166,7 +166,7 @@ export function ROITrendChart({ days = 30 }: ROITrendChartProps) {
         </ResponsiveContainer>
       </div>
 
-      {/* 圖例控制 */}
+      {/* Legend Controls */}
       <div className="mt-4 pt-4 border-t border-gray-100">
         <div className="flex flex-wrap gap-3">
           {lines.map((line) => (

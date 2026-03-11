@@ -40,7 +40,7 @@ export function PriceHistoryModal({ productId, productName, onClose }: PriceHist
             <TrendingUp className="w-4 h-4 text-teal-500" />
             <div>
               <h3 className="font-semibold text-gray-800 text-sm sm:text-base">{productName}</h3>
-              <p className="text-xs text-gray-400">過去 30 日競品價格趨勢</p>
+              <p className="text-xs text-gray-400">過去 30 日CompetitorPriceTrend</p>
             </div>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1">
@@ -52,11 +52,11 @@ export function PriceHistoryModal({ productId, productName, onClose }: PriceHist
         <div className="p-4">
           {isLoading ? (
             <div className="h-64 flex items-center justify-center">
-              <div className="text-sm text-gray-400 animate-pulse">載入中...</div>
+              <div className="text-sm text-gray-400 animate-pulse">Loading...</div>
             </div>
           ) : chartData.length === 0 || !data?.series.length ? (
             <div className="h-64 flex items-center justify-center">
-              <p className="text-sm text-gray-400">未有足夠歷史數據</p>
+              <p className="text-sm text-gray-400">未有足夠HistoryData</p>
             </div>
           ) : (
             <>

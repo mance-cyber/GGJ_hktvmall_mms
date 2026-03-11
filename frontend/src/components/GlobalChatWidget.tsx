@@ -1,9 +1,9 @@
 'use client'
 
 // =============================================
-// 全局浮動聊天組件
-// 右下角常駐 Chatbot 按鈕 + 迷你聊天框
-// 功能：聲音提醒、附件上傳、訊息反饋、頁面感知、可拖曳
+// 全局浮動聊天組items
+// 右下角常駐 Chatbot button + 迷你聊天框
+// Feature：Sound notification、附itemsUpload、訊息反饋、page感知、可拖曳
 // =============================================
 
 import { useState, useRef, useEffect, useCallback } from 'react'
@@ -62,55 +62,55 @@ interface FileAttachment {
 }
 
 // =============================================
-// 頁面感知建議配置
+// page感知suggestionsConfiguration
 // =============================================
 
 const PAGE_SUGGESTIONS: Record<string, string[]> = {
   '/': [
     '今日營業額幾多？',
-    '有冇需要關注嘅警報？',
+    '有冇Need關注嘅Alert？',
     '最近訂單情況點樣？'
   ],
   '/dashboard': [
-    '今日銷售數據點樣？',
-    '邊個產品賣得最好？',
-    '同上星期比較下'
+    '今日銷售Data點樣？',
+    '邊個Product賣得最好？',
+    '同上星期Compare下'
   ],
   '/products': [
-    '邊個產品需要補貨？',
-    '價格有冇競爭力？',
-    '產品銷量排行榜'
+    '邊個ProductNeed補貨？',
+    'Price有冇競爭力？',
+    'Product銷量排行榜'
   ],
   '/competitors': [
-    '競爭對手最新價格？',
-    '邊個競爭對手最有威脅？',
-    '價格差異分析'
+    '競爭Competitor最新Price？',
+    '邊個競爭Competitor最有威脅？',
+    'Price差異Analysis'
   ],
   '/alerts': [
-    '有幾多個未處理警報？',
-    '最緊急嘅警報係咩？',
-    '警報趨勢分析'
+    '有幾多個未ProcessingAlert？',
+    '最緊急嘅Alert係咩？',
+    'AlertTrendAnalysis'
   ],
   '/orders': [
-    '今日訂單數量？',
+    '今日訂單Quantity？',
     '有冇異常訂單？',
-    '訂單完成率幾多？'
+    '訂單Complete率幾多？'
   ],
   '/analytics': [
-    '本月營收趨勢？',
-    '用戶行為分析',
+    '本月營收Trend？',
+    '用戶行為Analysis',
     '轉化率點樣？'
   ]
 }
 
 const DEFAULT_SUGGESTIONS = [
   '今日訂單點樣？',
-  '比較下競爭對手價格',
-  '邊個產品賣得最好？'
+  'Compare下競爭CompetitorPrice',
+  '邊個Product賣得最好？'
 ]
 
 // =============================================
-// 聲音提醒 Hook
+// Sound notification Hook
 // =============================================
 
 function useNotificationSound() {
@@ -118,11 +118,11 @@ function useNotificationSound() {
   const [soundEnabled, setSoundEnabled] = useState(true)
 
   useEffect(() => {
-    // 創建音頻元素
+    // Create audio element
     audioRef.current = new Audio('/audio/notification.mp3')
     audioRef.current.volume = 0.5
 
-    // 從 localStorage 讀取設定
+    // Read from localStorageSettings
     const saved = localStorage.getItem('chatbot-sound-enabled')
     if (saved !== null) {
       setSoundEnabled(saved === 'true')
@@ -133,7 +133,7 @@ function useNotificationSound() {
     if (soundEnabled && audioRef.current) {
       audioRef.current.currentTime = 0
       audioRef.current.play().catch(() => {
-        // 忽略自動播放限制錯誤
+        // Ignore autoplay restriction error
       })
     }
   }, [soundEnabled])
@@ -150,7 +150,7 @@ function useNotificationSound() {
 }
 
 // =============================================
-// 浮動按鈕組件（可拖曳）
+// 浮動button組items（可拖曳）
 // =============================================
 
 function FloatingButton({
@@ -164,12 +164,12 @@ function FloatingButton({
 }) {
   const dotLottieInstance = useRef<any>(null)
 
-  // 動畫播放完成後停頓 3 秒再重新播放（使用 play API 避免閃爍）
+  // Animation播放Complete後停頓 3 秒再Re-播放（使用 play API Avoid閃爍）
   const dotLottieRefCallback = useCallback((dotLottie: any) => {
     if (dotLottie) {
       dotLottieInstance.current = dotLottie
       dotLottie.addEventListener('complete', () => {
-        // 停頓 3 秒後重新播放
+        // 停頓 3 秒後Re-播放
         setTimeout(() => {
           if (dotLottieInstance.current) {
             dotLottieInstance.current.setFrame(0)
@@ -189,7 +189,7 @@ function FloatingButton({
       )}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
-      aria-label={isOpen ? "關閉聊天" : "開啟聊天"}
+      aria-label={isOpen ? "Close聊天" : "開啟聊天"}
     >
       <AnimatePresence mode="wait">
         {isOpen ? (
@@ -224,7 +224,7 @@ function FloatingButton({
         )}
       </AnimatePresence>
 
-      {/* 未讀指示器 */}
+      {/* Unread指示器 */}
       {hasUnread && !isOpen && (
         <span className="absolute top-2 right-2 w-4 h-4 bg-red-500 rounded-full animate-pulse" />
       )}
@@ -233,7 +233,7 @@ function FloatingButton({
 }
 
 // =============================================
-// 訊息反饋組件
+// 訊息反饋組items
 // =============================================
 
 function MessageFeedback({
@@ -265,7 +265,7 @@ function MessageFeedback({
           "p-1 rounded hover:bg-red-100 transition-colors",
           feedback === 'dislike' && "bg-red-100 text-red-600"
         )}
-        title="需要改進"
+        title="Need改進"
       >
         <ThumbsDown className={cn("w-3 h-3", feedback === 'dislike' ? "fill-current" : "")} />
       </button>
@@ -274,7 +274,7 @@ function MessageFeedback({
 }
 
 // =============================================
-// 附件預覽組件
+// 附items預覽組items
 // =============================================
 
 function AttachmentPreview({
@@ -304,7 +304,7 @@ function AttachmentPreview({
               type="button"
               onClick={() => onRemove(file.id)}
               className="opacity-0 group-hover:opacity-100 transition-opacity"
-              title="移除附件"
+              title="移除附items"
             >
               <X className="w-3 h-3 text-slate-400 hover:text-red-500" />
             </button>
@@ -316,7 +316,7 @@ function AttachmentPreview({
 }
 
 // =============================================
-// 迷你聊天框組件
+// 迷你聊天框組items
 // =============================================
 
 function MiniChatBox({
@@ -377,7 +377,7 @@ function MiniChatBox({
       transition={{ duration: 0.2 }}
       className={cn(
         "bg-white shadow-2xl border overflow-hidden flex flex-col",
-        // 手機版：全屏顯示，留出安全邊距
+        // 手機版：全屏Display，留出Security邊距
         "fixed inset-x-2 top-16 bottom-24 rounded-xl",
         // 桌面版：浮動框
         "sm:relative sm:inset-auto sm:top-auto sm:bottom-auto",
@@ -399,7 +399,7 @@ function MiniChatBox({
           </div>
           <div>
             <h3 className="text-white font-medium text-sm">Jap仔</h3>
-            <p className="text-white/70 text-xs">你嘅日本產品專家 ✨</p>
+            <p className="text-white/70 text-xs">你嘅日本Product專家 ✨</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -409,7 +409,7 @@ function MiniChatBox({
             size="icon"
             onClick={onToggleSound}
             className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20"
-            title={soundEnabled ? "關閉聲音" : "開啟聲音"}
+            title={soundEnabled ? "Close聲音" : "開啟聲音"}
           >
             {soundEnabled ? (
               <Volume2 className="w-4 h-4" />
@@ -422,7 +422,7 @@ function MiniChatBox({
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/20"
-              title="完整聊天頁面"
+              title="Full chat page"
             >
               <ExternalLink className="w-4 h-4" />
             </Button>
@@ -466,7 +466,7 @@ function MiniChatBox({
             <p className="text-sm text-slate-500">
               有咩可以幫到你？問我啦！
             </p>
-            {/* 頁面感知建議 */}
+            {/* page感知suggestions */}
             <div className="mt-4 space-y-2 w-full">
               {suggestions.map((suggestion, i) => (
                 <button
@@ -481,7 +481,7 @@ function MiniChatBox({
           </div>
         ) : (
           messages.map((msg, index) => {
-            // 計算是否為最後一條 AI 訊息
+            // Calculatewhether為最後一條 AI 訊息
             const lastAssistantIndex = messages.findLastIndex(m => m.role === 'assistant')
             const isLastAssistantMessage = index === lastAssistantIndex
 
@@ -519,7 +519,7 @@ function MiniChatBox({
                       ? "bg-gradient-to-br from-cyan-500 to-blue-500 text-white rounded-tr-sm"
                       : "bg-white border shadow-sm rounded-tl-sm"
                   )}>
-                    {/* 附件預覽 */}
+                    {/* 附items預覽 */}
                     {msg.attachments && msg.attachments.length > 0 && (
                       <AttachmentPreview attachments={msg.attachments} />
                     )}
@@ -533,7 +533,7 @@ function MiniChatBox({
                       <p>{msg.content}</p>
                     )}
                   </div>
-                  {/* 訊息反饋 - 只顯示在 AI 回覆 */}
+                  {/* Message feedback - shown only on AI replies */}
                   {msg.role === 'assistant' && (
                     <MessageFeedback
                       messageId={msg.id}
@@ -541,7 +541,7 @@ function MiniChatBox({
                       onFeedback={onFeedback}
                     />
                   )}
-                  {/* Follow-up Suggestions - 只顯示在最後一條 AI 訊息 */}
+                  {/* Follow-up Suggestions - 只Display在最後一條 AI 訊息 */}
                   {isLastAssistantMessage &&
                    msg.role === 'assistant' &&
                    msg.suggestions &&
@@ -549,7 +549,7 @@ function MiniChatBox({
                    !isLoading && (
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {msg.suggestions.map((suggestion, i) => {
-                        const isNewTopicButton = suggestion.text.includes('問其他嘢')
+                        const isNewTopicButton = suggestion.text.includes('Ask something else')
                         return (
                           <button
                             key={i}
@@ -609,7 +609,7 @@ function MiniChatBox({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 附件預覽區 */}
+      {/* 附items預覽區 */}
       {attachments.length > 0 && (
         <div className="border-t px-3 py-2">
           <AttachmentPreview attachments={attachments} onRemove={onRemoveAttachment} />
@@ -619,7 +619,7 @@ function MiniChatBox({
       {/* Input */}
       <div className="border-t bg-white p-3">
         <div className="flex gap-2">
-          {/* 附件按鈕 */}
+          {/* 附itemsbutton */}
           <input
             ref={fileInputRef}
             type="file"
@@ -627,8 +627,8 @@ function MiniChatBox({
             accept="image/*,.pdf,.doc,.docx,.txt"
             onChange={handleFileSelect}
             className="hidden"
-            title="上傳附件"
-            aria-label="上傳附件"
+            title="Upload附items"
+            aria-label="Upload附items"
           />
           <Button
             type="button"
@@ -636,7 +636,7 @@ function MiniChatBox({
             size="icon"
             onClick={() => fileInputRef.current?.click()}
             className="h-9 w-9 text-slate-500 hover:text-purple-600"
-            title="上傳附件"
+            title="Upload附items"
           >
             <Paperclip className="w-4 h-4" />
           </Button>
@@ -667,7 +667,7 @@ function MiniChatBox({
 }
 
 // =============================================
-// 主組件
+// 主組items
 // =============================================
 
 export function GlobalChatWidget() {
@@ -680,7 +680,7 @@ export function GlobalChatWidget() {
   const [hasUnread, setHasUnread] = useState(false)
   const [attachments, setAttachments] = useState<FileAttachment[]>([])
 
-  // 拖曳狀態 — 手動 pointer event，放手即停，零慣性
+  // 拖曳State — Manual pointer event, stops on release, zero inertia
   const containerRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
   const [isDraggingState, setIsDraggingState] = useState(false) // for cursor re-render
@@ -696,10 +696,10 @@ export function GlobalChatWidget() {
   }, [])
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    // 唔好攔截 input/button/a 嘅 click
+    // 唔好Intercept input/button/a 嘅 click
     const tag = (e.target as HTMLElement).tagName.toLowerCase()
     if (['input', 'button', 'a', 'textarea'].includes(tag)) return
-    // 也唔好攔截 chat box 入面嘅操作
+    // 也唔好Intercept chat box 入面嘅Operation
     const chatBox = (e.target as HTMLElement).closest('[data-chat-box]')
     if (chatBox) return
 
@@ -719,7 +719,7 @@ export function GlobalChatWidget() {
     const dx = e.clientX - dragStart.current.x
     const dy = e.clientY - dragStart.current.y
 
-    // 移動超過 5px 先算拖曳（避免誤觸）
+    // Treat as drag after moving >5px (avoid accidental clicks)
     if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
       if (!isDragging.current) {
         isDragging.current = true
@@ -731,7 +731,7 @@ export function GlobalChatWidget() {
       // right 同 bottom 係反方向
       const newRight = Math.max(0, dragStart.current.right - dx)
       const newBottom = Math.max(0, dragStart.current.bottom - dy)
-      // 限制唔好拖出畫面
+      // Limit唔好拖出畫面
       const maxRight = window.innerWidth - 80
       const maxBottom = window.innerHeight - 80
       setPosition({
@@ -746,18 +746,18 @@ export function GlobalChatWidget() {
     if (el.hasPointerCapture(e.pointerId)) {
       el.releasePointerCapture(e.pointerId)
     }
-    // 延遲 reset isDragging，讓 onClick 可以判斷
+    // Delay reset isDragging, let onClick decide
     setIsDraggingState(false)
     setTimeout(() => { isDragging.current = false }, 50)
   }, [])
 
-  // 聲音提醒
+  // Sound notification
   const { soundEnabled, toggleSound, playSound } = useNotificationSound()
 
-  // 頁面感知建議
+  // page感知suggestions
   const suggestions = PAGE_SUGGESTIONS[pathname] || DEFAULT_SUGGESTIONS
 
-  // 發送訊息
+  // Send message
   const chatMutation = useMutation({
     mutationFn: (content: string) => api.agentChat({
       content,
@@ -779,10 +779,10 @@ export function GlobalChatWidget() {
 
       setMessages(prev => [...prev, assistantMessage])
 
-      // 播放聲音提醒
+      // 播放Sound notification
       playSound()
 
-      // 如果聊天框關閉，設置未讀
+      // 如果聊天框Close，Set upUnread
       if (!isOpen) {
         setHasUnread(true)
       }
@@ -802,13 +802,13 @@ export function GlobalChatWidget() {
 
     setMessages(prev => [...prev, userMessage])
 
-    // 如果有附件，將附件信息加入訊息
+    // If attachments present, add attachment info to message
     let messageContent = input.trim()
     if (attachments.length > 0) {
       const attachmentNames = attachments.map(a => a.name).join(', ')
       messageContent = messageContent
-        ? `${messageContent}\n\n[附件: ${attachmentNames}]`
-        : `[附件: ${attachmentNames}]`
+        ? `${messageContent}\n\n[附items: ${attachmentNames}]`
+        : `[附items: ${attachmentNames}]`
     }
 
     chatMutation.mutate(messageContent)
@@ -825,7 +825,7 @@ export function GlobalChatWidget() {
     setIsOpen(false)
   }
 
-  // 開新對話
+  // 開New conversation
   const handleNewConversation = () => {
     setMessages([])
     setConversationId(null)
@@ -843,11 +843,11 @@ export function GlobalChatWidget() {
       }
       return msg
     }))
-    // TODO: 發送反饋到後端
+    // TODO: 發送反饋到Backend
     console.log(`Message ${messageId} feedback: ${type}`)
   }
 
-  // 附件處理
+  // 附itemsProcessing
   const handleAttach = (files: FileList) => {
     const newAttachments: FileAttachment[] = Array.from(files).map(file => ({
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -869,7 +869,7 @@ export function GlobalChatWidget() {
     })
   }
 
-  // 在 Agent 頁面不顯示此組件（避免重複）
+  // 在 Agent page不Display此組items（Avoid重複）
   if (pathname === '/agent') {
     return null
   }

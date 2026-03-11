@@ -1,6 +1,6 @@
 // =============================================
-// ROI 儀表板頁面
-// 展示 GoGoJap 為用戶創造的價值
+// ROI Dashboard Page
+// Showcase the value GoGoJap creates for users
 // =============================================
 
 'use client'
@@ -20,7 +20,8 @@ export default function ROIDashboardPage() {
   const { t } = useLocale()
   const [period, setPeriod] = useState<ROIPeriod>('month')
 
-  // 根據 period 計算趨勢天數
+  // Calculate trend days based on period
+
   const getTrendDays = (p: ROIPeriod): number => {
     switch (p) {
       case 'today': return 1
@@ -33,7 +34,7 @@ export default function ROIDashboardPage() {
 
   return (
     <div className="space-y-6 p-6">
-      {/* 頁面標題 */}
+      {/* Page Title */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -43,14 +44,14 @@ export default function ROIDashboardPage() {
           <p className="text-gray-500 mt-1">{t['roi.subtitle']}</p>
         </div>
 
-        {/* 時間範圍選擇 */}
+        {/* Time Range Selector */}
         <TimeRangeSelector value={period} onChange={setPeriod} />
       </div>
 
-      {/* KPI 卡片 */}
+      {/* KPI Cards */}
       <ROISummaryCards period={period} />
 
-      {/* 趨勢圖表 */}
+      {/* Trend Chart */}
       <HoloCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <BarChart3 className="w-5 h-5 text-gray-400" />
@@ -59,9 +60,9 @@ export default function ROIDashboardPage() {
         <ROITrendChart days={getTrendDays(period)} />
       </HoloCard>
 
-      {/* 雙列佈局 */}
+      {/* Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 左側: AI 改價影響 */}
+        {/* Left: AI Pricing Impact */}
         <HoloCard className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <Brain className="w-5 h-5 text-purple-500" />
@@ -70,7 +71,7 @@ export default function ROIDashboardPage() {
           <PricingImpactTable />
         </HoloCard>
 
-        {/* 右側: 競品監測價值 */}
+        {/* Right: Competitor Monitoring Value */}
         <HoloCard className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <Eye className="w-5 h-5 text-cyan-500" />
@@ -80,7 +81,7 @@ export default function ROIDashboardPage() {
         </HoloCard>
       </div>
 
-      {/* 頁腳說明 */}
+      {/* Footer Notes */}
       <div className="text-center text-xs text-gray-400 py-4">
         <p>{t['roi.footer_note1']}</p>
         <p className="mt-1">{t['roi.footer_note2']}</p>

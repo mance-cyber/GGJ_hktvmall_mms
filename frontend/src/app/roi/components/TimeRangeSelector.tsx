@@ -1,5 +1,5 @@
 // =============================================
-// 時間範圍選擇器組件
+// TimeRangeSelector Component
 // =============================================
 
 'use client'
@@ -13,10 +13,10 @@ interface TimeRangeSelectorProps {
 }
 
 const periods: { value: ROIPeriod; label: string }[] = [
-  { value: 'today', label: '今日' },
-  { value: 'week', label: '本週' },
-  { value: 'month', label: '本月' },
-  { value: 'quarter', label: '本季' },
+  { value: 'today', label: 'Today' },
+  { value: 'week', label: 'This Week' },
+  { value: 'month', label: 'This Month' },
+  { value: 'quarter', label: 'This Quarter' },
 ]
 
 export function TimeRangeSelector({ value, onChange }: TimeRangeSelectorProps) {

@@ -8,7 +8,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
 async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}${endpoint}`
-  // 使用安全 token 管理器
+  // 使用Security token Management器
   const token = getToken()
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -24,7 +24,7 @@ async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> 
   })
 
   if (!response.ok) {
-    // 嘗試從 response body 讀取錯誤訊息
+    // Try從 response body 讀取Error訊息
     let errorMessage = `API Error: ${response.status} ${response.statusText}`
     try {
       const errorData = await response.json()
@@ -36,7 +36,7 @@ async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> 
         errorMessage = errorData.message
       }
     } catch {
-      // 無法解析 JSON，使用默認錯誤訊息
+      // Cannot parse JSON, use defaultError訊息
     }
     throw new Error(errorMessage)
   }
@@ -155,7 +155,7 @@ export interface PriceHistory {
   }
 }
 
-// 預覽商品
+// 預覽products
 export interface PreviewProduct {
   url: string
   name: string
@@ -172,7 +172,7 @@ export interface PreviewProduct {
   unit_type: string | null
 }
 
-// 預覽抓取響應
+// 預覽抓取Response
 export interface PreviewScrapeResponse {
   preview_id: string
   category_id: string
@@ -184,7 +184,7 @@ export interface PreviewScrapeResponse {
   duration_seconds: number
 }
 
-// 確認保存響應
+// ConfirmSaveResponse
 export interface ConfirmScrapeResponse {
   success: boolean
   message: string
@@ -193,7 +193,7 @@ export interface ConfirmScrapeResponse {
   errors: string[]
 }
 
-// 批量刪除響應
+// Batch deleteResponse
 export interface BulkDeleteResponse {
   success: boolean
   deleted_count: number
@@ -203,7 +203,7 @@ export interface BulkDeleteResponse {
 }
 
 // =============================================
-// 智能抓取相關類型
+// 智能抓取相關Type
 // =============================================
 
 export interface SmartScrapeRequest {
@@ -226,7 +226,7 @@ export interface QuotaUsageResponse {
   // 本地統計
   daily_usage: number
   monthly_usage: number
-  // Firecrawl API 真實配額
+  // Firecrawl API 真實Quota
   remaining_credits: number
   plan_credits: number
   used_credits: number
@@ -234,7 +234,7 @@ export interface QuotaUsageResponse {
   billing_period_start: string | null
   billing_period_end: string | null
   days_remaining: number
-  // 狀態
+  // State
   is_low: boolean
   is_critical: boolean
   error_message: string | null
@@ -261,7 +261,7 @@ export interface ProductPriority {
   is_monitored: boolean
 }
 
-// API 函數
+// API Function
 export const api = {
   // 類別
   getCategories: (page = 1, pageSize = 20) =>
@@ -276,28 +276,28 @@ export const api = {
   getCategoryPriceOverview: (id: string) =>
     fetchAPI<PriceOverview>(`/categories/${id}/price-overview`),
 
-  // 商品
+  // products
   getCategoryProducts: (categoryId: string, page = 1, pageSize = 20) =>
     fetchAPI<ProductListResponse>(`/categories/${categoryId}/products?page=${page}&page_size=${pageSize}`),
 
   getProductPriceHistory: (categoryId: string, productId: string, days = 30) =>
     fetchAPI<PriceHistory>(`/categories/${categoryId}/products/${productId}/price-history?days=${days}`),
 
-  // 抓取（直接保存）
+  // 抓取（直接Save）
   triggerScrape: (categoryId: string, maxProducts = 20) =>
     fetchAPI<{ success: boolean; message: string }>(`/categories/${categoryId}/scrape-sync`, {
       method: 'POST',
       body: JSON.stringify({ max_products: maxProducts }),
     }),
 
-  // 預覽抓取（不保存，需要審核）
+  // 預覽抓取（不Save，NeedReview）
   previewScrape: (categoryId: string, maxProducts = 20) =>
     fetchAPI<PreviewScrapeResponse>(`/categories/${categoryId}/scrape-preview`, {
       method: 'POST',
       body: JSON.stringify({ max_products: maxProducts }),
     }),
 
-  // 確認保存預覽結果
+  // ConfirmSave預覽Result
   confirmScrape: (categoryId: string, previewId: string, selectedIndices?: number[]) =>
     fetchAPI<ConfirmScrapeResponse>(`/categories/${categoryId}/scrape-confirm`, {
       method: 'POST',
@@ -307,19 +307,19 @@ export const api = {
       }),
     }),
 
-  // 取消預覽
+  // Cancel preview
   cancelPreview: (categoryId: string, previewId: string) =>
     fetch(`${API_BASE}/categories/${categoryId}/scrape-preview/${previewId}`, {
       method: 'DELETE',
     }),
 
-  // 刪除單個商品
+  // Delete single product
   deleteProduct: (categoryId: string, productId: string) =>
     fetch(`${API_BASE}/categories/${categoryId}/products/${productId}`, {
       method: 'DELETE',
     }),
 
-  // 批量刪除商品
+  // Batch deleteproducts
   bulkDeleteProducts: (categoryId: string, productIds: string[]) =>
     fetchAPI<BulkDeleteResponse>(`/categories/${categoryId}/products/bulk-delete`, {
       method: 'POST',
@@ -327,35 +327,35 @@ export const api = {
     }),
 
   // =============================================
-  // 智能抓取 API（優化版）
+  // 智能抓取 API（Optimize版）
   // =============================================
 
-  // 智能抓取（使用緩存 + 增量更新）
+  // 智能抓取（使用Cache + 增量Update）
   smartScrape: (categoryId: string, options?: SmartScrapeRequest) =>
     fetchAPI<SmartScrapeResponse>(`/categories/${categoryId}/smart-scrape`, {
       method: 'POST',
       body: JSON.stringify(options || {}),
     }),
 
-  // 設置商品優先級
+  // Set upproducts優先級
   setProductsPriority: (categoryId: string, priority: 'high' | 'normal' | 'low', productIds?: string[]) =>
     fetchAPI<{ success: boolean; message: string; updated_count: number }>(`/categories/${categoryId}/products/priority`, {
       method: 'PUT',
       body: JSON.stringify({ priority, product_ids: productIds }),
     }),
 
-  // 獲取商品優先級列表
+  // Fetchproducts優先級List
   getProductsPriorities: (categoryId: string, priority?: string, page = 1, pageSize = 50) => {
     const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) })
     if (priority) params.append('priority', priority)
     return fetchAPI<ProductPriority[]>(`/categories/${categoryId}/products/priorities?${params}`)
   },
 
-  // 獲取配額使用情況
+  // FetchQuota使用情況
   getQuotaUsage: () =>
     fetchAPI<QuotaUsageResponse>('/categories/quota/usage'),
 
-  // 獲取配額使用歷史
+  // FetchQuota使用History
   getQuotaHistory: (days = 7) =>
     fetchAPI<QuotaHistoryResponse>(`/categories/quota/history?days=${days}`),
 
@@ -367,7 +367,7 @@ export const api = {
     fetchAPI<{ success: boolean; message: string }>('/telegram/test', { method: 'POST' }),
 
   // =============================================
-  // 競爭對手 API
+  // 競爭Competitor API
   // =============================================
   getCompetitors: (isActive?: boolean) =>
     fetchAPI<CompetitorListResponse>(`/competitors${isActive !== undefined ? `?is_active=${isActive}` : ''}`),
@@ -419,7 +419,7 @@ export const api = {
     }),
 
   // =============================================
-  // 自家商品 API
+  // 自家products API
   // =============================================
   getProducts: (page = 1, limit = 20, search?: string, status?: string, category?: string) => {
     const params = new URLSearchParams({ page: String(page), limit: String(limit) })
@@ -448,7 +448,7 @@ export const api = {
     fetch(`${API_BASE}/products/${id}`, { method: 'DELETE' }),
 
   // =============================================
-  // AI 內容 API
+  // AI Content API
   // =============================================
   generateContent: (data: ContentGenerateRequest) =>
     fetchAPI<ContentGenerateResponse>('/content/generate', {
@@ -462,18 +462,18 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
-  // 查詢批量任務狀態
+  // Query批量任務State
   getBatchTaskStatus: (taskId: string) =>
     fetchAPI<BatchTaskStatusResponse>(`/content/batch-generate/${taskId}/status`),
 
-  // 導出內容為 CSV
+  // ExportContent為 CSV
   exportContentCsv: (contentIds: string[]) => {
     const params = new URLSearchParams({ content_ids: contentIds.join(',') })
-    // 返回下載 URL，前端需要使用 window.open 或 <a> 標籤觸發下載
+    // BackDownload URL，Frontend needs window.open or <a> tag to triggerDownload
     return `${process.env.NEXT_PUBLIC_API_URL || '/api/v1'}/content/export?${params}`
   },
 
-  // 下載批量導入模板
+  // Download批量Import模板
   getImportTemplateUrl: () =>
     `${process.env.NEXT_PUBLIC_API_URL || '/api/v1'}/content/template/download`,
 
@@ -495,19 +495,19 @@ export const api = {
       method: 'PUT',
     }),
 
-  // 文案對話式優化
+  // 文案對話式Optimize
   optimizeContent: (contentId: string, data: ContentOptimizeRequest) =>
     fetchAPI<ContentOptimizeResponse>(`/content/${contentId}/optimize`, {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // 獲取快捷優化建議
+  // Fetch快捷Optimizesuggestions
   getOptimizeSuggestions: () =>
     fetchAPI<QuickSuggestionsResponse>('/content/optimize/suggestions'),
 
   // =============================================
-  // 警報 API
+  // Alert API
   // =============================================
   getAlerts: (isRead?: boolean, alertType?: string, limit = 50) => {
     const params = new URLSearchParams({ limit: String(limit) })
@@ -540,7 +540,7 @@ export const api = {
   getMrcStatsOverview: () =>
     fetchAPI<any>('/mrc/stats/overview'),
 
-  // 批量競品匹配
+  // 批量CompetitorMatch
   batchFindCompetitors: (limit: number = 50, categoryMain?: string, categorySub?: string) => {
     const params = new URLSearchParams({ limit: limit.toString() })
     if (categoryMain) params.append('category_main', categoryMain)
@@ -557,7 +557,7 @@ export const api = {
     }>(`/mrc/batch/find-competitors?${params.toString()}`, { method: 'POST' })
   },
 
-  // 批量競品匹配（SSE 串流版）— 返回完整 URL，由呼叫方處理 stream
+  // Batch competitor matching (SSE streaming)— BackFull URL, handled by caller stream
   batchFindCompetitorsStreamUrl: (limit: number, categoryMain?: string, platform?: string) => {
     const base = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
     const params = new URLSearchParams({ limit: limit.toString() })
@@ -567,10 +567,10 @@ export const api = {
   },
 
   // =============================================
-  // 競品建庫 API
+  // Competitor建庫 API
   // =============================================
 
-  // 啟動管線後台任務（返回 task_id）
+  // Start pipeline background task (returns task_id)
   startPipeline: (platform: string = 'all') =>
     fetchAPI<{ task_id: string }>(`/catalog/pipeline/start?platform=${platform}`, {
       method: 'POST',
@@ -591,21 +591,21 @@ export const api = {
       progress: { current: number; total: number; failed?: number; message?: string } | null
     }>(`/catalog/pipeline/progress/${taskId}`),
 
-  // 建庫：抓取競品平台商品（長時間操作，5 分鐘超時）
+  // 建庫：抓取Competitor平台products（長TimeOperation，5 minutesTimeout）
   buildCatalog: (platform: string = 'all') =>
     fetchAPI<{ status: string; result: any }>(`/catalog/build?platform=${platform}`, {
       method: 'POST',
       signal: AbortSignal.timeout(300_000),
     }),
 
-  // 打標：自動分類標籤（3 分鐘超時）
+  // 打標：Auto分類標籤（3 minutesTimeout）
   tagCatalog: () =>
     fetchAPI<{ status: string; result: any }>('/catalog/tag', {
       method: 'POST',
       signal: AbortSignal.timeout(180_000),
     }),
 
-  // 匹配：AI 配對自家商品與競品（5 分鐘超時）
+  // Matching: AI pairs own products with competitors (5 min timeout)
   matchCatalog: (productId?: string) => {
     const params = productId ? `?product_id=${productId}` : ''
     return fetchAPI<{ status: string; result: any }>(`/catalog/match${params}`, {
@@ -615,32 +615,32 @@ export const api = {
   },
 
   // =============================================
-  // AI 設定與分析 API
+  // AI Settings與Analysis API
   // =============================================
   
-  // 獲取 AI 配置
+  // Fetch AI Configuration
   getAIConfig: () =>
     fetchAPI<AIConfigResponse>('/ai/config'),
 
-  // 更新 AI 配置
+  // Update AI Configuration
   updateAIConfig: (data: AIConfigUpdate) =>
     fetchAPI<AIConfigResponse>('/ai/config', {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
 
-  // 測試 API 連接
+  // Test API Connection
   testAIConnection: (apiKey: string, baseUrl: string, model = 'gpt-3.5-turbo') =>
     fetchAPI<{ valid: boolean; error?: string; message?: string }>('/ai/test-connection', {
       method: 'POST',
       body: JSON.stringify({ api_key: apiKey, base_url: baseUrl, model }),
     }),
 
-  // 獲取預設可用模型列表
+  // FetchDefault可用ModelList
   getAIModels: () =>
     fetchAPI<AIModel[]>('/ai/models'),
 
-  // 從 API 動態獲取模型列表
+  // Dynamically fetch models from APIList
   fetchModelsFromAPI: (options: { apiKey?: string; baseUrl?: string; useSaved?: boolean }) =>
     fetchAPI<FetchModelsResponse>('/ai/fetch-models', {
       method: 'POST',
@@ -651,21 +651,21 @@ export const api = {
       }),
     }),
 
-  // 生成數據摘要
+  // GenerateData摘要
   generateDataInsights: (data: Record<string, any>) =>
     fetchAPI<AIAnalysisResponse>('/ai/generate-insights', {
       method: 'POST',
       body: JSON.stringify({ data }),
     }),
 
-  // 生成 Marketing 策略
+  // Generate marketing strategy
   generateMarketingStrategy: (insights: string, context: Record<string, any> = {}) =>
     fetchAPI<AIAnalysisResponse>('/ai/generate-strategy', {
       method: 'POST',
       body: JSON.stringify({ insights, context }),
     }),
 
-  // 完整分析流程（兩個 AI 串聯）
+  // 完整Analysis流程（兩個 AI 串聯）
   runFullAnalysis: (data: Record<string, any>, context: Record<string, any> = {}) =>
     fetchAPI<AIFullAnalysisResponse>('/ai/analyze-full', {
       method: 'POST',
@@ -683,37 +683,37 @@ export const api = {
       body: JSON.stringify(message),
     }),
 
-  // 處理澄清回應
+  // Processing澄清回應
   agentClarify: (response: AgentClarificationResponse) =>
     fetchAPI<AgentChatResponse>('/agent/clarify', {
       method: 'POST',
       body: JSON.stringify(response),
     }),
 
-  // 獲取對話狀態
+  // Fetch對話State
   getAgentConversation: (conversationId: string) =>
     fetchAPI<AgentConversationState>(`/agent/conversation/${conversationId}`),
 
-  // 獲取查詢建議
+  // FetchQuerysuggestions
   getAgentSuggestions: () =>
     fetchAPI<{ suggestions: AgentSuggestion[] }>('/agent/suggestions'),
 
-  // 獲取產品類別
+  // FetchProduct類別
   
-  // 獲取對話歷史
+  // Fetch對話History
   getAgentConversations: (limit = 50, offset = 0) =>
     fetchAPI<{ conversations: { id: string; title: string; created_at: string; updated_at: string }[] }>(`/agent/conversations?limit=${limit}&offset=${offset}`),
 
   getAgentProductCategories: () =>
     fetchAPI<{ categories: AgentProductCategory[] }>('/agent/product-categories'),
 
-  // 刪除單個對話
+  // Delete單個對話
   deleteAgentConversation: (conversationId: string) =>
     fetchAPI<{ success: boolean; message: string }>(`/agent/conversation/${conversationId}`, {
       method: 'DELETE',
     }),
 
-  // 批量刪除對話
+  // Batch delete對話
   deleteAgentConversations: (conversationIds: string[]) =>
     fetchAPI<{ success: boolean; deleted_count: number; message: string }>('/agent/conversations', {
       method: 'DELETE',
@@ -766,7 +766,7 @@ export const api = {
 }
 
 // =============================================
-// 競爭對手相關類型
+// 競爭Competitor相關Type
 // =============================================
 
 export interface Competitor {
@@ -856,7 +856,7 @@ export interface CompetitorPriceHistoryResponse {
 }
 
 // =============================================
-// 自家商品相關類型
+// 自家products相關Type
 // =============================================
 
 export interface OwnProduct {
@@ -913,7 +913,7 @@ export interface OwnProductUpdate {
 }
 
 // =============================================
-// AI 內容相關類型
+// AI Content相關Type
 // =============================================
 
 export interface ProductInfo {
@@ -953,14 +953,14 @@ export interface ContentGenerateResponse {
   metadata: Record<string, unknown>
 }
 
-// 舊版批量請求（已廢棄）
+// 舊版批量Request（已廢棄）
 export interface ContentBatchGenerateRequestLegacy {
   product_ids: string[]
   content_type: 'title' | 'description' | 'selling_points' | 'full_copy'
   style: 'formal' | 'casual' | 'playful' | 'professional'
 }
 
-// 新版批量生成
+// 新版批量Generate
 export interface BatchGenerateItem {
   product_id?: string
   product_info?: ProductInfo
@@ -1038,7 +1038,7 @@ export interface ContentListResponse {
   total: number
 }
 
-// 文案優化相關類型
+// 文案Optimize相關Type
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
@@ -1070,7 +1070,7 @@ export interface QuickSuggestionsResponse {
 }
 
 // =============================================
-// 警報相關類型
+// Alert相關Type
 // =============================================
 
 export interface PriceAlert {
@@ -1091,7 +1091,7 @@ export interface PriceAlertListResponse {
 }
 
 // =============================================
-// AI 設定相關類型
+// AI Settings相關Type
 // =============================================
 
 export interface AIModel {
@@ -1162,7 +1162,7 @@ export interface AIFullAnalysisResponse {
 }
 
 // =============================================
-// AI Agent 類型
+// AI Agent Type
 // =============================================
 
 export interface AgentChatMessage {
@@ -1211,7 +1211,7 @@ export interface AgentChatResponse {
     generated_at: string
   }
   charts?: AgentChartData[]
-  suggestions?: AgentFollowUpSuggestion[]  // 後續建議按鈕
+  suggestions?: AgentFollowUpSuggestion[]  // 後續suggestionsbutton
 }
 
 export interface AgentConversationState {
@@ -1235,7 +1235,7 @@ export interface AgentProductCategory {
 }
 
 // =============================================
-// 智能定價 API
+// 智能Pricing API
 // =============================================
 
 export interface PriceProposal {
@@ -1318,7 +1318,7 @@ export const orderApi = {
 }
 
 // =============================================
-// 客服收件箱 API
+// 客服收items箱 API
 // =============================================
 
 export interface Message {
@@ -1354,7 +1354,7 @@ export const inboxApi = {
 }
 
 // =============================================
-// 財務管理 API
+// 財務Management API
 // =============================================
 
 export interface SettlementItem {
@@ -1447,7 +1447,7 @@ export const promotionApi = {
 }
 
 // =============================================
-// 分析總覽 API
+// Analysis總覽 API
 // =============================================
 
 export interface CommandCenterStats {
@@ -1478,7 +1478,7 @@ export const analyticsApi = {
 }
 
 // =============================================
-// 認證 API
+// Authentication API
 // =============================================
 
 export interface LoginResponse {
@@ -1524,7 +1524,7 @@ export const authApi = {
 }
 
 // =============================================
-// SEO 優化 API 類型
+// SEO Optimize API Type
 // =============================================
 
 export interface SEOScoreBreakdown {
@@ -1644,29 +1644,29 @@ export interface ContentAuditResponse {
 }
 
 // =============================================
-// SEO 優化 API
+// SEO Optimize API
 // =============================================
 
 export const seoApi = {
-  // SEO 內容生成
+  // SEO ContentGenerate
   generateSEO: (data: SEOGenerateRequest) =>
     fetchAPI<SEOContentResponse>('/seo/generate', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // 批量生成 SEO 內容
+  // 批量Generate SEO Content
   batchGenerateSEO: (data: SEOBatchGenerateRequest) =>
     fetchAPI<SEOBatchResponse>('/seo/batch-generate', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // 獲取 SEO 評分
+  // Fetch SEO Score
   getSEOScore: (productId: string) =>
     fetchAPI<SEOScoreResponse>(`/seo/${productId}/score`),
 
-  // 分析內容
+  // AnalysisContent
   analyzeSEO: (data: { product_id?: string; title: string; description: string; keywords?: string[]; audit_type?: string }) =>
     fetchAPI<ContentAuditResponse>('/seo/analyze', {
       method: 'POST',
@@ -1680,18 +1680,18 @@ export const seoApi = {
       body: JSON.stringify(data),
     }),
 
-  // 獲取關鍵詞建議
+  // Get keyword suggestions
   getKeywordSuggestions: (query: string, category?: string, limit = 10) => {
     const params = new URLSearchParams({ query, limit: String(limit) })
     if (category) params.append('category', category)
     return fetchAPI<KeywordSuggestionsResponse>(`/seo/keywords/suggestions?${params}`)
   },
 
-  // 獲取 SEO 內容詳情
+  // Fetch SEO ContentDetails
   getSEOContent: (contentId: string) =>
     fetchAPI<SEOContentResponse>(`/seo/${contentId}`),
 
-  // 列出 SEO 內容
+  // 列出 SEO Content
   listSEOContents: (productId?: string, status?: string, limit = 20, offset = 0) => {
     const params = new URLSearchParams({ limit: String(limit), offset: String(offset) })
     if (productId) params.append('product_id', productId)
@@ -1699,7 +1699,7 @@ export const seoApi = {
     return fetchAPI<{ data: any[]; total: number }>(`/seo/?${params}`)
   },
 
-  // 審批 SEO 內容
+  // 審批 SEO Content
   approveSEOContent: (contentId: string) =>
     fetchAPI<{ id: string; status: string; approved_at: string }>(`/seo/${contentId}/approve`, {
       method: 'PATCH',
@@ -1707,7 +1707,7 @@ export const seoApi = {
 }
 
 // =============================================
-// GEO 結構化數據 API 類型
+// GEO Structured data API types
 // =============================================
 
 export interface StructuredDataResponse {
@@ -1801,57 +1801,57 @@ export interface ExpertContentRequest {
 }
 
 // =============================================
-// GEO 結構化數據 API
+// GEO 結構化Data API
 // =============================================
 
 export const geoApi = {
-  // 生成 Product Schema
+  // Generate Product Schema
   generateProductSchema: (data: ProductSchemaRequest) =>
     fetchAPI<StructuredDataResponse>('/geo/schema/product', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // 生成 FAQ Schema
+  // Generate FAQ Schema
   generateFAQSchema: (data: FAQSchemaRequest) =>
     fetchAPI<StructuredDataResponse>('/geo/schema/faq', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // 生成 Breadcrumb Schema
+  // Generate Breadcrumb Schema
   generateBreadcrumbSchema: (data: BreadcrumbSchemaRequest) =>
     fetchAPI<StructuredDataResponse>('/geo/schema/breadcrumb', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // 批量生成 Schema
+  // 批量Generate Schema
   batchGenerateSchemas: (productIds: string[], schemaTypes: string[]) =>
     fetchAPI<BatchSchemaResponse>('/geo/schema/batch', {
       method: 'POST',
       body: JSON.stringify({ product_ids: productIds, schema_types: schemaTypes }),
     }),
 
-  // 生成 AI 摘要
+  // Generate AI 摘要
   generateAISummary: (data: { product_id?: string; product_info?: ProductInfo; max_facts?: number }) =>
     fetchAPI<AISummaryResponse>('/geo/ai-summary', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // 驗證 Schema
+  // Validate Schema
   validateSchema: (jsonLd: Record<string, any>) =>
     fetchAPI<SchemaValidationResponse>('/geo/validate', {
       method: 'POST',
       body: JSON.stringify({ json_ld: jsonLd }),
     }),
 
-  // 獲取結構化數據詳情
+  // Fetch結構化DataDetails
   getStructuredData: (dataId: string) =>
     fetchAPI<StructuredDataResponse>(`/geo/schema/${dataId}`),
 
-  // 列出結構化數據
+  // 列出結構化Data
   listStructuredData: (productId?: string, schemaType?: string, limit = 20, offset = 0) => {
     const params = new URLSearchParams({ limit: String(limit), offset: String(offset) })
     if (productId) params.append('product_id', productId)
@@ -1859,41 +1859,41 @@ export const geoApi = {
     return fetchAPI<{ data: any[]; total: number }>(`/geo/schema?${params}`)
   },
 
-  // 品牌知識 - 創建
+  // 品牌知識 - Create
   createBrandKnowledge: (data: BrandKnowledgeCreate) =>
     fetchAPI<BrandKnowledgeResponse>('/geo/knowledge', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // 品牌知識 - 搜索
+  // 品牌知識 - Search
   searchBrandKnowledge: (query: string, knowledgeType?: string, limit = 10) => {
     const params = new URLSearchParams({ query, limit: String(limit) })
     if (knowledgeType) params.append('knowledge_type', knowledgeType)
     return fetchAPI<{ data: BrandKnowledgeResponse[]; total: number }>(`/geo/knowledge/search?${params}`)
   },
 
-  // 品牌知識 - 獲取產品相關知識
+  // Brand knowledge - get product knowledge
   getProductKnowledge: (productId: string) =>
     fetchAPI<{ data: BrandKnowledgeResponse[]; total: number }>(`/geo/knowledge/product/${productId}`),
 
-  // 品牌知識 - AI 生成專家內容
+  // 品牌知識 - AI Generate專家Content
   generateExpertContent: (data: ExpertContentRequest) =>
     fetchAPI<BrandKnowledgeResponse>('/geo/knowledge/generate-expert', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // 品牌知識 - 獲取詳情
+  // 品牌知識 - FetchDetails
   getBrandKnowledge: (knowledgeId: string) =>
     fetchAPI<BrandKnowledgeResponse>(`/geo/knowledge/${knowledgeId}`),
 }
 
 
 // =============================================
-// 內容生成流水線 API (Content Pipeline)
+// ContentGenerate流水線 API (Content Pipeline)
 // =============================================
-// 一次 AI 調用生成多語言完整內容包：文案 + SEO + GEO
+// One AI call generates multilingual complete content pack: copy + SEO + GEO
 
 export interface ContentPipelineInput {
   name: string
@@ -1908,13 +1908,13 @@ export interface ContentPipelineInput {
 export interface ContentPipelineRequest {
   product_id?: string
   product_info?: ContentPipelineInput
-  languages?: string[]  // 多語言支持，如 ['zh-HK', 'en']
+  languages?: string[]  // 多語言Support，如 ['zh-HK', 'en']
   tone?: string
   include_faq?: boolean
   save_to_db?: boolean
 }
 
-// 單一語言的內容
+// 單一語言的Content
 export interface LocalizedContentResponse {
   language: string
 
@@ -1943,7 +1943,7 @@ export interface ContentPipelineResponse {
   success: boolean
   product_info: Record<string, any>
 
-  // 多語言內容（key = language code）
+  // Multilingual content (key = language code)
   localized: Record<string, LocalizedContentResponse>
 
   // 共用部分
@@ -1956,7 +1956,7 @@ export interface ContentPipelineResponse {
   seo_content_ids: Record<string, string>
   structured_data_id?: string
 
-  // 元數據
+  // 元Data
   languages: string[]
   generation_time_ms: number
   model_used: string
@@ -1965,7 +1965,7 @@ export interface ContentPipelineResponse {
 
 export interface BatchPipelineRequest {
   products: ContentPipelineInput[]
-  languages?: string[]  // 多語言支持
+  languages?: string[]  // 多語言Support
   tone?: string
   include_faq?: boolean
   save_to_db?: boolean
@@ -1989,7 +1989,7 @@ export interface BatchPipelineResponse {
 }
 
 // =============================================
-// 內容生成歷史記錄
+// ContentGenerateHistoryRecord
 // =============================================
 
 export interface PipelineHistoryItem {
@@ -2031,21 +2031,21 @@ export interface PipelineHistoryParams {
 }
 
 export const contentPipelineApi = {
-  // 生成多語言內容（文案 + SEO + GEO）
+  // Generate multilingual content (copy + SEO + GEO)
   generate: (data: ContentPipelineRequest) =>
     fetchAPI<ContentPipelineResponse>('/content-pipeline/generate', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // 批量生成
+  // 批量Generate
   batchGenerate: (data: BatchPipelineRequest) =>
     fetchAPI<BatchPipelineResponse>('/content-pipeline/batch', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // 獲取歷史記錄列表
+  // FetchHistoryRecordList
   getHistory: (params?: PipelineHistoryParams) => {
     const searchParams = new URLSearchParams()
     if (params?.page) searchParams.set('page', params.page.toString())
@@ -2060,11 +2060,11 @@ export const contentPipelineApi = {
     )
   },
 
-  // 獲取歷史記錄詳情
+  // FetchHistoryRecordDetails
   getHistoryDetail: (sessionId: string) =>
     fetchAPI<PipelineHistoryDetail>(`/content-pipeline/history/${sessionId}`),
 
-  // 刪除歷史記錄
+  // DeleteHistoryRecord
   deleteHistory: (sessionId: string) =>
     fetchAPI<{ message: string; id: string }>(`/content-pipeline/history/${sessionId}`, {
       method: 'DELETE',

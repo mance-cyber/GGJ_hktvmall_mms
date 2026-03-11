@@ -1,7 +1,7 @@
 'use client'
 
 // =============================================
-// AI 文案對話式優化組件
+// AI 文案對話式Optimize組items
 // =============================================
 
 import { useState, useRef, useEffect } from 'react'
@@ -27,15 +27,15 @@ import {
 } from '@/lib/api'
 
 // =============================================
-// 內建快捷建議（備用，優先從 API 獲取）
+// 內建快捷suggestions（備用，優先從 API Fetch）
 // =============================================
 
 const FALLBACK_QUICK_SUGGESTIONS: QuickSuggestion[] = [
   { key: 'tone_casual', label: '語氣輕鬆啲', instruction: '請將文案語氣改得更輕鬆親切，加入更多香港地道口語' },
-  { key: 'enhance_selling_points', label: '加強賣點', instruction: '請加強產品的核心賣點描述，突出米芝蓮/五星酒店背書' },
-  { key: 'shorten', label: '縮短長度', instruction: '請精簡文案，保留重點，去除冗餘內容' },
-  { key: 'more_local', label: '更貼地', instruction: '請用更地道的香港口語重寫，讓文案更貼近本地消費者' },
-  { key: 'add_urgency', label: '加入限時優惠', instruction: '請加入限時優惠的緊迫感，如「限時88折」「上週一分鐘售罄」等' },
+  { key: 'enhance_selling_points', label: '加強賣點', instruction: '請加強Product的核心賣點Description，突出米芝蓮/五星酒店背書' },
+  { key: 'shorten', label: '縮短長度', instruction: 'Please refine the copy, keep the key points, remove redundancyContent' },
+  { key: 'more_local', label: '更貼地', instruction: 'Please rewrite in more authentic Hong Kong colloquial, make copy closer to local consumers' },
+  { key: 'add_urgency', label: '加入限時優惠', instruction: '請加入限時優惠的緊迫感，如「限時88折」「上週一minutes售罄」等' },
 ]
 
 // =============================================
@@ -51,7 +51,7 @@ interface ContentOptimizeChatProps {
 }
 
 // =============================================
-// 對話消息組件
+// 對話消息組items
 // =============================================
 
 function ChatMessageItem({ message }: { message: ChatMessage }) {
@@ -93,7 +93,7 @@ function ChatMessageItem({ message }: { message: ChatMessage }) {
 }
 
 // =============================================
-// 主組件
+// 主組items
 // =============================================
 
 export function ContentOptimizeChat({
@@ -107,16 +107,16 @@ export function ContentOptimizeChat({
   const [inputValue, setInputValue] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // 獲取快捷建議
+  // Fetch快捷suggestions
   const { data: suggestionsData } = useQuery({
     queryKey: ['optimize-suggestions'],
     queryFn: () => api.getOptimizeSuggestions(),
-    staleTime: 1000 * 60 * 10, // 10 分鐘緩存
+    staleTime: 1000 * 60 * 10, // 10 minutesCache
   })
 
   const quickSuggestions = suggestionsData?.suggestions || FALLBACK_QUICK_SUGGESTIONS
 
-  // 優化 mutation
+  // Optimize mutation
   const optimizeMutation = useMutation({
     mutationFn: (data: ContentOptimizeRequest) =>
       api.optimizeContent(contentId, data),
@@ -124,17 +124,17 @@ export function ContentOptimizeChat({
       // 添加 AI 回覆
       const aiMessage: ChatMessage = {
         role: 'assistant',
-        content: `已完成優化！版本更新至 v${response.version}。\n\n後續建議：\n${response.suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')}`,
+        content: `已CompleteOptimize！VersionUpdate至 v${response.version}。\n\n後續suggestions：\n${response.suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')}`,
       }
       setMessages((prev) => [...prev, aiMessage])
 
-      // 通知父組件更新內容
+      // Notification父組itemsUpdateContent
       onContentUpdate(response.content, response.version)
     },
     onError: (error: Error) => {
       const aiMessage: ChatMessage = {
         role: 'assistant',
-        content: `抱歉，優化失敗：${error.message}。請稍後再試。`,
+        content: `抱歉，OptimizeFailed：${error.message}。請稍後再試。`,
       }
       setMessages((prev) => [...prev, aiMessage])
     },
@@ -147,7 +147,7 @@ export function ContentOptimizeChat({
     }
   }, [messages])
 
-  // 發送優化指令
+  // 發送Optimize指令
   const handleSend = (instruction: string) => {
     if (!instruction.trim()) return
 
@@ -159,7 +159,7 @@ export function ContentOptimizeChat({
     setMessages((prev) => [...prev, userMessage])
     setInputValue('')
 
-    // 發送優化請求
+    // 發送OptimizeRequest
     optimizeMutation.mutate({
       instruction,
       context: messages,
@@ -167,16 +167,16 @@ export function ContentOptimizeChat({
     })
   }
 
-  // 快捷建議點擊
+  // 快捷suggestions點擊
   const handleQuickSuggestion = (suggestion: QuickSuggestion) => {
     handleSend(suggestion.instruction)
   }
 
   return (
     <div className={cn('space-y-4', className)}>
-      {/* 快捷建議區 */}
+      {/* 快捷suggestions區 */}
       <div>
-        <p className="text-xs text-slate-500 mb-2">快捷優化：</p>
+        <p className="text-xs text-slate-500 mb-2">快捷Optimize：</p>
         <div className="flex flex-wrap gap-1.5">
           {quickSuggestions.map((suggestion) => (
             <Button
@@ -193,7 +193,7 @@ export function ContentOptimizeChat({
         </div>
       </div>
 
-      {/* 對話歷史區 */}
+      {/* 對話History區 */}
       {messages.length > 0 && (
         <div className="border border-slate-200 rounded-lg bg-white/50">
           <div className="max-h-[250px] overflow-y-auto p-3">
@@ -203,7 +203,7 @@ export function ContentOptimizeChat({
             {optimizeMutation.isPending && (
               <div className="flex items-center gap-2 text-sm text-slate-500">
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                AI 正在優化中...
+                AI currentlyOptimize中...
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -211,13 +211,13 @@ export function ContentOptimizeChat({
         </div>
       )}
 
-      {/* 輸入區 */}
+      {/* Input區 */}
       <div>
         <div className="flex gap-2">
           <Textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="輸入優化指令，例如：「加強限時優惠感」「語氣更活潑」..."
+            placeholder="InputOptimize指令，例如：「加強限時優惠感」「語氣更活潑」..."
             className="min-h-[80px] resize-none bg-white text-sm"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -249,11 +249,11 @@ export function ContentOptimizeChat({
         </div>
       </div>
 
-      {/* 錯誤提示 */}
+      {/* Error hint */}
       {optimizeMutation.isError && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm flex items-center gap-2">
           <AlertCircle className="w-4 h-4" />
-          優化失敗，請稍後再試
+          OptimizeFailed，請稍後再試
         </div>
       )}
     </div>

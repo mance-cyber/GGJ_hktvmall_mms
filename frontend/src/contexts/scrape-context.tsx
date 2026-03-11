@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useCallback, useEffect, ReactNode 
 import { useQueryClient } from '@tanstack/react-query'
 
 // =============================================
-// 類型定義
+// Type definitions
 // =============================================
 
 export type ScrapeTaskStatus = 'pending' | 'running' | 'success' | 'failed'
@@ -23,21 +23,21 @@ export interface ScrapeJob {
 }
 
 interface ScrapeContextType {
-  // 任務列表
+  // 任務List
   jobs: ScrapeJob[]
   activeJobsCount: number
   
-  // 操作方法
+  // OperationMethod
   addJob: (job: Omit<ScrapeJob, 'status' | 'progress'>) => string
   updateJob: (id: string, updates: Partial<ScrapeJob>) => void
   removeJob: (id: string) => void
   clearCompleted: () => void
   
-  // 狀態檢查
+  // StateCheck
   isJobRunning: (targetId: string) => boolean
   getJobByTarget: (targetId: string) => ScrapeJob | undefined
   
-  // 全局狀態
+  // 全局State
   isAnyScraping: boolean
   lastActivity?: Date
 }
@@ -53,7 +53,7 @@ export function ScrapeProvider({ children }: { children: ReactNode }) {
   const [lastActivity, setLastActivity] = useState<Date>()
   const queryClient = useQueryClient()
 
-  // 計算活躍任務數
+  // Calculate活躍任務數
   const activeJobsCount = jobs.filter(j => j.status === 'running' || j.status === 'pending').length
   const isAnyScraping = activeJobsCount > 0
 
@@ -70,14 +70,14 @@ export function ScrapeProvider({ children }: { children: ReactNode }) {
     return job.id
   }, [])
 
-  // 更新任務
+  // Update任務
   const updateJob = useCallback((id: string, updates: Partial<ScrapeJob>) => {
     setJobs(prev => prev.map(job => 
       job.id === id ? { ...job, ...updates } : job
     ))
     setLastActivity(new Date())
     
-    // 如果任務完成，刷新相關數據
+    // If task completed, refresh related data
     if (updates.status === 'success' || updates.status === 'failed') {
       const job = jobs.find(j => j.id === id)
       if (job) {
@@ -99,22 +99,22 @@ export function ScrapeProvider({ children }: { children: ReactNode }) {
     setJobs(prev => prev.filter(job => job.id !== id))
   }, [])
 
-  // 清除已完成任務
+  // Clear completed tasks
   const clearCompleted = useCallback(() => {
     setJobs(prev => prev.filter(job => job.status === 'running' || job.status === 'pending'))
   }, [])
 
-  // 檢查任務是否正在運行
+  // Check if task is running
   const isJobRunning = useCallback((targetId: string): boolean => {
     return jobs.some(j => j.targetId === targetId && (j.status === 'running' || j.status === 'pending'))
   }, [jobs])
 
-  // 獲取目標的任務
+  // FetchTarget的任務
   const getJobByTarget = useCallback((targetId: string): ScrapeJob | undefined => {
     return jobs.find(j => j.targetId === targetId)
   }, [jobs])
 
-  // 自動清理過期任務（超過 5 分鐘的已完成任務）
+  // Auto-clean expired tasks (completed tasks older than 5 minutes)
   useEffect(() => {
     const interval = setInterval(() => {
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
@@ -124,7 +124,7 @@ export function ScrapeProvider({ children }: { children: ReactNode }) {
         }
         return true
       }))
-    }, 60000) // 每分鐘檢查一次
+    }, 60000) // Check every minute
 
     return () => clearInterval(interval)
   }, [])

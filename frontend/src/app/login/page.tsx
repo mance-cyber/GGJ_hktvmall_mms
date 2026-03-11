@@ -1,7 +1,7 @@
 'use client'
 
 // =============================================
-// 登入頁面 - Future Tech 設計
+// Login page - Future Tech design
 // =============================================
 
 import { useState, useMemo } from 'react'
@@ -42,14 +42,14 @@ export default function LoginPage() {
     password: z.string().min(1, { message: t['login.password_required'] }),
   }), [t])
 
-  // 開發模式測試帳號
+  // Development mode test account
   const devAccounts = useMemo(() => [
     { email: 'admin@dev.local', password: 'admin123', role: t['common.admin'], color: 'from-red-500 to-orange-500' },
     { email: 'operator@dev.local', password: 'operator123', role: t['common.operator'], color: 'from-blue-500 to-cyan-500' },
     { email: 'viewer@dev.local', password: 'viewer123', role: t['common.viewer'], color: 'from-green-500 to-emerald-500' },
   ], [t])
 
-  // 檢測是否為開發環境
+  // Detect if development environment
   const isDevelopment = typeof window !== 'undefined' && (
     window.location.hostname === 'localhost' ||
     window.location.hostname === '127.0.0.1' ||
@@ -83,7 +83,7 @@ export default function LoginPage() {
     }
   }
 
-  // 開發模式快速登入
+  // Development mode quick login
   async function quickLogin(email: string, password: string, role: string) {
     setIsLoading(true)
     try {
@@ -106,15 +106,15 @@ export default function LoginPage() {
   return (
     <PageTransition>
       <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* 背景效果 */}
+        {/* Background effects */}
         <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-cyan-50/30 to-blue-50/50" />
         <DataStreamBg density="low" color="cyan" className="opacity-20" />
 
-        {/* 裝飾元素 */}
+        {/* Decorative elements */}
         <div className="absolute top-20 left-20 w-72 h-72 bg-cyan-400/10 rounded-full blur-3xl animate-float" />
         <div className="absolute bottom-20 right-20 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl animate-float-delayed" />
 
-        {/* 登入卡片 */}
+        {/* Login card */}
         <motion.div
           initial={{ opacity: 0, y: 20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -122,7 +122,7 @@ export default function LoginPage() {
           className="relative z-10 w-full max-w-md mx-4"
         >
           <HoloCard glowColor="cyan" scanLine className="p-8">
-            {/* Logo 區域 */}
+            {/* Logo area */}
             <div className="text-center mb-8">
               <motion.div
                 initial={{ scale: 0 }}
@@ -140,7 +140,7 @@ export default function LoginPage() {
               <p className="text-slate-500 mt-1">{t['login.subtitle']}</p>
             </div>
 
-            {/* 登入表單 */}
+            {/* Login form */}
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
                 <FormField
@@ -195,7 +195,7 @@ export default function LoginPage() {
               </form>
             </Form>
 
-            {/* 分隔線 */}
+            {/* Divider */}
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-slate-200" />
@@ -207,7 +207,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Google 登入 */}
+            {/* Google login */}
             <div className="flex justify-center">
               <GoogleLogin
                 onSuccess={credentialResponse => {
@@ -240,7 +240,7 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* 開發模式快速登入 */}
+            {/* Development mode quick login */}
             {isDevelopment && (
               <>
                 <div className="relative my-6">

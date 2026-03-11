@@ -1,7 +1,7 @@
 'use client'
 
 // =============================================
-// 價格趨勢儀表板
+// PriceTrend儀表板
 // =============================================
 
 import { useState } from 'react'
@@ -28,18 +28,18 @@ import {
 
 export default function TrendsPage() {
   const { t } = useLocale()
-  // 狀態
+  // State
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null)
   const [selectedDays, setSelectedDays] = useState(30)
 
-  // 獲取產品列表
+  // FetchProductList
   const {
     data: productsData,
     isLoading: isLoadingProducts,
     error: productsError,
   } = useProductsWithTrends()
 
-  // 獲取價格趨勢
+  // FetchPriceTrend
   const {
     data: trendData,
     isLoading: isLoadingTrend,
@@ -47,7 +47,7 @@ export default function TrendsPage() {
     refetch: refetchTrend,
   } = useProductPriceTrendWithDays(selectedProductId, selectedDays)
 
-  // 加載狀態
+  // Loading state
   if (isLoadingProducts) {
     return (
       <PageTransition>
@@ -72,7 +72,7 @@ export default function TrendsPage() {
     )
   }
 
-  // 錯誤狀態
+  // ErrorState
   if (productsError) {
     return (
       <PageTransition>
@@ -96,7 +96,7 @@ export default function TrendsPage() {
     )
   }
 
-  // 無產品狀態
+  // 無ProductState
   if (!productsData?.products || productsData.products.length === 0) {
     return (
       <PageTransition>
@@ -125,7 +125,7 @@ export default function TrendsPage() {
   return (
     <PageTransition>
       <div className="space-y-6">
-        {/* ========== 頁面標題 ========== */}
+        {/* ========== Page title ========== */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white">
@@ -148,7 +148,7 @@ export default function TrendsPage() {
           )}
         </div>
 
-        {/* ========== 篩選控制 ========== */}
+        {/* ========== Filter控制 ========== */}
         <div className="relative z-[9999]">
           <div className="flex flex-col sm:flex-row gap-4 p-4 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.08)]">
             <div className="flex-1">
@@ -168,7 +168,7 @@ export default function TrendsPage() {
           </div>
         </div>
 
-        {/* ========== 內容區域 ========== */}
+        {/* ========== ContentArea ========== */}
         {!selectedProductId ? (
           <HoloCard className="p-12 text-center">
             <TrendingUp className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -196,10 +196,10 @@ export default function TrendsPage() {
           </HoloCard>
         ) : trendData ? (
           <>
-            {/* KPI 卡片 */}
+            {/* KPI Card */}
             <TrendKPICards summary={trendData.summary} />
 
-            {/* 價格趨勢圖表 */}
+            {/* PriceTrendChart */}
             <HoloCard className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">{t['trends.section_chart']}</h3>
               <PriceTrendChart
@@ -209,7 +209,7 @@ export default function TrendsPage() {
               />
             </HoloCard>
 
-            {/* 數據表格 */}
+            {/* DataTable */}
             <HoloCard className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">{t['trends.section_table']}</h3>
               <PriceDataTable

@@ -1,7 +1,7 @@
 "use client";
 
 // =============================================
-// 排行榜表格組件
+// 排行榜Table組items
 // =============================================
 
 import { TrendingUp, TrendingDown, Minus, ExternalLink } from "lucide-react";
@@ -29,8 +29,8 @@ export function LeaderboardTable({ entries, isLoading, source }: LeaderboardTabl
   if (entries.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
-        <p>暫無排名數據</p>
-        <p className="text-sm mt-1">開始追蹤關鍵詞以查看排名</p>
+        <p>暫無RankingData</p>
+        <p className="text-sm mt-1">Start tracking keywords to see rankings</p>
       </div>
     );
   }
@@ -42,10 +42,10 @@ export function LeaderboardTable({ entries, isLoading, source }: LeaderboardTabl
           <tr className="text-left text-xs text-slate-500 uppercase tracking-wider border-b border-slate-200">
             <th className="pb-3 pl-2">#</th>
             <th className="pb-3">關鍵詞</th>
-            <th className="pb-3 text-center">類型</th>
-            <th className="pb-3 text-right">當前排名</th>
+            <th className="pb-3 text-center">Type</th>
+            <th className="pb-3 text-right">當前Ranking</th>
             <th className="pb-3 text-right">變化</th>
-            <th className="pb-3 text-right">目標</th>
+            <th className="pb-3 text-right">Target</th>
             <th className="pb-3 text-right">差距</th>
           </tr>
         </thead>
@@ -55,7 +55,7 @@ export function LeaderboardTable({ entries, isLoading, source }: LeaderboardTabl
               key={entry.keyword_config_id}
               className="group hover:bg-cyan-50/50 transition-colors"
             >
-              {/* 排名位置 */}
+              {/* Ranking位置 */}
               <td className="py-3 pl-2">
                 <span className="text-slate-400 text-sm">{entry.rank}</span>
               </td>
@@ -71,12 +71,12 @@ export function LeaderboardTable({ entries, isLoading, source }: LeaderboardTabl
                 </Link>
               </td>
 
-              {/* 類型 */}
+              {/* Type */}
               <td className="py-3 text-center">
                 <KeywordTypeBadge type={entry.keyword_type} />
               </td>
 
-              {/* 當前排名 */}
+              {/* 當前Ranking */}
               <td className="py-3 text-right">
                 {entry.current_rank ? (
                   <span className={getRankColor(entry.current_rank)}>
@@ -87,12 +87,12 @@ export function LeaderboardTable({ entries, isLoading, source }: LeaderboardTabl
                 )}
               </td>
 
-              {/* 排名變化 */}
+              {/* Ranking變化 */}
               <td className="py-3 text-right">
                 <RankChange change={entry.rank_change} />
               </td>
 
-              {/* 目標排名 */}
+              {/* TargetRanking */}
               <td className="py-3 text-right">
                 {entry.target_rank ? (
                   <span className="text-purple-600 font-medium">#{entry.target_rank}</span>
@@ -101,7 +101,7 @@ export function LeaderboardTable({ entries, isLoading, source }: LeaderboardTabl
                 )}
               </td>
 
-              {/* 目標差距 */}
+              {/* Target差距 */}
               <td className="py-3 text-right">
                 {entry.target_gap !== null ? (
                   <span
@@ -123,7 +123,7 @@ export function LeaderboardTable({ entries, isLoading, source }: LeaderboardTabl
   );
 }
 
-// ==================== 輔助組件 ====================
+// ==================== 輔助組items ====================
 
 function KeywordTypeBadge({ type }: { type: string }) {
   const config: Record<string, { label: string; variant: "default" | "info" | "success" | "warning" | "error" }> = {
@@ -131,7 +131,7 @@ function KeywordTypeBadge({ type }: { type: string }) {
     secondary: { label: "次要", variant: "default" },
     long_tail: { label: "長尾", variant: "success" },
     brand: { label: "品牌", variant: "warning" },
-    competitor: { label: "競品", variant: "error" },
+    competitor: { label: "Competitor", variant: "error" },
   };
 
   const { label, variant } = config[type] || { label: type, variant: "default" };

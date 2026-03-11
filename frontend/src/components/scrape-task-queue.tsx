@@ -14,21 +14,21 @@ import {
 import { cn } from '@/lib/utils'
 
 // =============================================
-// 類型定義
+// Type definitions
 // =============================================
 
 export type TaskStatus = 'pending' | 'running' | 'success' | 'failed'
 
 export interface ScrapeTask {
   id: string
-  name: string           // 競爭對手或類別名稱
+  name: string           // 競爭Competitor或類別Name
   type: 'competitor' | 'category' | 'product'
   status: TaskStatus
   progress?: number      // 0-100
   startedAt?: string
   completedAt?: string
   error?: string
-  productCount?: number  // 抓取的商品數量
+  productCount?: number  // 抓取的productsQuantity
 }
 
 interface ScrapeTaskQueueProps {
@@ -40,7 +40,7 @@ interface ScrapeTaskQueueProps {
 }
 
 // =============================================
-// 主組件
+// 主組items
 // =============================================
 
 export function ScrapeTaskQueue({ 
@@ -54,7 +54,7 @@ export function ScrapeTaskQueue({
   const pendingTasks = tasks.filter(t => t.status === 'pending')
   const completedTasks = tasks.filter(t => t.status === 'success' || t.status === 'failed')
   
-  // 顯示的任務：正在運行 + 等待中 + 最近完成的
+  // Displayed tasks: running + pending + recently completed
   const visibleTasks = [
     ...runningTasks,
     ...pendingTasks,
@@ -83,7 +83,7 @@ export function ScrapeTaskQueue({
             {pendingTasks.length > 0 && (
               <span className="flex items-center text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
                 <Clock className="w-3 h-3 mr-1" />
-                {pendingTasks.length} 等待中
+                {pendingTasks.length} Waiting中
               </span>
             )}
           </div>
@@ -103,10 +103,10 @@ export function ScrapeTaskQueue({
         </AnimatePresence>
       </div>
 
-      {/* 顯示更多提示 */}
+      {/* Display更多提示 */}
       {tasks.length > maxVisible && (
         <div className="text-xs text-slate-400 text-center py-1">
-          還有 {tasks.length - maxVisible} 個任務...
+          And {tasks.length - maxVisible} 個任務...
         </div>
       )}
     </div>
@@ -114,7 +114,7 @@ export function ScrapeTaskQueue({
 }
 
 // =============================================
-// 任務項組件
+// 任務項組items
 // =============================================
 
 function TaskItem({ 
@@ -131,7 +131,7 @@ function TaskItem({
       icon: Clock,
       iconClass: 'text-slate-400',
       bgClass: 'bg-slate-50 border-slate-200',
-      label: '等待中'
+      label: 'Waiting中'
     },
     running: {
       icon: Loader2,
@@ -143,13 +143,13 @@ function TaskItem({
       icon: CheckCircle2,
       iconClass: 'text-green-500',
       bgClass: 'bg-green-50/50 border-green-200',
-      label: '已完成'
+      label: '已Complete'
     },
     failed: {
       icon: XCircle,
       iconClass: 'text-red-500',
       bgClass: 'bg-red-50/50 border-red-200',
-      label: '失敗'
+      label: 'Failed'
     }
   }
 
@@ -185,7 +185,7 @@ function TaskItem({
       )}
 
       <div className="relative flex items-center space-x-3">
-        {/* 類型圖標 */}
+        {/* TypeIcon */}
         <div className={cn(
           "flex-shrink-0 rounded-lg flex items-center justify-center",
           compact ? "w-8 h-8 bg-white/80" : "w-10 h-10 bg-white shadow-sm"
@@ -217,7 +217,7 @@ function TaskItem({
               </span>
               {task.productCount !== undefined && task.status === 'success' && (
                 <span className="text-xs text-slate-400">
-                  · {task.productCount} 商品
+                  · {task.productCount} products
                 </span>
               )}
               {task.error && (
@@ -229,13 +229,13 @@ function TaskItem({
           )}
         </div>
 
-        {/* 狀態圖標 */}
+        {/* StateIcon */}
         <div className="flex-shrink-0">
           <Icon className={cn(config.iconClass, compact ? "w-4 h-4" : "w-5 h-5")} />
         </div>
       </div>
 
-      {/* 運行中的脈動效果 */}
+      {/* Running中的脈動Effect */}
       {task.status === 'running' && (
         <motion.div
           className="absolute inset-0 border-2 border-blue-400 rounded-lg"
@@ -248,7 +248,7 @@ function TaskItem({
 }
 
 // =============================================
-// 輔助組件：迷你任務指示器
+// Helper component: mini task indicator
 // =============================================
 
 export function ScrapeTaskIndicator({ 

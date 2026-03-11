@@ -1,7 +1,7 @@
 'use client'
 
 // =============================================
-// 語言切換按鈕 — 放在側欄底部
+// 語言切換button — 放在側Bar底部
 // =============================================
 
 import { useLocale } from '@/components/providers/locale-provider'

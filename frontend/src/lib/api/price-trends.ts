@@ -1,11 +1,11 @@
 // =============================================
-// 價格趨勢 API 客戶端
+// PriceTrend API 客戶端
 // =============================================
 
 import { apiClient } from './client'
 
 // =============================================
-// 類型定義
+// Type definitions
 // =============================================
 
 export type TimeInterval = 'hour' | 'day' | 'week'
@@ -74,11 +74,11 @@ export interface PriceTrendQuery {
 }
 
 // =============================================
-// API 方法
+// API Method
 // =============================================
 
 /**
- * 獲取有價格歷史的產品列表（供下拉選單）
+ * Get products with price historyList（供下拉選單）
  */
 export async function getProductsWithTrends(
   search?: string
@@ -89,7 +89,7 @@ export async function getProductsWithTrends(
 }
 
 /**
- * 獲取單個產品的價格趨勢
+ * Fetch單個Product的PriceTrend
  */
 export async function getProductPriceTrend(
   productId: string,
@@ -102,18 +102,18 @@ export async function getProductPriceTrend(
 }
 
 // =============================================
-// 工具函數
+// 工具Function
 // =============================================
 
 /**
- * 格式化日期為 YYYY-MM-DD
+ * Format化Date為 YYYY-MM-DD
  */
 export function formatDateForApi(date: Date): string {
   return date.toISOString().split('T')[0]
 }
 
 /**
- * 計算時間範圍
+ * CalculateTimeRange
  */
 export function getDateRange(days: number): { start_date: string; end_date: string } {
   const endDate = new Date()
@@ -127,7 +127,7 @@ export function getDateRange(days: number): { start_date: string; end_date: stri
 }
 
 /**
- * 預設時間範圍選項
+ * DefaultTimeRangeOption
  */
 export const TIME_RANGE_OPTIONS = [
   { label: '7 天', value: 7 },
@@ -136,20 +136,20 @@ export const TIME_RANGE_OPTIONS = [
 ] as const
 
 /**
- * 圖表顏色配置
+ * Chart顏色Configuration
  */
 export const CHART_COLORS = {
-  own: '#8b5cf6',        // 紫色 - 自家產品（實線）
-  competitor1: '#06b6d4', // 青色 - 競爭對手 1（虛線）
-  competitor2: '#f59e0b', // 橙色 - 競爭對手 2（虛線）
-  competitor3: '#22c55e', // 綠色 - 競爭對手 3（虛線）
-  competitor4: '#ef4444', // 紅色 - 競爭對手 4（虛線）
-  outOfStock: '#dc2626',  // 缺貨標記點
+  own: '#8b5cf6',        // 紫色 - 自家Product（實線）
+  competitor1: '#06b6d4', // Cyan - Competitor 1 (dashed)
+  competitor2: '#f59e0b', // Orange - Competitor 2 (dashed)
+  competitor3: '#22c55e', // Green - Competitor 3 (dashed)
+  competitor4: '#ef4444', // 紅色 - 競爭Competitor 4（虛線）
+  outOfStock: '#dc2626',  // Out of stock標記點
   promotion: '#facc15',   // 促銷標記
 } as const
 
 /**
- * 獲取競爭對手顏色
+ * Fetch競爭Competitor顏色
  */
 export function getCompetitorColor(index: number): string {
   const colors = [

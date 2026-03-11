@@ -18,14 +18,14 @@ import { cn } from '@/lib/utils'
 import { useScrapeContext, ScrapeJob } from '@/contexts/scrape-context'
 
 // =============================================
-// 全局抓取狀態指示器
+// 全局抓取State指示器
 // =============================================
 
 export function GlobalScrapeIndicator() {
   const { jobs, activeJobsCount, isAnyScraping, clearCompleted } = useScrapeContext()
   const [isExpanded, setIsExpanded] = useState(false)
 
-  // 沒有任務時不顯示
+  // 沒有任務時不Display
   if (jobs.length === 0) return null
 
   const completedJobs = jobs.filter(j => j.status === 'success' || j.status === 'failed')
@@ -43,7 +43,7 @@ export function GlobalScrapeIndicator() {
         "border border-slate-700/50 overflow-hidden",
         "min-w-[320px] max-w-[400px]"
       )}>
-        {/* 標題欄 */}
+        {/* TitleBar */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-800/50 transition-colors"
@@ -60,7 +60,7 @@ export function GlobalScrapeIndicator() {
             <span className="text-sm font-medium text-slate-200">
               {isAnyScraping 
                 ? `${activeJobsCount} 個任務進行中`
-                : `${completedJobs.length} 個任務已完成`
+                : `${completedJobs.length} 個任務已Complete`
               }
             </span>
           </div>
@@ -72,7 +72,7 @@ export function GlobalScrapeIndicator() {
                 onClick={(e) => { e.stopPropagation(); clearCompleted(); }}
                 className="h-6 px-2 text-xs text-slate-400 hover:text-slate-200"
               >
-                清除
+                Clear
               </Button>
             )}
             {isExpanded ? (
@@ -83,7 +83,7 @@ export function GlobalScrapeIndicator() {
           </div>
         </button>
 
-        {/* 展開的任務列表 */}
+        {/* 展開的任務List */}
         <AnimatePresence>
           {isExpanded && (
             <motion.div
@@ -98,10 +98,10 @@ export function GlobalScrapeIndicator() {
                   <JobItem key={job.id} job={job} />
                 ))}
                 
-                {/* 已完成的任務 */}
+                {/* 已Complete的任務 */}
                 {completedJobs.length > 0 && activeJobs.length > 0 && (
                   <div className="px-4 py-2 text-xs text-slate-500 bg-slate-800/30">
-                    已完成
+                    已Complete
                   </div>
                 )}
                 {completedJobs.slice(0, 5).map(job => (
@@ -112,7 +112,7 @@ export function GlobalScrapeIndicator() {
           )}
         </AnimatePresence>
 
-        {/* 進度條（收起時顯示） */}
+        {/* 進度條（收起時Display） */}
         {!isExpanded && isAnyScraping && (
           <div className="h-1 bg-slate-800">
             <motion.div
@@ -131,7 +131,7 @@ export function GlobalScrapeIndicator() {
 }
 
 // =============================================
-// 任務項組件
+// 任務項組items
 // =============================================
 
 function JobItem({ job }: { job: ScrapeJob }) {
@@ -139,7 +139,7 @@ function JobItem({ job }: { job: ScrapeJob }) {
     pending: { 
       icon: Loader2, 
       iconClass: 'text-slate-400',
-      label: '等待中'
+      label: 'Waiting中'
     },
     running: { 
       icon: Loader2, 
@@ -149,12 +149,12 @@ function JobItem({ job }: { job: ScrapeJob }) {
     success: { 
       icon: CheckCircle2, 
       iconClass: 'text-green-400',
-      label: '完成'
+      label: 'Complete'
     },
     failed: { 
       icon: XCircle, 
       iconClass: 'text-red-400',
-      label: '失敗'
+      label: 'Failed'
     },
   }
 
@@ -164,7 +164,7 @@ function JobItem({ job }: { job: ScrapeJob }) {
 
   return (
     <div className="px-4 py-3 flex items-center space-x-3 hover:bg-slate-800/30 transition-colors">
-      {/* 類型圖標 */}
+      {/* TypeIcon */}
       <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0">
         <TypeIcon className="w-4 h-4 text-slate-400" />
       </div>
@@ -186,7 +186,7 @@ function JobItem({ job }: { job: ScrapeJob }) {
           )}
           {job.productCount !== undefined && job.status === 'success' && (
             <span className="text-xs text-slate-500">
-              · {job.productCount} 商品
+              · {job.productCount} products
             </span>
           )}
         </div>

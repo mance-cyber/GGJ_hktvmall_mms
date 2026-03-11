@@ -56,7 +56,7 @@ export function BatchResultList({
   const failedCount = results.filter((r) => !r.success).length
   const successIds = results.filter((r) => r.success && r.content_id).map((r) => r.content_id!)
 
-  // 導出 CSV
+  // Export CSV
   const handleExport = () => {
     if (successIds.length === 0) return
     const url = api.exportContentCsv(successIds)
@@ -70,7 +70,7 @@ export function BatchResultList({
     setTimeout(() => setCopiedField(null), 2000)
   }
 
-  // 查看詳情
+  // 查看Details
   const handleViewDetail = (result: BatchResultItem) => {
     if (result.success && result.content_id && onViewDetail) {
       onViewDetail(result.content_id)
@@ -85,13 +85,13 @@ export function BatchResultList({
 
   return (
     <div className={cn('space-y-4', className)}>
-      {/* 進度條（異步模式） */}
+      {/* 進度條（Async模式） */}
       {isProcessing && progress && (
         <div className="p-4 bg-slate-50 rounded-lg space-y-3">
           <div className="flex items-center justify-between text-sm">
             <span className="text-slate-600 flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin text-cyan-500" />
-              正在生成中...
+              currentlyGenerate中...
             </span>
             <span className="font-medium text-slate-700">
               {progress.completed + progress.failed} / {progress.total}
@@ -100,30 +100,30 @@ export function BatchResultList({
           <Progress value={progress.percent} className="h-2" />
           <div className="flex items-center gap-4 text-xs text-slate-500">
             <span className="flex items-center gap-1">
-              <Check className="w-3 h-3 text-green-500" /> 成功: {progress.completed}
+              <Check className="w-3 h-3 text-green-500" /> Success: {progress.completed}
             </span>
             {progress.failed > 0 && (
               <span className="flex items-center gap-1">
-                <X className="w-3 h-3 text-red-500" /> 失敗: {progress.failed}
+                <X className="w-3 h-3 text-red-500" /> Failed: {progress.failed}
               </span>
             )}
           </div>
         </div>
       )}
 
-      {/* 摘要和操作 */}
+      {/* 摘要和Operation */}
       {results.length > 0 && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-sm text-slate-600">生成結果</span>
+            <span className="text-sm text-slate-600">GenerateResult</span>
             {successCount > 0 && (
               <HoloBadge variant="success">
-                <Check className="w-3 h-3 mr-1" /> {successCount} 成功
+                <Check className="w-3 h-3 mr-1" /> {successCount} Success
               </HoloBadge>
             )}
             {failedCount > 0 && (
               <HoloBadge variant="error">
-                <X className="w-3 h-3 mr-1" /> {failedCount} 失敗
+                <X className="w-3 h-3 mr-1" /> {failedCount} Failed
               </HoloBadge>
             )}
           </div>
@@ -135,22 +135,22 @@ export function BatchResultList({
               onClick={handleExport}
               icon={<Download className="w-4 h-4" />}
             >
-              導出 CSV
+              Export CSV
             </HoloButton>
           )}
         </div>
       )}
 
-      {/* 結果列表 */}
+      {/* ResultList */}
       {results.length > 0 && (
         <div className="border border-slate-200 rounded-lg overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-slate-50">
               <tr>
-                <th className="px-4 py-3 text-left font-medium text-slate-600 w-12">狀態</th>
-                <th className="px-4 py-3 text-left font-medium text-slate-600">商品名稱</th>
-                <th className="px-4 py-3 text-left font-medium text-slate-600">生成標題</th>
-                <th className="px-4 py-3 text-center font-medium text-slate-600 w-24">操作</th>
+                <th className="px-4 py-3 text-left font-medium text-slate-600 w-12">State</th>
+                <th className="px-4 py-3 text-left font-medium text-slate-600">productsName</th>
+                <th className="px-4 py-3 text-left font-medium text-slate-600">GenerateTitle</th>
+                <th className="px-4 py-3 text-center font-medium text-slate-600 w-24">Operation</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -203,7 +203,7 @@ export function BatchResultList({
         </div>
       )}
 
-      {/* 詳情彈窗 */}
+      {/* DetailsPopup */}
       <Dialog open={!!selectedResult} onOpenChange={() => setSelectedResult(null)}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
@@ -221,10 +221,10 @@ export function BatchResultList({
             <div className="space-y-4 pt-4">
               {selectedResult.success && selectedResult.content ? (
                 <>
-                  {/* 標題 */}
+                  {/* Title */}
                   {selectedResult.content.title && (
                     <ContentSection
-                      label="標題"
+                      label="Title"
                       content={selectedResult.content.title}
                       onCopy={(text) => handleCopy(text, 'title')}
                       isCopied={copiedField === 'title'}
@@ -244,17 +244,17 @@ export function BatchResultList({
                       />
                     )}
 
-                  {/* 描述 */}
+                  {/* Description */}
                   {selectedResult.content.description && (
                     <ContentSection
-                      label="描述"
+                      label="Description"
                       content={selectedResult.content.description}
                       onCopy={(text) => handleCopy(text, 'desc')}
                       isCopied={copiedField === 'desc'}
                     />
                   )}
 
-                  {/* 跳轉到編輯 */}
+                  {/* 跳轉到Edit */}
                   {selectedResult.content_id && onViewDetail && (
                     <div className="pt-4 border-t border-slate-200">
                       <Button
@@ -265,7 +265,7 @@ export function BatchResultList({
                         className="w-full"
                       >
                         <ExternalLink className="w-4 h-4 mr-2" />
-                        前往編輯優化
+                        前往EditOptimize
                       </Button>
                     </div>
                   )}
@@ -273,8 +273,8 @@ export function BatchResultList({
               ) : (
                 <div className="p-4 bg-red-50 rounded-lg">
                   <p className="text-sm text-red-700">
-                    <span className="font-medium">錯誤原因：</span>
-                    {selectedResult.error || '未知錯誤'}
+                    <span className="font-medium">Error原因：</span>
+                    {selectedResult.error || 'UnknownError'}
                   </p>
                 </div>
               )}
@@ -286,7 +286,7 @@ export function BatchResultList({
   )
 }
 
-// 內容區塊組件
+// Content區塊組items
 function ContentSection({
   label,
   content,

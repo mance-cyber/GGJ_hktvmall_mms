@@ -1,7 +1,7 @@
-// ==================== 统一爬虫配置 ====================
+// ==================== 统一爬虫Configuration ====================
 // 用途: 根据环境自动切换 Clawdbot (本地) 或 Firecrawl (云端)
 // 架构: 开发环境 → Clawdbot | 生产环境 → Firecrawl
-// ✅ FIXED: CRIT-4 - API Key 不再存儲在配置對象中，僅從環境變量讀取
+// ✅ FIXED: CRIT-4 - API Key No longer stored in config object, only read from env vars
 
 export type ScraperType = 'clawdbot' | 'firecrawl';
 
@@ -14,39 +14,39 @@ export interface ScraperConfig {
   rateLimitPerMinute: number;
 }
 
-// ==================== 安全的 API Key 管理 ====================
+// ==================== Security的 API Key Management ====================
 
 /**
- * 安全獲取 API Key（僅在需要時從環境變量讀取，不緩存）
+ * Securely fetch API Key (read from env vars only when needed, no caching)
  * @returns API Key 或 undefined
  */
 export function getAPIKeySafe(): string | undefined {
-  // 🔒 每次調用時從環境變量讀取，避免內存中存儲敏感信息
+  // 🔒 Read from env vars on each call, avoid storing sensitive info in memory
   return process.env.FIRECRAWL_API_KEY;
 }
 
 /**
- * 驗證 API Key 是否已配置
- * @returns 是否已配置
+ * Verify if API Key is configured
+ * @returns whether已Configuration
  */
 export function hasAPIKey(): boolean {
   return !!process.env.FIRECRAWL_API_KEY;
 }
 
 /**
- * 獲取 API Key 的遮蔽版本（用於日誌）
+ * Get masked API Key version (for logging)
  * @returns 遮蔽後的 API Key（例如：sk_***********1234）
  */
 export function getMaskedAPIKey(): string {
   const apiKey = getAPIKeySafe();
-  if (!apiKey) return '未配置';
+  if (!apiKey) return '未Configuration';
   
-  // 只顯示前 3 個和後 4 個字符
+  // 只Display前 3 個和後 4 個字符
   if (apiKey.length < 8) return '***';
   return `${apiKey.substring(0, 3)}***${apiKey.substring(apiKey.length - 4)}`;
 }
 
-// ==================== 环境配置 ====================
+// ==================== 环境Configuration ====================
 
 const SCRAPER_CONFIGS: Record<string, ScraperConfig> = {
   // 开发环境: 使用本地 Clawdbot (免费, 完全自定义)
@@ -58,7 +58,7 @@ const SCRAPER_CONFIGS: Record<string, ScraperConfig> = {
     rateLimitPerMinute: 30,
   },
 
-  // 测试环境: 可配置使用哪个服务
+  // 测试环境: 可Configuration使用哪个服务
   test: {
     type: (process.env.SCRAPER_TYPE as ScraperType) || 'clawdbot',
     endpoint:
@@ -77,42 +77,42 @@ const SCRAPER_CONFIGS: Record<string, ScraperConfig> = {
     // ❌ 移除: apiKey: process.env.FIRECRAWL_API_KEY,
     timeout: 120000, // 120 秒 (生产环境更保守)
     retryAttempts: 5, // 生产环境更多重试
-    rateLimitPerMinute: 60, // Firecrawl 支持更高并发
+    rateLimitPerMinute: 60, // Firecrawl Support更高并发
   },
 };
 
-// ==================== 获取当前配置 ====================
+// ==================== 获取当前Configuration ====================
 
 /**
- * 根据当前环境自动选择爬虫配置
- * @returns 当前环境的爬虫配置（不包含 API Key）
+ * 根据当前环境自动选择爬虫Configuration
+ * @returns 当前环境的爬虫Configuration（不Include API Key）
  */
 export function getScraperConfig(): ScraperConfig {
   const env = process.env.NODE_ENV || 'development';
   const config = SCRAPER_CONFIGS[env];
 
   if (!config) {
-    console.warn(`⚠️ 未找到环境 "${env}" 的配置，使用开发环境配置`);
+    console.warn(`⚠️ 未找到环境 "${env}" 的Configuration，使用开发环境Configuration`);
     return SCRAPER_CONFIGS.development;
   }
 
-  // 🔒 驗證生產環境必需的 API Key（但不返回它）
+  // 🔒 Validate生產Environment必需的 API Key（但不Back它）
   if (config.type === 'firecrawl' && !hasAPIKey()) {
     throw new Error(
-      '❌ 生产环境需要配置 FIRECRAWL_API_KEY 环境变量'
+      '❌ 生产环境NeedConfiguration FIRECRAWL_API_KEY 环境变量'
     );
   }
 
-  console.log(`🔧 爬虫配置: ${config.type} (${env} 环境)`);
+  console.log(`🔧 爬虫Configuration: ${config.type} (${env} 环境)`);
   return config;
 }
 
-// ==================== 手动覆盖配置 ====================
+// ==================== 手动覆盖Configuration ====================
 
 /**
  * 手动指定使用的爬虫类型 (用于测试或特殊场景)
  * @param type 爬虫类型
- * @returns 指定类型的爬虫配置
+ * @returns 指定类型的爬虫Configuration
  */
 export function forceScraperType(type: ScraperType): ScraperConfig {
   const baseConfig =
@@ -124,60 +124,60 @@ export function forceScraperType(type: ScraperType): ScraperConfig {
   return baseConfig;
 }
 
-// ==================== 配置验证 ====================
+// ==================== Configuration验证 ====================
 
 /**
- * 验证配置是否完整
- * @param config 爬虫配置
- * @returns 是否有效
+ * 验证Configurationwhether完整
+ * @param config 爬虫Configuration
+ * @returns whetherValid
  */
 export function validateScraperConfig(config: ScraperConfig): boolean {
   // 检查必填字段
   if (!config.type || !config.endpoint) {
-    console.error('❌ 爬虫配置缺少必填字段: type, endpoint');
+    console.error('❌ 爬虫Configuration缺少必填字段: type, endpoint');
     return false;
   }
 
-  // 🔒 檢查 Firecrawl 必需的 API Key（從環境變量）
+  // 🔒 Check required Firecrawl API Key (from env vars)
   if (config.type === 'firecrawl' && !hasAPIKey()) {
-    console.error('❌ Firecrawl 需要配置 FIRECRAWL_API_KEY 環境變量');
+    console.error('❌ Firecrawl Requires FIRECRAWL_API_KEY environment variable');
     return false;
   }
 
   // 检查 Clawdbot WebSocket 连接
   if (config.type === 'clawdbot' && !config.endpoint.startsWith('ws')) {
-    console.error('❌ Clawdbot 需要 WebSocket 连接 (ws:// 或 wss://)');
+    console.error('❌ Clawdbot Need WebSocket 连接 (ws:// 或 wss://)');
     return false;
   }
 
   return true;
 }
 
-// ==================== 配置信息输出（安全版本）====================
+// ==================== Configuration信息输出（SecurityVersion）====================
 
 /**
- * 打印当前配置信息 (用于调试) - 不顯示完整 API Key
+ * 打印当前Configuration信息 (用于调试) - 不Display完整 API Key
  */
 export function printScraperConfig(): void {
   const config = getScraperConfig();
 
-  console.log('\n==================== 爬虫配置 ====================');
+  console.log('\n==================== 爬虫Configuration ====================');
   console.log(`环境: ${process.env.NODE_ENV || 'development'}`);
   console.log(`类型: ${config.type}`);
   console.log(`端点: ${config.endpoint}`);
-  console.log(`API Key: ${getMaskedAPIKey()}`); // 🔒 顯示遮蔽版本
+  console.log(`API Key: ${getMaskedAPIKey()}`); // 🔒 Display遮蔽Version
   console.log(`超时: ${config.timeout}ms`);
   console.log(`重试: ${config.retryAttempts} 次`);
   console.log(`速率: ${config.rateLimitPerMinute} req/min`);
   console.log('===============================================\n');
 }
 
-// ==================== 安全使用 API Key 的工具函數 ====================
+// ==================== Utility functions for secure API Key usage ====================
 
 /**
- * 使用 API Key 執行操作（確保 API Key 不會洩漏到日誌）
- * @param operation 需要 API Key 的操作
- * @returns 操作結果
+ * 使用 API Key 執行Operation（Ensure API Key 不會洩漏到Log）
+ * @param operation Need API Key 的Operation
+ * @returns OperationResult
  */
 export async function withAPIKey<T>(
   operation: (apiKey: string) => Promise<T>
@@ -185,13 +185,13 @@ export async function withAPIKey<T>(
   const apiKey = getAPIKeySafe();
   
   if (!apiKey) {
-    throw new Error('API Key 未配置');
+    throw new Error('API Key 未Configuration');
   }
 
   try {
     return await operation(apiKey);
   } catch (error) {
-    // 🔒 確保錯誤信息中不包含 API Key
+    // 🔒 EnsureError信息中不Include API Key
     if (error instanceof Error && error.message.includes(apiKey)) {
       throw new Error(error.message.replace(apiKey, getMaskedAPIKey()));
     }

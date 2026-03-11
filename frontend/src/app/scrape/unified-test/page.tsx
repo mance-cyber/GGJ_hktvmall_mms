@@ -1,8 +1,8 @@
 'use client';
 
-// ==================== 统一爬虫测试页面 ====================
-// 用途: 测试混合架构的自动切换功能
-// 路径: /scrape/unified-test
+// ==================== Unified Scraper Test Page ====================
+// Purpose: Test hybrid architecture auto-switching feature
+// Path: /scrape/unified-test
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,7 +28,7 @@ export default function UnifiedScraperTestPage() {
   );
   const [result, setResult] = useState<any>(null);
 
-  // ==================== 获取爬虫配置信息 ====================
+  // ==================== Fetch Scraper Configuration ====================
 
   useEffect(() => {
     fetchScraperInfo();
@@ -43,15 +43,15 @@ export default function UnifiedScraperTestPage() {
         setScraperInfo(data.scraper);
       }
     } catch (error) {
-      console.error('获取爬虫信息失败:', error);
+      console.error('Failed to fetch scraper info:', error);
     }
   };
 
-  // ==================== 测试抓取 ====================
+  // ==================== Test Scraping ====================
 
   const handleTestScrape = async () => {
     if (!testUrl) {
-      alert('请输入测试 URL');
+      alert('Please enter a test URL');
       return;
     }
 
@@ -73,14 +73,14 @@ export default function UnifiedScraperTestPage() {
     } catch (error) {
       setResult({
         success: false,
-        error: error instanceof Error ? error.message : '未知错误',
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     } finally {
       setLoading(false);
     }
   };
 
-  // ==================== 渲染 ====================
+  // ==================== Rendering ====================
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -99,44 +99,44 @@ export default function UnifiedScraperTestPage() {
 
   return (
     <div className="container mx-auto p-8 space-y-6">
-      {/* 页面标题 */}
+      {/* Page Title */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">统一爬虫测试</h1>
+          <h1 className="text-3xl font-bold">Unified Scraper Test</h1>
           <p className="text-muted-foreground mt-1">
-            测试混合架构的自动切换功能
+            Test hybrid architecture auto-switching feature
           </p>
         </div>
         <Button onClick={fetchScraperInfo} variant="outline">
-          🔄 刷新状态
+          🔄 Refresh Status
         </Button>
       </div>
 
-      {/* 爬虫配置信息 */}
+      {/* Scraper Configuration Info */}
       <Card>
         <CardHeader>
-          <CardTitle>当前爬虫配置</CardTitle>
+          <CardTitle>Current Scraper Configuration</CardTitle>
         </CardHeader>
         <CardContent>
           {scraperInfo ? (
             <div className="space-y-4">
-              {/* 爬虫类型 */}
+              {/* Scraper Type */}
               <div className="flex items-center gap-4">
-                <span className="text-sm font-medium w-24">爬虫类型:</span>
+                <span className="text-sm font-medium w-24">Scraper Type:</span>
                 <Badge className={getScraperBadgeColor(scraperInfo.type)}>
                   {scraperInfo.type === 'clawdbot' ? '🤖 Clawdbot' : '🔥 Firecrawl'}
                 </Badge>
               </div>
 
-              {/* 环境 */}
+              {/* Environment */}
               <div className="flex items-center gap-4">
-                <span className="text-sm font-medium w-24">环境:</span>
+                <span className="text-sm font-medium w-24">Environment:</span>
                 <Badge variant="outline">{scraperInfo.environment}</Badge>
               </div>
 
-              {/* 连接状态 */}
+              {/* Connection Status */}
               <div className="flex items-center gap-4">
-                <span className="text-sm font-medium w-24">连接状态:</span>
+                <span className="text-sm font-medium w-24">Status:</span>
                 <div className="flex items-center gap-2">
                   <div
                     className={`h-3 w-3 rounded-full ${getStatusColor(
@@ -144,62 +144,62 @@ export default function UnifiedScraperTestPage() {
                     )}`}
                   />
                   <span className="text-sm">
-                    {scraperInfo.status === 'connected' ? '已连接' : '未连接'}
+                    {scraperInfo.status === 'connected' ? 'Connected' : 'Disconnected'}
                   </span>
                 </div>
               </div>
 
-              {/* 端点 */}
+              {/* Endpoint */}
               <div className="flex items-center gap-4">
-                <span className="text-sm font-medium w-24">端点:</span>
+                <span className="text-sm font-medium w-24">Endpoint:</span>
                 <code className="text-xs bg-muted px-2 py-1 rounded">
                   {scraperInfo.endpoint}
                 </code>
               </div>
 
-              {/* API Key 状态 */}
+              {/* API Key Status */}
               {scraperInfo.type === 'firecrawl' && (
                 <div className="flex items-center gap-4">
                   <span className="text-sm font-medium w-24">API Key:</span>
                   <Badge variant={scraperInfo.hasApiKey ? 'default' : 'destructive'}>
-                    {scraperInfo.hasApiKey ? '✅ 已配置' : '❌ 未配置'}
+                    {scraperInfo.hasApiKey ? '✅ Configured' : '❌ Not Configured'}
                   </Badge>
                 </div>
               )}
 
-              {/* 说明 */}
+              {/* Description */}
               <Alert>
                 <AlertDescription>
                   {scraperInfo.type === 'clawdbot' ? (
                     <>
-                      <strong>开发模式</strong>: 使用本地 Clawdbot 服务 (免费测试)
+                      <strong>Development Mode</strong>: Using local Clawdbot service (free testing)
                       <br />
-                      确保 Clawdbot 已启动: <code>./start-clawdbot.bat</code>
+                      Ensure Clawdbot is running: <code>./start-clawdbot.bat</code>
                     </>
                   ) : (
                     <>
-                      <strong>生产模式</strong>: 使用云端 Firecrawl 服务 (稳定可靠)
+                      <strong>Production Mode</strong>: Using cloud Firecrawl service (stable & reliable)
                       <br />
-                      确保环境变量已配置: <code>FIRECRAWL_API_KEY</code>
+                      Ensure environment variable is configured: <code>FIRECRAWL_API_KEY</code>
                     </>
                   )}
                 </AlertDescription>
               </Alert>
             </div>
           ) : (
-            <p className="text-muted-foreground">加载中...</p>
+            <p className="text-muted-foreground">Loading...</p>
           )}
         </CardContent>
       </Card>
 
-      {/* 测试抓取 */}
+      {/* Test Scraping */}
       <Card>
         <CardHeader>
-          <CardTitle>测试抓取</CardTitle>
+          <CardTitle>Test Scraping</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <label className="text-sm font-medium">测试 URL</label>
+            <label className="text-sm font-medium">Test URL</label>
             <Input
               value={testUrl}
               onChange={(e) => setTestUrl(e.target.value)}
@@ -213,26 +213,26 @@ export default function UnifiedScraperTestPage() {
             disabled={loading || !scraperInfo || scraperInfo.status !== 'connected'}
             className="w-full"
           >
-            {loading ? '抓取中...' : '开始抓取'}
+            {loading ? 'Scraping...' : 'Start Scraping'}
           </Button>
 
-          {/* 抓取结果 */}
+          {/* Scrape Result */}
           {result && (
             <div className="mt-6">
-              <h3 className="text-lg font-semibold mb-2">抓取结果</h3>
+              <h3 className="text-lg font-semibold mb-2">Scrape Result</h3>
               <div className="bg-muted p-4 rounded-lg">
                 {result.success ? (
                   <div className="space-y-2">
-                    <Badge className="bg-green-500">✅ 抓取成功</Badge>
+                    <Badge className="bg-green-500">✅ Scrape Successful</Badge>
                     <div className="text-sm text-muted-foreground">
                       <div>
-                        <strong>爬虫:</strong> {result.metadata?.scraper}
+                        <strong>Scraper:</strong> {result.metadata?.scraper}
                       </div>
                       <div>
-                        <strong>耗时:</strong> {result.metadata?.durationMs}ms
+                        <strong>Duration:</strong> {result.metadata?.durationMs}ms
                       </div>
                       <div>
-                        <strong>任务 ID:</strong> {result.metadata?.taskId}
+                        <strong>Task ID:</strong> {result.metadata?.taskId}
                       </div>
                     </div>
                     <Textarea
@@ -244,7 +244,7 @@ export default function UnifiedScraperTestPage() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <Badge variant="destructive">❌ 抓取失败</Badge>
+                    <Badge variant="destructive">❌ Scrape Failed</Badge>
                     <p className="text-sm text-red-600">{result.error}</p>
                   </div>
                 )}
@@ -254,39 +254,39 @@ export default function UnifiedScraperTestPage() {
         </CardContent>
       </Card>
 
-      {/* 架构说明 */}
+      {/* Architecture Overview */}
       <Card>
         <CardHeader>
-          <CardTitle>混合架构说明</CardTitle>
+          <CardTitle>Hybrid Architecture Overview</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            {/* 开发环境 */}
+            {/* Development Environment */}
             <div className="border rounded-lg p-4">
               <h4 className="font-semibold mb-2 flex items-center gap-2">
-                🤖 开发环境
+                🤖 Development
               </h4>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>✅ 使用本地 Clawdbot</li>
-                <li>✅ 免费测试</li>
-                <li>✅ 完全自定义</li>
-                <li>✅ 快速迭代</li>
+                <li>✅ Local Clawdbot</li>
+                <li>✅ Free testing</li>
+                <li>✅ Fully customizable</li>
+                <li>✅ Rapid iteration</li>
               </ul>
               <code className="text-xs bg-muted px-2 py-1 rounded block mt-2">
                 NODE_ENV=development
               </code>
             </div>
 
-            {/* 生产环境 */}
+            {/* Production Environment */}
             <div className="border rounded-lg p-4">
               <h4 className="font-semibold mb-2 flex items-center gap-2">
-                🔥 生产环境
+                🔥 Production
               </h4>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>✅ 使用云端 Firecrawl</li>
-                <li>✅ 稳定可靠</li>
-                <li>✅ 自动扩展</li>
-                <li>✅ 专业支持</li>
+                <li>✅ Cloud Firecrawl</li>
+                <li>✅ Stable & reliable</li>
+                <li>✅ Auto-scaling</li>
+                <li>✅ Professional support</li>
               </ul>
               <code className="text-xs bg-muted px-2 py-1 rounded block mt-2">
                 NODE_ENV=production
@@ -296,8 +296,8 @@ export default function UnifiedScraperTestPage() {
 
           <Alert>
             <AlertDescription>
-              <strong>自动切换</strong>: 系统根据 <code>NODE_ENV</code>{' '}
-              环境变量自动选择合适的爬虫服务，无需手动配置。
+              <strong>Auto-switching</strong>: The system automatically selects the appropriate scraper service based on the <code>NODE_ENV</code>{' '}
+              environment variable — no manual configuration needed.
             </AlertDescription>
           </Alert>
         </CardContent>

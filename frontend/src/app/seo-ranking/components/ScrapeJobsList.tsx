@@ -1,14 +1,14 @@
 "use client";
 
 // =============================================
-// 抓取任務列表組件
+// 抓取任務List組items
 // =============================================
 
 import { Clock, CheckCircle, XCircle, Loader2, PlayCircle } from "lucide-react";
 import { HoloBadge, ProgressRing } from "@/components/ui/future-tech";
 import { RankingScrapeJob } from "@/lib/api/seo-ranking";
 
-// 時間格式化工具
+// TimeFormat化工具
 function formatTimeAgo(date: Date): string {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -18,8 +18,8 @@ function formatTimeAgo(date: Date): string {
   const diffDay = Math.floor(diffHour / 24);
 
   if (diffSec < 60) return "剛剛";
-  if (diffMin < 60) return `${diffMin} 分鐘前`;
-  if (diffHour < 24) return `${diffHour} 小時前`;
+  if (diffMin < 60) return `${diffMin} minutes前`;
+  if (diffHour < 24) return `${diffHour} hours前`;
   if (diffDay < 30) return `${diffDay} 天前`;
   return date.toLocaleDateString("zh-TW");
 }
@@ -46,14 +46,14 @@ export function ScrapeJobsList({ jobs }: ScrapeJobsListProps) {
           className="p-3 rounded-lg bg-white border border-slate-200 hover:border-cyan-400 hover:shadow-sm transition-colors"
         >
           <div className="flex items-center gap-3">
-            {/* 狀態圖標 */}
+            {/* StateIcon */}
             <div className="flex-shrink-0">
               <StatusIcon status={job.status} progress={job.progress_percent} />
             </div>
 
-            {/* 內容 */}
+            {/* Content */}
             <div className="flex-1 min-w-0">
-              {/* 標題行 */}
+              {/* Title行 */}
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-slate-800 font-medium text-sm">
                   {getJobTypeLabel(job.job_type)}
@@ -68,7 +68,7 @@ export function ScrapeJobsList({ jobs }: ScrapeJobsListProps) {
                 </span>
                 {job.success_rate !== null && (
                   <span className="text-emerald-600">
-                    成功率 {job.success_rate}%
+                    Success率 {job.success_rate}%
                   </span>
                 )}
                 {job.duration_seconds !== null && (
@@ -76,24 +76,24 @@ export function ScrapeJobsList({ jobs }: ScrapeJobsListProps) {
                 )}
               </div>
 
-              {/* 錯誤信息 */}
+              {/* Error信息 */}
               {job.errors && job.errors.length > 0 && (
                 <p className="text-red-500 text-xs mt-1">
-                  {job.errors.length} 個錯誤
+                  {job.errors.length} 個Error
                 </p>
               )}
 
-              {/* 時間 */}
+              {/* Time */}
               <p className="text-slate-400 text-xs mt-2">
                 {job.completed_at
-                  ? `完成於 ${formatTimeAgo(new Date(job.completed_at))}`
+                  ? `Complete於 ${formatTimeAgo(new Date(job.completed_at))}`
                   : job.started_at
-                  ? `開始於 ${formatTimeAgo(new Date(job.started_at))}`
+                  ? `Start於 ${formatTimeAgo(new Date(job.started_at))}`
                   : `建立於 ${formatTimeAgo(new Date(job.created_at))}`}
               </p>
             </div>
 
-            {/* 進度指示器（進行中時顯示） */}
+            {/* Progress indicator (shown when in progress) */}
             {(job.status === "running" || job.status === "pending") && (
               <div className="flex-shrink-0">
                 <ProgressRing
@@ -112,7 +112,7 @@ export function ScrapeJobsList({ jobs }: ScrapeJobsListProps) {
   );
 }
 
-// ==================== 輔助組件 ====================
+// ==================== 輔助組items ====================
 
 function StatusIcon({
   status,
@@ -140,10 +140,10 @@ function StatusBadge({ status }: { status: string }) {
     string,
     { label: string; variant: "default" | "info" | "success" | "warning" | "error" }
   > = {
-    completed: { label: "已完成", variant: "success" },
-    failed: { label: "失敗", variant: "error" },
+    completed: { label: "已Complete", variant: "success" },
+    failed: { label: "Failed", variant: "error" },
     running: { label: "進行中", variant: "info" },
-    pending: { label: "等待中", variant: "warning" },
+    pending: { label: "Waiting中", variant: "warning" },
   };
 
   const { label, variant } = config[status] || {
@@ -159,7 +159,7 @@ function getJobTypeLabel(type: string): string {
     full: "完整抓取",
     google_only: "Google 抓取",
     hktvmall_only: "HKTVmall 抓取",
-    selective: "選擇性抓取",
+    selective: "Select性抓取",
   };
   return labels[type] || type;
 }
@@ -173,9 +173,9 @@ function formatDuration(seconds: number): string {
   if (minutes < 60) {
     return remainingSeconds > 0
       ? `${minutes}分${remainingSeconds}秒`
-      : `${minutes}分鐘`;
+      : `${minutes}minutes`;
   }
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
-  return `${hours}小時${remainingMinutes}分`;
+  return `${hours}hours${remainingMinutes}分`;
 }

@@ -38,11 +38,11 @@ import { ProductSelector } from './ProductSelector'
 import { FileImporter } from './FileImporter'
 import { BatchResultList } from './BatchResultList'
 
-// 配置選項
+// ConfigurationOption
 const CONTENT_TYPES = [
-  { value: 'title', label: '商品標題' },
-  { value: 'selling_points', label: '賣點列表' },
-  { value: 'description', label: '商品描述' },
+  { value: 'title', label: 'productsTitle' },
+  { value: 'selling_points', label: '賣點List' },
+  { value: 'description', label: 'productsDescription' },
   { value: 'full_copy', label: '完整文案' },
 ] as const
 
@@ -71,21 +71,21 @@ export function BatchContentGenerator({
   onNavigateToEdit,
   className,
 }: BatchContentGeneratorProps) {
-  // 輸入模式
+  // Input模式
   const [inputMode, setInputMode] = useState<InputMode>('products')
 
-  // 選中的商品（商品選擇模式）
+  // 選中的products（productsSelect模式）
   const [selectedProducts, setSelectedProducts] = useState<OwnProduct[]>([])
 
-  // 導入的商品資訊（文件導入模式）
+  // Import的productsInformation（文itemsImport模式）
   const [importedProducts, setImportedProducts] = useState<ProductInfo[]>([])
 
-  // 生成配置
+  // GenerateConfiguration
   const [contentType, setContentType] = useState<ContentBatchGenerateRequest['content_type']>('full_copy')
   const [style, setStyle] = useState<ContentBatchGenerateRequest['style']>('professional')
   const [selectedLanguages, setSelectedLanguages] = useState<LanguageCode[]>(['TC'])
 
-  // 生成結果
+  // GenerateResult
   const [results, setResults] = useState<BatchResultItem[]>([])
   const [asyncTaskId, setAsyncTaskId] = useState<string | null>(null)
   const [asyncProgress, setAsyncProgress] = useState<BatchProgress | null>(null)
@@ -93,7 +93,7 @@ export function BatchContentGenerator({
   // 輪詢定時器
   const pollingRef = useRef<NodeJS.Timeout | null>(null)
 
-  // 清理輪詢
+  // Clean up輪詢
   const stopPolling = useCallback(() => {
     if (pollingRef.current) {
       clearInterval(pollingRef.current)
@@ -101,17 +101,17 @@ export function BatchContentGenerator({
     }
   }, [])
 
-  // 批量生成 mutation
+  // 批量Generate mutation
   const generateMutation = useMutation({
     mutationFn: (data: ContentBatchGenerateRequest) => api.batchGenerateContent(data),
     onSuccess: (response: BatchGenerateResponse) => {
       if (response.mode === 'sync') {
-        // 同步模式：直接顯示結果
+        // Sync模式：直接DisplayResult
         setResults(response.results)
         setAsyncTaskId(null)
         setAsyncProgress(null)
       } else {
-        // 異步模式：開始輪詢
+        // Async模式：Start輪詢
         setAsyncTaskId(response.task_id)
         setAsyncProgress({
           total: response.total,
@@ -124,7 +124,7 @@ export function BatchContentGenerator({
     },
   })
 
-  // 開始輪詢任務狀態
+  // Start輪詢任務State
   const startPolling = useCallback((taskId: string) => {
     stopPolling()
 
@@ -134,13 +134,13 @@ export function BatchContentGenerator({
         setAsyncProgress(status.progress)
         setResults(status.results)
 
-        // 任務完成，停止輪詢
+        // 任務Complete，Stopped輪詢
         if (status.status === 'completed' || status.status === 'failed') {
           stopPolling()
           setAsyncTaskId(null)
         }
       } catch (error) {
-        console.error('輪詢任務狀態失敗:', error)
+        console.error('輪詢任務StateFailed:', error)
         stopPolling()
         setAsyncTaskId(null)
       }
@@ -149,21 +149,21 @@ export function BatchContentGenerator({
     // 立即執行一次
     poll()
 
-    // 每 2 秒輪詢一次
+    // Poll every 2 seconds
     pollingRef.current = setInterval(poll, 2000)
   }, [stopPolling])
 
-  // 組件卸載時清理
+  // 組items卸載時Clean up
   useEffect(() => {
     return () => {
       stopPolling()
     }
   }, [stopPolling])
 
-  // 計算當前選中的商品數量
+  // Calculate當前選中的productsQuantity
   const itemCount = inputMode === 'products' ? selectedProducts.length : importedProducts.length
 
-  // 構建請求並提交
+  // 構建Request並Submit
   const handleGenerate = () => {
     const items =
       inputMode === 'products'
@@ -172,7 +172,7 @@ export function BatchContentGenerator({
 
     if (items.length === 0) return
 
-    // 重置結果
+    // ResetResult
     setResults([])
     setAsyncTaskId(null)
     setAsyncProgress(null)
@@ -185,7 +185,7 @@ export function BatchContentGenerator({
     })
   }
 
-  // 切換輸入模式時重置
+  // 切換Input模式時Reset
   const handleModeChange = (mode: InputMode) => {
     if (mode !== inputMode) {
       setInputMode(mode)
@@ -200,7 +200,7 @@ export function BatchContentGenerator({
 
   return (
     <div className={cn('space-y-6', className)}>
-      {/* 輸入模式切換 */}
+      {/* Input模式切換 */}
       <div className="flex rounded-xl bg-white/50 p-1 border border-white/40">
         <button
           onClick={() => handleModeChange('products')}
@@ -212,7 +212,7 @@ export function BatchContentGenerator({
           )}
         >
           <Package className="w-4 h-4" />
-          從商品列表選擇
+          從Product listSelect
         </button>
         <button
           onClick={() => handleModeChange('file')}
@@ -224,17 +224,17 @@ export function BatchContentGenerator({
           )}
         >
           <FileSpreadsheet className="w-4 h-4" />
-          CSV 文件導入
+          CSV 文itemsImport
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 左側：輸入區 */}
+        {/* 左側：Input區 */}
         <div className="lg:col-span-2">
           <HoloCard glowColor="cyan" className="h-full">
             <div className="p-6">
               <HoloPanelHeader
-                title={inputMode === 'products' ? '選擇商品' : '導入文件'}
+                title={inputMode === 'products' ? 'Selectproducts' : 'Import文items'}
                 icon={
                   inputMode === 'products' ? (
                     <Package className="w-5 h-5" />
@@ -259,18 +259,18 @@ export function BatchContentGenerator({
           </HoloCard>
         </div>
 
-        {/* 右側：配置區 */}
+        {/* 右側：Configuration區 */}
         <div>
           <HoloCard glowColor="purple" className="h-full">
             <div className="p-6 space-y-6">
               <HoloPanelHeader
-                title="生成設定"
+                title="GenerateSettings"
                 icon={<Settings2 className="w-5 h-5" />}
               />
 
-              {/* 內容類型 */}
+              {/* ContentType */}
               <div className="space-y-2">
-                <Label>內容類型</Label>
+                <Label>ContentType</Label>
                 <Select
                   value={contentType}
                   onValueChange={(val) =>
@@ -312,9 +312,9 @@ export function BatchContentGenerator({
                 </Select>
               </div>
 
-              {/* 語言選擇 */}
+              {/* 語言Select */}
               <div className="space-y-2">
-                <Label>輸出語言（可多選）</Label>
+                <Label>Output語言（可多選）</Label>
                 <div className="flex flex-wrap gap-2">
                   {LANGUAGES.map((lang) => {
                     const isSelected = selectedLanguages.includes(lang.value)
@@ -349,26 +349,26 @@ export function BatchContentGenerator({
               {/* 摘要信息 */}
               <div className="p-3 bg-slate-50 rounded-lg space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600">已選商品</span>
+                  <span className="text-slate-600">Selectedproducts</span>
                   <HoloBadge variant={itemCount > 0 ? 'info' : 'default'}>
                     {itemCount} 個
                   </HoloBadge>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600">處理模式</span>
+                  <span className="text-slate-600">Processing模式</span>
                   <span className="text-slate-700 font-medium">
-                    {itemCount <= 10 ? '即時生成' : '後台處理'}
+                    {itemCount <= 10 ? '即時Generate' : '後台Processing'}
                   </span>
                 </div>
                 {itemCount > 10 && (
                   <p className="text-xs text-amber-600 flex items-start gap-1">
                     <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                    大於 10 個商品將使用後台異步處理，預計需要數分鐘
+                    大於 10 個products將使用後台AsyncProcessing，預計Need數minutes
                   </p>
                 )}
               </div>
 
-              {/* 生成按鈕 */}
+              {/* Generatebutton */}
               <HoloButton
                 onClick={handleGenerate}
                 disabled={itemCount === 0 || isProcessing}
@@ -379,19 +379,19 @@ export function BatchContentGenerator({
               >
                 {isProcessing
                   ? asyncTaskId
-                    ? '後台處理中...'
-                    : '生成中...'
-                  : `批量生成 ${itemCount} 個商品`}
+                    ? '後台Processing...'
+                    : 'Generate中...'
+                  : `批量Generate ${itemCount} 個products`}
               </HoloButton>
 
               {generateMutation.isError && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                   <span>
-                    生成失敗:{' '}
+                    GenerateFailed:{' '}
                     {generateMutation.error instanceof Error
                       ? generateMutation.error.message
-                      : '未知錯誤'}
+                      : 'UnknownError'}
                   </span>
                 </div>
               )}
@@ -400,7 +400,7 @@ export function BatchContentGenerator({
         </div>
       </div>
 
-      {/* 結果區域 */}
+      {/* ResultArea */}
       <BatchResultList
         results={results}
         isProcessing={!!asyncTaskId}

@@ -5,8 +5,8 @@ import { AppShell } from '@/components/AppShell'
 import { Toaster } from '@/components/ui/toaster'
 
 export const metadata: Metadata = {
-  title: 'GoGoJap AI 營運系統',
-  description: '競品監測與價格追踪儀表板',
+  title: 'GoGoJap AI Operations System',
+  description: 'Competitor Monitor & Price Tracking Dashboard',
   icons: {
     icon: '/favicon.ico',
   },
@@ -17,7 +17,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  viewportFit: 'cover', // 支持 iPhone 瀏海屏幕
+  viewportFit: 'cover', // Support iPhone notch screens
 }
 
 export default function RootLayout({
@@ -26,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="zh-HK">
+    <html lang="en">
       <body className="antialiased bg-slate-50">
         <QueryProvider>
           <AppShell>

@@ -1,7 +1,7 @@
 'use client'
 
 // =============================================
-// Sidebar - Future Tech 風格側邊欄
+// Sidebar - Future Tech 風格Sidebar
 // =============================================
 
 import { useState, useEffect, useMemo } from 'react'
@@ -43,7 +43,7 @@ import { LocaleToggle } from '@/components/LocaleToggle'
 import type { TranslationDict } from '@/i18n/types'
 
 // =============================================
-// 導航項目類型定義
+// Navigation項目Type definitions
 // =============================================
 
 interface NavItem {
@@ -72,7 +72,7 @@ interface NavGroup {
 }
 
 // =============================================
-// 分類顏色主題
+// 分類顏色Theme
 // =============================================
 
 const categoryColors = {
@@ -133,7 +133,7 @@ const categoryColors = {
 }
 
 // =============================================
-// 導航配置 - 按功能分組（含權限和顏色）
+// NavigationConfiguration - 按Feature分組（含Permission和顏色）
 // =============================================
 
 function getNavigationGroups(t: TranslationDict): NavGroup[] {
@@ -279,7 +279,7 @@ function getNavigationGroups(t: TranslationDict): NavGroup[] {
 }
 
 // =============================================
-// 主組件
+// 主組items
 // =============================================
 
 export function Sidebar() {
@@ -289,7 +289,7 @@ export function Sidebar() {
   const { role, hasAnyPermission } = usePermissions()
   const { t } = useLocale()
 
-  // 獲取未讀警報數
+  // FetchUnreadAlert數
   const { data: alerts } = useQuery({
     queryKey: ['alerts-count'],
     queryFn: () => api.getAlerts(false, undefined, 1),
@@ -297,7 +297,7 @@ export function Sidebar() {
   })
   const unreadCount = alerts?.unread_count || 0
 
-  // 過濾有權限的導航組和項目
+  // Filter有Permission的Navigation組和項目
   const filteredNavGroups = useMemo(() => {
     return getNavigationGroups(t)
       .filter((group) => {
@@ -316,12 +316,12 @@ export function Sidebar() {
       .filter((group) => group.items.length > 0)
   }, [role, hasAnyPermission, t])
 
-  // 路由變化時關閉移動端菜單
+  // Close mobile menu on route change
   useEffect(() => {
     setIsMobileOpen(false)
   }, [pathname])
 
-  // 移動端菜單按鈕
+  // 移動端Menubutton
   const MobileMenuButton = () => (
     <button
       type="button"
@@ -336,10 +336,10 @@ export function Sidebar() {
     </button>
   )
 
-  // 側邊欄內容
+  // SidebarContent
   const SidebarContent = () => (
     <div className="h-full rounded-2xl glass-sidebar p-6 relative overflow-hidden flex flex-col">
-      {/* 全息邊緣效果 */}
+      {/* 全息邊緣Effect */}
       <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-100/20 via-transparent to-purple-100/20 pointer-events-none" />
 
       {/* Logo */}
@@ -374,7 +374,7 @@ export function Sidebar() {
                 `border ${colors.border}`
               )}
             >
-              {/* 分類標題 */}
+              {/* 分類Title */}
               <div className={cn("text-[10px] uppercase tracking-widest mb-2.5 px-2 font-bold flex items-center gap-2", colors.accent)}>
                 <div className={cn("h-px flex-1 bg-gradient-to-r opacity-30", colors.indicator)} />
                 <span>{group.title}</span>
@@ -411,7 +411,7 @@ export function Sidebar() {
                         {item.name}
                       </span>
 
-                      {/* 未讀警報徽章 */}
+                      {/* UnreadAlert徽章 */}
                       {showBadge && (
                         <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full animate-pulse-glow">
                           {unreadCount > 99 ? '99+' : unreadCount}
@@ -470,15 +470,15 @@ export function Sidebar() {
 
   return (
     <>
-      {/* 移動端菜單按鈕 */}
+      {/* 移動端Menubutton */}
       <MobileMenuButton />
 
-      {/* 桌面端側邊欄 */}
+      {/* 桌面端Sidebar */}
       <div className="hidden lg:block lg:fixed lg:inset-y-0 lg:left-0 lg:w-72 lg:p-6 z-20">
         <SidebarContent />
       </div>
 
-      {/* 移動端側邊欄 */}
+      {/* 移動端Sidebar */}
       <AnimatePresence>
         {isMobileOpen && (
           <>
@@ -491,7 +491,7 @@ export function Sidebar() {
               className="lg:hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
             />
 
-            {/* 側邊欄 */}
+            {/* Sidebar */}
             <motion.div
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
@@ -509,7 +509,7 @@ export function Sidebar() {
 }
 
 // =============================================
-// 輔助組件：移動端底部導航
+// 輔助組items：移動端底部Navigation
 // =============================================
 
 export function MobileBottomNav() {
@@ -523,14 +523,14 @@ export function MobileBottomNav() {
   })
   const unreadCount = alerts?.unread_count || 0
 
-  // 主導航項目（顯示在底部欄）
+  // 主Navigation項目（Display在底部Bar）
   const quickNav = [
     { name: t['mobile.home'], href: '/', icon: LayoutDashboard },
     { name: t['mobile.alerts'], href: '/alerts', icon: Bell, badge: unreadCount },
     { name: t['mobile.ai'], href: '/agent', icon: MessageSquare },
   ]
 
-  // 更多菜單項目
+  // 更多Menu項目
   const moreItems = [
     { name: t['mobile.competitor_monitor'], href: '/competitors', icon: Eye },
     { name: t['mobile.product_library'], href: '/products', icon: Package },
@@ -539,14 +539,14 @@ export function MobileBottomNav() {
     { name: t['mobile.settings'], href: '/settings', icon: Settings },
   ]
 
-  // 檢查更多菜單中是否有當前頁面
+  // Check更多Menu中whether有當前page
   const isMoreActive = moreItems.some(
     item => pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
   )
 
   return (
     <>
-      {/* 更多菜單彈出層 */}
+      {/* 更多Menu彈出層 */}
       <AnimatePresence>
         {showMore && (
           <>
@@ -591,7 +591,7 @@ export function MobileBottomNav() {
         )}
       </AnimatePresence>
 
-      {/* 底部導航欄 */}
+      {/* Bottom navigation bar */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 px-3 pb-3 safe-area-bottom bg-gradient-to-t from-white/80 to-transparent pt-6">
         <nav className="flex items-center justify-around py-1 px-2 rounded-2xl glass-panel border border-purple-200/30">
           {quickNav.map((item) => {
@@ -611,7 +611,7 @@ export function MobileBottomNav() {
               >
                 <item.icon className={cn("w-5 h-5", isActive && "scale-110")} />
                 <span className="text-[10px] mt-1 font-medium">{item.name}</span>
-                {/* 未讀徽章 */}
+                {/* Unread徽章 */}
                 {item.badge && item.badge > 0 && (
                   <span className="absolute -top-0.5 right-2 min-w-[18px] h-[18px] flex items-center justify-center px-1 bg-red-500 text-white text-[10px] font-bold rounded-full">
                     {item.badge > 99 ? '99+' : item.badge}
@@ -621,7 +621,7 @@ export function MobileBottomNav() {
             )
           })}
 
-          {/* 更多按鈕 */}
+          {/* 更多button */}
           <button
             type="button"
             onClick={() => setShowMore(!showMore)}

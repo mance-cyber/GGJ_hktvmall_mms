@@ -26,10 +26,10 @@ export default function GlobalError({
         }}>
           <div style={{ textAlign: 'center', maxWidth: '400px' }}>
             <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>
-              系統發生錯誤
+              SystemAn error occurred
             </h2>
             <p style={{ color: '#666', marginBottom: '1.5rem' }}>
-              {error.message || '發生未知錯誤，請重試'}
+              {error.message || 'An unknown error occurred, please retry'}
             </p>
             <button
               onClick={reset}
@@ -42,7 +42,7 @@ export default function GlobalError({
                 cursor: 'pointer'
               }}
             >
-              重新載入
+              Reload
             </button>
           </div>
         </div>

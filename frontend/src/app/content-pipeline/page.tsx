@@ -34,13 +34,13 @@ import {
 import { useLocale } from '@/components/providers/locale-provider'
 
 // =============================================
-// 統一內容生成流水線頁面（支持多語言）
+// Unified content generation pipeline page (supports multilingual)
 // =============================================
 
 export default function ContentPipelinePage() {
   const { t } = useLocale()
 
-  // 可用語言列表（name 從 i18n 字典讀取）
+  // Available languages list (name read from i18n dictionary)
   const AVAILABLE_LANGUAGES = [
     { code: 'zh-HK', name: t['content_pipeline.lang_zh_HK'], flag: '🇭🇰' },
     { code: 'zh-CN', name: t['content_pipeline.lang_zh_CN'], flag: '🇨🇳' },
@@ -48,10 +48,10 @@ export default function ContentPipelinePage() {
     { code: 'ja', name: '日本語', flag: '🇯🇵' },
   ]
 
-  // Tab 狀態
+  // Tab State
   const [activeTab, setActiveTab] = useState<'single' | 'batch'>('single')
 
-  // 單個產品輸入狀態
+  // Single product input state
   const [productName, setProductName] = useState('')
   const [brand, setBrand] = useState('GoGoJap')
   const [category, setCategory] = useState('')
@@ -60,24 +60,24 @@ export default function ContentPipelinePage() {
   const [price, setPrice] = useState('')
   const [origin, setOrigin] = useState('')
 
-  // 批量輸入狀態
+  // Batch input state
   const [batchInput, setBatchInput] = useState('')
 
-  // 選項狀態
+  // OptionState
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>(['zh-HK'])
   const [tone, setTone] = useState('professional')
   const [includeFaq, setIncludeFaq] = useState(false)
 
-  // 結果狀態
+  // ResultState
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<ContentPipelineResponse | null>(null)
   const [batchResult, setBatchResult] = useState<BatchPipelineResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // 當前顯示的語言
+  // Currently displayed language
   const [activeResultLang, setActiveResultLang] = useState<string>('zh-HK')
 
-  // 展開狀態
+  // Expanded sections state
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['content', 'seo', 'geo'])
   )
@@ -138,7 +138,7 @@ export default function ContentPipelinePage() {
 
       const response = await contentPipelineApi.generate(request)
       setResult(response)
-      // 設置第一個語言為活躍語言
+      // Set the first language as the active language
       if (response.languages && response.languages.length > 0) {
         setActiveResultLang(response.languages[0])
       }
@@ -153,7 +153,7 @@ export default function ContentPipelinePage() {
     navigator.clipboard.writeText(text)
   }
 
-  // 解析批量輸入
+  // Parse batch input
   const parseBatchInput = (input: string): ContentPipelineInput[] => {
     const trimmed = input.trim()
     if (!trimmed) return []
@@ -173,7 +173,7 @@ export default function ContentPipelinePage() {
           }))
         }
       } catch {
-        // 繼續嘗試其他格式
+        // Continue trying other formats
       }
     }
 
@@ -224,13 +224,13 @@ export default function ContentPipelinePage() {
     }
   }
 
-  // 獲取當前語言的內容
+  // Fetch current language content
   const currentLangContent: LocalizedContentResponse | null = result?.localized?.[activeResultLang] || null
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* 標題 */}
+        {/* Title */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
@@ -245,7 +245,7 @@ export default function ContentPipelinePage() {
           </div>
         </div>
 
-        {/* Tab 切換 */}
+        {/* Tab switch */}
         <div className="flex gap-2 mb-6">
           <button
             onClick={() => setActiveTab('single')}
@@ -276,7 +276,7 @@ export default function ContentPipelinePage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* 左側：輸入區 */}
+          {/* Left: Input section */}
           <div className="space-y-6">
             {activeTab === 'single' ? (
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
@@ -393,7 +393,7 @@ export default function ContentPipelinePage() {
               </div>
             )}
 
-            {/* 生成選項 */}
+            {/* Generate options */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
               <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
                 <Languages className="w-5 h-5 text-emerald-500" />
@@ -403,7 +403,7 @@ export default function ContentPipelinePage() {
                 </span>
               </h2>
 
-              {/* 語言選擇 */}
+              {/* Language selection */}
               <div className="flex flex-wrap gap-2 mb-6">
                 {AVAILABLE_LANGUAGES.map((lang) => (
                   <button
@@ -426,7 +426,7 @@ export default function ContentPipelinePage() {
                 ))}
               </div>
 
-              {/* 其他選項 */}
+              {/* Other options */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t['content_pipeline.field_tone']}</label>
@@ -453,7 +453,7 @@ export default function ContentPipelinePage() {
                 </div>
               </div>
 
-              {/* 生成按鈕 */}
+              {/* Generate button */}
               <button
                 onClick={activeTab === 'single' ? handleGenerate : handleBatchGenerate}
                 disabled={isLoading || (activeTab === 'single' ? !productName.trim() : !batchInput.trim())}
@@ -485,11 +485,11 @@ export default function ContentPipelinePage() {
             </div>
           </div>
 
-          {/* 右側：結果區 */}
+          {/* Right: Result section */}
           <div className="space-y-4">
             {activeTab === 'batch' && batchResult ? (
               <>
-                {/* 批量結果摘要 */}
+                {/* Batch result summary */}
                 <div className={`rounded-2xl p-4 text-white ${
                   batchResult.failed_count === 0
                     ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
@@ -511,7 +511,7 @@ export default function ContentPipelinePage() {
                   </div>
                 </div>
 
-                {/* 批量結果列表 */}
+                {/* Batch result list */}
                 {batchResult.results.map((res, index) => (
                   <div key={index} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                     <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
@@ -550,7 +550,7 @@ export default function ContentPipelinePage() {
               </>
             ) : result && currentLangContent ? (
               <>
-                {/* 單個結果摘要 */}
+                {/* Single result summary */}
                 <div className="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl p-4 text-white">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -567,7 +567,7 @@ export default function ContentPipelinePage() {
                   </div>
                 </div>
 
-                {/* 語言切換 Tab */}
+                {/* Language switch tab */}
                 <div className="flex gap-2 bg-white rounded-2xl p-2 shadow-sm border border-slate-100">
                   {result.languages.map(lang => {
                     const langInfo = AVAILABLE_LANGUAGES.find(l => l.code === lang)
@@ -598,7 +598,7 @@ export default function ContentPipelinePage() {
                   })}
                 </div>
 
-                {/* 文案結果 */}
+                {/* Content result */}
                 <ResultSection
                   title={t['content_pipeline.result_section_content']}
                   icon={<FileText className="w-5 h-5" />}
@@ -627,7 +627,7 @@ export default function ContentPipelinePage() {
                   </div>
                 </ResultSection>
 
-                {/* SEO 結果 */}
+                {/* SEO Result */}
                 <ResultSection
                   title={t['content_pipeline.result_section_seo']}
                   icon={<Target className="w-5 h-5" />}
@@ -680,7 +680,7 @@ export default function ContentPipelinePage() {
                   </div>
                 </ResultSection>
 
-                {/* GEO 結果 */}
+                {/* GEO Result */}
                 <ResultSection
                   title={t['content_pipeline.result_section_geo']}
                   icon={<Code className="w-5 h-5" />}
@@ -730,7 +730,7 @@ export default function ContentPipelinePage() {
                 </ResultSection>
               </>
             ) : (
-              /* 空狀態 */
+              /* Empty state */
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-12 text-center">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center mx-auto mb-4">
                   <Languages className="w-8 h-8 text-blue-600" />
@@ -765,7 +765,7 @@ export default function ContentPipelinePage() {
 
 
 // =============================================
-// 結果區塊組件
+// Result section component
 // =============================================
 
 function ResultSection({
@@ -827,7 +827,7 @@ function ResultSection({
 
 
 // =============================================
-// 結果項目組件
+// Result item component
 // =============================================
 
 function ResultItem({

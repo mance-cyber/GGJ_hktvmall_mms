@@ -23,15 +23,15 @@ interface FilterBarProps {
 const SORT_OPTIONS_PRODUCTS: { key: SortKey; label: string }[] = [
   { key: 'threat', label: '威脅程度' },
   { key: 'price_diff', label: '價差 %' },
-  { key: 'rank', label: '排名' },
-  { key: 'competitors', label: '競品數' },
-  { key: 'name', label: '名稱' },
+  { key: 'rank', label: 'Ranking' },
+  { key: 'competitors', label: 'Competitor數' },
+  { key: 'name', label: 'Name' },
 ]
 
 const SORT_OPTIONS_MERCHANTS: { key: SortKey; label: string }[] = [
   { key: 'threat', label: '威脅程度' },
-  { key: 'competitors', label: '商品數' },
-  { key: 'name', label: '名稱' },
+  { key: 'competitors', label: 'products數' },
+  { key: 'name', label: 'Name' },
 ]
 
 export function FilterBar({
@@ -63,7 +63,7 @@ export function FilterBar({
             type="text"
             value={search}
             onChange={e => onSearchChange(e.target.value)}
-            placeholder={mode === 'products' ? '搜索商品...' : '搜索商戶...'}
+            placeholder={mode === 'products' ? 'Searchproducts...' : 'Searchmerchants...'}
             className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300 focus:border-teal-400"
           />
         </div>
@@ -75,7 +75,7 @@ export function FilterBar({
             onChange={e => onCategoryChange(e.target.value)}
             className="shrink-0 px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300 text-gray-600 bg-white"
           >
-            <option value="">全部分類</option>
+            <option value="">All分類</option>
             {categories.map(c => (
               <option key={c} value={c}>{c}</option>
             ))}
@@ -87,7 +87,7 @@ export function FilterBar({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1 min-w-0 overflow-x-auto scrollbar-hide">
           <span className="text-[10px] sm:text-xs text-gray-400 flex items-center gap-1 mr-1 shrink-0">
-            <ArrowUpDown className="w-3 h-3" /> 排序:
+            <ArrowUpDown className="w-3 h-3" /> Sort:
           </span>
           {sortOptions.map(opt => (
             <button

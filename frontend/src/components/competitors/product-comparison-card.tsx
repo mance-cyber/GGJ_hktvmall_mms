@@ -50,7 +50,7 @@ export function ProductComparisonCard({ data, selected, onClick }: ProductCompar
           ? (knownStockLevels.length === 1
             ? `庫存 ${knownStockLevels[0]}`
             : `庫存 ${minStockLevel}-${maxStockLevel}`)
-          : '有貨')
+          : 'In stock')
         : '無資料'
 
   return (
@@ -86,9 +86,9 @@ export function ProductComparisonCard({ data, selected, onClick }: ProductCompar
 
         {/* Row 2: Data grid — mimicking reference layout */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-x-3 gap-y-2 text-xs">
-          {/* GoGoJap 價格 */}
+          {/* GoGoJap Price */}
           <div>
-            <div className="text-[10px] text-gray-400 mb-0.5">GoGoJap 價格</div>
+            <div className="text-[10px] text-gray-400 mb-0.5">GoGoJap Price</div>
             <div className="font-mono font-bold text-teal-600 text-sm">
               ${ourPrice?.toFixed(0) || 'N/A'}
             </div>
@@ -96,7 +96,7 @@ export function ProductComparisonCard({ data, selected, onClick }: ProductCompar
 
           {/* 最低競手價 + 價差 */}
           <div>
-            <div className="text-[10px] text-gray-400 mb-0.5">最低競手價格</div>
+            <div className="text-[10px] text-gray-400 mb-0.5">最低競手Price</div>
             <div className="flex items-baseline gap-1.5">
               {cheapestPrice ? (
                 <>
@@ -134,9 +134,9 @@ export function ProductComparisonCard({ data, selected, onClick }: ProductCompar
             </div>
           </div>
 
-          {/* 排名 */}
+          {/* Ranking */}
           <div>
-            <div className="text-[10px] text-gray-400 mb-0.5">排名</div>
+            <div className="text-[10px] text-gray-400 mb-0.5">Ranking</div>
             <div className="flex items-center gap-1">
               {isWeCheapest ? (
                 <span className="flex items-center gap-0.5 text-emerald-600 font-semibold">
@@ -154,7 +154,7 @@ export function ProductComparisonCard({ data, selected, onClick }: ProductCompar
             </div>
           </div>
 
-          {/* 股貨狀態 */}
+          {/* 股貨State */}
           <div>
             <div className="text-[10px] text-gray-400 mb-0.5">庫存</div>
             <div className={cn(

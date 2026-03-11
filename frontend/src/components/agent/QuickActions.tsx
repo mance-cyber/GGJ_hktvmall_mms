@@ -1,7 +1,7 @@
 'use client'
 
 // =============================================
-// 快捷操作組件 - 常用問題快捷入口
+// 快捷Operation組items - 常用問題快捷入口
 // =============================================
 
 import { useState } from 'react'
@@ -44,7 +44,7 @@ const QUICK_ACTIONS: QuickAction[] = [
   {
     id: 'orders',
     label: '今日訂單',
-    query: '今日有幾多單未處理？',
+    query: '今日有幾多單未Processing？',
     icon: <Package className="w-4 h-4" />,
     color: 'from-blue-500 to-cyan-500',
   },
@@ -57,22 +57,22 @@ const QUICK_ACTIONS: QuickAction[] = [
   },
   {
     id: 'alerts',
-    label: '查警報',
-    query: '有咩價格警報？',
+    label: '查Alert',
+    query: '有咩PriceAlert？',
     icon: <Bell className="w-4 h-4" />,
     color: 'from-amber-500 to-orange-500',
   },
   {
     id: 'trends',
-    label: '價格趨勢',
-    query: '分析和牛嘅價格趨勢',
+    label: 'PriceTrend',
+    query: 'Analysis和牛嘅PriceTrend',
     icon: <TrendingUp className="w-4 h-4" />,
     color: 'from-purple-500 to-pink-500',
   },
   {
     id: 'competitors',
-    label: '競爭分析',
-    query: '同百佳比較日本零食價格',
+    label: '競爭Analysis',
+    query: '同百佳Compare日本零食Price',
     icon: <Store className="w-4 h-4" />,
     color: 'from-red-500 to-rose-500',
   },
@@ -94,7 +94,7 @@ export function QuickActions({ onAction, disabled }: QuickActionsProps) {
       >
         <div className="flex items-center gap-2">
           <Zap className="w-4 h-4" />
-          <span>快捷操作</span>
+          <span>快捷Operation</span>
         </div>
         {isExpanded ? (
           <ChevronDown className="w-4 h-4" />

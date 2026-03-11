@@ -42,7 +42,7 @@ import { Button } from '@/components/ui/button'
 import { useLocale } from '@/components/providers/locale-provider'
 
 // =============================================
-// 內容生成歷史記錄頁面
+// Content Generation History Page
 // =============================================
 
 const LANGUAGE_FLAGS: Record<string, string> = {
@@ -56,7 +56,7 @@ export default function ContentHistoryPage() {
   const router = useRouter()
   const { t } = useLocale()
 
-  // 語言名稱映射（從 i18n 字典讀取）
+  // Language name mapping (from i18n dictionary)
   const LANGUAGE_NAMES: Record<string, string> = useMemo(() => ({
     'zh-HK': t['content_history.lang_zh_HK'],
     'zh-CN': t['content_history.lang_zh_CN'],
@@ -64,23 +64,23 @@ export default function ContentHistoryPage() {
     'ja': '日本語',
   }), [t])
 
-  // 數據狀態
+  // Data state
   const [history, setHistory] = useState<PipelineHistoryListResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // 篩選狀態
+  // Filter state
   const [page, setPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterLanguage, setFilterLanguage] = useState<string>('')
   const [filterBatch, setFilterBatch] = useState<string>('')
   const [showFilters, setShowFilters] = useState(false)
 
-  // 刪除確認狀態
+  // Delete confirm state
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // 獲取歷史記錄
+  // Fetch history records
   const fetchHistory = useCallback(async () => {
     setIsLoading(true)
     setError(null)
@@ -105,12 +105,12 @@ export default function ContentHistoryPage() {
     fetchHistory()
   }, [fetchHistory])
 
-  // 搜索時重置頁碼
+  // Reset page number on search
   useEffect(() => {
     setPage(1)
   }, [searchQuery, filterLanguage, filterBatch])
 
-  // 刪除歷史記錄
+  // Delete history record
   const handleDelete = async (id: string) => {
     setIsDeleting(true)
     try {
@@ -124,7 +124,7 @@ export default function ContentHistoryPage() {
     }
   }
 
-  // 重新生成
+  // Re-Generate
   const handleRegenerate = (item: PipelineHistoryItem) => {
     sessionStorage.setItem('regenerate_product', item.product_name)
     sessionStorage.setItem('regenerate_languages', JSON.stringify(item.languages))
@@ -132,7 +132,7 @@ export default function ContentHistoryPage() {
     router.push('/content-pipeline')
   }
 
-  // 格式化時間
+  // Format time
   const formatTime = useCallback((dateStr: string) => {
     const date = new Date(dateStr)
     const now = new Date()
@@ -152,7 +152,7 @@ export default function ContentHistoryPage() {
     })
   }, [t])
 
-  // SEO 分數顏色
+  // SEO score color
   const getSeoScoreStyle = (score: number | null) => {
     if (!score) return { bg: 'bg-slate-200', text: 'text-slate-600' }
     if (score >= 80) return { bg: 'bg-emerald-100', text: 'text-emerald-700' }
@@ -160,7 +160,7 @@ export default function ContentHistoryPage() {
     return { bg: 'bg-red-100', text: 'text-red-700' }
   }
 
-  // 統計數據
+  // Statistics
   const stats = useMemo(() => {
     if (!history) return { total: 0, single: 0, batch: 0 }
     return {
@@ -170,12 +170,12 @@ export default function ContentHistoryPage() {
     }
   }, [history])
 
-  // ========== Loading 骨架屏 ==========
+  // ========== Loading Skeleton ==========
   if (isLoading && !history) {
     return (
       <PageTransition>
         <div className="space-y-6">
-          {/* 標題骨架屏 */}
+          {/* TitleSkeleton */}
           <div className="flex items-start justify-between">
             <div>
               <HoloSkeleton variant="text" width={200} height={36} />
@@ -186,20 +186,20 @@ export default function ContentHistoryPage() {
             </div>
           </div>
 
-          {/* 統計卡片骨架屏 */}
+          {/* Stats card skeleton */}
           <div className="grid grid-cols-3 gap-4">
             {[...Array(3)].map((_, i) => (
               <HoloSkeleton key={i} variant="rectangular" height={100} />
             ))}
           </div>
 
-          {/* 工具欄骨架屏 */}
+          {/* ToolbarSkeleton */}
           <div className="flex items-center gap-4">
             <HoloSkeleton variant="rectangular" className="flex-1" height={40} />
             <HoloSkeleton variant="rectangular" width={100} height={40} />
           </div>
 
-          {/* 列表骨架屏 */}
+          {/* ListSkeleton */}
           <HoloCard className="overflow-hidden">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="px-6 py-4 border-b border-slate-100">
@@ -216,7 +216,7 @@ export default function ContentHistoryPage() {
   return (
     <PageTransition>
       <div className="space-y-6">
-        {/* ========== 標題區 ========== */}
+        {/* ========== Title section ========== */}
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
@@ -239,7 +239,7 @@ export default function ContentHistoryPage() {
           </HoloButton>
         </div>
 
-        {/* ========== 統計卡片 ========== */}
+        {/* ========== Stats Cards ========== */}
         <StaggerContainer className="grid grid-cols-3 gap-4">
           <HoloCard className="p-4">
             <DataMetric
@@ -267,10 +267,10 @@ export default function ContentHistoryPage() {
           </HoloCard>
         </StaggerContainer>
 
-        {/* ========== 搜索和篩選 ========== */}
+        {/* ========== Search and Filter ========== */}
         <div className="space-y-4">
           <div className="flex gap-4">
-            {/* 搜索框 */}
+            {/* Search box */}
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
@@ -282,7 +282,7 @@ export default function ContentHistoryPage() {
               />
             </div>
 
-            {/* 篩選按鈕 */}
+            {/* Filterbutton */}
             <Button
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}
@@ -298,7 +298,7 @@ export default function ContentHistoryPage() {
               )}
             </Button>
 
-            {/* 刷新按鈕 */}
+            {/* Refreshbutton */}
             <Button
               variant="outline"
               size="icon"
@@ -309,7 +309,7 @@ export default function ContentHistoryPage() {
             </Button>
           </div>
 
-          {/* 篩選選項 */}
+          {/* FilterOption */}
           <AnimatePresence>
             {showFilters && (
               <motion.div
@@ -320,7 +320,7 @@ export default function ContentHistoryPage() {
               >
                 <HoloCard className="p-4">
                   <div className="flex items-end gap-6">
-                    {/* 語言篩選 */}
+                    {/* Language filter */}
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-slate-600">{t['content_history.filter_language']}</label>
                       <select
@@ -336,7 +336,7 @@ export default function ContentHistoryPage() {
                       </select>
                     </div>
 
-                    {/* 類型篩選 */}
+                    {/* TypeFilter */}
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-slate-600">{t['content_history.filter_gen_type']}</label>
                       <select
@@ -350,7 +350,7 @@ export default function ContentHistoryPage() {
                       </select>
                     </div>
 
-                    {/* 清除篩選 */}
+                    {/* Clear filter */}
                     {(filterLanguage || filterBatch) && (
                       <Button
                         variant="ghost"
@@ -372,7 +372,7 @@ export default function ContentHistoryPage() {
           </AnimatePresence>
         </div>
 
-        {/* ========== 錯誤提示 ========== */}
+        {/* ========== Error hint ========== */}
         {error && (
           <HoloCard className="p-4 border-red-200 bg-red-50">
             <div className="flex items-center gap-3">
@@ -390,7 +390,7 @@ export default function ContentHistoryPage() {
           </HoloCard>
         )}
 
-        {/* ========== 歷史記錄列表 ========== */}
+        {/* ========== History Record List ========== */}
         <HoloCard className="overflow-hidden">
           <HoloPanelHeader
             title={`${t['content_history.table_title']}${history ? ` (${t['content_history.table_count'].replace('{total}', String(history.total))})` : ''}`}
@@ -413,7 +413,7 @@ export default function ContentHistoryPage() {
             </div>
           ) : (
             <>
-              {/* 表格 */}
+              {/* Table */}
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -438,7 +438,7 @@ export default function ContentHistoryPage() {
                           transition={{ delay: index * 0.03 }}
                           className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors"
                         >
-                          {/* 產品 */}
+                          {/* Product */}
                           <td className="py-4 px-6">
                             <div className="flex items-center gap-3">
                               <div className="flex-1 min-w-0">
@@ -493,14 +493,14 @@ export default function ContentHistoryPage() {
                             </span>
                           </td>
 
-                          {/* 時間 */}
+                          {/* Time */}
                           <td className="py-4 px-4">
                             <span className="text-sm text-slate-500">
                               {formatTime(item.created_at)}
                             </span>
                           </td>
 
-                          {/* 操作 */}
+                          {/* Operation */}
                           <td className="py-4 px-6">
                             <div className="flex items-center justify-end gap-2">
                               <Button
@@ -529,7 +529,7 @@ export default function ContentHistoryPage() {
                 </table>
               </div>
 
-              {/* 分頁 */}
+              {/* Pagination */}
               {history && history.total > 20 && (
                 <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
                   <p className="text-sm text-slate-500">
@@ -566,7 +566,7 @@ export default function ContentHistoryPage() {
           )}
         </HoloCard>
 
-        {/* ========== 刪除確認對話框 ========== */}
+        {/* ========== DeleteConfirmDialog ========== */}
         <AnimatePresence>
           {deleteId && (
             <motion.div

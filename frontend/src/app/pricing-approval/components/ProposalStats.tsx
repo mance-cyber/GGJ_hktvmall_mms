@@ -1,5 +1,5 @@
 // =============================================
-// 提案統計卡片組件
+// Proposal statistics card component
 // =============================================
 
 'use client'
@@ -17,25 +17,25 @@ interface ProposalStatsProps {
 export function ProposalStats({ pending, approved, rejected, failed }: ProposalStatsProps) {
   const stats = [
     {
-      title: '待審批',
+      title: 'Pending',
       value: pending,
       icon: Clock,
       color: 'orange',
     },
     {
-      title: '已批准',
+      title: 'Approved',
       value: approved,
       icon: CheckCircle,
       color: 'green',
     },
     {
-      title: '已拒絕',
+      title: 'Rejected',
       value: rejected,
       icon: XCircle,
       color: 'gray',
     },
     {
-      title: '執行失敗',
+      title: 'Failed',
       value: failed,
       icon: AlertTriangle,
       color: 'red',

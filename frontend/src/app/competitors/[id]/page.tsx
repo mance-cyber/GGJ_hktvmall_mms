@@ -57,7 +57,7 @@ import { cn } from '@/lib/utils'
 import { BulkImportDialog, ImportRow } from '@/components/bulk-import-dialog'
 
 // =============================================
-// Future Tech 設計系統組件導入
+// Future Tech Design System Component Imports
 // =============================================
 import {
   PageTransition,
@@ -72,14 +72,14 @@ import {
 } from '@/components/ui/future-tech'
 
 // =============================================
-// 類型定義
+// Type definitions
 // =============================================
 
 type SortField = 'name' | 'price' | 'price_change' | 'last_scraped'
 type SortOrder = 'asc' | 'desc'
 
 // =============================================
-// 主頁面組件
+// Main page組items
 // =============================================
 
 export default function CompetitorDetailPage() {
@@ -87,13 +87,13 @@ export default function CompetitorDetailPage() {
   const competitorId = params.id as string
   const queryClient = useQueryClient()
 
-  // 分頁和搜索
+  // Pagination and search
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const pageSize = 20
 
-  // UI 狀態
+  // UI State
   const [showAddForm, setShowAddForm] = useState(false)
   const [showBulkImport, setShowBulkImport] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
@@ -104,7 +104,7 @@ export default function CompetitorDetailPage() {
   const [stockFilter, setStockFilter] = useState<string | undefined>(undefined)
   const [editingProduct, setEditingProduct] = useState<CompetitorProduct | null>(null)
 
-  // ========== 數據查詢 ==========
+  // ========== Data queries ==========
 
   const { data: competitor, isLoading: competitorLoading } = useQuery({
     queryKey: ['competitor', competitorId],
@@ -122,19 +122,19 @@ export default function CompetitorDetailPage() {
     enabled: !!selectedProductId,
   })
 
-  // ========== 排序和過濾 ==========
+  // ========== Sort and filter ==========
 
   const sortedProducts = useMemo(() => {
     if (!products?.data) return []
 
     let filtered = [...products.data]
 
-    // 庫存過濾
+    // Stock filter
     if (stockFilter) {
       filtered = filtered.filter(p => p.stock_status === stockFilter)
     }
 
-    // 排序
+    // Sort
     filtered.sort((a, b) => {
       let comparison = 0
       switch (sortField) {
@@ -193,9 +193,9 @@ export default function CompetitorDetailPage() {
     },
   })
 
-  // ========== 事件處理 ==========
+  // ========== Event handlers ==========
 
-  // 批量導入處理
+  // Bulk import handler
   const handleBulkImport = async (rows: ImportRow[]) => {
     setIsImporting(true)
     try {
@@ -247,12 +247,12 @@ export default function CompetitorDetailPage() {
     }
   }
 
-  // ========== 計算 ==========
+  // ========== Calculate ==========
 
   const totalPages = products ? Math.ceil(products.total / pageSize) : 0
   const isLoading = competitorLoading || productsLoading
 
-  // 統計數據
+  // Statistics
   const stats = useMemo(() => {
     if (!products?.data) return null
     const inStock = products.data.filter(p => p.stock_status === 'in_stock').length
@@ -262,14 +262,14 @@ export default function CompetitorDetailPage() {
     return { inStock, outOfStock, priceUp, priceDown }
   }, [products?.data])
 
-  // ========== 渲染 ==========
+  // ========== Rendering ==========
 
-  // Loading 狀態 - 使用 HoloSkeleton
+  // Loading State - 使用 HoloSkeleton
   if (isLoading) {
     return (
       <PageTransition>
         <div className="space-y-6 max-w-7xl mx-auto">
-          {/* 頂部骨架 */}
+          {/* Top skeleton */}
           <div className="space-y-4">
             <HoloSkeleton width={120} height={20} />
             <HoloSkeleton width="60%" height={36} />
@@ -279,14 +279,14 @@ export default function CompetitorDetailPage() {
             </div>
           </div>
 
-          {/* 統計卡片骨架 */}
+          {/* Statistics card skeleton */}
           <div className="grid grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
               <HoloSkeleton key={i} height={100} className="rounded-xl" />
             ))}
           </div>
 
-          {/* 主內容骨架 */}
+          {/* Main content skeleton */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-4">
               <HoloSkeleton height={44} className="rounded-xl" />
@@ -307,7 +307,7 @@ export default function CompetitorDetailPage() {
         <HoloCard glowColor="purple" className="max-w-7xl mx-auto border-red-200/50 bg-red-50/50 p-6">
           <div className="flex items-center text-red-600">
             <AlertCircle className="w-5 h-5 mr-3" />
-            <span className="font-medium">無法載入商品列表，請稍後再試。</span>
+            <span className="font-medium">Unable to load product list, please try again later.</span>
           </div>
         </HoloCard>
       </PageTransition>
@@ -316,7 +316,7 @@ export default function CompetitorDetailPage() {
 
   return (
     <PageTransition className="space-y-6 max-w-7xl mx-auto">
-      {/* ========== 頂部導航與標題 ========== */}
+      {/* ========== Top navigation and title ========== */}
       <div className="space-y-4">
         <Link
           href="/competitors"
@@ -325,7 +325,7 @@ export default function CompetitorDetailPage() {
           <div className="p-1.5 rounded-lg bg-slate-100 group-hover:bg-cyan-50 mr-2 transition-all group-hover:shadow-md group-hover:shadow-cyan-200/50">
             <ArrowLeft className="w-4 h-4 group-hover:text-cyan-600 transition-colors" />
           </div>
-          返回競品列表
+          Back to competitors list
         </Link>
 
         <div className="flex items-start justify-between">
@@ -340,14 +340,14 @@ export default function CompetitorDetailPage() {
               <span className="text-slate-300">|</span>
               <span className="text-muted-foreground flex items-center">
                 <Package className="w-4 h-4 mr-1 text-cyan-500" />
-                {products?.total || 0} 個監測商品
+                {products?.total || 0} 個Monitorproducts
               </span>
               {competitor?.last_scraped_at && (
                 <>
                   <span className="text-slate-300">|</span>
                   <span className="text-muted-foreground flex items-center text-sm">
                     <Clock className="w-3.5 h-3.5 mr-1 text-cyan-500" />
-                    最後更新: {new Date(competitor.last_scraped_at).toLocaleString('zh-HK')}
+                    最後Update: {new Date(competitor.last_scraped_at).toLocaleString('zh-HK')}
                   </span>
                 </>
               )}
@@ -368,7 +368,7 @@ export default function CompetitorDetailPage() {
               onClick={() => refetch()}
               icon={<RefreshCw className="w-4 h-4" />}
             >
-              刷新
+              Refresh
             </HoloButton>
             <HoloButton
               variant="secondary"
@@ -376,42 +376,42 @@ export default function CompetitorDetailPage() {
               icon={<FileSpreadsheet className="w-4 h-4 text-emerald-500" />}
               className="border-emerald-200 hover:border-emerald-300"
             >
-              批量導入
+              批量Import
             </HoloButton>
             <HoloButton
               variant="primary"
               onClick={() => setShowAddForm(true)}
               icon={<Plus className="w-4 h-4" />}
             >
-              新增商品
+              Addproducts
             </HoloButton>
           </div>
         </div>
       </div>
 
-      {/* ========== 統計卡片 - 使用 DataMetric ========== */}
+      {/* ========== Statistics cards - using DataMetric ========== */}
       {stats && (
         <StaggerContainer className="grid grid-cols-4 gap-4" staggerDelay={0.08}>
           <DataMetric
-            label="有貨商品"
+            label="In stockproducts"
             value={stats.inStock}
             icon={<Package className="w-5 h-5 text-emerald-500" />}
             color="green"
           />
           <DataMetric
-            label="缺貨商品"
+            label="Out of stockproducts"
             value={stats.outOfStock}
             icon={<Package className="w-5 h-5 text-amber-500" />}
             color="orange"
           />
           <DataMetric
-            label="價格上漲"
+            label="Price increase"
             value={stats.priceUp}
             icon={<TrendingUp className="w-5 h-5 text-red-500" />}
             color="purple"
           />
           <DataMetric
-            label="價格下跌"
+            label="Price decrease"
             value={stats.priceDown}
             icon={<TrendingDown className="w-5 h-5 text-emerald-500" />}
             color="cyan"
@@ -419,47 +419,47 @@ export default function CompetitorDetailPage() {
         </StaggerContainer>
       )}
 
-      {/* ========== 主要內容區域 ========== */}
+      {/* ========== Main content area ========== */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 左側：商品列表 */}
+        {/* 左側：Product list */}
         <div className="lg:col-span-2 space-y-4">
-          {/* 搜索和過濾欄 */}
+          {/* Search and filter bar */}
           <div className="flex items-center space-x-3">
             <form onSubmit={handleSearch} className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="搜索商品名稱、分類..."
+                placeholder="Search product name, category..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 className="pl-10 bg-white/70 backdrop-blur-sm border-slate-200/80 focus:border-cyan-300 focus:ring-cyan-200/50 transition-all"
               />
             </form>
 
-            {/* 庫存過濾 */}
+            {/* Stock filter */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <div>
                   <HoloButton variant="secondary" size="sm" icon={<Filter className="w-4 h-4" />}>
-                    {stockFilter === 'in_stock' ? '有貨' :
-                     stockFilter === 'out_of_stock' ? '缺貨' : '全部'}
+                    {stockFilter === 'in_stock' ? 'In stock' :
+                     stockFilter === 'out_of_stock' ? 'Out of stock' : 'All'}
                   </HoloButton>
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-white/95 backdrop-blur-xl border-slate-200/80">
                 <DropdownMenuItem onClick={() => setStockFilter(undefined)}>
-                  全部
+                  All
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setStockFilter('in_stock')}>
-                  有貨
+                  In stock
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setStockFilter('out_of_stock')}>
-                  缺貨
+                  Out of stock
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* 排序 */}
+            {/* Sort */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <div>
@@ -468,28 +468,28 @@ export default function CompetitorDetailPage() {
                     size="sm"
                     icon={sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
                   >
-                    排序
+                    Sort
                   </HoloButton>
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-white/95 backdrop-blur-xl border-slate-200/80">
                 <DropdownMenuItem onClick={() => handleSort('name')}>
-                  名稱 {sortField === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  Name {sortField === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleSort('price')}>
-                  價格 {sortField === 'price' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  Price {sortField === 'price' && (sortOrder === 'asc' ? '↑' : '↓')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleSort('price_change')}>
-                  價格變動 {sortField === 'price_change' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  Price change {sortField === 'price_change' && (sortOrder === 'asc' ? '↑' : '↓')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleSort('last_scraped')}>
-                  更新時間 {sortField === 'last_scraped' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  Update time {sortField === 'last_scraped' && (sortOrder === 'asc' ? '↑' : '↓')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
 
-          {/* 批量操作欄 */}
+          {/* Batch operationsBar */}
           <AnimatePresence>
             {selectedProducts.size > 0 && (
               <motion.div
@@ -499,11 +499,11 @@ export default function CompetitorDetailPage() {
                 className="flex items-center justify-between bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl px-4 py-3 border border-cyan-200/60 shadow-sm"
               >
                 <span className="text-sm font-medium text-cyan-700">
-                  已選擇 {selectedProducts.size} 個商品
+                  Selected擇 {selectedProducts.size} 個products
                 </span>
                 <div className="flex items-center space-x-2">
                   <HoloButton size="sm" variant="ghost" onClick={() => setSelectedProducts(new Set())}>
-                    取消選擇
+                    Deselect
                   </HoloButton>
                   <HoloButton
                     size="sm"
@@ -511,16 +511,16 @@ export default function CompetitorDetailPage() {
                     className="border-red-200 text-red-600 hover:bg-red-50"
                     icon={<Trash2 className="w-3.5 h-3.5" />}
                   >
-                    刪除
+                    Delete
                   </HoloButton>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* 商品列表 - 使用 HoloCard */}
+          {/* Product list - 使用 HoloCard */}
           <HoloCard glowColor="cyan" className="overflow-hidden">
-            {/* 列表頭部 */}
+            {/* List header */}
             <div className="px-4 py-3 bg-gradient-to-r from-slate-50/80 to-white/80 border-b border-slate-100/80 flex items-center">
               <button
                 onClick={toggleSelectAll}
@@ -533,7 +533,7 @@ export default function CompetitorDetailPage() {
                 )}
               </button>
               <span className="text-xs font-medium text-slate-500">
-                {sortedProducts.length} 個商品
+                {sortedProducts.length} 個products
               </span>
             </div>
 
@@ -560,14 +560,14 @@ export default function CompetitorDetailPage() {
               </AnimatePresence>
             </div>
 
-            {/* 空狀態 */}
+            {/* 空State */}
             {sortedProducts.length === 0 && (
               <div className="px-6 py-16 text-center">
                 <div className="w-16 h-16 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-cyan-100/50">
                   <Package className="w-8 h-8 text-cyan-400" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900">尚無監測商品</h3>
-                <p className="text-muted-foreground mt-1">點擊右上角「新增商品」開始監測</p>
+                <h3 className="text-lg font-medium text-gray-900">尚無Monitorproducts</h3>
+                <p className="text-muted-foreground mt-1">點擊右上角「Addproducts」StartMonitor</p>
               </div>
             )}
           </HoloCard>
@@ -602,11 +602,11 @@ export default function CompetitorDetailPage() {
           )}
         </div>
 
-        {/* ========== 右側：價格歷史側邊欄 - 使用 HoloCard ========== */}
+        {/* ========== Right: Price history sidebar - using HoloCard ========== */}
         <div className="lg:col-span-1">
           <HoloCard glowColor="blue" className="sticky top-6 overflow-hidden">
             <HoloPanelHeader
-              title="價格走勢分析"
+              title="Price走勢Analysis"
               icon={<LineChart className="w-5 h-5" />}
             />
 
@@ -616,9 +616,9 @@ export default function CompetitorDetailPage() {
                   <div className="w-16 h-16 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-cyan-100/50 animate-pulse">
                     <LineChart className="w-8 h-8 text-cyan-400" />
                   </div>
-                  <h3 className="text-base font-medium text-gray-900">尚未選擇商品</h3>
+                  <h3 className="text-base font-medium text-gray-900">尚未Selectproducts</h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    點擊左側列表中的商品<br/>查看詳細價格歷史與分析
+                    Click a product in the left list<br/>View detailed price history and analysis
                   </p>
                 </div>
               ) : historyLoading ? (
@@ -627,7 +627,7 @@ export default function CompetitorDetailPage() {
                     <div className="absolute inset-0 bg-cyan-500/20 blur-xl rounded-full animate-pulse" />
                     <RefreshCw className="relative w-8 h-8 animate-spin text-cyan-500" />
                   </div>
-                  <span className="text-sm text-muted-foreground">正在分析數據...</span>
+                  <span className="text-sm text-muted-foreground">currentlyAnalysisData...</span>
                 </div>
               ) : priceHistory ? (
                 <motion.div
@@ -636,7 +636,7 @@ export default function CompetitorDetailPage() {
                   transition={{ duration: 0.4 }}
                   className="space-y-6"
                 >
-                  {/* 商品信息 */}
+                  {/* products信息 */}
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900 leading-relaxed mb-2">
                       {priceHistory.product.name}
@@ -650,28 +650,28 @@ export default function CompetitorDetailPage() {
                           className="inline-flex items-center text-xs text-cyan-600 hover:text-cyan-700 bg-cyan-50 px-2.5 py-1 rounded-lg transition-colors hover:bg-cyan-100"
                         >
                           <ExternalLink className="w-3 h-3 mr-1" />
-                          訪問商品頁面
+                          訪問productspage
                         </a>
                       )}
                       <HoloBadge
                         variant={priceHistory.product.stock_status === 'in_stock' ? 'success' : 'error'}
                         size="sm"
                       >
-                        {priceHistory.product.stock_status === 'in_stock' ? '有貨' : '缺貨'}
+                        {priceHistory.product.stock_status === 'in_stock' ? 'In stock' : 'Out of stock'}
                       </HoloBadge>
                     </div>
                   </div>
 
-                  {/* 價格卡片 */}
+                  {/* PriceCard */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-gradient-to-br from-slate-50 to-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                      <div className="text-xs text-muted-foreground mb-1">當前價格</div>
+                      <div className="text-xs text-muted-foreground mb-1">當前Price</div>
                       <div className="text-xl font-bold text-gray-900">
                         ${priceHistory.product.current_price ? Number(priceHistory.product.current_price).toFixed(2) : '-'}
                       </div>
                     </div>
                     <div className="bg-gradient-to-br from-slate-50 to-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                      <div className="text-xs text-muted-foreground mb-1">價格變動</div>
+                      <div className="text-xs text-muted-foreground mb-1">Price change</div>
                       <div className={cn(
                         "text-xl font-bold flex items-center",
                         (priceHistory.product.price_change || 0) > 0 ? "text-red-500" :
@@ -687,23 +687,23 @@ export default function CompetitorDetailPage() {
                     </div>
                   </div>
 
-                  {/* 最後抓取時間 */}
+                  {/* 最後抓取Time */}
                   {priceHistory.product.last_scraped_at && (
                     <div className="flex items-center text-xs text-slate-500 bg-gradient-to-r from-slate-50 to-white rounded-xl px-3 py-2 border border-slate-100">
                       <Clock className="w-3.5 h-3.5 mr-2 text-cyan-500" />
-                      最後更新: {new Date(priceHistory.product.last_scraped_at).toLocaleString('zh-HK')}
+                      最後Update: {new Date(priceHistory.product.last_scraped_at).toLocaleString('zh-HK')}
                     </div>
                   )}
 
-                  {/* 價格時間軸 */}
+                  {/* PriceTime軸 */}
                   <div>
                     <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center">
                       <History className="w-3 h-3 mr-1 text-cyan-500" />
-                      歷史記錄 (30天)
+                      HistoryRecord (30天)
                     </h4>
                     <div className="relative border-l-2 border-cyan-200 ml-2 space-y-4 pb-2 max-h-[300px] overflow-y-auto">
                       {priceHistory.history.length === 0 ? (
-                        <p className="text-sm text-muted-foreground pl-4 py-2">暫無價格記錄</p>
+                        <p className="text-sm text-muted-foreground pl-4 py-2">暫無PriceRecord</p>
                       ) : (
                         priceHistory.history.map((snapshot, idx) => (
                           <motion.div
@@ -744,7 +744,7 @@ export default function CompetitorDetailPage() {
         </div>
       </div>
 
-      {/* ========== 新增商品彈窗 ========== */}
+      {/* ========== AddproductsPopup ========== */}
       <AddProductDialog
         open={showAddForm}
         onOpenChange={setShowAddForm}
@@ -752,7 +752,7 @@ export default function CompetitorDetailPage() {
         isLoading={addProductMutation.isPending}
       />
 
-      {/* ========== 編輯商品彈窗 ========== */}
+      {/* ========== EditproductsPopup ========== */}
       <EditProductDialog
         product={editingProduct}
         onOpenChange={(open) => { if (!open) setEditingProduct(null) }}
@@ -762,7 +762,7 @@ export default function CompetitorDetailPage() {
         isLoading={updateProductMutation.isPending}
       />
 
-      {/* ========== 批量導入彈窗 ========== */}
+      {/* ========== 批量ImportPopup ========== */}
       <BulkImportDialog
         open={showBulkImport}
         onOpenChange={setShowBulkImport}
@@ -774,7 +774,7 @@ export default function CompetitorDetailPage() {
 }
 
 // =============================================
-// 子組件
+// Sub-components
 // =============================================
 
 function ProductRow({
@@ -823,7 +823,7 @@ function ProductRow({
         )}
       </button>
 
-      {/* 商品信息 */}
+      {/* products信息 */}
       <div
         className="flex items-center space-x-4 flex-1 min-w-0"
         onClick={onSelect}
@@ -864,7 +864,7 @@ function ProductRow({
         </div>
       </div>
 
-      {/* 價格和狀態 */}
+      {/* Price和State */}
       <div className="flex items-center space-x-4">
         <div className="text-right min-w-[80px]">
           <p className="text-sm font-bold text-gray-900 font-mono">
@@ -891,10 +891,10 @@ function ProductRow({
                    product.stock_status === 'out_of_stock' ? 'error' : 'default'}
           size="sm"
         >
-          {product.stock_status === 'in_stock' ? '有貨' : product.stock_status === 'out_of_stock' ? '缺貨' : '未知'}
+          {product.stock_status === 'in_stock' ? 'In stock' : product.stock_status === 'out_of_stock' ? 'Out of stock' : 'Unknown'}
         </HoloBadge>
 
-        {/* 更多操作 */}
+        {/* 更多Operation */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-slate-100 transition-all">
@@ -904,19 +904,19 @@ function ProductRow({
           <DropdownMenuContent align="end" className="bg-white/95 backdrop-blur-xl border-slate-200/80">
             <DropdownMenuItem className="flex items-center" onClick={onEdit}>
               <Pencil className="w-4 h-4 mr-2 text-blue-500" />
-              編輯商品
+              Editproducts
             </DropdownMenuItem>
             <DropdownMenuItem className="flex items-center" onClick={() => window.open(product.url, '_blank')}>
               <ExternalLink className="w-4 h-4 mr-2 text-cyan-500" />
-              訪問頁面
+              Visit page
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-red-600 flex items-center"
-              onClick={() => { if (confirm(`確定刪除「${product.name}」？`)) onDelete() }}
+              onClick={() => { if (confirm(`OKDelete「${product.name}」？`)) onDelete() }}
             >
               <Trash2 className="w-4 h-4 mr-2" />
-              刪除
+              Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -952,10 +952,10 @@ function AddProductDialog({
       <DialogContent className="sm:max-w-[500px] bg-white/95 backdrop-blur-xl border-slate-200/80 shadow-2xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-            新增監測商品
+            AddMonitorproducts
           </DialogTitle>
           <DialogDescription>
-            輸入商品鏈接，系統將自動抓取價格和庫存信息。
+            Inputproducts鏈接，System將Auto抓取Price和庫存信息。
           </DialogDescription>
         </DialogHeader>
 
@@ -963,7 +963,7 @@ function AddProductDialog({
           <div className="space-y-4">
             <div className="grid gap-2">
               <Label htmlFor="product-url" className="text-slate-700">
-                商品 URL <span className="text-red-500">*</span>
+                products URL <span className="text-red-500">*</span>
               </Label>
               <div className="relative">
                 <ShoppingCart className="absolute left-3 top-3 h-4 w-4 text-cyan-500" />
@@ -980,18 +980,18 @@ function AddProductDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="product-name" className="text-slate-700">自定義名稱（可選）</Label>
+              <Label htmlFor="product-name" className="text-slate-700">CustomName（Optional）</Label>
               <Input
                 id="product-name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="留空則使用自動抓取的名稱"
+                placeholder="留空則使用Auto抓取的Name"
                 className="bg-white/70 backdrop-blur-sm border-slate-200/80 focus:border-cyan-300 focus:ring-cyan-200/50"
               />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="product-category" className="text-slate-700">分類標籤（可選）</Label>
+              <Label htmlFor="product-category" className="text-slate-700">分類標籤（Optional）</Label>
               <Input
                 id="product-category"
                 value={formData.category}
@@ -1008,7 +1008,7 @@ function AddProductDialog({
               variant="ghost"
               onClick={() => onOpenChange(false)}
             >
-              取消
+              Cancel
             </HoloButton>
             <HoloButton
               type="submit"
@@ -1016,7 +1016,7 @@ function AddProductDialog({
               loading={isLoading}
               icon={!isLoading ? <Check className="w-4 h-4" /> : undefined}
             >
-              開始監測
+              StartMonitor
             </HoloButton>
           </div>
         </form>
@@ -1027,7 +1027,7 @@ function AddProductDialog({
 
 
 // =============================================
-// 編輯商品對話框
+// EditproductsDialog
 // =============================================
 
 function EditProductDialog({
@@ -1045,7 +1045,7 @@ function EditProductDialog({
   const [error, setError] = useState('')
   const open = !!product
 
-  // 當 product 變更時同步表單
+  // 當 product 變更時Sync表單
   useEffect(() => {
     if (product) {
       setFormData({
@@ -1061,9 +1061,9 @@ function EditProductDialog({
     e.preventDefault()
     setError('')
 
-    // HKTVmall URL 格式驗證
+    // HKTVmall URL FormatValidate
     if (formData.url.includes('hktvmall.com') && !/\/p\/[A-Z]\d{7,}[A-Za-z0-9_-]*/i.test(formData.url)) {
-      setError('HKTVmall URL 必須包含 /p/{SKU} 格式，例如：.../p/H0340001 或 .../p/B1600001_S_F03A-00')
+      setError('HKTVmall URL RequiredInclude /p/{SKU} Format, e.g.: .../p/H0340001 or .../p/B1600001_S_F03A-00')
       return
     }
 
@@ -1084,10 +1084,10 @@ function EditProductDialog({
       <DialogContent className="sm:max-w-[500px] bg-white/95 backdrop-blur-xl border-slate-200/80 shadow-2xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-            編輯商品
+            Editproducts
           </DialogTitle>
           <DialogDescription>
-            {"修改商品 URL、名稱或分類。HKTVmall URL 必須包含 /p/H{SKU} 格式。"}
+            {"修改products URL、Name或分類。HKTVmall URL RequiredInclude /p/H{SKU} Format。"}
           </DialogDescription>
         </DialogHeader>
 
@@ -1095,7 +1095,7 @@ function EditProductDialog({
           <div className="space-y-4">
             <div className="grid gap-2">
               <Label htmlFor="edit-url" className="text-slate-700">
-                商品 URL <span className="text-red-500">*</span>
+                products URL <span className="text-red-500">*</span>
               </Label>
               <div className="relative">
                 <ShoppingCart className="absolute left-3 top-3 h-4 w-4 text-cyan-500" />
@@ -1113,7 +1113,7 @@ function EditProductDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="edit-name" className="text-slate-700">商品名稱</Label>
+              <Label htmlFor="edit-name" className="text-slate-700">productsName</Label>
               <Input
                 id="edit-name"
                 value={formData.name}
@@ -1140,7 +1140,7 @@ function EditProductDialog({
               variant="ghost"
               onClick={() => onOpenChange(false)}
             >
-              取消
+              Cancel
             </HoloButton>
             <HoloButton
               type="submit"
@@ -1148,7 +1148,7 @@ function EditProductDialog({
               loading={isLoading}
               icon={!isLoading ? <Check className="w-4 h-4" /> : undefined}
             >
-              儲存
+              Save
             </HoloButton>
           </div>
         </form>

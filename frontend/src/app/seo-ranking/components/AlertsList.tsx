@@ -1,7 +1,7 @@
 "use client";
 
 // =============================================
-// 排名警報列表組件
+// Ranking Alerts List Component
 // =============================================
 
 import { AlertTriangle, AlertCircle, Info, TrendingDown, TrendingUp, Check } from "lucide-react";
@@ -9,7 +9,7 @@ import { HoloBadge } from "@/components/ui/future-tech";
 import { RankingAlert } from "@/lib/api/seo-ranking";
 import { useMarkAlertRead } from "../hooks/useSEORanking";
 
-// 時間格式化工具
+// Time formatting utility
 function formatTimeAgo(date: Date): string {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -18,11 +18,11 @@ function formatTimeAgo(date: Date): string {
   const diffHour = Math.floor(diffMin / 60);
   const diffDay = Math.floor(diffHour / 24);
 
-  if (diffSec < 60) return "剛剛";
-  if (diffMin < 60) return `${diffMin} 分鐘前`;
-  if (diffHour < 24) return `${diffHour} 小時前`;
-  if (diffDay < 30) return `${diffDay} 天前`;
-  return date.toLocaleDateString("zh-TW");
+  if (diffSec < 60) return "Just now";
+  if (diffMin < 60) return `${diffMin} min ago`;
+  if (diffHour < 24) return `${diffHour} hr ago`;
+  if (diffDay < 30) return `${diffDay} days ago`;
+  return date.toLocaleDateString("en-US");
 }
 
 interface AlertsListProps {
@@ -36,7 +36,7 @@ export function AlertsList({ alerts }: AlertsListProps) {
     return (
       <div className="text-center py-8 text-gray-500">
         <Check className="w-8 h-8 mx-auto mb-2 text-green-500" />
-        <p>沒有需要關注的警報</p>
+        <p>No alerts requiring attention</p>
       </div>
     );
   }
@@ -58,14 +58,14 @@ export function AlertsList({ alerts }: AlertsListProps) {
           onClick={() => !alert.is_read && handleMarkRead(alert.id)}
         >
           <div className="flex items-start gap-3">
-            {/* 圖標 */}
+            {/* Icon */}
             <div className="flex-shrink-0 mt-0.5">
               <AlertIcon severity={alert.severity} />
             </div>
 
-            {/* 內容 */}
+            {/* Content */}
             <div className="flex-1 min-w-0">
-              {/* 標題行 */}
+              {/* Title Row */}
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-slate-800 font-medium text-sm truncate">
                   {alert.keyword}
@@ -74,10 +74,10 @@ export function AlertsList({ alerts }: AlertsListProps) {
                 <SourceBadge source={alert.source} />
               </div>
 
-              {/* 消息 */}
+              {/* Message */}
               <p className="text-slate-600 text-sm">{alert.message}</p>
 
-              {/* 排名變化 */}
+              {/* Rank Change */}
               {alert.previous_rank && alert.current_rank && (
                 <div className="flex items-center gap-2 mt-2 text-xs">
                   <span className="text-slate-500">
@@ -87,13 +87,13 @@ export function AlertsList({ alerts }: AlertsListProps) {
                 </div>
               )}
 
-              {/* 時間 */}
+              {/* Timestamp */}
               <p className="text-slate-400 text-xs mt-2">
                 {formatTimeAgo(new Date(alert.created_at))}
               </p>
             </div>
 
-            {/* 未讀指示 */}
+            {/* Unread Indicator */}
             {!alert.is_read && (
               <div className="w-2 h-2 rounded-full bg-cyan-500 flex-shrink-0 animate-pulse" />
             )}
@@ -104,7 +104,7 @@ export function AlertsList({ alerts }: AlertsListProps) {
   );
 }
 
-// ==================== 輔助組件 ====================
+// ==================== Helper Components ====================
 
 function AlertIcon({ severity }: { severity: string }) {
   switch (severity) {
@@ -119,9 +119,9 @@ function AlertIcon({ severity }: { severity: string }) {
 
 function SeverityBadge({ severity }: { severity: string }) {
   const config: Record<string, { label: string; variant: "default" | "info" | "success" | "warning" | "error" }> = {
-    critical: { label: "嚴重", variant: "error" },
-    warning: { label: "警告", variant: "warning" },
-    info: { label: "資訊", variant: "info" },
+    critical: { label: "Critical", variant: "error" },
+    warning: { label: "Warning", variant: "warning" },
+    info: { label: "Info", variant: "info" },
   };
 
   const { label, variant } = config[severity] || { label: severity, variant: "default" };
@@ -145,7 +145,7 @@ function RankChangeIndicator({ change }: { change: number | null }) {
     return (
       <span className="text-emerald-600 flex items-center gap-0.5">
         <TrendingUp className="w-3 h-3" />
-        上升 {change} 名
+        Up {change} positions
       </span>
     );
   }
@@ -153,7 +153,7 @@ function RankChangeIndicator({ change }: { change: number | null }) {
   return (
     <span className="text-red-500 flex items-center gap-0.5">
       <TrendingDown className="w-3 h-3" />
-      下降 {Math.abs(change)} 名
+      Down {Math.abs(change)} positions
     </span>
   );
 }

@@ -132,7 +132,7 @@ export async function listSchedules(params?: {
 }
 
 /**
- * 獲取排程詳情
+ * Fetch排程Details
  */
 export async function getSchedule(scheduleId: string): Promise<ScheduledReport> {
   const response = await apiClient.get(`/workflow/schedules/${scheduleId}`)
@@ -140,7 +140,7 @@ export async function getSchedule(scheduleId: string): Promise<ScheduledReport> 
 }
 
 /**
- * 創建排程
+ * Create排程
  */
 export async function createSchedule(data: ScheduleCreateRequest): Promise<ScheduledReport> {
   const response = await apiClient.post('/workflow/schedules', data)
@@ -148,7 +148,7 @@ export async function createSchedule(data: ScheduleCreateRequest): Promise<Sched
 }
 
 /**
- * 更新排程
+ * Update排程
  */
 export async function updateSchedule(
   scheduleId: string,
@@ -159,14 +159,14 @@ export async function updateSchedule(
 }
 
 /**
- * 刪除排程
+ * Delete排程
  */
 export async function deleteSchedule(scheduleId: string): Promise<void> {
   await apiClient.delete(`/workflow/schedules/${scheduleId}`)
 }
 
 /**
- * 暫停排程
+ * Pause排程
  */
 export async function pauseSchedule(scheduleId: string): Promise<ScheduleActionResponse> {
   const response = await apiClient.post(`/workflow/schedules/${scheduleId}/pause`)
@@ -182,7 +182,7 @@ export async function resumeSchedule(scheduleId: string): Promise<ScheduleAction
 }
 
 /**
- * 立即觸發排程
+ * 立即Trigger排程
  */
 export async function triggerSchedule(scheduleId: string): Promise<TriggerResponse> {
   const response = await apiClient.post(`/workflow/schedules/${scheduleId}/trigger`)
@@ -190,7 +190,7 @@ export async function triggerSchedule(scheduleId: string): Promise<TriggerRespon
 }
 
 /**
- * 預覽下次執行時間
+ * 預覽下次執行Time
  */
 export async function previewNextRuns(
   scheduleId: string,
@@ -203,7 +203,7 @@ export async function previewNextRuns(
 }
 
 /**
- * 列出執行記錄
+ * 列出執行Record
  */
 export async function listExecutions(params?: {
   schedule_id?: string
@@ -221,7 +221,7 @@ export async function listExecutions(params?: {
 }
 
 /**
- * 獲取執行記錄詳情
+ * Fetch執行RecordDetails
  */
 export async function getExecution(executionId: string): Promise<ReportExecution> {
   const response = await apiClient.get(`/workflow/executions/${executionId}`)
@@ -231,47 +231,47 @@ export async function getExecution(executionId: string): Promise<ReportExecution
 // ==================== Utility Functions ====================
 
 /**
- * 格式化頻率顯示
+ * Format化頻率Display
  */
 export function formatFrequency(frequency: ScheduleFrequency): string {
   const labels: Record<ScheduleFrequency, string> = {
     daily: '每日',
     weekly: '每週',
     monthly: '每月',
-    custom: '自定義',
+    custom: 'Custom',
   }
   return labels[frequency] || frequency
 }
 
 /**
- * 格式化狀態顯示
+ * Format化StateDisplay
  */
 export function formatScheduleStatus(status: ScheduleStatus): string {
   const labels: Record<ScheduleStatus, string> = {
-    active: '運行中',
-    paused: '已暫停',
-    completed: '已完成',
-    failed: '失敗',
+    active: 'Running中',
+    paused: '已Pause',
+    completed: '已Complete',
+    failed: 'Failed',
   }
   return labels[status] || status
 }
 
 /**
- * 格式化報告類型顯示
+ * Format化ReportTypeDisplay
  */
 export function formatReportType(reportType: ReportType): string {
   const labels: Record<ReportType, string> = {
-    price_analysis: '價格分析',
-    competitor_report: '競品報告',
+    price_analysis: 'PriceAnalysis',
+    competitor_report: 'CompetitorReport',
     sales_summary: '銷售摘要',
-    inventory_alert: '庫存警報',
-    custom: '自定義',
+    inventory_alert: '庫存Alert',
+    custom: 'Custom',
   }
   return labels[reportType] || reportType
 }
 
 /**
- * 獲取狀態顏色
+ * FetchState顏色
  */
 export function getStatusColor(status: ScheduleStatus): string {
   const colors: Record<ScheduleStatus, string> = {

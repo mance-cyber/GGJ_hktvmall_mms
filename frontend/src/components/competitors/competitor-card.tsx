@@ -22,7 +22,7 @@ import {
   HoloBadge,
 } from '@/components/ui/future-tech'
 
-// 平台選項
+// 平台Option
 const PLATFORMS = [
   { value: 'hktvmall', label: 'HKTVmall' },
   { value: 'watsons', label: 'Watsons' },
@@ -57,7 +57,7 @@ export function CompetitorCard({
       )}
     >
       <div className="p-3 sm:p-5 flex-1 flex flex-col">
-        {/* 頭部：圖標 + 名稱 + 狀態 */}
+        {/* 頭部：Icon + Name + State */}
         <div className="flex items-start justify-between gap-2 sm:gap-3 mb-3 sm:mb-4">
           <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
             <div className={cn(
@@ -82,12 +82,12 @@ export function CompetitorCard({
             size="sm"
             pulse={competitor.is_active}
           >
-            <span className="hidden sm:inline">{competitor.is_active ? '監測中' : '已暫停'}</span>
-            <span className="sm:hidden">{competitor.is_active ? '監測' : '暫停'}</span>
+            <span className="hidden sm:inline">{competitor.is_active ? 'Monitor中' : '已Pause'}</span>
+            <span className="sm:hidden">{competitor.is_active ? 'Monitor' : 'Pause'}</span>
           </HoloBadge>
         </div>
 
-        {/* 描述 - 使用 min-h 而非固定 h，避免手機版內容壓縮 */}
+        {/* Description - use min-h instead of fixed h, avoid mobile content compression */}
         <div className="min-h-[2rem] sm:min-h-[2.5rem] mb-3 sm:mb-4">
           {competitor.notes ? (
             <p className="text-xs sm:text-sm text-slate-500 line-clamp-2">
@@ -98,19 +98,19 @@ export function CompetitorCard({
           )}
         </div>
 
-        {/* 數據網格 */}
+        {/* Data網格 */}
         <div className="grid grid-cols-2 gap-2 sm:gap-3">
           <div className="bg-gradient-to-br from-slate-50 to-white rounded-lg sm:rounded-xl p-2 sm:p-3 border border-slate-100/80">
             <div className="flex items-center text-[10px] sm:text-xs text-slate-500 mb-0.5 sm:mb-1">
               <Activity className="w-3 h-3 mr-1 text-cyan-500" />
-              監測商品
+              Monitorproducts
             </div>
             <div className="text-lg sm:text-xl font-bold text-slate-800">{competitor.product_count}</div>
           </div>
           <div className="bg-gradient-to-br from-slate-50 to-white rounded-lg sm:rounded-xl p-2 sm:p-3 border border-slate-100/80">
             <div className="flex items-center text-[10px] sm:text-xs text-slate-500 mb-0.5 sm:mb-1">
               <Clock className="w-3 h-3 mr-1 text-cyan-500" />
-              最後更新
+              最後Update
             </div>
             <div className="text-xs sm:text-sm font-semibold text-slate-800 pt-0.5 sm:pt-1">
               {competitor.last_scraped_at
@@ -121,7 +121,7 @@ export function CompetitorCard({
         </div>
       </div>
 
-      {/* 底部操作欄 */}
+      {/* 底部OperationBar */}
       <div className="px-3 sm:px-5 py-2 sm:py-3 bg-gradient-to-r from-slate-50/80 to-white/80 border-t border-slate-100/60 flex items-center justify-between">
         <div className="flex items-center space-x-1">
           <HoloButton
@@ -140,7 +140,7 @@ export function CompetitorCard({
             onClick={onEdit}
             icon={<Edit className="w-4 h-4" />}
           >
-            <span className="sr-only">編輯</span>
+            <span className="sr-only">Edit</span>
           </HoloButton>
           <HoloButton
             size="sm"
@@ -149,7 +149,7 @@ export function CompetitorCard({
             icon={<Trash2 className="w-4 h-4" />}
             className="hover:text-red-600 hover:bg-red-50"
           >
-            <span className="sr-only">刪除</span>
+            <span className="sr-only">Delete</span>
           </HoloButton>
         </div>
 
@@ -160,7 +160,7 @@ export function CompetitorCard({
             icon={<ChevronRight className="w-4 h-4" />}
             className="text-cyan-600 hover:text-cyan-700"
           >
-            詳情
+            Details
           </HoloButton>
         </Link>
       </div>

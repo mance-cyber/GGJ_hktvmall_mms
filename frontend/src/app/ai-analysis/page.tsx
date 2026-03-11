@@ -74,7 +74,7 @@ const renderContent = (text: string) => {
 // Page Component
 // =============================================
 
-// 數據摘要類型
+// Data summary type
 interface DataSummary {
   total_products: number
   total_competitors: number
@@ -105,11 +105,11 @@ export default function AIAnalysisPage() {
     queryFn: () => api.getAIConfig(),
   })
 
-  // 從數據庫加載數據
+  // Load data from database
   const loadDatabaseData = async () => {
     setIsLoadingData(true)
     try {
-      // 並行獲取多個數據源
+      // Fetch multiple data sources in parallel
       const [productsRes, competitorsRes, categoriesRes, commandCenterRes] = await Promise.all([
         api.getProducts(1, 50),
         api.getCompetitors(),
@@ -117,7 +117,7 @@ export default function AIAnalysisPage() {
         analyticsApi.getCommandCenter().catch(() => null)
       ])
 
-      // 獲取競品產品（取前3個競爭對手的產品）
+      // Get competitor products (top 3 competitors)
       const competitorProducts: any[] = []
       const activeCompetitors = competitorsRes.data?.slice(0, 3) || []
       for (const competitor of activeCompetitors) {
@@ -135,11 +135,11 @@ export default function AIAnalysisPage() {
             })) || []
           })
         } catch (e) {
-          // 忽略單個競爭對手的錯誤
+          // Ignore individual competitor errors
         }
       }
 
-      // 組織數據結構
+      // Organize data structure
       const analysisData = {
         summary: {
           total_products: productsRes.total || 0,
@@ -178,7 +178,7 @@ export default function AIAnalysisPage() {
 
       setInputData(JSON.stringify(analysisData, null, 2))
 
-      // 設置摘要數據供 UI 顯示
+      // Set summary data for UI display
       setDataSummary({
         total_products: analysisData.summary.total_products,
         total_competitors: analysisData.summary.total_competitors,
@@ -241,7 +241,7 @@ export default function AIAnalysisPage() {
   const fullAnalysisMutation = useMutation({
     mutationFn: async (data: Record<string, any>) => {
       const result = await api.runFullAnalysis(data, {})
-      // 後端可能返回 200 但 success: false，需要手動處理
+      // Backend may return 200 with success: false, need manual handling
       if (!result.success) {
         const errorMsg = result.error || result.strategy?.error || t['ai_analysis.error_analysis_failed']
         throw new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg))
@@ -382,7 +382,7 @@ export default function AIAnalysisPage() {
                 )}
               </div>
 
-              {/* 未加載數據時顯示加載按鈕 */}
+              {/* Show load button when data not loaded */}
               {!dataLoaded ? (
                 <div className="text-center py-6">
                   <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center">
@@ -399,9 +399,9 @@ export default function AIAnalysisPage() {
                   </HoloButton>
                 </div>
               ) : (
-                /* 已加載數據時顯示摘要 */
+                /* Show summary when data loaded */
                 <div className="space-y-3">
-                  {/* 統計數據網格 */}
+                  {/* Statistics data grid */}
                   <div className="grid grid-cols-3 gap-2">
                     <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-2 border border-blue-100">
                       <p className="text-[10px] text-slate-500">{t['ai_analysis.stat_products']}</p>
@@ -429,7 +429,7 @@ export default function AIAnalysisPage() {
                     </div>
                   </div>
 
-                  {/* 產品樣本 - 手機隱藏 */}
+                  {/* Product samples - hidden on mobile */}
                   {dataSummary?.products_sample && dataSummary.products_sample.length > 0 && (
                     <div className="hidden sm:block bg-slate-50 rounded-lg p-2 border border-slate-100">
                       <p className="text-[10px] text-slate-500 mb-1">{t['ai_analysis.product_sample']}</p>
@@ -444,7 +444,7 @@ export default function AIAnalysisPage() {
                     </div>
                   )}
 
-                  {/* 競品樣本 - 手機隱藏 */}
+                  {/* Competitor samples - hidden on mobile */}
                   {dataSummary?.competitors_sample && dataSummary.competitors_sample.length > 0 && (
                     <div className="hidden sm:block bg-slate-50 rounded-lg p-2 border border-slate-100">
                       <p className="text-[10px] text-slate-500 mb-1">{t['ai_analysis.competitor_sample']}</p>
@@ -459,7 +459,7 @@ export default function AIAnalysisPage() {
                     </div>
                   )}
 
-                  {/* 重新加載按鈕 */}
+                  {/* Reload button */}
                   <div className="flex justify-center pt-1">
                     <Button
                       variant="ghost"
@@ -476,7 +476,7 @@ export default function AIAnalysisPage() {
               )}
             </HoloCard>
 
-            {/* 分析按鈕 */}
+            {/* Analysis button */}
             <HoloCard glowColor="cyan" className="p-3 sm:p-4">
               <div className="flex gap-2">
                 <HoloButton

@@ -1,7 +1,7 @@
 "use client";
 
 // =============================================
-// SEO 排名追蹤儀表板頁面
+// SEO Ranking Tracker Dashboard Page
 // =============================================
 
 import { useState } from "react";
@@ -26,7 +26,7 @@ import { AlertsList } from "./components/AlertsList";
 import { ScrapeJobsList } from "./components/ScrapeJobsList";
 
 // =============================================
-// Mock 數據（開發/演示用）
+// Mock Data (Development/Demo)
 // =============================================
 
 const MOCK_DASHBOARD: SEODashboardResponse = {
@@ -70,7 +70,7 @@ const MOCK_DASHBOARD: SEODashboardResponse = {
       source: "google_hk",
       alert_type: "rank_improved",
       severity: "info",
-      message: "排名從第 8 名上升至第 3 名",
+      message: "Ranking improved from #8 to #3",
       previous_rank: 8,
       current_rank: 3,
       rank_change: 5,
@@ -88,7 +88,7 @@ const MOCK_DASHBOARD: SEODashboardResponse = {
       source: "hktvmall",
       alert_type: "rank_dropped",
       severity: "warning",
-      message: "排名從第 5 名下降至第 12 名",
+      message: "Ranking dropped from #5 to #12",
       previous_rank: 5,
       current_rank: 12,
       rank_change: -7,
@@ -106,7 +106,7 @@ const MOCK_DASHBOARD: SEODashboardResponse = {
       source: "google_hk",
       alert_type: "rank_dropped",
       severity: "critical",
-      message: "排名從第 15 名下降至第 42 名",
+      message: "Ranking dropped from #15 to #42",
       previous_rank: 15,
       current_rank: 42,
       rank_change: -27,
@@ -211,20 +211,20 @@ export default function SEORankingPage() {
   const [days, setDays] = useState(7);
   const [useMockData, setUseMockData] = useState(false);
 
-  // 獲取儀表板數據
+  // Fetch dashboard data
   const { data: apiDashboard, isLoading, error, refetch } = useSEODashboard({ days });
 
-  // 獲取排行榜數據
+  // Get leaderboard data
   const { data: apiLeaderboard, isLoading: isLoadingLeaderboard } = useLeaderboard({
     source: selectedSource,
     include_unranked: true,
     limit: 10,
   });
 
-  // 觸發抓取
+  // Trigger scrape
   const triggerScrape = useTriggerScrape();
 
-  // 使用 mock 數據或 API 數據
+  // Use mock or API data
   const dashboard = useMockData || error ? MOCK_DASHBOARD : apiDashboard;
   const leaderboard = useMockData || error
     ? (selectedSource === "google_hk" ? MOCK_LEADERBOARD_GOOGLE : MOCK_LEADERBOARD_HKTVMALL)
@@ -245,7 +245,7 @@ export default function SEORankingPage() {
     setUseMockData(true);
   };
 
-  // 加載狀態
+  // Loading state
   if (isLoading && !useMockData) {
     return (
       <PageTransition>
@@ -268,7 +268,7 @@ export default function SEORankingPage() {
     );
   }
 
-  // 錯誤狀態 - 提供使用 mock 數據的選項
+  // ErrorState - Provide option to use mock data
   if (error && !useMockData) {
     return (
       <PageTransition>
@@ -296,7 +296,7 @@ export default function SEORankingPage() {
   return (
     <PageTransition>
       <div className="space-y-6 p-6">
-        {/* ==================== Mock 數據提示 ==================== */}
+        {/* ==================== Mock Data Notice ==================== */}
         {useMockData && (
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -314,7 +314,7 @@ export default function SEORankingPage() {
           </div>
         )}
 
-        {/* ==================== 頁面標題 ==================== */}
+        {/* ==================== Page title ==================== */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -329,7 +329,7 @@ export default function SEORankingPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {/* 時間範圍選擇 */}
+            {/* Time Range Selector */}
             <select
               value={days}
               onChange={(e) => setDays(Number(e.target.value))}
@@ -340,7 +340,7 @@ export default function SEORankingPage() {
               <option value={30}>{t['seo_ranking.days_30']}</option>
               <option value={90}>{t['seo_ranking.days_90']}</option>
             </select>
-            {/* 觸發抓取 */}
+            {/* Trigger Scrape */}
             <HoloButton
               variant="secondary"
               onClick={handleTriggerScrape}
@@ -358,16 +358,16 @@ export default function SEORankingPage() {
                 </>
               )}
             </HoloButton>
-            {/* 刷新 */}
+            {/* Refresh */}
             <HoloButton variant="ghost" onClick={handleRefresh}>
               <RefreshCw className="w-4 h-4" />
             </HoloButton>
           </div>
         </div>
 
-        {/* ==================== 概覽指標 ==================== */}
+        {/* ==================== Overview Metrics ==================== */}
         <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* SEO 健康分數 */}
+          {/* SEO Health Score */}
           <HoloCard className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -394,7 +394,7 @@ export default function SEORankingPage() {
             </div>
           </HoloCard>
 
-          {/* 追蹤關鍵詞數 */}
+          {/* Tracked Keywords Count */}
           <HoloCard className="p-4">
             <DataMetric
               label={t['seo_ranking.metric_tracked_keywords']}
@@ -404,7 +404,7 @@ export default function SEORankingPage() {
             />
           </HoloCard>
 
-          {/* 排名上升 */}
+          {/* Rankings Improved */}
           <HoloCard className="p-4">
             <DataMetric
               label={t['seo_ranking.metric_improved']}
@@ -414,7 +414,7 @@ export default function SEORankingPage() {
             />
           </HoloCard>
 
-          {/* 排名下降 */}
+          {/* Rankings Declined */}
           <HoloCard className="p-4">
             <DataMetric
               label={t['seo_ranking.metric_declined']}
@@ -425,9 +425,9 @@ export default function SEORankingPage() {
           </HoloCard>
         </StaggerContainer>
 
-        {/* ==================== 排名摘要卡片 ==================== */}
+        {/* ==================== Ranking Summary Cards ==================== */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Google 排名摘要 */}
+          {/* Google Ranking Summary */}
           <HoloCard>
             <HoloPanelHeader
               title={t['seo_ranking.section_google']}
@@ -471,7 +471,7 @@ export default function SEORankingPage() {
             </div>
           </HoloCard>
 
-          {/* HKTVmall 排名摘要 */}
+          {/* HKTVmall Ranking Summary */}
           <HoloCard>
             <HoloPanelHeader
               title={t['seo_ranking.section_hktvmall']}
@@ -516,7 +516,7 @@ export default function SEORankingPage() {
           </HoloCard>
         </div>
 
-        {/* ==================== 排行榜 ==================== */}
+        {/* ==================== Leaderboard ==================== */}
         <HoloCard>
           <HoloPanelHeader
             title={t['seo_ranking.section_leaderboard']}
@@ -556,9 +556,9 @@ export default function SEORankingPage() {
           </div>
         </HoloCard>
 
-        {/* ==================== 警報與任務 ==================== */}
+        {/* ==================== Alert與任務 ==================== */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* 最近警報 */}
+          {/* 最近Alert */}
           <HoloCard>
             <HoloPanelHeader
               title={t['seo_ranking.section_alerts']}
@@ -590,7 +590,7 @@ export default function SEORankingPage() {
           </HoloCard>
         </div>
 
-        {/* ==================== 最後抓取時間 ==================== */}
+        {/* ==================== 最後抓取Time ==================== */}
         {overview?.last_scrape_at && (
           <div className="text-center text-sm text-gray-500">
             {t['seo_ranking.last_scrape']}{" "}

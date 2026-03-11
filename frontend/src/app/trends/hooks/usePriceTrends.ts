@@ -1,5 +1,5 @@
 // =============================================
-// 價格趨勢 React Query Hooks
+// PriceTrend React Query Hooks
 // =============================================
 
 import { useQuery } from '@tanstack/react-query'
@@ -30,7 +30,7 @@ export const priceTrendsKeys = {
 // =============================================
 
 /**
- * 獲取有價格歷史的產品列表
+ * Get products with price historyList
  */
 export function useProductsWithTrends(search?: string) {
   return useQuery<ProductListResponse>({
@@ -38,12 +38,12 @@ export function useProductsWithTrends(search?: string) {
       ? priceTrendsKeys.productSearch(search)
       : priceTrendsKeys.products(),
     queryFn: () => getProductsWithTrends(search),
-    staleTime: 5 * 60 * 1000, // 5 分鐘
+    staleTime: 5 * 60 * 1000, // 5 minutes
   })
 }
 
 /**
- * 獲取單個產品的價格趨勢
+ * Fetch單個Product的PriceTrend
  */
 export function useProductPriceTrend(
   productId: string | null,
@@ -55,12 +55,12 @@ export function useProductPriceTrend(
       : ['disabled'],
     queryFn: () => getProductPriceTrend(productId!, query),
     enabled: !!productId,
-    staleTime: 2 * 60 * 1000, // 2 分鐘
+    staleTime: 2 * 60 * 1000, // 2 minutes
   })
 }
 
 /**
- * 使用預設時間範圍的價格趨勢 Hook
+ * 使用DefaultTimeRange的PriceTrend Hook
  */
 export function useProductPriceTrendWithDays(
   productId: string | null,

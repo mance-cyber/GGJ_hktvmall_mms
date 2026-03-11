@@ -1,30 +1,30 @@
 // =============================================
-// 權限檢查 Hook
+// PermissionCheck Hook
 // =============================================
 
 import { useAuth } from '@/components/providers/auth-provider'
 import { useMemo, useCallback } from 'react'
 
-// 權限常量定義
+// PermissionConstant定義
 export const PERMISSIONS = {
-  // 系統管理
+  // SystemManagement
   SYSTEM_SETTINGS_READ: 'system:settings:read',
   SYSTEM_SETTINGS_WRITE: 'system:settings:write',
   SYSTEM_USERS_READ: 'system:users:read',
   SYSTEM_USERS_WRITE: 'system:users:write',
   SYSTEM_USERS_DELETE: 'system:users:delete',
 
-  // 競品監測
+  // CompetitorMonitor
   COMPETITORS_READ: 'competitors:read',
   COMPETITORS_WRITE: 'competitors:write',
   COMPETITORS_DELETE: 'competitors:delete',
 
-  // 價格調整
+  // Price調整
   PRICES_READ: 'prices:read',
   PRICES_WRITE: 'prices:write',
   PRICES_APPROVE: 'prices:approve',
 
-  // 訂單管理
+  // 訂單Management
   ORDERS_READ: 'orders:read',
   ORDERS_WRITE: 'orders:write',
 
@@ -37,7 +37,7 @@ export const PERMISSIONS = {
   REPORTS_READ: 'reports:read',
   REPORTS_EXPORT: 'reports:export',
 
-  // 通知
+  // Notification
   NOTIFICATIONS_READ: 'notifications:read',
   NOTIFICATIONS_WRITE: 'notifications:write',
   NOTIFICATIONS_SETTINGS: 'notifications:settings',
@@ -45,25 +45,25 @@ export const PERMISSIONS = {
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS]
 
-// 角色定義
+// Role定義
 export type UserRole = 'admin' | 'operator' | 'viewer'
 
 export interface UsePermissionsReturn {
-  // 當前用戶角色
+  // 當前用戶Role
   role: UserRole | null
-  // 當前用戶權限列表
+  // 當前用戶PermissionList
   permissions: string[]
-  // 檢查單個權限
+  // Check單個Permission
   hasPermission: (permission: string) => boolean
-  // 檢查多個權限（全部滿足）
+  // Check多個Permission（All滿足）
   hasAllPermissions: (...permissions: string[]) => boolean
-  // 檢查多個權限（任一滿足）
+  // Check多個Permission（任一滿足）
   hasAnyPermission: (...permissions: string[]) => boolean
-  // 角色檢查
+  // RoleCheck
   isAdmin: boolean
   isOperator: boolean
   isViewer: boolean
-  // 便捷檢查
+  // 便捷Check
   canManageSystem: boolean
   canManageUsers: boolean
   canWriteCompetitors: boolean
@@ -130,7 +130,7 @@ export function usePermissions(): UsePermissionsReturn {
 }
 
 // =============================================
-// 權限門控組件
+// Permission門控組items
 // =============================================
 
 interface PermissionGateProps {
@@ -166,7 +166,7 @@ export function PermissionGate({
 }
 
 // =============================================
-// 角色門控組件
+// Role門控組items
 // =============================================
 
 interface RoleGateProps {

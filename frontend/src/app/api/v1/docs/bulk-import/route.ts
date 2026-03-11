@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 解析请求数据
+    // Parse请求数据
     const body = await request.json();
     const { docs } = body;
 
@@ -47,14 +47,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : '未知错误',
+        error: error instanceof Error ? error.message : 'Unknown错误',
       },
       { status: 500 }
     );
   }
 }
 
-// ==================== 数据库操作 ====================
+// ==================== 数据库Operation ====================
 
 /**
  * 批量插入文档到数据库
@@ -63,7 +63,7 @@ async function bulkInsertDocs(docs: any[]) {
   let successCount = 0;
   let failCount = 0;
 
-  // TODO: 替换为你的实际数据库操作
+  // TODO: 替换为你的实际数据库Operation
   // 示例使用 Prisma:
   /*
   for (const doc of docs) {
@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : '未知错误',
+        error: error instanceof Error ? error.message : 'Unknown错误',
       },
       { status: 500 }
     );

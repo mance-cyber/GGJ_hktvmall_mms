@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
           details:
             config.type === 'clawdbot'
               ? '请确认 clawdbot 已启动 (ws://127.0.0.1:18789)'
-              : '请检查 FIRECRAWL_API_KEY 是否配置正确',
+              : '请检查 FIRECRAWL_API_KEY whetherConfiguration正确',
         },
         { status: 503 }
       );
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            error: `不支持的操作: ${action}`,
+            error: `不Support的Operation: ${action}`,
             supportedActions: [
               'scrape_product',
               'scrape_search_rank',
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : '未知错误',
+        error: error instanceof Error ? error.message : 'Unknown错误',
       },
       { status: 500 }
     );
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
 // ==================== Action Handlers ====================
 
 /**
- * 抓取单个商品
+ * 抓取单个products
  */
 async function handleScrapeProduct(scraper: any, params: any) {
   const { url } = params;
@@ -98,7 +98,7 @@ async function handleScrapeProduct(scraper: any, params: any) {
     );
   }
 
-  console.log(`🛍️ 抓取商品: ${url}`);
+  console.log(`🛍️ 抓取products: ${url}`);
   const result = await scraper.scrapeHKTVProduct(url);
 
   return NextResponse.json({
@@ -115,7 +115,7 @@ async function handleScrapeProduct(scraper: any, params: any) {
 }
 
 /**
- * 抓取搜索排名
+ * 抓取SearchRanking
  */
 async function handleScrapeSearchRank(scraper: any, params: any) {
   const { keyword, targetUrl } = params;
@@ -127,7 +127,7 @@ async function handleScrapeSearchRank(scraper: any, params: any) {
     );
   }
 
-  console.log(`🔍 抓取搜索排名: ${keyword} → ${targetUrl}`);
+  console.log(`🔍 抓取SearchRanking: ${keyword} → ${targetUrl}`);
   const result = await scraper.scrapeHKTVSearchRank(keyword, targetUrl);
 
   return NextResponse.json({
@@ -231,7 +231,7 @@ async function handleScrapeUrl(scraper: any, params: any) {
   });
 }
 
-// ==================== GET: 健康检查 & 配置信息 ====================
+// ==================== GET: 健康检查 & Configuration信息 ====================
 
 export async function GET() {
   try {
@@ -254,7 +254,7 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : '未知错误',
+        error: error instanceof Error ? error.message : 'Unknown错误',
       },
       { status: 500 }
     );

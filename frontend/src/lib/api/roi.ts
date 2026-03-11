@@ -1,5 +1,5 @@
 // =============================================
-// ROI 分析 API 客戶端
+// ROI Analysis API 客戶端
 // =============================================
 
 import { apiClient } from './client'
@@ -68,7 +68,7 @@ export type ROIPeriod = 'today' | 'week' | 'month' | 'quarter'
 // ==================== API Functions ====================
 
 /**
- * 獲取 ROI 總覽
+ * Fetch ROI 總覽
  */
 export async function getROISummary(period: ROIPeriod = 'month'): Promise<ROISummary> {
   const response = await apiClient.get('/roi/summary', {
@@ -78,7 +78,7 @@ export async function getROISummary(period: ROIPeriod = 'month'): Promise<ROISum
 }
 
 /**
- * 獲取 ROI 趨勢數據
+ * Get ROI trend data
  */
 export async function getROITrends(
   days: number = 30,
@@ -91,7 +91,7 @@ export async function getROITrends(
 }
 
 /**
- * 獲取 AI 改價影響分析
+ * Get AI pricing impact analysis
  */
 export async function getPricingImpact(limit: number = 10): Promise<PricingImpactResponse> {
   const response = await apiClient.get('/roi/pricing-impact', {
@@ -101,7 +101,7 @@ export async function getPricingImpact(limit: number = 10): Promise<PricingImpac
 }
 
 /**
- * 獲取競品監測洞察
+ * FetchCompetitorMonitorInsight
  */
 export async function getCompetitorInsights(period: ROIPeriod = 'month'): Promise<CompetitorInsights> {
   const response = await apiClient.get('/roi/competitor-insights', {

@@ -1,39 +1,39 @@
 // =============================================
-// SEO 排名追蹤 API 服務
+// SEO RankingTrack API 服務
 // =============================================
 //
-// 功能：
-//   - 關鍵詞配置 CRUD
-//   - 排名查詢與歷史
+// Feature：
+//   - 關鍵詞Configuration CRUD
+//   - RankingQuery與History
 //   - 排行榜
-//   - 警報管理
+//   - AlertManagement
 //   - 抓取任務
-//   - 儀表板數據
+//   - 儀表板Data
 // =============================================
 
 import { get, post, patch, del, buildUrl } from "./client";
 
 // =============================================
-// 類型定義
+// Type definitions
 // =============================================
 
-// 關鍵詞類型
+// 關鍵詞Type
 export type KeywordType = "primary" | "secondary" | "long_tail" | "brand" | "competitor";
 
-// 排名來源
+// RankingSource
 export type RankingSource = "google_hk" | "hktvmall";
 
-// 報告類型
+// ReportType
 export type ReportType = "weekly" | "monthly" | "quarterly" | "custom";
 
-// 警報嚴重程度
+// Alert嚴重程度
 export type AlertSeverity = "info" | "warning" | "critical";
 
-// 抓取任務狀態
+// 抓取任務State
 export type ScrapeJobStatus = "pending" | "running" | "completed" | "failed";
 
 // =============================================
-// 關鍵詞配置
+// 關鍵詞Configuration
 // =============================================
 
 export interface KeywordConfig {
@@ -58,7 +58,7 @@ export interface KeywordConfig {
   tags: string[];
   created_at: string;
   updated_at: string;
-  // 計算字段
+  // Calculate字段
   google_rank_change: number | null;
   hktvmall_rank_change: number | null;
   google_target_gap: number | null;
@@ -115,7 +115,7 @@ export interface KeywordConfigBatchResponse {
 }
 
 // =============================================
-// 排名記錄
+// RankingRecord
 // =============================================
 
 export interface KeywordRanking {
@@ -198,7 +198,7 @@ export interface RankingLeaderboardResponse {
 }
 
 // =============================================
-// 警報
+// Alert
 // =============================================
 
 export interface RankingAlert {
@@ -297,7 +297,7 @@ export interface SEODashboardResponse {
 }
 
 // =============================================
-// 報告
+// Report
 // =============================================
 
 export interface SEOReport {
@@ -323,7 +323,7 @@ export interface SEOReportListResponse {
 }
 
 // =============================================
-// Query Keys（用於 React Query 緩存管理）
+// Query Keys（用於 React Query CacheManagement）
 // =============================================
 
 export const seoRankingKeys = {
@@ -334,7 +334,7 @@ export const seoRankingKeys = {
     [...seoRankingKeys.keywords(), "list", params] as const,
   keywordDetail: (id: string) =>
     [...seoRankingKeys.keywords(), "detail", id] as const,
-  // 排名
+  // Ranking
   rankings: () => [...seoRankingKeys.all, "rankings"] as const,
   rankingHistory: (configId: string) =>
     [...seoRankingKeys.rankings(), "history", configId] as const,
@@ -343,7 +343,7 @@ export const seoRankingKeys = {
   // 排行榜
   leaderboard: (source: RankingSource, params?: Record<string, any>) =>
     [...seoRankingKeys.all, "leaderboard", source, params] as const,
-  // 警報
+  // Alert
   alerts: () => [...seoRankingKeys.all, "alerts"] as const,
   alertsList: (params?: Record<string, any>) =>
     [...seoRankingKeys.alerts(), "list", params] as const,
@@ -356,7 +356,7 @@ export const seoRankingKeys = {
   // 儀表板
   dashboard: (params?: Record<string, any>) =>
     [...seoRankingKeys.all, "dashboard", params] as const,
-  // 報告
+  // Report
   reports: () => [...seoRankingKeys.all, "reports"] as const,
   reportsList: (params?: Record<string, any>) =>
     [...seoRankingKeys.reports(), "list", params] as const,
@@ -365,12 +365,12 @@ export const seoRankingKeys = {
 };
 
 // =============================================
-// API 函數
+// API Function
 // =============================================
 
 const BASE_URL = "/api/v1/seo-ranking";
 
-// ==================== 關鍵詞配置 ====================
+// ==================== 關鍵詞Configuration ====================
 
 export async function createKeywordConfig(
   data: KeywordConfigCreate
@@ -413,7 +413,7 @@ export async function deleteKeywordConfig(
   return del<{ message: string; id: string }>(`${BASE_URL}/keywords/${id}`);
 }
 
-// ==================== 排名查詢 ====================
+// ==================== RankingQuery ====================
 
 export async function getRankingHistory(
   configId: string,
@@ -451,7 +451,7 @@ export async function getLeaderboard(params?: {
   return get<RankingLeaderboardResponse>(url);
 }
 
-// ==================== 警報 ====================
+// ==================== Alert ====================
 
 export async function getAlerts(params?: {
   is_read?: boolean;
@@ -518,7 +518,7 @@ export async function getDashboard(params?: {
   return get<SEODashboardResponse>(url);
 }
 
-// ==================== 報告 ====================
+// ==================== Report ====================
 
 export async function generateReport(data: {
   product_id?: string;

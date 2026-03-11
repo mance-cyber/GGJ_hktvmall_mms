@@ -1,5 +1,5 @@
 // =============================================
-// 改價審批 API 客戶端
+// Price change審批 API 客戶端
 // =============================================
 
 import { apiClient } from './client'
@@ -23,7 +23,7 @@ export interface PriceProposal {
   created_at: string
   reviewed_at: string | null
   reviewed_by: string | null
-  // Workflow 擴展欄位
+  // Workflow ExtendBar位
   source_conversation_id: string | null
   source_type: SourceType
   assigned_to: string | null
@@ -39,7 +39,7 @@ export interface AIAnalysisResult {
 // ==================== API Functions ====================
 
 /**
- * 獲取待審批的改價提案
+ * Fetch待審批的Price changeProposal
  */
 export async function getPendingProposals(): Promise<PriceProposal[]> {
   const response = await apiClient.get('/pricing/proposals/pending')
@@ -47,7 +47,7 @@ export async function getPendingProposals(): Promise<PriceProposal[]> {
 }
 
 /**
- * 批准改價提案
+ * ApprovePrice changeProposal
  */
 export async function approveProposal(id: string): Promise<PriceProposal> {
   const response = await apiClient.post(`/pricing/proposals/${id}/approve`)
@@ -55,7 +55,7 @@ export async function approveProposal(id: string): Promise<PriceProposal> {
 }
 
 /**
- * 拒絕改價提案
+ * RejectPrice changeProposal
  */
 export async function rejectProposal(id: string): Promise<PriceProposal> {
   const response = await apiClient.post(`/pricing/proposals/${id}/reject`)
@@ -63,7 +63,7 @@ export async function rejectProposal(id: string): Promise<PriceProposal> {
 }
 
 /**
- * 觸發 AI 價格分析
+ * Trigger AI PriceAnalysis
  */
 export async function triggerAIAnalysis(): Promise<AIAnalysisResult> {
   const response = await apiClient.post('/pricing/analyze')
@@ -73,7 +73,7 @@ export async function triggerAIAnalysis(): Promise<AIAnalysisResult> {
 // ==================== Utility Functions ====================
 
 /**
- * 計算價格變化百分比
+ * CalculatePrice變化Percentage
  */
 export function calculatePriceChangePercent(current: number, proposed: number): number {
   if (current === 0) return 0
@@ -81,7 +81,7 @@ export function calculatePriceChangePercent(current: number, proposed: number): 
 }
 
 /**
- * 格式化價格變化顯示
+ * Format化Price變化Display
  */
 export function formatPriceChange(current: number, proposed: number): string {
   const percent = calculatePriceChangePercent(current, proposed)

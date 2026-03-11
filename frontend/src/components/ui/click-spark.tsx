@@ -22,7 +22,7 @@ interface Spark {
 }
 
 export function ClickSpark({
-  sparkColor = '#3b82f6', // 使用藍色配合平台主題
+  sparkColor = '#3b82f6', // 使用藍色配合平台Theme
   sparkSize = 10,
   sparkRadius = 15,
   sparkCount = 8,
@@ -185,7 +185,7 @@ export function ClickSpark({
 }
 
 // =============================================
-// 預設主題變體
+// DefaultTheme變體
 // =============================================
 
 export function ClickSparkBlue(props: Omit<ClickSparkProps, 'sparkColor'>) {

@@ -29,7 +29,7 @@ import {
 import { cn } from '@/lib/utils'
 
 // =============================================
-// 類型定義
+// Type definitions
 // =============================================
 
 export interface ImportRow {
@@ -48,7 +48,7 @@ interface BulkImportDialogProps {
 }
 
 // =============================================
-// 主組件
+// 主組items
 // =============================================
 
 export function BulkImportDialog({
@@ -63,14 +63,14 @@ export function BulkImportDialog({
   const [dragActive, setDragActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // 重置狀態
+  // ResetState
   const resetState = () => {
     setStep('upload')
     setImportData([])
     setSelectedRows(new Set())
   }
 
-  // 關閉對話框
+  // CloseDialog
   const handleClose = (open: boolean) => {
     if (!open) {
       resetState()
@@ -78,34 +78,34 @@ export function BulkImportDialog({
     onOpenChange(open)
   }
 
-  // 解析 CSV
+  // Parse CSV
   const parseCSV = (text: string): ImportRow[] => {
     const lines = text.trim().split('\n')
     const rows: ImportRow[] = []
     
-    // 跳過標題行（如果有）
+    // SkipTitle行（如果有）
     const startIndex = lines[0]?.toLowerCase().includes('url') ? 1 : 0
     
     for (let i = startIndex; i < lines.length; i++) {
       const line = lines[i].trim()
       if (!line) continue
       
-      // 支持逗號或 Tab 分隔
+      // Support逗號或 Tab 分隔
       const parts = line.includes('\t') ? line.split('\t') : line.split(',')
       const url = parts[0]?.trim().replace(/^["']|["']$/g, '')
       const name = parts[1]?.trim().replace(/^["']|["']$/g, '') || undefined
       const category = parts[2]?.trim().replace(/^["']|["']$/g, '') || undefined
       
-      // 驗證 URL
+      // Validate URL
       const isValid = url ? isValidUrl(url) : false
       let error: string | undefined
       if (!url) {
         error = '缺少 URL'
       } else if (!isValid) {
         if (url.includes('hktvmall.com')) {
-          error = 'HKTVmall URL 需包含 /p/H{SKU}，如 /p/H0340001'
+          error = 'HKTVmall URL 需Include /p/H{SKU}，如 /p/H0340001'
         } else {
-          error = '無效的 URL 格式'
+          error = 'Invalid的 URL Format'
         }
       }
       
@@ -115,12 +115,12 @@ export function BulkImportDialog({
     return rows
   }
 
-  // 驗證 URL
+  // Validate URL
   const isValidUrl = (str: string): boolean => {
     try {
       const url = new URL(str)
       if (url.protocol !== 'http:' && url.protocol !== 'https:') return false
-      // HKTVmall URL 必須包含 /p/H{SKU} 格式（SKU 可帶後綴如 H9423001_S_WNF-003A）
+      // HKTVmall URL RequiredInclude /p/H{SKU} Format（SKU 可帶後綴如 H9423001_S_WNF-003A）
       if (url.hostname.includes('hktvmall.com') && !/\/p\/[A-Z]\d{7,}[A-Za-z0-9_-]*/i.test(url.pathname)) {
         return false
       }
@@ -130,10 +130,10 @@ export function BulkImportDialog({
     }
   }
 
-  // 處理文件上傳
+  // Processing文itemsUpload
   const handleFileUpload = useCallback((file: File) => {
     if (!file.name.endsWith('.csv') && !file.name.endsWith('.txt')) {
-      alert('請上傳 CSV 或 TXT 文件')
+      alert('Please upload a CSV or TXT file')
       return
     }
 
@@ -142,14 +142,14 @@ export function BulkImportDialog({
       const text = e.target?.result as string
       const rows = parseCSV(text)
       setImportData(rows)
-      // 默認選中所有有效行
+      // Default選中所有Valid行
       setSelectedRows(new Set(rows.map((r, i) => r.isValid ? i : -1).filter(i => i >= 0)))
       setStep('preview')
     }
     reader.readAsText(file)
   }, [])
 
-  // 處理拖放
+  // Processing拖放
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -170,14 +170,14 @@ export function BulkImportDialog({
     }
   }, [handleFileUpload])
 
-  // 處理文件選擇
+  // Processing文itemsSelect
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       handleFileUpload(e.target.files[0])
     }
   }
 
-  // 切換選擇
+  // 切換Select
   const toggleRow = (index: number) => {
     const newSet = new Set(selectedRows)
     if (newSet.has(index)) {
@@ -188,7 +188,7 @@ export function BulkImportDialog({
     setSelectedRows(newSet)
   }
 
-  // 全選/取消全選
+  // Select all / Deselect all
   const toggleSelectAll = () => {
     const validIndices = importData.map((r, i) => r.isValid ? i : -1).filter(i => i >= 0)
     if (selectedRows.size === validIndices.length) {
@@ -198,7 +198,7 @@ export function BulkImportDialog({
     }
   }
 
-  // 開始導入
+  // StartImport
   const handleImport = async () => {
     const rowsToImport = importData.filter((_, i) => selectedRows.has(i))
     setStep('importing')
@@ -210,9 +210,9 @@ export function BulkImportDialog({
     }
   }
 
-  // 下載模板
+  // Download模板
   const downloadTemplate = () => {
-    const template = 'URL,名稱（可選）,分類（可選）\nhttps://www.hktvmall.com/hktv/zh/main/body-care/hair-care/shampoo/p/H0340001,洗髮水,護髮\nhttps://www.hktvmall.com/hktv/zh/main/health/supplements/p/H9423001_S_WNF-003A,保健品,保健品'
+    const template = 'URL,Name（Optional）,分類（Optional）\nhttps://www.hktvmall.com/hktv/zh/main/body-care/hair-care/shampoo/p/H0340001,洗髮水,護髮\nhttps://www.hktvmall.com/hktv/zh/main/health/supplements/p/H9423001_S_WNF-003A,保健品,保健品'
     const blob = new Blob([template], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
@@ -230,16 +230,16 @@ export function BulkImportDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center text-xl">
             <FileSpreadsheet className="w-5 h-5 mr-2 text-blue-500" />
-            批量導入商品
+            批量Importproducts
           </DialogTitle>
           <DialogDescription>
-            上傳 CSV 文件批量添加監測商品，支持一次導入多個商品 URL
+            Upload CSV 文items批量添加Monitorproducts，Support一次Import多個products URL
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-auto">
           <AnimatePresence mode="wait">
-            {/* ========== 上傳步驟 ========== */}
+            {/* ========== Upload步驟 ========== */}
             {step === 'upload' && (
               <motion.div
                 key="upload"
@@ -248,7 +248,7 @@ export function BulkImportDialog({
                 exit={{ opacity: 0, y: -20 }}
                 className="space-y-6 py-4"
               >
-                {/* 拖放區域 */}
+                {/* 拖放Area */}
                 <div
                   onDragEnter={handleDrag}
                   onDragLeave={handleDrag}
@@ -279,22 +279,22 @@ export function BulkImportDialog({
                     )} />
                   </div>
                   <h3 className="text-lg font-medium text-slate-800 mb-2">
-                    {dragActive ? '放開以上傳文件' : '拖放文件到此處'}
+                    {dragActive ? '放開以Upload文items' : '拖放文items到此處'}
                   </h3>
                   <p className="text-sm text-slate-500 mb-4">
-                    或點擊選擇文件（支持 .csv, .txt）
+                    或點擊Select文items（Support .csv, .txt）
                   </p>
                   <Badge variant="secondary" className="text-xs">
-                    每行一個 URL，可選名稱和分類
+                    One URL per line, optional name and category
                   </Badge>
                 </div>
 
-                {/* 格式說明 */}
+                {/* Format說明 */}
                 <div className="bg-slate-50 rounded-xl p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium text-slate-700 flex items-center">
                       <HelpCircle className="w-4 h-4 mr-2" />
-                      文件格式說明
+                      文itemsFormat說明
                     </h4>
                     <Button
                       size="sm"
@@ -303,14 +303,14 @@ export function BulkImportDialog({
                       className="h-8"
                     >
                       <Download className="w-4 h-4 mr-1" />
-                      下載模板
+                      Download模板
                     </Button>
                   </div>
                   <div className="text-sm text-slate-600 space-y-2">
-                    <p>每行包含一個商品，使用逗號或 Tab 分隔：</p>
+                    <p>One product per line, separated by comma or Tab：</p>
                     <code className="block bg-white p-3 rounded-lg text-xs font-mono">
-                      URL,名稱（可選）,分類（可選）<br/>
-                      https://www.hktvmall.com/hktv/zh/main/.../p/H0340001,商品A,飲品<br/>
+                      URL,Name（Optional）,分類（Optional）<br/>
+                      https://www.hktvmall.com/hktv/zh/main/.../p/H0340001,productsA,飲品<br/>
                       https://www.watsons.com.hk/product2,,保健品
                     </code>
                   </div>
@@ -335,12 +335,12 @@ export function BulkImportDialog({
                     </Badge>
                     <Badge className="bg-green-100 text-green-700">
                       <Check className="w-3 h-3 mr-1" />
-                      {validCount} 有效
+                      {validCount} Valid
                     </Badge>
                     {invalidCount > 0 && (
                       <Badge className="bg-red-100 text-red-700">
                         <AlertTriangle className="w-3 h-3 mr-1" />
-                        {invalidCount} 無效
+                        {invalidCount} Invalid
                       </Badge>
                     )}
                   </div>
@@ -351,7 +351,7 @@ export function BulkImportDialog({
                       onClick={toggleSelectAll}
                       className="h-8"
                     >
-                      {selectedRows.size === validCount ? '取消全選' : '全選有效'}
+                      {selectedRows.size === validCount ? 'Cancel全選' : '全選Valid'}
                     </Button>
                     <Button
                       size="sm"
@@ -359,21 +359,21 @@ export function BulkImportDialog({
                       onClick={resetState}
                       className="h-8 text-slate-500"
                     >
-                      重新上傳
+                      Re-Upload
                     </Button>
                   </div>
                 </div>
 
-                {/* 預覽列表 */}
+                {/* 預覽List */}
                 <div className="border border-slate-200 rounded-lg overflow-hidden max-h-[350px] overflow-y-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-slate-50 sticky top-0">
                       <tr>
                         <th className="w-10 px-3 py-2"></th>
                         <th className="px-3 py-2 text-left font-medium text-slate-600">URL</th>
-                        <th className="px-3 py-2 text-left font-medium text-slate-600 w-32">名稱</th>
+                        <th className="px-3 py-2 text-left font-medium text-slate-600 w-32">Name</th>
                         <th className="px-3 py-2 text-left font-medium text-slate-600 w-24">分類</th>
-                        <th className="px-3 py-2 text-center font-medium text-slate-600 w-20">狀態</th>
+                        <th className="px-3 py-2 text-center font-medium text-slate-600 w-20">State</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -409,17 +409,17 @@ export function BulkImportDialog({
                             </div>
                           </td>
                           <td className="px-3 py-2 text-slate-600 truncate">
-                            {row.name || <span className="text-slate-300">自動抓取</span>}
+                            {row.name || <span className="text-slate-300">Auto抓取</span>}
                           </td>
                           <td className="px-3 py-2 text-slate-600 truncate">
                             {row.category || <span className="text-slate-300">-</span>}
                           </td>
                           <td className="px-3 py-2 text-center">
                             {row.isValid ? (
-                              <Badge className="bg-green-100 text-green-700 text-xs">有效</Badge>
+                              <Badge className="bg-green-100 text-green-700 text-xs">Valid</Badge>
                             ) : (
                               <Badge className="bg-red-100 text-red-700 text-xs" title={row.error}>
-                                無效
+                                Invalid
                               </Badge>
                             )}
                           </td>
@@ -429,14 +429,14 @@ export function BulkImportDialog({
                   </table>
                 </div>
 
-                {/* 操作按鈕 */}
+                {/* Action buttons */}
                 <div className="flex items-center justify-between pt-2">
                   <p className="text-sm text-slate-500">
-                    已選擇 <span className="font-medium text-slate-700">{selectedRows.size}</span> 個商品準備導入
+                    Selected擇 <span className="font-medium text-slate-700">{selectedRows.size}</span> 個productsReadyImport
                   </p>
                   <div className="flex space-x-3">
                     <Button variant="outline" onClick={() => handleClose(false)}>
-                      取消
+                      Cancel
                     </Button>
                     <Button
                       onClick={handleImport}
@@ -448,14 +448,14 @@ export function BulkImportDialog({
                       ) : (
                         <Check className="w-4 h-4 mr-2" />
                       )}
-                      導入 {selectedRows.size} 個商品
+                      Import {selectedRows.size} 個products
                     </Button>
                   </div>
                 </div>
               </motion.div>
             )}
 
-            {/* ========== 導入中 ========== */}
+            {/* ========== Import中 ========== */}
             {step === 'importing' && (
               <motion.div
                 key="importing"
@@ -467,10 +467,10 @@ export function BulkImportDialog({
                   <RefreshCw className="w-8 h-8 text-blue-500 animate-spin" />
                 </div>
                 <h3 className="text-lg font-medium text-slate-800 mb-2">
-                  正在導入商品...
+                  currentlyImportproducts...
                 </h3>
                 <p className="text-sm text-slate-500">
-                  正在處理 {selectedRows.size} 個商品，請稍候
+                  currentlyProcessing {selectedRows.size} 個products，請稍候
                 </p>
               </motion.div>
             )}

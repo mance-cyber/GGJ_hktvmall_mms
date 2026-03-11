@@ -30,13 +30,13 @@ export function ProductSelector({
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('')
 
-  // 獲取商品列表
+  // FetchProduct list
   const { data: productsData, isLoading: productsLoading } = useQuery({
     queryKey: ['own-products', 1, 200],
     queryFn: () => api.getProducts(1, 200),
   })
 
-  // 獲取分類列表
+  // Fetch分類List
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
     queryFn: () => api.getCategories(),
@@ -45,11 +45,11 @@ export function ProductSelector({
   const products = productsData?.data || []
   const categories = categoriesData?.items || []
 
-  // 過濾商品
+  // Filterproducts
   const filteredProducts = useMemo(() => {
     let filtered = products
 
-    // 按搜索詞過濾
+    // 按Search詞Filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(
@@ -60,7 +60,7 @@ export function ProductSelector({
       )
     }
 
-    // 按分類過濾
+    // 按分類Filter
     if (selectedCategory) {
       filtered = filtered.filter((p) => p.category === selectedCategory)
     }
@@ -68,11 +68,11 @@ export function ProductSelector({
     return filtered
   }, [products, searchQuery, selectedCategory])
 
-  // 檢查商品是否已選中
+  // CheckproductswhetherSelected中
   const isSelected = (productId: string) =>
     selectedProducts.some((p) => p.id === productId)
 
-  // 切換選中狀態
+  // 切換選中State
   const toggleSelection = (product: OwnProduct) => {
     if (isSelected(product.id)) {
       onSelectionChange(selectedProducts.filter((p) => p.id !== product.id))
@@ -81,16 +81,16 @@ export function ProductSelector({
     }
   }
 
-  // 全選/取消全選當前過濾結果
+  // Select all / Deselect all當前FilterResult
   const toggleSelectAll = () => {
     const allFilteredSelected = filteredProducts.every((p) => isSelected(p.id))
 
     if (allFilteredSelected) {
-      // 取消選中所有過濾結果
+      // Cancel選中所有FilterResult
       const filteredIds = new Set(filteredProducts.map((p) => p.id))
       onSelectionChange(selectedProducts.filter((p) => !filteredIds.has(p.id)))
     } else {
-      // 選中所有過濾結果（不超過上限）
+      // Select all filtered results (up to limit)
       const currentIds = new Set(selectedProducts.map((p) => p.id))
       const toAdd = filteredProducts.filter((p) => !currentIds.has(p.id))
       const newSelection = [...selectedProducts, ...toAdd].slice(0, maxSelection)
@@ -98,7 +98,7 @@ export function ProductSelector({
     }
   }
 
-  // 清空選擇
+  // 清空Select
   const clearSelection = () => {
     onSelectionChange([])
   }
@@ -108,14 +108,14 @@ export function ProductSelector({
 
   return (
     <div className={cn('space-y-4', className)}>
-      {/* 搜索和過濾 */}
+      {/* Search和Filter */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="搜索商品名稱、品牌、SKU..."
+            placeholder="SearchproductsName、品牌、SKU..."
             className="pl-10 bg-white/50"
           />
         </div>
@@ -134,18 +134,18 @@ export function ProductSelector({
         </select>
       </div>
 
-      {/* 已選擇摘要 */}
+      {/* Selected擇摘要 */}
       <div className="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-lg">
         <div className="flex items-center gap-2">
           <HoloBadge variant={selectedProducts.length > 0 ? 'info' : 'default'}>
-            已選 {selectedProducts.length}/{maxSelection}
+            Selected {selectedProducts.length}/{maxSelection}
           </HoloBadge>
           {selectedProducts.length > 0 && (
             <button
               onClick={clearSelection}
               className="text-xs text-slate-500 hover:text-red-500 transition-colors"
             >
-              清空選擇
+              清空Select
             </button>
           )}
         </div>
@@ -157,11 +157,11 @@ export function ProductSelector({
           disabled={filteredProducts.length === 0}
           className="text-xs"
         >
-          {allFilteredSelected ? '取消全選' : '全選當前'}
+          {allFilteredSelected ? 'Cancel全選' : '全選當前'}
         </Button>
       </div>
 
-      {/* 商品列表 */}
+      {/* Product list */}
       <div className="border border-slate-200 rounded-lg overflow-hidden max-h-[400px] overflow-y-auto">
         {productsLoading ? (
           <div className="p-4 space-y-3">
@@ -179,7 +179,7 @@ export function ProductSelector({
           <div className="p-8 text-center text-slate-400">
             <Package className="w-10 h-10 mx-auto mb-2 text-slate-300" />
             <p className="text-sm">
-              {searchQuery || selectedCategory ? '無符合條件的商品' : '暫無商品'}
+              {searchQuery || selectedCategory ? '無符合條items的products' : '暫無products'}
             </p>
           </div>
         ) : (
@@ -212,7 +212,7 @@ export function ProductSelector({
                     {selected && <Check className="w-3 h-3 text-white" />}
                   </div>
 
-                  {/* 商品圖片 */}
+                  {/* productsImage */}
                   {product.images?.[0] ? (
                     <img
                       src={product.images[0]}
@@ -225,7 +225,7 @@ export function ProductSelector({
                     </div>
                   )}
 
-                  {/* 商品信息 */}
+                  {/* products信息 */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-900 truncate">
                       {product.name}
@@ -236,7 +236,7 @@ export function ProductSelector({
                     </p>
                   </div>
 
-                  {/* 價格 */}
+                  {/* Price */}
                   {product.price && (
                     <div className="text-sm font-medium text-slate-700">
                       ${product.price}
@@ -249,7 +249,7 @@ export function ProductSelector({
         )}
       </div>
 
-      {/* 已選商品標籤 */}
+      {/* Selectedproducts標籤 */}
       {selectedProducts.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {selectedProducts.slice(0, 10).map((product) => (

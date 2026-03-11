@@ -1,5 +1,5 @@
 // =============================================
-// 圖片生成歷史記錄頁面
+// Image Generation History Page
 // =============================================
 
 'use client'
@@ -28,7 +28,7 @@ import {
   Image as ImageIcon
 } from 'lucide-react'
 
-// 狀態標籤組件
+// Status label items
 function StatusBadge({ status }: { status: string }) {
   const { t } = useLocale()
 
@@ -70,7 +70,7 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
-// 格式化日期
+// Format date
 function formatDate(dateString: string): string {
   const date = new Date(dateString)
   return date.toLocaleString('zh-HK', {
@@ -82,7 +82,7 @@ function formatDate(dateString: string): string {
   })
 }
 
-// 計算剩餘天數
+// Calculate remaining days
 function getDaysRemaining(dateString: string): number {
   const createdDate = new Date(dateString)
   const expiryDate = new Date(createdDate.getTime() + 7 * 24 * 60 * 60 * 1000)
@@ -101,11 +101,11 @@ export default function ImageGenerationHistoryPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // 選中的任務（用於批量刪除）
+  // Selected tasks (for batch deletion)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // 加載任務列表
+  // Load task list
   const loadTasks = useCallback(async () => {
     setIsLoading(true)
     setError(null)
@@ -126,10 +126,10 @@ export default function ImageGenerationHistoryPage() {
     loadTasks()
   }, [loadTasks])
 
-  // 計算總頁數
+  // Calculate total pages
   const totalPages = Math.ceil(total / pageSize)
 
-  // 全選/取消全選
+  // Select all / Deselect all
   const handleSelectAll = () => {
     if (selectedIds.size === tasks.length) {
       setSelectedIds(new Set())
@@ -138,7 +138,7 @@ export default function ImageGenerationHistoryPage() {
     }
   }
 
-  // 選中/取消選中單個任務
+  // Select / Deselect individual task
   const handleSelectTask = (taskId: string) => {
     const newSelected = new Set(selectedIds)
     if (newSelected.has(taskId)) {
@@ -149,7 +149,7 @@ export default function ImageGenerationHistoryPage() {
     setSelectedIds(newSelected)
   }
 
-  // 刪除單個任務
+  // Delete single task
   const handleDeleteTask = async (taskId: string) => {
     if (!confirm(t['image_gen.confirm_delete'])) {
       return
@@ -172,7 +172,7 @@ export default function ImageGenerationHistoryPage() {
     }
   }
 
-  // 批量刪除任務
+  // Batch delete tasks
   const handleBatchDelete = async () => {
     if (selectedIds.size === 0) return
 
@@ -194,14 +194,14 @@ export default function ImageGenerationHistoryPage() {
     }
   }
 
-  // 查看任務詳情
+  // View task details
   const handleViewTask = (taskId: string) => {
     router.push(`/image-generation/results/${taskId}`)
   }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
-      {/* 標題 */}
+      {/* Title */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">{t['image_gen.history_title']}</h1>
@@ -222,7 +222,7 @@ export default function ImageGenerationHistoryPage() {
         </button>
       </div>
 
-      {/* 批量操作欄 */}
+      {/* Batch operationsBar */}
       {tasks.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -263,7 +263,7 @@ export default function ImageGenerationHistoryPage() {
         </div>
       )}
 
-      {/* 任務列表 */}
+      {/* Task list */}
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
@@ -385,7 +385,7 @@ export default function ImageGenerationHistoryPage() {
             </tbody>
           </table>
 
-          {/* 分頁 */}
+          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
               <div className="text-sm text-gray-600">

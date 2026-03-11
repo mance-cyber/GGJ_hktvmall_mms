@@ -1,7 +1,7 @@
 "use client";
 
 // =============================================
-// 關鍵詞配置對話框組件
+// Keyword Configuration Dialog Component
 // =============================================
 
 import { useState, useEffect } from "react";
@@ -27,7 +27,7 @@ export function KeywordConfigDialog({
 }: KeywordConfigDialogProps) {
   const isEditing = !!keyword;
 
-  // 表單狀態
+  // Form state
   const [mode, setMode] = useState<"single" | "batch">("single");
   const [formData, setFormData] = useState({
     keyword: "",
@@ -47,7 +47,7 @@ export function KeywordConfigDialog({
   const updateKeyword = useUpdateKeywordConfig();
   const batchCreate = useBatchCreateKeywordConfigs();
 
-  // 初始化表單
+  // Initialize form
   useEffect(() => {
     if (keyword) {
       setFormData({
@@ -81,7 +81,7 @@ export function KeywordConfigDialog({
 
     try {
       if (isEditing) {
-        // 更新
+        // Update
         await updateKeyword.mutateAsync({
           id: keyword.id,
           data: {
@@ -99,7 +99,7 @@ export function KeywordConfigDialog({
           },
         });
       } else if (mode === "single") {
-        // 單個創建
+        // Single create
         await createKeyword.mutateAsync({
           keyword: formData.keyword,
           keyword_type: formData.keyword_type,
@@ -115,7 +115,7 @@ export function KeywordConfigDialog({
           tags: formData.tags.length > 0 ? formData.tags : undefined,
         });
       } else {
-        // 批量創建
+        // Batch create
         const keywords = batchKeywords
           .split("\n")
           .map((k) => k.trim())
@@ -159,18 +159,18 @@ export function KeywordConfigDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* 背景遮罩 */}
+      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* 對話框 */}
+      {/* Dialog */}
       <div className="relative bg-gray-900 border border-cyan-500/30 rounded-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-        {/* 標題 */}
+        {/* Title */}
         <div className="flex items-center justify-between p-4 border-b border-gray-800">
           <h2 className="text-lg font-bold text-white">
-            {isEditing ? "編輯關鍵詞" : "新增關鍵詞"}
+            {isEditing ? "Edit Keyword" : "Add Keyword"}
           </h2>
           <button
             onClick={onClose}
@@ -180,7 +180,7 @@ export function KeywordConfigDialog({
           </button>
         </div>
 
-        {/* 模式切換（僅新增時顯示） */}
+        {/* Mode Toggle (shown only when adding) */}
         {!isEditing && (
           <div className="flex border-b border-gray-800">
             <button
@@ -191,7 +191,7 @@ export function KeywordConfigDialog({
                   : "text-gray-400 hover:text-white"
               }`}
             >
-              單個新增
+              Single Add
             </button>
             <button
               onClick={() => setMode("batch")}
@@ -201,18 +201,18 @@ export function KeywordConfigDialog({
                   : "text-gray-400 hover:text-white"
               }`}
             >
-              批量新增
+              Batch Add
             </button>
           </div>
         )}
 
-        {/* 表單 */}
+        {/* Form */}
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          {/* 單個模式：關鍵詞輸入 */}
+          {/* Single mode: keyword input */}
           {mode === "single" && (
             <div>
               <label className="block text-sm text-gray-400 mb-1">
-                關鍵詞 <span className="text-red-500">*</span>
+                Keyword <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -221,37 +221,36 @@ export function KeywordConfigDialog({
                   setFormData((prev) => ({ ...prev, keyword: e.target.value }))
                 }
                 disabled={isEditing}
-                placeholder="輸入關鍵詞"
+                placeholder="Enter keyword"
                 className="w-full bg-gray-800/50 border border-cyan-500/30 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 disabled:opacity-50"
                 required={mode === "single"}
               />
             </div>
           )}
 
-          {/* 批量模式：多行輸入 */}
+          {/* Batch mode: multi-line input */}
           {mode === "batch" && (
             <div>
               <label className="block text-sm text-gray-400 mb-1">
-                關鍵詞列表 <span className="text-red-500">*</span>
+                Keyword List <span className="text-red-500">*</span>
               </label>
               <textarea
                 value={batchKeywords}
                 onChange={(e) => setBatchKeywords(e.target.value)}
-                placeholder="每行輸入一個關鍵詞&#10;例如：&#10;日本零食&#10;進口糖果&#10;抹茶食品"
+                placeholder="Enter one keyword per line&#10;e.g.:&#10;日本零食&#10;進口糖果&#10;抹茶食品"
                 rows={6}
                 className="w-full bg-gray-800/50 border border-cyan-500/30 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 resize-none"
                 required={mode === "batch"}
               />
               <p className="text-xs text-gray-500 mt-1">
-                已輸入{" "}
-                {batchKeywords.split("\n").filter((k) => k.trim()).length} 個關鍵詞
+                {batchKeywords.split("\n").filter((k) => k.trim()).length} keywords entered
               </p>
             </div>
           )}
 
-          {/* 關鍵詞類型 */}
+          {/* Keyword Type */}
           <div>
-            <label className="block text-sm text-gray-400 mb-1">類型</label>
+            <label className="block text-sm text-gray-400 mb-1">Type</label>
             <select
               value={formData.keyword_type}
               onChange={(e) =>
@@ -262,15 +261,15 @@ export function KeywordConfigDialog({
               }
               className="w-full bg-gray-800/50 border border-cyan-500/30 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
             >
-              <option value="primary">主要關鍵詞</option>
-              <option value="secondary">次要關鍵詞</option>
-              <option value="long_tail">長尾關鍵詞</option>
-              <option value="brand">品牌關鍵詞</option>
-              <option value="competitor">競品關鍵詞</option>
+              <option value="primary">Primary Keyword</option>
+              <option value="secondary">Secondary Keyword</option>
+              <option value="long_tail">Long-tail Keyword</option>
+              <option value="brand">Brand Keyword</option>
+              <option value="competitor">Competitor Keyword</option>
             </select>
           </div>
 
-          {/* 追蹤選項 */}
+          {/* Tracking Options */}
           <div className="grid grid-cols-2 gap-4">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -284,7 +283,7 @@ export function KeywordConfigDialog({
                 }
                 className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-cyan-500 focus:ring-cyan-500"
               />
-              <span className="text-sm text-gray-300">追蹤 Google</span>
+              <span className="text-sm text-gray-300">Track Google</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -298,16 +297,16 @@ export function KeywordConfigDialog({
                 }
                 className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-cyan-500 focus:ring-cyan-500"
               />
-              <span className="text-sm text-gray-300">追蹤 HKTVmall</span>
+              <span className="text-sm text-gray-300">Track HKTVmall</span>
             </label>
           </div>
 
-          {/* 目標排名（僅單個模式） */}
+          {/* Target Ranking (single mode only) */}
           {mode === "single" && (
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm text-gray-400 mb-1">
-                  Google 目標排名
+                  Google Target Rank
                 </label>
                 <input
                   type="number"
@@ -320,13 +319,13 @@ export function KeywordConfigDialog({
                       target_google_rank: e.target.value,
                     }))
                   }
-                  placeholder="例如: 10"
+                  placeholder="e.g. 10"
                   className="w-full bg-gray-800/50 border border-cyan-500/30 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
                 />
               </div>
               <div>
                 <label className="block text-sm text-gray-400 mb-1">
-                  HKTVmall 目標排名
+                  HKTVmall TargetRanking
                 </label>
                 <input
                   type="number"
@@ -378,7 +377,7 @@ export function KeywordConfigDialog({
                       handleAddTag();
                     }
                   }}
-                  placeholder="新增標籤"
+                  placeholder="Add標籤"
                   className="flex-1 bg-gray-800/50 border border-cyan-500/30 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
                 />
                 <HoloButton type="button" variant="ghost" onClick={handleAddTag}>
@@ -397,26 +396,26 @@ export function KeywordConfigDialog({
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, notes: e.target.value }))
                 }
-                placeholder="可選備註..."
+                placeholder="Optional備註..."
                 rows={2}
                 className="w-full bg-gray-800/50 border border-cyan-500/30 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 resize-none"
               />
             </div>
           )}
 
-          {/* 按鈕 */}
+          {/* button */}
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-800">
             <HoloButton type="button" variant="ghost" onClick={onClose}>
-              取消
+              Cancel
             </HoloButton>
             <HoloButton type="submit" disabled={isPending}>
               {isPending
-                ? "處理中..."
+                ? "Processing..."
                 : isEditing
-                ? "儲存"
+                ? "Save"
                 : mode === "batch"
-                ? "批量新增"
-                : "新增"}
+                ? "批量Add"
+                : "Add"}
             </HoloButton>
           </div>
         </form>

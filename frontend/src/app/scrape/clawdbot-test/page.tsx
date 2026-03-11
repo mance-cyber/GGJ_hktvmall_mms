@@ -1,7 +1,7 @@
 'use client';
 
-// ==================== Clawdbot 測試頁面 (簡化版) ====================
-// 用途: 測試 clawdbot 抓取功能
+// ==================== Clawdbot Test Page (Simplified) ====================
+// Purpose: Test clawdbot scraping feature
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +18,7 @@ export default function ClawdbotTestPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 檢查健康狀態
+  // Check health status
   const checkHealth = async () => {
     try {
       const response = await fetch('/api/v1/scrape/clawdbot');
@@ -30,7 +30,7 @@ export default function ClawdbotTestPage() {
     }
   };
 
-  // 抓取商品
+  // Scrape products
   const handleScrapeProduct = async () => {
     setLoading(true);
     setError(null);
@@ -49,36 +49,36 @@ export default function ClawdbotTestPage() {
       const data = await response.json();
       setResult(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '抓取失敗');
+      setError(err instanceof Error ? err.message : 'Scraping failed');
     } finally {
       setLoading(false);
     }
   };
 
-  // 頁面加載時檢查健康狀態
+  // Check health status on page load
   useEffect(() => {
     checkHealth();
   }, []);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      {/* 頁面標題 */}
+      {/* Page title */}
       <div>
-        <h1 className="text-3xl font-bold">Clawdbot 測試面板</h1>
+        <h1 className="text-3xl font-bold">Clawdbot Test Panel</h1>
         <p className="text-gray-600 mt-2">
-          測試 clawdbot 瀏覽器自動化抓取功能
+          Test clawdbot browser automation scraping feature
         </p>
       </div>
 
-      {/* 健康狀態卡片 */}
+      {/* Health Status Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            Clawdbot 服務狀態
+            Clawdbot Service Status
             {isConnected ? (
-              <Badge className="bg-green-500">已連接</Badge>
+              <Badge className="bg-green-500">Connected</Badge>
             ) : (
-              <Badge variant="destructive">未連接</Badge>
+              <Badge variant="destructive">Disconnected</Badge>
             )}
           </CardTitle>
           <CardDescription>
@@ -92,16 +92,16 @@ export default function ClawdbotTestPage() {
             size="sm"
             className="w-full"
           >
-            刷新狀態
+            Refresh Status
           </Button>
 
           {!isConnected && (
             <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded">
               <p className="text-sm text-red-800 font-semibold">
-                Clawdbot 未運行
+                Clawdbot is not running
               </p>
               <p className="text-sm text-red-600 mt-2">
-                請確認 clawdbot 已啟動:
+                Please confirm clawdbot is running:
               </p>
               <code className="block mt-2 p-2 bg-gray-100 rounded text-xs">
                 cd clawdbot && node scripts/run-node.mjs gateway --port 18789
@@ -111,17 +111,17 @@ export default function ClawdbotTestPage() {
         </CardContent>
       </Card>
 
-      {/* 測試功能 */}
+      {/* Test Feature */}
       <Card>
         <CardHeader>
-          <CardTitle>抓取 HKTVmall 商品資訊</CardTitle>
+          <CardTitle>Scrape HKTVmall Product Information</CardTitle>
           <CardDescription>
-            輸入商品頁面 URL，自動提取商品資訊
+            Enter product page URL to automatically extract product information
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="product-url">商品 URL</Label>
+            <Label htmlFor="product-url">Product URL</Label>
             <Input
               id="product-url"
               placeholder="https://www.hktvmall.com/..."
@@ -135,7 +135,7 @@ export default function ClawdbotTestPage() {
             disabled={!isConnected || loading || !productUrl}
             className="w-full"
           >
-            {loading ? '抓取中...' : '開始抓取'}
+            {loading ? 'Scraping...' : 'Start Scraping'}
           </Button>
 
           {error && (
@@ -146,7 +146,7 @@ export default function ClawdbotTestPage() {
 
           {result && (
             <div className="mt-4">
-              <h3 className="font-semibold mb-2">抓取結果:</h3>
+              <h3 className="font-semibold mb-2">Scrape Result:</h3>
               <pre className="bg-gray-100 p-4 rounded-lg overflow-auto max-h-96 text-sm">
                 {JSON.stringify(result, null, 2)}
               </pre>

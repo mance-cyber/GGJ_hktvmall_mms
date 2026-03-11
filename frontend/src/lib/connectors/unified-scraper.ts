@@ -1,5 +1,5 @@
-// ==================== 统一爬虫接口 ====================
-// 用途: 提供统一的 API，自动路由到 Clawdbot 或 Firecrawl
+// ==================== 统一爬虫Interface ====================
+// 用途: Provide统一的 API，自动路由到 Clawdbot 或 Firecrawl
 // 架构: UnifiedScraper → ClawdbotConnector / FirecrawlConnector
 
 import {
@@ -9,7 +9,7 @@ import {
 } from './clawdbot-connector';
 import { getScraperConfig, ScraperType, getAPIKeySafe } from '../config/scraper.config';
 
-// ==================== 统一任务接口 ====================
+// ==================== 统一任务Interface ====================
 
 export interface UnifiedScrapeTask {
   url: string;
@@ -94,7 +94,7 @@ class FirecrawlConnector {
 
         const result = await response.json();
 
-        // 成功返回
+        // SuccessBack
         return {
           success: true,
           url: task.url,
@@ -122,7 +122,7 @@ class FirecrawlConnector {
           break;
         }
 
-        // 等待后重试 (指数退避)
+        // Waiting后重试 (指数退避)
         await new Promise((resolve) =>
           setTimeout(resolve, Math.pow(2, attempt) * 1000)
         );
@@ -134,7 +134,7 @@ class FirecrawlConnector {
       success: false,
       url: task.url,
       data: null,
-      error: lastError?.message || '未知错误',
+      error: lastError?.message || 'Unknown错误',
       durationMs: Date.now() - startTime,
       scrapedAt: new Date().toISOString(),
       metadata: {
@@ -146,7 +146,7 @@ class FirecrawlConnector {
   }
 
   /**
-   * 转换 Firecrawl 数据格式为统一格式
+   * 转换 Firecrawl 数据Format为统一Format
    */
   private transformFirecrawlData(data: any): Record<string, any> {
     return {
@@ -178,11 +178,11 @@ export class UnifiedScraper {
   }
 
   /**
-   * 根据配置初始化对应的连接器
+   * 根据ConfigurationInitialize对应的连接器
    */
   private initializeConnector(): void {
     if (this.config.type === 'clawdbot') {
-      console.log('🤖 初始化 Clawdbot 连接器');
+      console.log('🤖 Initialize Clawdbot 连接器');
       this.clawdbotConnector = new ClawdbotConnector({
         gatewayUrl: this.config.endpoint,
         timeout: this.config.timeout,
@@ -190,10 +190,10 @@ export class UnifiedScraper {
         rateLimitPerMinute: this.config.rateLimitPerMinute,
       });
     } else {
-      console.log('🔥 初始化 Firecrawl 连接器');
+      console.log('🔥 Initialize Firecrawl 连接器');
       const apiKey = getAPIKeySafe();
       if (!apiKey) {
-        throw new Error('FIRECRAWL_API_KEY 環境變量未配置');
+        throw new Error('FIRECRAWL_API_KEY EnvironmentVariable未Configuration');
       }
       this.firecrawlConnector = new FirecrawlConnector({
         apiUrl: this.config.endpoint,
@@ -204,7 +204,7 @@ export class UnifiedScraper {
     }
   }
 
-  // ==================== 核心方法 ====================
+  // ==================== 核心Method ====================
 
   /**
    * 抓取单个页面
@@ -215,7 +215,7 @@ export class UnifiedScraper {
     } else if (this.config.type === 'firecrawl' && this.firecrawlConnector) {
       return this.firecrawlConnector.scrape(task);
     } else {
-      throw new Error('❌ 爬虫连接器未初始化');
+      throw new Error('❌ 爬虫连接器未Initialize');
     }
   }
 
@@ -260,7 +260,7 @@ export class UnifiedScraper {
         const result = await this.scrape({ url });
         results.push(result);
 
-        // 随机延迟，避免触发速率限制
+        // 随机延迟，Avoid触发速率Limit
         await this.randomDelay(1000, 3000);
       } catch (error) {
         console.error(`❌ 批量抓取失败: ${url}`, error);
@@ -268,7 +268,7 @@ export class UnifiedScraper {
           success: false,
           url,
           data: null,
-          error: error instanceof Error ? error.message : '未知错误',
+          error: error instanceof Error ? error.message : 'Unknown错误',
           durationMs: 0,
           scrapedAt: new Date().toISOString(),
           metadata: {
@@ -282,10 +282,10 @@ export class UnifiedScraper {
     return results;
   }
 
-  // ==================== HKTVmall 专用方法 ====================
+  // ==================== HKTVmall 专用Method ====================
 
   /**
-   * 抓取 HKTVmall 商品
+   * 抓取 HKTVmall products
    */
   async scrapeHKTVProduct(productUrl: string): Promise<UnifiedScrapeResult> {
     return this.scrape({
@@ -325,7 +325,7 @@ export class UnifiedScraper {
   }
 
   /**
-   * 抓取 HKTVmall 搜索排名
+   * 抓取 HKTVmall SearchRanking
    */
   async scrapeHKTVSearchRank(
     keyword: string,
@@ -352,7 +352,7 @@ export class UnifiedScraper {
       },
     });
 
-    // 后处理: 计算排名
+    // 后处理: 计算Ranking
     if (result.success && result.data?.searchResults) {
       const products = result.data.searchResults as any[];
       const targetIndex = products.findIndex((p) => p.url === targetUrl);
@@ -369,7 +369,7 @@ export class UnifiedScraper {
     return result;
   }
 
-  // ==================== 工具方法 ====================
+  // ==================== 工具Method ====================
 
   /**
    * 健康检查
@@ -422,7 +422,7 @@ export function getUnifiedScraper(): UnifiedScraper {
   return scraperInstance;
 }
 
-// ==================== 便捷方法导出 ====================
+// ==================== 便捷Method导出 ====================
 
 /**
  * 快速抓取单个页面
@@ -433,7 +433,7 @@ export async function scrapeUrl(url: string): Promise<UnifiedScrapeResult> {
 }
 
 /**
- * 快速抓取 HKTVmall 商品
+ * 快速抓取 HKTVmall products
  */
 export async function scrapeHKTVProduct(
   productUrl: string
@@ -443,7 +443,7 @@ export async function scrapeHKTVProduct(
 }
 
 /**
- * 快速抓取搜索排名
+ * 快速抓取SearchRanking
  */
 export async function scrapeSearchRank(
   keyword: string,

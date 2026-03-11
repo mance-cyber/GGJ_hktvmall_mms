@@ -1,17 +1,17 @@
-// ==================== GoGoJap Clawdbot 連接器 ====================
-// 用途: 連接到本地 clawdbot WebSocket Gateway，執行瀏覽器自動化抓取任務
+// ==================== GoGoJap Clawdbot Connection器 ====================
+// 用途: Connect to local clawdbot WebSocket Gateway for browser automation抓取任務
 // 架構: GoGoJap Backend ←→ ClawdbotConnector ←→ Clawdbot Gateway ←→ Browser Pool
 
 import WebSocket from 'ws';
 
-// ==================== 類型定義 ====================
+// ==================== Type definitions ====================
 
 export interface ClawdbotConfig {
   gatewayUrl: string;           // WebSocket Gateway URL
-  apiKey?: string;              // API Key (如果需要)
-  timeout: number;              // 任務超時時間 (毫秒)
-  retryAttempts: number;        // 失敗重試次數
-  rateLimitPerMinute: number;   // 每分鐘最大請求數
+  apiKey?: string;              // API Key (如果Need)
+  timeout: number;              // 任務TimeoutTime (毫秒)
+  retryAttempts: number;        // FailedRetry次數
+  rateLimitPerMinute: number;   // Max requests per minute
 }
 
 export interface ScrapeTask {
@@ -22,11 +22,11 @@ export interface ScrapeTask {
 }
 
 export interface ScrapeTaskConfig {
-  waitForSelector?: string;      // 等待特定元素加載
-  actions?: BrowserAction[];     // 瀏覽器操作序列
-  extractors?: DataExtractor[];  // 數據提取規則
-  screenshot?: boolean;          // 是否截圖
-  useProxy?: boolean;            // 是否使用代理
+  waitForSelector?: string;      // Waiting特定元素Loading
+  actions?: BrowserAction[];     // Browser action sequence
+  extractors?: DataExtractor[];  // Data提取規則
+  screenshot?: boolean;          // whether截圖
+  useProxy?: boolean;            // whether使用代理
 }
 
 export interface BrowserAction {
@@ -40,7 +40,7 @@ export interface DataExtractor {
   field: string;
   selector: string;
   attribute?: string;  // 提取屬性 (href, src, etc.)
-  multiple?: boolean;  // 是否提取多個元素
+  multiple?: boolean;  // whether提取多個元素
   transform?: 'number' | 'trim' | 'lowercase';
 }
 
@@ -55,7 +55,7 @@ export interface ScrapeResult {
   screenshot?: string;  // Base64 encoded screenshot
 }
 
-// ==================== Clawdbot 連接器 ====================
+// ==================== Clawdbot Connection器 ====================
 
 export class ClawdbotConnector {
   private config: ClawdbotConfig;
@@ -75,10 +75,10 @@ export class ClawdbotConnector {
     };
   }
 
-  // ==================== 連接管理 ====================
+  // ==================== ConnectionManagement ====================
 
   /**
-   * 連接到 Clawdbot WebSocket Gateway
+   * Connection到 Clawdbot WebSocket Gateway
    */
   async connect(): Promise<void> {
     if (this.connected && this.ws?.readyState === WebSocket.OPEN) {
@@ -90,7 +90,7 @@ export class ClawdbotConnector {
         this.ws = new WebSocket(this.config.gatewayUrl);
 
         this.ws.on('open', () => {
-          console.log('✅ 已連接到 Clawdbot Gateway:', this.config.gatewayUrl);
+          console.log('✅ 已Connection到 Clawdbot Gateway:', this.config.gatewayUrl);
           this.connected = true;
           resolve();
         });
@@ -100,20 +100,20 @@ export class ClawdbotConnector {
         });
 
         this.ws.on('error', (error) => {
-          console.error('❌ Clawdbot WebSocket 錯誤:', error);
+          console.error('❌ Clawdbot WebSocket Error:', error);
           this.connected = false;
           reject(error);
         });
 
         this.ws.on('close', () => {
-          console.log('🔌 Clawdbot 連接已關閉');
+          console.log('🔌 Clawdbot Connection已Close');
           this.connected = false;
         });
 
-        // 連接超時
+        // ConnectionTimeout
         setTimeout(() => {
           if (!this.connected) {
-            reject(new Error('Clawdbot 連接超時'));
+            reject(new Error('Clawdbot ConnectionTimeout'));
           }
         }, 10000);
       } catch (error) {
@@ -123,7 +123,7 @@ export class ClawdbotConnector {
   }
 
   /**
-   * 斷開連接
+   * DisconnectedConnection
    */
   disconnect(): void {
     if (this.ws) {
@@ -134,7 +134,7 @@ export class ClawdbotConnector {
   }
 
   /**
-   * 處理 WebSocket 消息
+   * Processing WebSocket 消息
    */
   private handleMessage(message: string): void {
     try {
@@ -148,29 +148,29 @@ export class ClawdbotConnector {
         }
       }
     } catch (error) {
-      console.error('解析 Clawdbot 消息失敗:', error);
+      console.error('Parse Clawdbot 消息Failed:', error);
     }
   }
 
-  // ==================== 速率限制 ====================
+  // ==================== 速率Limit ====================
 
   /**
-   * 檢查速率限制
+   * Check速率Limit
    */
   private async checkRateLimit(): Promise<void> {
     const now = new Date();
     const timeElapsed = now.getTime() - this.requestWindow.getTime();
 
-    // 重置計數器 (每分鐘)
+    // Reset計數器 (每minutes)
     if (timeElapsed > 60000) {
       this.requestCount = 0;
       this.requestWindow = now;
     }
 
-    // 檢查是否超過限制
+    // Checkwhether超過Limit
     if (this.requestCount >= this.config.rateLimitPerMinute) {
       const waitTime = 60000 - timeElapsed;
-      console.log(`⏳ 達到速率限制，等待 ${waitTime}ms`);
+      console.log(`⏳ 達到速率Limit，Waiting ${waitTime}ms`);
       await new Promise(resolve => setTimeout(resolve, waitTime));
       this.requestCount = 0;
       this.requestWindow = new Date();
@@ -179,7 +179,7 @@ export class ClawdbotConnector {
     this.requestCount++;
   }
 
-  // ==================== 核心抓取方法 ====================
+  // ==================== 核心抓取Method ====================
 
   /**
    * 執行抓取任務
@@ -194,7 +194,7 @@ export class ClawdbotConnector {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.taskQueue.delete(task.id);
-        reject(new Error('抓取任務超時'));
+        reject(new Error('抓取任務Timeout'));
       }, this.config.timeout);
 
       this.taskQueue.set(task.id, (result: ScrapeResult) => {
@@ -212,10 +212,10 @@ export class ClawdbotConnector {
     });
   }
 
-  // ==================== HKTVmall 專用方法 ====================
+  // ==================== HKTVmall 專用Method ====================
 
   /**
-   * 抓取 HKTVmall 商品資訊
+   * 抓取 HKTVmall productsInformation
    */
   async scrapeHKTVProduct(productUrl: string): Promise<ScrapeResult> {
     const taskId = this.generateTaskId();
@@ -253,7 +253,7 @@ export class ClawdbotConnector {
   }
 
   /**
-   * 抓取 HKTVmall 搜尋排名
+   * 抓取 HKTVmall SearchRanking
    */
   async scrapeHKTVSearchRank(keyword: string, targetUrl: string): Promise<ScrapeResult> {
     const taskId = this.generateTaskId();
@@ -267,7 +267,7 @@ export class ClawdbotConnector {
         waitForSelector: '.search-results',
         actions: [
           { type: 'wait', delay: 3000 },
-          { type: 'scroll', value: 2000 },  // 加載更多結果
+          { type: 'scroll', value: 2000 },  // Loading更多Result
         ],
         extractors: [
           {
@@ -281,7 +281,7 @@ export class ClawdbotConnector {
 
     const result = await this.scrape(task);
 
-    // 後處理: 找到目標 URL 的排名
+    // 後Processing: Find target URL ranking
     if (result.success && result.data?.searchResults) {
       const products = result.data.searchResults as any[];
       const targetIndex = products.findIndex(p => p.url === targetUrl);
@@ -299,7 +299,7 @@ export class ClawdbotConnector {
   }
 
   /**
-   * 批量抓取商品
+   * 批量抓取products
    */
   async scrapeBatch(urls: string[]): Promise<ScrapeResult[]> {
     const results: ScrapeResult[] = [];
@@ -309,16 +309,16 @@ export class ClawdbotConnector {
         const result = await this.scrapeHKTVProduct(url);
         results.push(result);
 
-        // 添加隨機延遲，避免被檢測
+        // 添加隨機延遲，Avoid被檢測
         await this.randomDelay(2000, 5000);
       } catch (error) {
-        console.error(`抓取失敗: ${url}`, error);
+        console.error(`抓取Failed: ${url}`, error);
         results.push({
           success: false,
           taskId: this.generateTaskId(),
           url,
           data: null,
-          error: error instanceof Error ? error.message : '未知錯誤',
+          error: error instanceof Error ? error.message : 'UnknownError',
           durationMs: 0,
           scrapedAt: new Date().toISOString(),
         });
@@ -328,10 +328,10 @@ export class ClawdbotConnector {
     return results;
   }
 
-  // ==================== 工具方法 ====================
+  // ==================== 工具Method ====================
 
   /**
-   * 生成任務 ID
+   * Generate任務 ID
    */
   private generateTaskId(): string {
     return `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -346,7 +346,7 @@ export class ClawdbotConnector {
   }
 
   /**
-   * 健康檢查
+   * 健康Check
    */
   async healthCheck(): Promise<boolean> {
     try {
@@ -360,7 +360,7 @@ export class ClawdbotConnector {
   }
 }
 
-// ==================== 單例導出 ====================
+// ==================== 單例Export ====================
 
 let connectorInstance: ClawdbotConnector | null = null;
 

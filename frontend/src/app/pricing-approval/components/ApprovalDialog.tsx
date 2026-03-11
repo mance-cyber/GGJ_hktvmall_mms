@@ -1,5 +1,5 @@
 // =============================================
-// 批准確認對話框
+// Approval Confirmation Dialog
 // =============================================
 
 'use client'
@@ -38,7 +38,7 @@ export function ApprovalDialog({
   const [finalPrice, setFinalPrice] = useState<string>('')
   const [useCustomPrice, setUseCustomPrice] = useState(false)
 
-  // 重置狀態
+  // Reset state
   useEffect(() => {
     if (open && proposal) {
       setFinalPrice(proposal.proposed_price.toString())
@@ -69,25 +69,25 @@ export function ApprovalDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>確認批准改價</DialogTitle>
+          <DialogTitle>Confirm Price Change Approval</DialogTitle>
           <DialogDescription>
-            請確認以下改價提案，批准後將自動更新 HKTVmall 價格。
+            Please confirm the following pricing proposal. Once approved, HKTVmall prices will be automatically updated.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* 產品信息 */}
+          {/* Product Info */}
           <div>
-            <Label className="text-gray-500">產品</Label>
-            <p className="font-medium">{proposal.product_name || '未知產品'}</p>
+            <Label className="text-gray-500">Product</Label>
+            <p className="font-medium">{proposal.product_name || 'Unknown Product'}</p>
             {proposal.product_sku && (
               <p className="text-sm text-gray-500">SKU: {proposal.product_sku}</p>
             )}
           </div>
 
-          {/* 價格變化 */}
+          {/* Price Change */}
           <div>
-            <Label className="text-gray-500">價格變化</Label>
+            <Label className="text-gray-500">Price Change</Label>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-lg font-semibold text-gray-700">
                 {formatPrice(proposal.current_price)}
@@ -108,15 +108,15 @@ export function ApprovalDialog({
             </div>
           </div>
 
-          {/* AI 理由 */}
+          {/* AI Reasoning */}
           {proposal.reason && (
             <div>
-              <Label className="text-gray-500">AI 建議理由</Label>
+              <Label className="text-gray-500">AI Suggestion Rationale</Label>
               <p className="text-sm mt-1">{proposal.reason}</p>
             </div>
           )}
 
-          {/* 自定義價格 */}
+          {/* Custom Price */}
           <div className="pt-2 border-t">
             <div className="flex items-center gap-2 mb-2">
               <input
@@ -127,20 +127,20 @@ export function ApprovalDialog({
                 className="rounded border-gray-300"
               />
               <Label htmlFor="useCustomPrice" className="cursor-pointer">
-                使用自定義最終價格
+                Use custom final price
               </Label>
             </div>
 
             {useCustomPrice && (
               <div className="mt-2">
-                <Label htmlFor="finalPrice">最終執行價格</Label>
+                <Label htmlFor="finalPrice">Final Execution Price</Label>
                 <Input
                   id="finalPrice"
                   type="number"
                   step="0.01"
                   value={finalPrice}
                   onChange={(e) => setFinalPrice(e.target.value)}
-                  placeholder="輸入最終價格"
+                  placeholder="Enter final price"
                   className="mt-1"
                 />
               </div>
@@ -155,7 +155,7 @@ export function ApprovalDialog({
             disabled={isLoading}
           >
             <X className="w-4 h-4 mr-1" />
-            取消
+            Cancel
           </HoloButton>
           <HoloButton
             variant="primary"
@@ -164,7 +164,7 @@ export function ApprovalDialog({
             className="bg-green-500 hover:bg-green-600 text-white"
           >
             <Check className="w-4 h-4 mr-1" />
-            {isLoading ? '處理中...' : '確認批准'}
+            {isLoading ? 'Processing...' : 'Confirm Approval'}
           </HoloButton>
         </DialogFooter>
       </DialogContent>

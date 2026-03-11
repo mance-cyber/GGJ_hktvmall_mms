@@ -1,28 +1,28 @@
 // =============================================
-// API 類型定義
+// API Type definitions
 // =============================================
 
 /**
- * API 錯誤響應格式
+ * API ErrorResponseFormat
  */
 export interface ApiError {
   /**
-   * 錯誤消息
+   * Error消息
    */
   message?: string;
 
   /**
-   * 詳細錯誤信息（FastAPI 標準格式）
+   * Detailed error info (FastAPI standard format)
    */
   detail?: string;
 
   /**
-   * 錯誤代碼
+   * Error代碼
    */
   code?: string;
 
   /**
-   * 驗證錯誤詳情（422 錯誤時）
+   * ValidateErrorDetails（422 Error時）
    */
   errors?: Array<{
     loc: string[];
@@ -32,36 +32,36 @@ export interface ApiError {
 }
 
 /**
- * API 成功響應格式
+ * API SuccessResponseFormat
  */
 export interface ApiResponse<T = any> {
   /**
-   * 響應數據
+   * ResponseData
    */
   data: T;
 
   /**
-   * 響應消息
+   * Response消息
    */
   message?: string;
 
   /**
-   * 響應狀態碼
+   * ResponseState碼
    */
   status?: number;
 }
 
 /**
- * 分頁響應格式
+ * 分頁ResponseFormat
  */
 export interface PaginatedResponse<T = any> {
   /**
-   * 數據列表
+   * DataList
    */
   items: T[];
 
   /**
-   * 總記錄數
+   * 總Record數
    */
   total: number;
 

@@ -1,5 +1,5 @@
 // =============================================
-// 價格趨勢組件導出
+// PriceTrend組itemsExport
 // =============================================
 
 export { ProductSelector } from './ProductSelector'

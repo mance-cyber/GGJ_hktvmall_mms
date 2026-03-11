@@ -1,5 +1,5 @@
 // =============================================
-// ROI 數據 React Query Hooks
+// ROI Data React Query Hooks
 // =============================================
 
 'use client'
@@ -30,18 +30,18 @@ export const roiKeys = {
 // ==================== Hooks ====================
 
 /**
- * 獲取 ROI 總覽
+ * Fetch ROI summary
  */
 export function useROISummary(period: ROIPeriod = 'month') {
   return useQuery<ROISummary>({
     queryKey: roiKeys.summary(period),
     queryFn: () => getROISummary(period),
-    staleTime: 5 * 60 * 1000, // 5 分鐘緩存
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
   })
 }
 
 /**
- * 獲取 ROI 趨勢數據
+ * Get ROI trend data
  */
 export function useROITrends(days: number = 30) {
   return useQuery<ROITrendsResponse>({
@@ -52,7 +52,7 @@ export function useROITrends(days: number = 30) {
 }
 
 /**
- * 獲取 AI 改價影響
+ * Fetch AI price change impact
  */
 export function usePricingImpact(limit: number = 10) {
   return useQuery<PricingImpactResponse>({
@@ -63,7 +63,7 @@ export function usePricingImpact(limit: number = 10) {
 }
 
 /**
- * 獲取競品監測洞察
+ * Fetch competitor monitor insights
  */
 export function useCompetitorInsights(period: ROIPeriod = 'month') {
   return useQuery<CompetitorInsights>({

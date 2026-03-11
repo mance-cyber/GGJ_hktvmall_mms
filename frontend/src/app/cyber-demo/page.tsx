@@ -5,21 +5,21 @@ import { motion } from 'framer-motion'
 import { Sparkles, Zap, TrendingUp } from 'lucide-react'
 
 /**
- * 全息賽博朋克導航欄示範頁面
+ * Holographic cyberpunk navigation bar demo page
  * Holographic Cyberpunk Navbar Demo Page
  */
 export default function CyberDemoPage() {
   return (
     <>
-      {/* 導入樣式 */}
+      {/* ImportStyle */}
       <link rel="stylesheet" href="/styles/cyber-navbar.css" />
 
-      {/* 導航欄 */}
+      {/* NavigationBar */}
       <CyberNavbar />
 
-      {/* 示範內容 */}
+      {/* Demo Content */}
       <main className="min-h-screen pt-24 pb-16 px-4 bg-slate-950">
-        {/* 背景效果 */}
+        {/* Background effects */}
         <div className="fixed inset-0 -z-10">
           <div className="absolute inset-0 cyber-grid opacity-10" />
           <div className="absolute inset-0 bg-gradient-radial from-cyan-500/5 via-transparent to-transparent" />

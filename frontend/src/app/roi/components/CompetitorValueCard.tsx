@@ -1,5 +1,5 @@
 // =============================================
-// 競品監測價值卡片組件
+// Competitor Monitor Value Card Component
 // =============================================
 
 'use client'
@@ -15,7 +15,7 @@ interface CompetitorValueCardProps {
 export function CompetitorValueCard({ period }: CompetitorValueCardProps) {
   const { data, isLoading, error } = useCompetitorInsights(period)
 
-  // 格式化金額
+  // Format monetary amount
   const formatMoney = (value: number) => {
     return `$${Number(value).toLocaleString('zh-HK', { minimumFractionDigits: 0 })}`
   }
@@ -31,7 +31,7 @@ export function CompetitorValueCard({ period }: CompetitorValueCardProps) {
   if (error) {
     return (
       <div className="flex items-center justify-center h-64 text-red-500">
-        載入失敗
+        Failed to load
       </div>
     )
   }
@@ -39,21 +39,21 @@ export function CompetitorValueCard({ period }: CompetitorValueCardProps) {
   const stats = [
     {
       icon: Bell,
-      label: '觸發告警',
+      label: 'Alerts Triggered',
       value: data?.price_alerts_triggered || 0,
       color: 'text-blue-500',
       bg: 'bg-blue-50',
     },
     {
       icon: TrendingDown,
-      label: '偵測降價',
+      label: 'Price Drops Detected',
       value: data?.price_drops_detected || 0,
       color: 'text-red-500',
       bg: 'bg-red-50',
     },
     {
       icon: TrendingUp,
-      label: '偵測加價',
+      label: 'Price Increases Detected',
       value: data?.price_increases_detected || 0,
       color: 'text-green-500',
       bg: 'bg-green-50',
@@ -62,21 +62,21 @@ export function CompetitorValueCard({ period }: CompetitorValueCardProps) {
 
   return (
     <div className="space-y-6">
-      {/* 潛在節省金額 - 突出顯示 */}
+      {/* Potential savings - highlighted */}
       <div className="text-center p-6 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl border border-cyan-200">
         <div className="flex items-center justify-center gap-2 mb-2">
           <DollarSign className="w-6 h-6 text-cyan-500" />
-          <span className="text-sm font-medium text-gray-500">潛在節省金額</span>
+          <span className="text-sm font-medium text-gray-500">Potential Savings</span>
         </div>
         <div className="text-4xl font-bold text-cyan-600">
           {formatMoney(data?.potential_savings || 0)}
         </div>
         <div className="text-xs text-gray-400 mt-2">
-          基於警報響應計算的估算值
+          Estimated value based on alert response calculations
         </div>
       </div>
 
-      {/* 告警統計 */}
+      {/* Alert Statistics */}
       <div className="grid grid-cols-3 gap-4">
         {stats.map((stat) => {
           const Icon = stat.icon
@@ -92,9 +92,9 @@ export function CompetitorValueCard({ period }: CompetitorValueCardProps) {
         })}
       </div>
 
-      {/* 說明文字 */}
+      {/* Description */}
       <div className="text-xs text-gray-400 text-center">
-        競品監測幫助你及時掌握市場動態，避免定價失誤造成的損失
+        Competitor monitoring helps you stay on top of market dynamics and avoid losses from pricing errors
       </div>
     </div>
   )

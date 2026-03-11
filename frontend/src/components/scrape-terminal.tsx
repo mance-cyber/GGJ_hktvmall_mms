@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 // =============================================
-// 類型定義
+// Type definitions
 // =============================================
 
 export interface LogEntry {
@@ -37,7 +37,7 @@ export interface ScrapeStats {
   success: number
   failed: number
   skipped: number
-  current?: string  // 當前正在處理的項目名稱
+  current?: string  // Currently processing item name
 }
 
 interface ScrapeTerminalProps {
@@ -52,7 +52,7 @@ interface ScrapeTerminalProps {
 }
 
 // =============================================
-// 主組件
+// 主組items
 // =============================================
 
 export function ScrapeTerminal({ 
@@ -69,26 +69,26 @@ export function ScrapeTerminal({
   const [isMinimized, setIsMinimized] = useState(false)
   const [showSummary, setShowSummary] = useState(false)
 
-  // 自動滾動到底部
+  // Auto滾動到底部
   useEffect(() => {
     if (scrollRef.current && !isMinimized) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
   }, [logs, isMinimized])
 
-  // 當抓取完成時顯示摘要
+  // 當抓取Complete時Display摘要
   useEffect(() => {
     if (!isScraping && stats && stats.total > 0) {
       setShowSummary(true)
     }
   }, [isScraping, stats])
 
-  // 計算耗時（模擬）
+  // Calculate耗時（模擬）
   const getElapsedTime = () => {
     if (logs.length < 2) return '0s'
     const firstLog = logs[0]
     const lastLog = logs[logs.length - 1]
-    // 簡單計算 - 實際應該使用真實時間戳
+    // 簡單Calculate - 實際應該使用真實Time戳
     return `${logs.length * 0.8}s`
   }
 
@@ -111,10 +111,10 @@ export function ScrapeTerminal({
             "border border-slate-700/50 bg-slate-950/95 backdrop-blur-xl"
           )}
         >
-          {/* ========== 終端標題欄 ========== */}
+          {/* ========== 終端TitleBar ========== */}
           <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-900 to-slate-900/80 border-b border-slate-800/80">
             <div className="flex items-center space-x-3">
-              {/* 狀態指示燈 */}
+              {/* State指示燈 */}
               <div className="flex items-center space-x-1.5">
                 <div className={cn(
                   "w-3 h-3 rounded-full transition-colors",
@@ -134,7 +134,7 @@ export function ScrapeTerminal({
             </div>
             
             <div className="flex items-center space-x-1">
-              {/* 運行狀態標籤 */}
+              {/* RunningStatus label */}
               {isScraping && (
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.8 }}
@@ -146,7 +146,7 @@ export function ScrapeTerminal({
                 </motion.div>
               )}
               
-              {/* 最小化按鈕 */}
+              {/* 最小化button */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -156,7 +156,7 @@ export function ScrapeTerminal({
                 {isMinimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minimize2 className="w-3.5 h-3.5" />}
               </Button>
               
-              {/* 關閉按鈕 */}
+              {/* Closebutton */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -177,7 +177,7 @@ export function ScrapeTerminal({
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
               />
-              {/* 光暈效果 */}
+              {/* 光暈Effect */}
               <motion.div
                 className="absolute top-0 h-full w-20 bg-gradient-to-r from-transparent via-white/30 to-transparent"
                 animate={{ left: ['-20%', '120%'] }}
@@ -200,31 +200,31 @@ export function ScrapeTerminal({
                     <div className="grid grid-cols-4 gap-3">
                       <StatBadge 
                         icon={Zap} 
-                        label="總計" 
+                        label="Total" 
                         value={stats.total} 
                         color="slate" 
                       />
                       <StatBadge 
                         icon={CheckCircle2} 
-                        label="成功" 
+                        label="Success" 
                         value={stats.success} 
                         color="green" 
                       />
                       <StatBadge 
                         icon={XCircle} 
-                        label="失敗" 
+                        label="Failed" 
                         value={stats.failed} 
                         color="red" 
                       />
                       <StatBadge 
                         icon={SkipForward} 
-                        label="跳過" 
+                        label="Skip" 
                         value={stats.skipped} 
                         color="yellow" 
                       />
                     </div>
                     
-                    {/* 當前處理項目 */}
+                    {/* 當前Processing項目 */}
                     {isScraping && stats.current && (
                       <motion.div 
                         initial={{ opacity: 0, y: -5 }}
@@ -239,7 +239,7 @@ export function ScrapeTerminal({
                   </div>
                 )}
 
-                {/* ========== 日誌區域 ========== */}
+                {/* ========== LogArea ========== */}
                 <div 
                   ref={scrollRef}
                   className="p-4 h-[280px] overflow-y-auto font-mono text-xs space-y-1.5 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
@@ -268,7 +268,7 @@ export function ScrapeTerminal({
                   )}
                 </div>
 
-                {/* ========== 完成摘要 ========== */}
+                {/* ========== Complete摘要 ========== */}
                 <AnimatePresence>
                   {showSummary && !isScraping && stats && (
                     <motion.div
@@ -285,7 +285,7 @@ export function ScrapeTerminal({
                           <div className="flex items-center space-x-2">
                             <CheckCircle2 className="w-4 h-4 text-green-500" />
                             <span className="text-sm font-medium text-slate-200">
-                              抓取完成
+                              抓取Complete
                             </span>
                           </div>
                           <div className="flex items-center space-x-3 text-xs text-slate-400">
@@ -293,9 +293,9 @@ export function ScrapeTerminal({
                               <Clock className="w-3 h-3 mr-1" />
                               耗時 {getElapsedTime()}
                             </span>
-                            <span className="text-green-400">{stats.success} 成功</span>
+                            <span className="text-green-400">{stats.success} Success</span>
                             {stats.failed > 0 && (
-                              <span className="text-red-400">{stats.failed} 失敗</span>
+                              <span className="text-red-400">{stats.failed} Failed</span>
                             )}
                           </div>
                         </div>
@@ -304,13 +304,13 @@ export function ScrapeTerminal({
                   )}
                 </AnimatePresence>
 
-                {/* ========== 底部操作欄 ========== */}
+                {/* ========== 底部OperationBar ========== */}
                 <div className="px-4 py-3 bg-slate-900/30 border-t border-slate-800/50 flex items-center justify-between">
                   <div className="text-xs text-slate-500 font-mono">
                     {logs.length} entries {progress !== undefined && `• ${progress.toFixed(0)}%`}
                   </div>
                   
-                  {/* 取消按鈕 */}
+                  {/* Cancelbutton */}
                   {isScraping && onCancel && (
                     <Button
                       size="sm"
@@ -327,7 +327,7 @@ export function ScrapeTerminal({
             )}
           </AnimatePresence>
 
-          {/* ========== 最小化狀態顯示 ========== */}
+          {/* ========== 最小化StateDisplay ========== */}
           {isMinimized && (
             <motion.div 
               initial={{ opacity: 0 }}
@@ -362,7 +362,7 @@ export function ScrapeTerminal({
 }
 
 // =============================================
-// 子組件
+// Sub-components
 // =============================================
 
 function StatBadge({ 
@@ -440,7 +440,7 @@ function LogLine({ log, index }: { log: LogEntry; index: number }) {
 }
 
 // =============================================
-// 輔助函數
+// 輔助Function
 // =============================================
 
 export function createLogEntry(

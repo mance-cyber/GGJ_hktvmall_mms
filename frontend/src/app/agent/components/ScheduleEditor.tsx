@@ -1,7 +1,7 @@
 'use client'
 
 // =============================================
-// 排程編輯器組件 - 創建和編輯排程報告
+// Schedule Editor Component - Create and Edit Scheduled Reports
 // =============================================
 
 import { useState, useEffect } from 'react'
@@ -51,7 +51,7 @@ import {
 interface ScheduleEditorProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  schedule?: ScheduledReport | null  // 編輯模式時傳入
+  schedule?: ScheduledReport | null  // Pass in for edit mode
   conversationId?: string | null
   onSuccess?: (schedule: ScheduledReport) => void
 }
@@ -67,31 +67,31 @@ interface FormData {
 }
 
 // =============================================
-// 常量
+// Constants
 // =============================================
 
 const REPORT_TYPES: { value: ReportType; label: string }[] = [
-  { value: 'price_analysis', label: '價格分析' },
-  { value: 'competitor_report', label: '競品報告' },
-  { value: 'sales_summary', label: '銷售摘要' },
-  { value: 'inventory_alert', label: '庫存警報' },
-  { value: 'custom', label: '自定義' },
+  { value: 'price_analysis', label: 'Price Analysis' },
+  { value: 'competitor_report', label: 'Competitor Report' },
+  { value: 'sales_summary', label: 'Sales Summary' },
+  { value: 'inventory_alert', label: 'Inventory Alert' },
+  { value: 'custom', label: 'Custom' },
 ]
 
 const FREQUENCIES: { value: ScheduleFrequency; label: string }[] = [
-  { value: 'daily', label: '每日' },
-  { value: 'weekly', label: '每週' },
-  { value: 'monthly', label: '每月' },
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
 ]
 
 const WEEKDAYS = [
-  { value: 1, label: '週一' },
-  { value: 2, label: '週二' },
-  { value: 3, label: '週三' },
-  { value: 4, label: '週四' },
-  { value: 5, label: '週五' },
-  { value: 6, label: '週六' },
-  { value: 7, label: '週日' },
+  { value: 1, label: 'Monday' },
+  { value: 2, label: 'Tuesday' },
+  { value: 3, label: 'Wednesday' },
+  { value: 4, label: 'Thursday' },
+  { value: 5, label: 'Friday' },
+  { value: 6, label: 'Saturday' },
+  { value: 7, label: 'Sunday' },
 ]
 
 // =============================================
@@ -108,7 +108,7 @@ export function ScheduleEditor({
   const isEditMode = !!schedule
   const queryClient = useQueryClient()
 
-  // 表單狀態
+  // Form state
   const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
@@ -121,7 +121,7 @@ export function ScheduleEditor({
 
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({})
 
-  // 編輯模式時填充表單
+  // Populate form in edit mode
   useEffect(() => {
     if (schedule) {
       setFormData({
@@ -134,7 +134,7 @@ export function ScheduleEditor({
         timezone: schedule.timezone || 'Asia/Hong_Kong',
       })
     } else {
-      // 重置表單
+      // Reset form
       setFormData({
         name: '',
         description: '',
@@ -148,7 +148,7 @@ export function ScheduleEditor({
     setErrors({})
   }, [schedule, open])
 
-  // 創建排程
+  // Create schedule
   const createMutation = useMutation({
     mutationFn: (data: ScheduleCreateRequest) => createSchedule(data),
     onSuccess: (newSchedule) => {
@@ -158,7 +158,7 @@ export function ScheduleEditor({
     },
   })
 
-  // 更新排程
+  // Update schedule
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: ScheduleUpdateRequest }) =>
       updateSchedule(id, data),
@@ -172,31 +172,31 @@ export function ScheduleEditor({
   const isLoading = createMutation.isPending || updateMutation.isPending
   const error = createMutation.error || updateMutation.error
 
-  // 驗證表單
+  // Validate form
   const validate = (): boolean => {
     const newErrors: Partial<Record<keyof FormData, string>> = {}
 
     if (!formData.name.trim()) {
-      newErrors.name = '請輸入排程名稱'
+      newErrors.name = 'Please enter a schedule name'
     }
 
     if (!formData.schedule_time) {
-      newErrors.schedule_time = '請選擇執行時間'
+      newErrors.schedule_time = 'Please select an execution time'
     }
 
     if (formData.frequency === 'weekly' && formData.schedule_day === null) {
-      newErrors.schedule_day = '請選擇執行日'
+      newErrors.schedule_day = 'Please select a day of the week'
     }
 
     if (formData.frequency === 'monthly' && formData.schedule_day === null) {
-      newErrors.schedule_day = '請選擇執行日'
+      newErrors.schedule_day = 'Please select a day of the month'
     }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  // 提交表單
+  // Submit form
   const handleSubmit = () => {
     if (!validate()) return
 
@@ -217,7 +217,7 @@ export function ScheduleEditor({
     }
   }
 
-  // 更新表單欄位
+  // Update form field
   const updateField = <K extends keyof FormData>(field: K, value: FormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     if (errors[field]) {
@@ -231,22 +231,22 @@ export function ScheduleEditor({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-purple-500" />
-            {isEditMode ? '編輯排程' : '創建排程報告'}
+            {isEditMode ? 'Edit Schedule' : 'Create Scheduled Report'}
           </DialogTitle>
           <DialogDescription>
             {isEditMode
-              ? '修改排程設定後，下次執行將使用新設定'
-              : '設定定時報告，自動生成並發送到 Telegram'}
+              ? 'After modifying schedule settings, the next run will use the new settings'
+              : 'Set up scheduled reports to auto-generate and send to Telegram'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* 名稱 */}
+          {/* Name */}
           <div className="space-y-2">
-            <Label htmlFor="name">排程名稱 *</Label>
+            <Label htmlFor="name">Schedule Name *</Label>
             <Input
               id="name"
-              placeholder="例如：每日價格報告"
+              placeholder="e.g. Daily Price Report"
               value={formData.name}
               onChange={(e) => updateField('name', e.target.value)}
               className={errors.name ? 'border-red-300' : ''}
@@ -256,21 +256,21 @@ export function ScheduleEditor({
             )}
           </div>
 
-          {/* 描述 */}
+          {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">描述</Label>
+            <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
-              placeholder="排程的用途或備註..."
+              placeholder="Purpose or notes for this schedule..."
               value={formData.description}
               onChange={(e) => updateField('description', e.target.value)}
               rows={2}
             />
           </div>
 
-          {/* 報告類型 */}
+          {/* Report Type */}
           <div className="space-y-2">
-            <Label>報告類型</Label>
+            <Label>Report Type</Label>
             <Select
               value={formData.report_type}
               onValueChange={(v) => updateField('report_type', v as ReportType)}
@@ -288,20 +288,20 @@ export function ScheduleEditor({
             </Select>
           </div>
 
-          {/* 頻率 */}
+          {/* Frequency */}
           <div className="space-y-2">
-            <Label>執行頻率</Label>
+            <Label>Frequency</Label>
             <Select
               value={formData.frequency}
               onValueChange={(v) => {
                 updateField('frequency', v as ScheduleFrequency)
-                // 重置 schedule_day
+                // Reset schedule_day
                 if (v === 'daily') {
                   updateField('schedule_day', null)
                 } else if (v === 'weekly') {
-                  updateField('schedule_day', 1) // 預設週一
+                  updateField('schedule_day', 1) // Default Monday
                 } else if (v === 'monthly') {
-                  updateField('schedule_day', 1) // 預設 1 號
+                  updateField('schedule_day', 1) // Default 1st
                 }
               }}
             >
@@ -318,16 +318,16 @@ export function ScheduleEditor({
             </Select>
           </div>
 
-          {/* 執行日 (週) */}
+          {/* Execution Day (Weekly) */}
           {formData.frequency === 'weekly' && (
             <div className="space-y-2">
-              <Label>執行日</Label>
+              <Label>Day of Week</Label>
               <Select
                 value={formData.schedule_day?.toString() || ''}
                 onValueChange={(v) => updateField('schedule_day', parseInt(v))}
               >
                 <SelectTrigger className={errors.schedule_day ? 'border-red-300' : ''}>
-                  <SelectValue placeholder="選擇週幾" />
+                  <SelectValue placeholder="Select day" />
                 </SelectTrigger>
                 <SelectContent>
                   {WEEKDAYS.map((day) => (
@@ -343,21 +343,21 @@ export function ScheduleEditor({
             </div>
           )}
 
-          {/* 執行日 (月) */}
+          {/* Execution Day (Monthly) */}
           {formData.frequency === 'monthly' && (
             <div className="space-y-2">
-              <Label>執行日 (每月幾號)</Label>
+              <Label>Day of Month</Label>
               <Select
                 value={formData.schedule_day?.toString() || ''}
                 onValueChange={(v) => updateField('schedule_day', parseInt(v))}
               >
                 <SelectTrigger className={errors.schedule_day ? 'border-red-300' : ''}>
-                  <SelectValue placeholder="選擇日期" />
+                  <SelectValue placeholder="Select date" />
                 </SelectTrigger>
                 <SelectContent>
                   {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
                     <SelectItem key={day} value={day.toString()}>
-                      {day} 號
+                      {day}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -368,9 +368,9 @@ export function ScheduleEditor({
             </div>
           )}
 
-          {/* 執行時間 */}
+          {/* Execution Time */}
           <div className="space-y-2">
-            <Label htmlFor="schedule_time">執行時間 *</Label>
+            <Label htmlFor="schedule_time">Execution Time *</Label>
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-slate-400" />
               <Input
@@ -384,14 +384,14 @@ export function ScheduleEditor({
             {errors.schedule_time && (
               <p className="text-xs text-red-500">{errors.schedule_time}</p>
             )}
-            <p className="text-xs text-slate-400">時區：香港時間 (GMT+8)</p>
+            <p className="text-xs text-slate-400">Timezone: Hong Kong (GMT+8)</p>
           </div>
 
           {/* Error Message */}
           {error && (
             <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{(error as Error).message || '操作失敗，請稍後重試'}</span>
+              <span>{(error as Error).message || 'Operation failed, please try again later'}</span>
             </div>
           )}
         </div>
@@ -403,7 +403,7 @@ export function ScheduleEditor({
             disabled={isLoading}
           >
             <X className="w-4 h-4 mr-2" />
-            取消
+            Cancel
           </Button>
           <Button
             onClick={handleSubmit}
@@ -413,12 +413,12 @@ export function ScheduleEditor({
             {isLoading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                {isEditMode ? '保存中...' : '創建中...'}
+                {isEditMode ? 'Saving...' : 'Creating...'}
               </>
             ) : (
               <>
                 <Save className="w-4 h-4 mr-2" />
-                {isEditMode ? '保存變更' : '創建排程'}
+                {isEditMode ? 'Save Changes' : 'Create Schedule'}
               </>
             )}
           </Button>

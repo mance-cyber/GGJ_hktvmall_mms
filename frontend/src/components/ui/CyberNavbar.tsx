@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 
 // =============================================
-// 全息賽博朋克導航欄
+// 全息賽博朋克NavigationBar
 // Holographic Cyberpunk Navbar
 // =============================================
 
@@ -43,7 +43,7 @@ export function CyberNavbar() {
 
   return (
     <>
-      {/* 導航欄容器 */}
+      {/* NavigationBar容器 */}
       <motion.nav
         style={{ opacity: navOpacity }}
         className={cn(
@@ -51,7 +51,7 @@ export function CyberNavbar() {
           "border-b border-cyan-500/30"
         )}
       >
-        {/* 全息掃描線動畫背景 */}
+        {/* 全息掃描線Animation背景 */}
         <div className="absolute inset-0 overflow-hidden">
           {/* 玻璃態背景 */}
           <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-xl" />
@@ -59,7 +59,7 @@ export function CyberNavbar() {
           {/* 動態網格 */}
           <div className="absolute inset-0 cyber-grid opacity-20" />
 
-          {/* 掃描線動畫 */}
+          {/* 掃描線Animation */}
           <motion.div
             className="absolute inset-0 bg-gradient-to-b from-cyan-500/10 via-transparent to-transparent"
             animate={{
@@ -72,7 +72,7 @@ export function CyberNavbar() {
             }}
           />
 
-          {/* 數據流效果 */}
+          {/* Data流Effect */}
           <DataFlow />
         </div>
 
@@ -84,7 +84,7 @@ export function CyberNavbar() {
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-3 group cursor-pointer"
             >
-              {/* 全息 Logo 圖標 */}
+              {/* 全息 Logo Icon */}
               <div className="relative">
                 <motion.div
                   className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-purple-600 p-[2px]"
@@ -96,7 +96,7 @@ export function CyberNavbar() {
                   </div>
                 </motion.div>
 
-                {/* 光暈效果 */}
+                {/* 光暈Effect */}
                 <motion.div
                   className="absolute inset-0 bg-cyan-500/20 rounded-lg blur-xl"
                   animate={{
@@ -137,18 +137,18 @@ export function CyberNavbar() {
 
             {/* Right Section */}
             <div className="hidden md:flex items-center gap-3">
-              {/* 通知按鈕 */}
+              {/* Notificationbutton */}
               <HolographicButton>
                 <Bell className="w-4 h-4" />
                 <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
               </HolographicButton>
 
-              {/* 用戶按鈕 */}
+              {/* 用戶button */}
               <HolographicButton>
                 <User className="w-4 h-4" />
               </HolographicButton>
 
-              {/* CTA 按鈕 */}
+              {/* CTA button */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -232,7 +232,7 @@ export function CyberNavbar() {
 }
 
 // =============================================
-// 導航連結組件
+// Navigation連結組items
 // =============================================
 
 interface NavLinkProps {
@@ -265,7 +265,7 @@ function NavLink({ item, index, isActive, onClick }: NavLinkProps) {
         </span>
       </div>
 
-      {/* 懸停光暈效果 */}
+      {/* 懸停光暈Effect */}
       <motion.div
         className="absolute inset-0 rounded-lg bg-cyan-500/0 group-hover:bg-cyan-500/10 transition-colors"
         whileHover={{
@@ -287,7 +287,7 @@ function NavLink({ item, index, isActive, onClick }: NavLinkProps) {
 }
 
 // =============================================
-// 全息按鈕組件
+// 全息button組items
 // =============================================
 
 function HolographicButton({ children }: { children: React.ReactNode }) {
@@ -318,7 +318,7 @@ function HolographicButton({ children }: { children: React.ReactNode }) {
 }
 
 // =============================================
-// 數據流動畫效果
+// Data流AnimationEffect
 // =============================================
 
 function DataFlow() {

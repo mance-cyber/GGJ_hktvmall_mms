@@ -1,7 +1,7 @@
 'use client'
 
 // =============================================
-// 商品管理頁面 - Future Tech 設計
+// Products Management Page - Future Tech Design
 // =============================================
 
 import { useState } from 'react'
@@ -96,7 +96,7 @@ export default function ProductsPage() {
 
   const totalPages = productsData ? Math.ceil(productsData.total / productsData.limit) : 0
 
-  // 計算統計數據
+  // Calculate statistics
   const stats = {
     total: productsData?.total || 0,
     active: productsData?.data.filter(p => p.status === 'active').length || 0,
@@ -138,7 +138,7 @@ export default function ProductsPage() {
   return (
     <PageTransition>
       <div className="space-y-3 sm:space-y-6">
-        {/* ========== 頁面標題 ========== */}
+        {/* ========== Page title ========== */}
         <div className="flex items-center justify-between gap-2">
           <h1 className="page-title">{t['products.title']}</h1>
           <div className="flex gap-1.5 sm:gap-2">
@@ -158,7 +158,7 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        {/* ========== 數據指標 ========== */}
+        {/* ========== Data Metrics ========== */}
         <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           <DataMetric
             label={t['products.total']}
@@ -196,7 +196,7 @@ export default function ProductsPage() {
           </HoloCard>
         </StaggerContainer>
 
-        {/* ========== 搜索與過濾 ========== */}
+        {/* ========== Search & Filters ========== */}
         <HoloCard className="p-2.5 sm:p-4">
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <div className="relative flex-1">
@@ -235,7 +235,7 @@ export default function ProductsPage() {
           </div>
         </HoloCard>
 
-        {/* ========== 手機版卡片視圖 ========== */}
+        {/* ========== Mobile card view ========== */}
         <div className="sm:hidden space-y-2">
           <AnimatePresence mode="popLayout">
             {productsData?.data.map((product, index) => (
@@ -296,7 +296,7 @@ export default function ProductsPage() {
           </AnimatePresence>
         </div>
 
-        {/* ========== 桌面版表格視圖 ========== */}
+        {/* ========== Desktop Table View ========== */}
         <div className="hidden sm:block">
           <HoloCard className="overflow-hidden">
             <HoloPanelHeader
@@ -397,7 +397,7 @@ export default function ProductsPage() {
               </div>
             )}
 
-            {/* 分頁 */}
+            {/* Pagination */}
             <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
               <div className="text-sm text-slate-500">
                 {t['products.pagination']
@@ -432,7 +432,7 @@ export default function ProductsPage() {
           </HoloCard>
         </div>
 
-        {/* 手機版分頁 */}
+        {/* Mobile Pagination */}
         <div className="sm:hidden flex items-center justify-between">
           <div className="text-xs text-slate-500">
             {productsData?.total ? (page - 1) * 20 + 1 : 0}-{Math.min(page * 20, productsData?.total || 0)} / {productsData?.total || 0}
@@ -455,7 +455,7 @@ export default function ProductsPage() {
 }
 
 // =============================================
-// 狀態標籤組件
+// Status Badge Component
 // =============================================
 
 function StatusBadge({ status }: { status: string }) {

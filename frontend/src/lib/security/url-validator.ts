@@ -1,10 +1,10 @@
-// ==================== URL 安全驗證工具 ====================
-// 用途: 防止 SSRF 攻擊，確保只抓取允許的域名
-// 安全級別: CRITICAL
+// ==================== URL SecurityValidate工具 ====================
+// 用途: Prevent SSRF Attack，Ensure只抓取Allow的域名
+// Security級別: CRITICAL
 
 /**
- * 允許的域名白名單
- * 只允許抓取 HKTVmall 官方域名
+ * Allow的域名白名單
+ * 只Allow抓取 HKTVmall 官方域名
  */
 const ALLOWED_DOMAINS = [
   'hktvmall.com',
@@ -13,7 +13,7 @@ const ALLOWED_DOMAINS = [
 ] as const;
 
 /**
- * 禁止訪問的內部網絡範圍（防止 SSRF）
+ * Block訪問的內部網絡Range（Prevent SSRF）
  */
 const BLOCKED_IP_RANGES = [
   /^127\./,           // localhost
@@ -21,13 +21,13 @@ const BLOCKED_IP_RANGES = [
   /^172\.(1[6-9]|2[0-9]|3[01])\./,  // 私有網絡 172.16.0.0/12
   /^192\.168\./,      // 私有網絡 192.168.0.0/16
   /^169\.254\./,      // Link-local
-  /^0\./,             // 無效地址
+  /^0\./,             // Invalid地址
   /^224\./,           // 組播地址
   /^255\./,           // 廣播地址
 ];
 
 /**
- * URL 驗證結果
+ * URL ValidateResult
  */
 export interface URLValidationResult {
   isValid: boolean;
@@ -36,13 +36,13 @@ export interface URLValidationResult {
 }
 
 /**
- * 驗證 URL 是否安全可抓取
- * @param url 待驗證的 URL
- * @returns 驗證結果
+ * Validate URL whetherSecurity可抓取
+ * @param url 待Validate的 URL
+ * @returns ValidateResult
  */
 export function validateScraperURL(url: string): URLValidationResult {
   try {
-    // 1. 基本格式驗證
+    // 1. 基本FormatValidate
     if (!url || typeof url !== 'string') {
       return {
         isValid: false,
@@ -50,26 +50,26 @@ export function validateScraperURL(url: string): URLValidationResult {
       };
     }
 
-    // 2. 解析 URL
+    // 2. Parse URL
     let parsedUrl: URL;
     try {
       parsedUrl = new URL(url);
     } catch {
       return {
         isValid: false,
-        error: 'URL 格式無效',
+        error: 'URL FormatInvalid',
       };
     }
 
-    // 3. 協議驗證 - 只允許 HTTPS
+    // 3. 協議Validate - 只Allow HTTPS
     if (parsedUrl.protocol !== 'https:') {
       return {
         isValid: false,
-        error: '只允許 HTTPS 協議',
+        error: 'Only allow HTTPS protocol',
       };
     }
 
-    // 4. 域名白名單驗證
+    // 4. 域名白名單Validate
     const hostname = parsedUrl.hostname.toLowerCase();
     const isAllowedDomain = ALLOWED_DOMAINS.some(
       (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
@@ -78,39 +78,39 @@ export function validateScraperURL(url: string): URLValidationResult {
     if (!isAllowedDomain) {
       return {
         isValid: false,
-        error: `域名 "${hostname}" 不在白名單中，只允許 ${ALLOWED_DOMAINS.join(', ')}`,
+        error: `域名 "${hostname}" 不在白名單中，只Allow ${ALLOWED_DOMAINS.join(', ')}`,
       };
     }
 
-    // 5. IP 地址檢測（防止直接使用 IP 繞過域名檢查）
+    // 5. IP 地址檢測（Prevent直接使用 IP 繞過域名Check）
     if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
-      // 檢查是否為內部 IP
+      // Checkwhether為內部 IP
       const isBlocked = BLOCKED_IP_RANGES.some((pattern) => pattern.test(hostname));
       if (isBlocked) {
         return {
           isValid: false,
-          error: '不允許訪問內部網絡地址',
+          error: '不Allow訪問內部網絡地址',
         };
       }
     }
 
-    // 6. 路徑驗證 - 防止目錄遍歷
+    // 6. 路徑Validate - Prevent目錄Iterate
     if (parsedUrl.pathname.includes('..')) {
       return {
         isValid: false,
-        error: '路徑包含非法字符',
+        error: '路徑Include非法字符',
       };
     }
 
-    // 7. 長度限制
+    // 7. 長度Limit
     if (url.length > 2048) {
       return {
         isValid: false,
-        error: 'URL 長度超過限制（最多 2048 字符）',
+        error: 'URL 長度超過Limit（最多 2048 字符）',
       };
     }
 
-    // 驗證通過，返回清理後的 URL
+    // Validation passed, return cleaned URL
     return {
       isValid: true,
       sanitizedUrl: parsedUrl.toString(),
@@ -118,15 +118,15 @@ export function validateScraperURL(url: string): URLValidationResult {
   } catch (error) {
     return {
       isValid: false,
-      error: error instanceof Error ? error.message : 'URL 驗證失敗',
+      error: error instanceof Error ? error.message : 'URL ValidateFailed',
     };
   }
 }
 
 /**
- * 批量驗證 URL
- * @param urls URL 列表
- * @returns 驗證結果列表
+ * 批量Validate URL
+ * @param urls URL List
+ * @returns ValidateResultList
  */
 export function validateScraperURLs(
   urls: string[]
@@ -141,7 +141,7 @@ export function validateScraperURLs(
     } else {
       invalidUrls.push({
         url,
-        error: result.error || '未知錯誤',
+        error: result.error || 'UnknownError',
       });
     }
   }
@@ -150,9 +150,9 @@ export function validateScraperURLs(
 }
 
 /**
- * 檢查 URL 是否為 HKTVmall 商品頁面
+ * Check if URL is HKTVmall product page
  * @param url URL
- * @returns 是否為商品頁面
+ * @returns whether為productspage
  */
 export function isHKTVProductURL(url: string): boolean {
   const validation = validateScraperURL(url);
@@ -162,7 +162,7 @@ export function isHKTVProductURL(url: string): boolean {
 
   try {
     const parsedUrl = new URL(validation.sanitizedUrl);
-    // HKTVmall 商品頁面路徑格式: /p/H*_*
+    // HKTVmall productspage路徑Format: /p/H*_*
     return /^\/p\/H\d+_/.test(parsedUrl.pathname);
   } catch {
     return false;
@@ -170,9 +170,9 @@ export function isHKTVProductURL(url: string): boolean {
 }
 
 /**
- * 檢查 URL 是否為 HKTVmall 搜尋頁面
+ * Check URL whether為 HKTVmall Searchpage
  * @param url URL
- * @returns 是否為搜尋頁面
+ * @returns whether為Searchpage
  */
 export function isHKTVSearchURL(url: string): boolean {
   const validation = validateScraperURL(url);
@@ -182,7 +182,7 @@ export function isHKTVSearchURL(url: string): boolean {
 
   try {
     const parsedUrl = new URL(validation.sanitizedUrl);
-    // HKTVmall 搜尋頁面路徑格式: /search 或 /search?q=...
+    // HKTVmall Searchpage路徑Format: /search 或 /search?q=...
     return parsedUrl.pathname === '/search' || parsedUrl.pathname.startsWith('/search/');
   } catch {
     return false;

@@ -1,5 +1,5 @@
 // =============================================
-// AI 改價影響表格組件
+// AI Pricing Impact Table Component
 // =============================================
 
 'use client'
@@ -10,12 +10,12 @@ import { usePricingImpact } from '../hooks/useROIData'
 export function PricingImpactTable() {
   const { data, isLoading, error } = usePricingImpact(10)
 
-  // 格式化金額
+  // Format monetary amount
   const formatMoney = (value: number) => {
     return `$${Number(value).toLocaleString('zh-HK', { minimumFractionDigits: 2 })}`
   }
 
-  // 格式化日期
+  // Format date
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('zh-HK', {
       month: 'short',
@@ -36,7 +36,7 @@ export function PricingImpactTable() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-64 text-red-500">
-        載入失敗
+        Failed to load
       </div>
     )
   }
@@ -46,40 +46,40 @@ export function PricingImpactTable() {
 
   return (
     <div className="space-y-4">
-      {/* 統計摘要 */}
+      {/* Summary Statistics */}
       <div className="grid grid-cols-4 gap-4">
         <div className="text-center p-3 bg-gray-50 rounded-lg">
           <div className="text-2xl font-bold text-gray-900">{summary?.total_proposals || 0}</div>
-          <div className="text-xs text-gray-500">總提案數</div>
+          <div className="text-xs text-gray-500">Total Proposals</div>
         </div>
         <div className="text-center p-3 bg-green-50 rounded-lg">
           <div className="text-2xl font-bold text-green-600">{summary?.executed_count || 0}</div>
-          <div className="text-xs text-gray-500">已執行</div>
+          <div className="text-xs text-gray-500">Executed</div>
         </div>
         <div className="text-center p-3 bg-yellow-50 rounded-lg">
           <div className="text-2xl font-bold text-yellow-600">{summary?.approved_count || 0}</div>
-          <div className="text-xs text-gray-500">待執行</div>
+          <div className="text-xs text-gray-500">Pending Execution</div>
         </div>
         <div className="text-center p-3 bg-purple-50 rounded-lg">
           <div className="text-2xl font-bold text-purple-600">
             {formatMoney(summary?.total_impact || 0)}
           </div>
-          <div className="text-xs text-gray-500">總影響金額</div>
+          <div className="text-xs text-gray-500">Total Impact</div>
         </div>
       </div>
 
-      {/* 提案列表 */}
+      {/* Proposal List */}
       {proposals.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-2 font-medium text-gray-500">產品</th>
-                <th className="text-right py-3 px-2 font-medium text-gray-500">原價</th>
-                <th className="text-right py-3 px-2 font-medium text-gray-500">新價</th>
-                <th className="text-right py-3 px-2 font-medium text-gray-500">差異</th>
-                <th className="text-right py-3 px-2 font-medium text-gray-500">影響金額</th>
-                <th className="text-right py-3 px-2 font-medium text-gray-500">執行時間</th>
+                <th className="text-left py-3 px-2 font-medium text-gray-500">Product</th>
+                <th className="text-right py-3 px-2 font-medium text-gray-500">Original Price</th>
+                <th className="text-right py-3 px-2 font-medium text-gray-500">New Price</th>
+                <th className="text-right py-3 px-2 font-medium text-gray-500">Difference</th>
+                <th className="text-right py-3 px-2 font-medium text-gray-500">Impact Amount</th>
+                <th className="text-right py-3 px-2 font-medium text-gray-500">Executed At</th>
               </tr>
             </thead>
             <tbody>
@@ -116,7 +116,7 @@ export function PricingImpactTable() {
         </div>
       ) : (
         <div className="text-center py-8 text-gray-500">
-          暫無已執行的改價提案
+          No executed pricing proposals yet
         </div>
       )}
     </div>

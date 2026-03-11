@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-// 平台選項
+// 平台Option
 const PLATFORMS = [
   { value: 'hktvmall', label: 'HKTVmall' },
   { value: 'wellcome', label: '惠康 Wellcome' },
@@ -68,13 +68,13 @@ export function CompetitorFormDialog({
         <form onSubmit={handleSubmit} className="space-y-6 mt-4">
           <div className="space-y-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">名稱 <span className="text-destructive">*</span></Label>
+              <Label htmlFor="name">Name <span className="text-destructive">*</span></Label>
               <Input
                 id="name"
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="例如：Watsons 屈臣氏"
+                placeholder="e.g. Watsons"
                 className="bg-white/50"
               />
             </div>
@@ -86,7 +86,7 @@ export function CompetitorFormDialog({
                 onValueChange={(value) => setFormData({ ...formData, platform: value })}
               >
                 <SelectTrigger className="bg-white/50">
-                  <SelectValue placeholder="選擇平台" />
+                  <SelectValue placeholder="Select平台" />
                 </SelectTrigger>
                 <SelectContent>
                   {PLATFORMS.map((platform) => (
@@ -116,7 +116,7 @@ export function CompetitorFormDialog({
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="關於此競爭對手的備註..."
+                placeholder="關於此競爭Competitor的備註..."
                 className="bg-white/50 min-h-[100px]"
               />
             </div>
@@ -128,7 +128,7 @@ export function CompetitorFormDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              取消
+              Cancel
             </Button>
             <Button
               type="submit"
@@ -140,7 +140,7 @@ export function CompetitorFormDialog({
               ) : (
                 <Check className="w-4 h-4 mr-2" />
               )}
-              {initialData ? '保存修改' : '立即新增'}
+              {initialData ? 'Save修改' : '立即Add'}
             </Button>
           </div>
         </form>

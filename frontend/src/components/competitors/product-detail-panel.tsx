@@ -139,16 +139,16 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
         <div className="p-3 sm:p-4 border-b border-gray-100">
           <div className="flex items-center gap-1.5 mb-3">
             <TrendingUp className="w-3.5 h-3.5 text-teal-500" />
-            <span className="text-xs font-medium text-gray-600">30 日價格趨勢</span>
+            <span className="text-xs font-medium text-gray-600">30 日PriceTrend</span>
           </div>
 
           {historyLoading ? (
             <div className="h-44 flex items-center justify-center">
-              <div className="text-xs text-gray-400 animate-pulse">載入中...</div>
+              <div className="text-xs text-gray-400 animate-pulse">Loading...</div>
             </div>
           ) : chartData.length === 0 || !history?.series.length ? (
             <div className="h-44 flex items-center justify-center">
-              <p className="text-xs text-gray-400">未有足夠歷史數據</p>
+              <p className="text-xs text-gray-400">未有足夠HistoryData</p>
             </div>
           ) : (
             <>
@@ -185,10 +185,10 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
                 </LineChart>
               </ResponsiveContainer>
 
-              {/* "查看 30 日趨勢" label below chart */}
+              {/* "查看 30 日Trend" label below chart */}
               <div className="mt-1.5 text-center">
                 <span className="text-[10px] text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">
-                  查看 30 日趨勢
+                  查看 30 日Trend
                 </span>
               </div>
             </>
@@ -198,21 +198,21 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
         {/* Competitor Table */}
         <div className="p-3 sm:p-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-gray-600">競品價格 ({total_competitors}間)</span>
-            <span className="text-[10px] text-gray-400">排名 {our_price_rank}/{total_competitors}</span>
+            <span className="text-xs font-medium text-gray-600">CompetitorPrice ({total_competitors}間)</span>
+            <span className="text-[10px] text-gray-400">Ranking {our_price_rank}/{total_competitors}</span>
           </div>
 
           {competitors.length === 0 ? (
-            <p className="text-xs text-gray-400 text-center py-6">未有競品配對</p>
+            <p className="text-xs text-gray-400 text-center py-6">未有CompetitorPair</p>
           ) : (
             <div className="overflow-x-auto -mx-1">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-gray-100">
-                    <th className="text-left text-[10px] text-gray-400 font-normal py-1.5 px-2">商戶</th>
-                    <th className="text-left text-[10px] text-gray-400 font-normal py-1.5 px-2">對手產品</th>
+                    <th className="text-left text-[10px] text-gray-400 font-normal py-1.5 px-2">merchants</th>
+                    <th className="text-left text-[10px] text-gray-400 font-normal py-1.5 px-2">CompetitorProduct</th>
                     <th className="text-right text-[10px] text-gray-400 font-normal py-1.5 px-2">售價</th>
-                    <th className="text-center text-[10px] text-gray-400 font-normal py-1.5 px-2 hidden sm:table-cell">7天趨勢</th>
+                    <th className="text-center text-[10px] text-gray-400 font-normal py-1.5 px-2 hidden sm:table-cell">7天Trend</th>
                     <th className="text-center text-[10px] text-gray-400 font-normal py-1.5 px-2">庫存</th>
                     <th className="text-right text-[10px] text-gray-400 font-normal py-1.5 px-2">連結</th>
                   </tr>
@@ -232,7 +232,7 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
                         <span className="text-gray-300">—</span>
                       )}
                     </td>
-                    <td className="py-2 px-2 text-center text-teal-500">有貨</td>
+                    <td className="py-2 px-2 text-center text-teal-500">In stock</td>
                     <td className="py-2 px-2 text-right text-gray-300">—</td>
                   </tr>
 
@@ -282,9 +282,9 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
                             comp.stock_level !== null && comp.stock_level !== undefined && comp.stock_level <= 10 ? 'text-amber-600 bg-amber-50' :
                             comp.stock_status === 'in_stock' ? 'text-emerald-600 bg-emerald-50' : 'text-gray-400'
                           )}>
-                            {comp.stock_status === 'out_of_stock' ? '缺貨' :
+                            {comp.stock_status === 'out_of_stock' ? 'Out of stock' :
                              comp.stock_status === 'in_stock'
-                               ? (comp.stock_level !== null && comp.stock_level !== undefined ? `${comp.stock_level}件` : '有貨')
+                               ? (comp.stock_level !== null && comp.stock_level !== undefined ? `${comp.stock_level}items` : 'In stock')
                                : '-'}
                           </span>
                         </td>

@@ -1,5 +1,5 @@
 // =============================================
-// ROI 總覽 KPI 卡片組件
+// ROI Overview KPI Card Component
 // =============================================
 
 'use client'
@@ -16,52 +16,52 @@ interface ROISummaryCardsProps {
 export function ROISummaryCards({ period }: ROISummaryCardsProps) {
   const { data: summary, isLoading, error } = useROISummary(period)
 
-  // 格式化金額
+  // Format monetary amount
   const formatMoney = (value: number | undefined) => {
     if (value === undefined || value === null) return '$0'
     return `$${Number(value).toLocaleString('zh-HK', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
   }
 
-  // 格式化百分比
+  // Format percentage
   const formatPercent = (value: number | undefined) => {
     if (value === undefined || value === null) return '0%'
     const sign = value > 0 ? '+' : ''
     return `${sign}${value.toFixed(1)}%`
   }
 
-  // KPI 卡片配置
+  // KPI card configuration
   const kpis = [
     {
-      title: '總價值創造',
+      title: 'Total Value Created',
       value: formatMoney(summary?.total_value_generated),
-      description: '本期間 GoGoJap 幫你創造的總價值',
+      description: 'Total value GoGoJap generated for you this period',
       icon: DollarSign,
       color: 'green',
     },
     {
-      title: 'AI 定價貢獻',
+      title: 'AI Pricing Contribution',
       value: formatMoney(summary?.ai_pricing_contribution),
-      description: '智能改價帶來的額外收益',
+      description: 'Additional revenue from intelligent pricing',
       icon: Brain,
       color: 'purple',
     },
     {
-      title: '競品監測價值',
+      title: 'Competitor Monitoring Value',
       value: formatMoney(summary?.competitor_monitoring_value),
-      description: '掌握競品動態避免的損失',
+      description: 'Losses avoided by tracking competitor activity',
       icon: Eye,
       color: 'cyan',
     },
     {
-      title: '投資回報率',
+      title: 'Return on Investment',
       value: formatPercent(summary?.roi_percentage),
-      description: '總投資回報百分比',
+      description: 'Overall ROI percentage',
       icon: TrendingUp,
       color: summary?.roi_percentage && summary.roi_percentage > 0 ? 'green' : 'gray',
     },
   ]
 
-  // 顏色配置
+  // Color configuration
   const colorConfig: Record<string, { bg: string; text: string; icon: string; border: string }> = {
     green: {
       bg: 'bg-green-50',
@@ -106,7 +106,7 @@ export function ROISummaryCards({ period }: ROISummaryCardsProps) {
   if (error) {
     return (
       <div className="text-center text-red-500 py-4">
-        載入失敗: {error instanceof Error ? error.message : '未知錯誤'}
+        LoadFailed: {error instanceof Error ? error.message : 'UnknownError'}
       </div>
     )
   }

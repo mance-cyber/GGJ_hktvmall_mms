@@ -1,5 +1,5 @@
 // =============================================
-// 價格趨勢圖表組件
+// PriceTrendChart組items
 // =============================================
 
 'use client'
@@ -34,7 +34,7 @@ export function PriceTrendChart({
   ownProduct,
   competitors,
 }: PriceTrendChartProps) {
-  // 可見性狀態
+  // 可見性State
   const [visibleLines, setVisibleLines] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = { own: true }
     competitors.forEach((comp) => {
@@ -60,9 +60,9 @@ export function PriceTrendChart({
     setVisibleLines(newState)
   }
 
-  // 處理圖表數據
+  // ProcessingChartData
   const chartData = useMemo(() => {
-    // 收集所有日期
+    // 收集所有Date
     const allDates = new Set<string>()
     Object.values(trends).forEach((points) => {
       points.forEach((p) => {
@@ -74,20 +74,20 @@ export function PriceTrendChart({
       })
     })
 
-    // 按日期排序
+    // 按DateSort
     const sortedDates = Array.from(allDates).sort((a, b) => {
       return new Date(a).getTime() - new Date(b).getTime()
     })
 
-    // 建立日期到數據的映射
+    // 建立Date到Data的Map
     const dateDataMap: Record<string, { date: string; [key: string]: string | number | null }> = {}
 
-    // 初始化所有日期
+    // Initialize所有Date
     sortedDates.forEach((date) => {
       dateDataMap[date] = { date }
     })
 
-    // 填充自家產品數據
+    // 填充自家ProductData
     if (trends.own) {
       trends.own.forEach((point) => {
         const dateStr = new Date(point.date).toLocaleDateString('zh-HK', {
@@ -100,7 +100,7 @@ export function PriceTrendChart({
       })
     }
 
-    // 填充競爭對手數據
+    // 填充競爭CompetitorData
     competitors.forEach((comp) => {
       const compTrends = trends[comp.id]
       if (compTrends) {
@@ -121,7 +121,7 @@ export function PriceTrendChart({
     return Object.values(dateDataMap)
   }, [trends, competitors])
 
-  // 計算 Y 軸範圍（只計算可見的線）
+  // Calculate Y 軸Range（只Calculate可見的線）
   const yAxisDomain = useMemo(() => {
     let min = Infinity
     let max = -Infinity
@@ -141,7 +141,7 @@ export function PriceTrendChart({
     return [Math.floor(min - padding), Math.ceil(max + padding)]
   }, [chartData, visibleLines])
 
-  // 自定義 Tooltip
+  // Custom Tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null
 
@@ -169,22 +169,22 @@ export function PriceTrendChart({
     )
   }
 
-  // 如果沒有數據
+  // 如果沒有Data
   if (chartData.length === 0) {
     return (
       <div className="h-[400px] flex items-center justify-center text-gray-500">
-        暫無價格數據
+        暫無PriceData
       </div>
     )
   }
 
-  // 計算有多少條線可見
+  // Calculate有多少條線可見
   const visibleCount = Object.values(visibleLines).filter(Boolean).length
   const totalCount = 1 + competitors.length
 
   return (
     <div>
-      {/* 圖表 */}
+      {/* Chart */}
       <div className="h-[400px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
@@ -207,7 +207,7 @@ export function PriceTrendChart({
             />
             <Tooltip content={<CustomTooltip />} />
 
-            {/* 自家產品線（實線，更粗更明顯） */}
+            {/* Own product line (solid, thicker and more visible) */}
             {visibleLines.own && (
               <Line
                 type="monotone"
@@ -224,7 +224,7 @@ export function PriceTrendChart({
               />
             )}
 
-            {/* 競爭對手線（虛線） */}
+            {/* 競爭Competitor線（虛線） */}
             {competitors.map((comp, index) => (
               visibleLines[comp.id] && (
                 <Line
@@ -245,11 +245,11 @@ export function PriceTrendChart({
         </ResponsiveContainer>
       </div>
 
-      {/* 顯示控制 Checkbox */}
+      {/* Display控制 Checkbox */}
       <div className="mt-4 pt-4 border-t border-gray-100">
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-medium text-gray-700">
-            顯示數據線 ({visibleCount}/{totalCount})
+            DisplayData線 ({visibleCount}/{totalCount})
           </span>
           <div className="flex gap-2">
             <button
@@ -268,7 +268,7 @@ export function PriceTrendChart({
         </div>
 
         <div className="flex flex-wrap gap-3">
-          {/* 自家產品 */}
+          {/* 自家Product */}
           <label
             className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border-2 cursor-pointer transition-all ${
               visibleLines.own
@@ -301,7 +301,7 @@ export function PriceTrendChart({
             </span>
           </label>
 
-          {/* 競爭對手 */}
+          {/* 競爭Competitor */}
           {competitors.map((comp, index) => (
             <label
               key={comp.id}

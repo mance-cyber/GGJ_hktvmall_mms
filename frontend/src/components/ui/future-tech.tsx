@@ -2,7 +2,7 @@
 
 // =============================================
 // Future Tech Design System
-// 未來科技感組件庫 - 淺色專業版
+// 未來科技感組items庫 - 淺色專業版
 // =============================================
 
 import React, { useEffect, useState, useRef } from 'react'
@@ -10,8 +10,8 @@ import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from
 import { cn } from '@/lib/utils'
 
 // =============================================
-// 1. 全息卡片 (HoloCard)
-// 帶有動態光效和掃描線的玻璃卡片
+// 1. 全息Card (HoloCard)
+// 帶有動態光效和掃描線的玻璃Card
 // =============================================
 
 interface HoloCardProps {
@@ -100,15 +100,15 @@ export function HoloCard({
         </div>
       )}
 
-      {/* 內容 */}
+      {/* Content */}
       <div className="relative z-10">{children}</div>
     </motion.div>
   )
 }
 
 // =============================================
-// 2. 數據指標卡 (DataMetric)
-// 帶有動畫計數器和狀態指示的指標展示
+// 2. Data指標卡 (DataMetric)
+// 帶有Animation計數器和State指示的指標展示
 // =============================================
 
 interface DataMetricProps {
@@ -150,7 +150,7 @@ export function DataMetric({
 
     const timer = setInterval(() => {
       step++
-      // 緩動函數
+      // 緩動Function
       const progress = step / steps
       const eased = 1 - Math.pow(1 - progress, 3)
       current = Math.round(value * eased)
@@ -258,7 +258,7 @@ export function DataMetric({
         )}
       </div>
 
-      {/* 底部進度條效果 */}
+      {/* Bottom progress bar effect */}
       <div className="absolute bottom-0 left-0 right-0 h-0.5 overflow-hidden rounded-b-xl">
         <motion.div
           initial={{ width: 0 }}
@@ -273,8 +273,8 @@ export function DataMetric({
 }
 
 // =============================================
-// 3. 脈衝狀態指示器 (PulseStatus)
-// 帶有脈衝動畫的狀態點
+// 3. 脈衝State指示器 (PulseStatus)
+// 帶有脈衝Animation的State點
 // =============================================
 
 interface PulseStatusProps {
@@ -307,7 +307,7 @@ export function PulseStatus({ status, label, size = 'md' }: PulseStatusProps) {
       color: 'bg-cyan-500',
       pulse: 'bg-cyan-400',
       text: 'text-cyan-600',
-      label: label || '處理中',
+      label: label || 'Processing中',
     },
   }
 
@@ -343,8 +343,8 @@ export function PulseStatus({ status, label, size = 'md' }: PulseStatusProps) {
 }
 
 // =============================================
-// 4. 數據流背景 (DataStreamBg)
-// 科技感數據流動畫背景
+// 4. Data流背景 (DataStreamBg)
+// 科技感Data流Animation背景
 // =============================================
 
 interface DataStreamBgProps {
@@ -371,7 +371,7 @@ export function DataStreamBg({ className, density = 'medium', color = 'cyan' }: 
 
   const streamCount = densityConfig[density]
 
-  // 只在客戶端掛載後生成隨機值
+  // 只在客戶端掛載後Generate隨機值
   useEffect(() => {
     setIsMounted(true)
     setStreams(
@@ -383,7 +383,7 @@ export function DataStreamBg({ className, density = 'medium', color = 'cyan' }: 
     )
   }, [streamCount])
 
-  // 服務器端渲染時不顯示動畫，避免 hydration 錯誤
+  // 服務器端Rendering時不DisplayAnimation，Avoid hydration Error
   if (!isMounted) {
     return <div className={cn('absolute inset-0 overflow-hidden pointer-events-none', className)} />
   }
@@ -416,8 +416,8 @@ export function DataStreamBg({ className, density = 'medium', color = 'cyan' }: 
 }
 
 // =============================================
-// 5. 全息按鈕 (HoloButton)
-// 帶有光效的科技感按鈕
+// 5. 全息button (HoloButton)
+// 帶有光效的科技感button
 // =============================================
 
 interface HoloButtonProps {
@@ -494,7 +494,7 @@ export function HoloButton({
         </span>
       )}
 
-      {/* Loading 狀態 */}
+      {/* Loading State */}
       {loading && (
         <svg
           className="animate-spin h-4 w-4"
@@ -518,7 +518,7 @@ export function HoloButton({
         </svg>
       )}
 
-      {/* 圖標 */}
+      {/* Icon */}
       {!loading && icon && <span className="flex-shrink-0">{icon}</span>}
 
       {/* 文字 */}
@@ -529,7 +529,7 @@ export function HoloButton({
 
 // =============================================
 // 6. 全息標籤 (HoloBadge)
-// 帶有微光效果的標籤
+// 帶有微光Effect的標籤
 // =============================================
 
 interface HoloBadgeProps {
@@ -577,7 +577,7 @@ export function HoloBadge({
 }
 
 // =============================================
-// 7. 科技感分隔線 (TechDivider)
+// 7. 科技感Divider (TechDivider)
 // =============================================
 
 interface TechDividerProps {
@@ -604,7 +604,7 @@ export function TechDivider({ className, label }: TechDividerProps) {
 }
 
 // =============================================
-// 8. 頁面入場動畫容器 (PageTransition)
+// 8. page入場Animation容器 (PageTransition)
 // =============================================
 
 interface PageTransitionProps {
@@ -630,7 +630,7 @@ export function PageTransition({ children, className }: PageTransitionProps) {
 }
 
 // =============================================
-// 9. 交錯動畫容器 (StaggerContainer)
+// 9. 交錯Animation容器 (StaggerContainer)
 // 子元素依次入場
 // =============================================
 
@@ -674,7 +674,7 @@ export function StaggerContainer({
 }
 
 // =============================================
-// 10. 全息面板標題 (HoloPanelHeader)
+// 10. 全息面板Title (HoloPanelHeader)
 // =============================================
 
 interface HoloPanelHeaderProps {
@@ -829,7 +829,7 @@ export function ProgressRing({
 }
 
 // =============================================
-// 13. 骨架屏 (HoloSkeleton)
+// 13. Skeleton (HoloSkeleton)
 // =============================================
 
 interface HoloSkeletonProps {

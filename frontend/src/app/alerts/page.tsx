@@ -53,13 +53,13 @@ import {
 } from '@/components/ui/future-tech'
 
 // =============================================
-// 類型定義
+// Type definitions
 // =============================================
 
 type FilterType = 'all' | 'unread' | 'price_drop' | 'price_increase' | 'out_of_stock' | 'back_in_stock'
 
 // =============================================
-// 主頁面
+// Main page
 // =============================================
 
 export default function AlertsPage() {
@@ -71,14 +71,14 @@ export default function AlertsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 20
 
-  // 獲取警報數據
+  // Fetch alert data
   const { data: alerts, isLoading, refetch } = useQuery({
     queryKey: ['alerts'],
     queryFn: () => api.getAlerts(undefined, undefined, 100),
     refetchInterval: 30000,
   })
 
-  // 標記已讀
+  // Mark as read
   const markReadMutation = useMutation({
     mutationFn: (alertId: string) => api.markAlertRead(alertId),
     onSuccess: () => {
@@ -86,23 +86,23 @@ export default function AlertsPage() {
     },
   })
 
-  // 全部標記已讀
+  // Mark all as read
   const [markingAllRead, setMarkingAllRead] = useState(false)
 
-  // 過濾和搜索
+  // Filter and search
   const filteredAlerts = useMemo(() => {
     if (!alerts?.data) return []
 
     let result = [...alerts.data]
 
-    // 按類型過濾
+    // Filter by type
     if (filterType === 'unread') {
       result = result.filter(a => !a.is_read)
     } else if (filterType !== 'all') {
       result = result.filter(a => a.alert_type === filterType)
     }
 
-    // 搜索過濾
+    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       result = result.filter(a =>
@@ -114,14 +114,14 @@ export default function AlertsPage() {
     return result
   }, [alerts?.data, filterType, searchQuery])
 
-  // 分頁
+  // Pagination
   const totalPages = Math.ceil(filteredAlerts.length / pageSize)
   const paginatedAlerts = filteredAlerts.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   )
 
-  // 統計數據
+  // Statistics
   const stats = useMemo(() => {
     if (!alerts?.data) return { total: 0, unread: 0, priceDrops: 0, priceIncreases: 0 }
     return {
@@ -132,7 +132,7 @@ export default function AlertsPage() {
     }
   }, [alerts?.data])
 
-  // 批量操作
+  // Batch operations
   const handleSelectAll = () => {
     if (selectedAlerts.size === paginatedAlerts.length) {
       setSelectedAlerts(new Set())
@@ -153,12 +153,12 @@ export default function AlertsPage() {
     }
   }
 
-  // ========== Loading 骨架屏 ==========
+  // ========== Loading Skeleton ==========
   if (isLoading) {
     return (
       <PageTransition>
         <div className="space-y-6">
-          {/* 標題骨架屏 */}
+          {/* Title skeleton */}
           <div className="flex items-start justify-between">
             <div>
               <HoloSkeleton variant="text" width={200} height={36} />
@@ -170,20 +170,20 @@ export default function AlertsPage() {
             </div>
           </div>
 
-          {/* 統計卡片骨架屏 */}
+          {/* Stats card skeleton */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
               <HoloSkeleton key={i} variant="rectangular" height={100} />
             ))}
           </div>
 
-          {/* 工具欄骨架屏 */}
+          {/* Toolbar skeleton */}
           <div className="flex items-center justify-between gap-4">
             <HoloSkeleton variant="rectangular" width={400} height={40} />
             <HoloSkeleton variant="rectangular" width={120} height={40} />
           </div>
 
-          {/* 列表骨架屏 */}
+          {/* List skeleton */}
           <HoloCard className="overflow-hidden">
             <div className="px-6 py-3 bg-slate-50/80 border-b border-slate-100">
               <HoloSkeleton variant="text" width={150} height={20} />
@@ -210,7 +210,7 @@ export default function AlertsPage() {
   return (
     <PageTransition>
       <div className="space-y-4 sm:space-y-6">
-        {/* ========== 頁面標題 ========== */}
+        {/* ========== Page title ========== */}
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
@@ -243,14 +243,14 @@ export default function AlertsPage() {
                 disabled={markingAllRead}
                 icon={markingAllRead ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCheck className="w-3.5 h-3.5" />}
               >
-                <span className="hidden sm:inline">{markingAllRead ? '處理中...' : t['alerts.mark_all_read']}</span>
+                <span className="hidden sm:inline">{markingAllRead ? 'Processing...' : t['alerts.mark_all_read']}</span>
                 <span className="sm:hidden">{markingAllRead ? '...' : t['alerts.read']}</span>
               </HoloButton>
             )}
           </div>
         </div>
 
-        {/* ========== 統計卡片 ========== */}
+        {/* ========== Stats Cards ========== */}
         <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
           <MetricCard
             label={t['alerts.total']}
@@ -286,9 +286,9 @@ export default function AlertsPage() {
           />
         </StaggerContainer>
 
-        {/* ========== 工具欄 ========== */}
+        {/* ========== Toolbar ========== */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* 搜索框 */}
+          {/* Search box */}
           <div className="relative flex-1 sm:max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
@@ -308,7 +308,7 @@ export default function AlertsPage() {
             )}
           </div>
 
-          {/* 過濾器 */}
+          {/* Filters */}
           <div className="flex items-center space-x-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -352,9 +352,9 @@ export default function AlertsPage() {
           </div>
         </div>
 
-        {/* ========== 警報列表 ========== */}
+        {/* ========== Alert list ========== */}
         <HoloCard className="overflow-hidden" glowColor="cyan">
-          {/* 列表頭部 */}
+          {/* List header */}
           <div className="px-3 sm:px-6 py-3 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center space-x-3 sm:space-x-4">
               <button onClick={handleSelectAll} className="p-1 hover:bg-slate-200 rounded">
@@ -385,7 +385,7 @@ export default function AlertsPage() {
             )}
           </div>
 
-          {/* 警報列表 */}
+          {/* Alert list */}
           <div className="divide-y divide-slate-300/60">
             <AnimatePresence mode="popLayout">
               {paginatedAlerts.map((alert, index) => (
@@ -415,7 +415,7 @@ export default function AlertsPage() {
             </AnimatePresence>
           </div>
 
-          {/* 空狀態 */}
+          {/* Empty state */}
           {paginatedAlerts.length === 0 && (
             <div className="px-4 sm:px-6 py-12 sm:py-16 text-center">
               <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -430,7 +430,7 @@ export default function AlertsPage() {
             </div>
           )}
 
-          {/* 分頁 */}
+          {/* Pagination */}
           {totalPages > 1 && (
             <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
               <span className="text-sm text-slate-500">
@@ -465,10 +465,10 @@ export default function AlertsPage() {
 }
 
 // =============================================
-// 子組件
+// Sub-components
 // =============================================
 
-// 可點擊的指標卡片包裝器
+// Clickable metric card wrapper
 function MetricCard({
   label,
   value,
@@ -573,7 +573,7 @@ function AlertCard({
     )}>
       {/* Desktop layout */}
       <div className="hidden sm:flex items-center gap-4">
-        {/* 選擇框 */}
+        {/* Checkbox */}
         <button onClick={onSelect} className="flex-shrink-0">
           <div className={cn(
             "w-5 h-5 border-2 rounded flex items-center justify-center transition-colors",
@@ -583,12 +583,12 @@ function AlertCard({
           </div>
         </button>
 
-        {/* 圖標 */}
+        {/* Icon */}
         <div className={cn("p-2.5 rounded-xl flex-shrink-0", config.bg)}>
           <Icon className={cn("w-5 h-5", config.color)} />
         </div>
 
-        {/* 內容 */}
+        {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <HoloBadge variant={config.badgeVariant} size="sm">
@@ -618,7 +618,7 @@ function AlertCard({
           </div>
         </div>
 
-        {/* 價格變動 */}
+        {/* Price change */}
         <div className="flex-shrink-0 text-right min-w-[120px]">
           <div className="flex items-center justify-end space-x-2 font-mono">
             <span className="text-slate-400 line-through text-sm">{alert.old_value}</span>
@@ -634,7 +634,7 @@ function AlertCard({
           )}
         </div>
 
-        {/* 操作按鈕 */}
+        {/* Action buttons */}
         <div className="flex-shrink-0 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
           {!isRead && (
             <HoloButton
@@ -673,7 +673,7 @@ function AlertCard({
 
       {/* Mobile layout */}
       <div className="flex sm:hidden gap-3">
-        {/* 選擇框 */}
+        {/* Checkbox */}
         <button onClick={onSelect} className="flex-shrink-0 pt-0.5">
           <div className={cn(
             "w-5 h-5 border-2 rounded flex items-center justify-center transition-colors",
@@ -683,14 +683,14 @@ function AlertCard({
           </div>
         </button>
 
-        {/* 圖標 */}
+        {/* Icon */}
         <div className={cn("p-2 rounded-lg flex-shrink-0", config.bg)}>
           <Icon className={cn("w-4 h-4", config.color)} />
         </div>
 
-        {/* 內容 — 垂直排列 */}
+        {/* Content — vertical layout */}
         <div className="flex-1 min-w-0">
-          {/* 第一行：Badge + 未讀 */}
+          {/* Row 1: Badge + unread */}
           <div className="flex items-center gap-2 mb-1">
             <HoloBadge variant={config.badgeVariant} size="sm">
               {config.label}
@@ -703,18 +703,18 @@ function AlertCard({
             )}
           </div>
 
-          {/* 第二行：產品名 */}
+          {/* Row 2: Product name */}
           <h3 className="font-semibold text-slate-800 text-sm leading-snug mb-1 line-clamp-2">
             {alert.product_name}
           </h3>
 
-          {/* 第三行：商戶名 */}
+          {/* Row 3: Merchant name */}
           <div className="flex items-center text-xs text-slate-500 mb-1.5">
             <Building2 className="w-3 h-3 mr-1 flex-shrink-0" />
             <span className="truncate">{alert.competitor_name}</span>
           </div>
 
-          {/* 第四行：價格 + 時間 */}
+          {/* Row 4: Price + time */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 font-mono text-sm">
               {(alert.old_value != null && alert.new_value != null) ? (
@@ -743,7 +743,7 @@ function AlertCard({
           </div>
         </div>
 
-        {/* Mobile 操作按鈕 */}
+        {/* Mobile Action buttons */}
         <div className="flex-shrink-0">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

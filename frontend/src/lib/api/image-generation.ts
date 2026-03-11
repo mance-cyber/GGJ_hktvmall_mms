@@ -1,5 +1,5 @@
 // =============================================
-// 圖片生成 API 客戶端
+// ImageGenerate API 客戶端
 // =============================================
 
 import { apiClient } from './client'
@@ -55,18 +55,18 @@ export interface TaskListResponse {
 }
 
 /**
- * 創建圖片生成任務
+ * CreateImageGenerate任務
  */
 export async function createTask(data: CreateTaskRequest): Promise<ImageGenerationTask> {
   const response = await apiClient.post('/image-generation/tasks', data)
-  return response as unknown as ImageGenerationTask  // 響應攔截器已返回 data
+  return response as unknown as ImageGenerationTask  // ResponseIntercept器已Back data
 }
 
 /**
- * 上傳輸入圖片（自動分批，每批最多 10 張）
+ * UploadInputImage（Auto分批，每批最多 10 張）
  *
- * 大量圖片一次 HTTP 上傳會超時/爆記憶體，
- * 這裡拆成多次循序請求，後端 upload_order 自動接續。
+ * Uploading many images in one HTTP request will time out/爆記憶體，
+ * 這裡拆成多次循序Request，Backend upload_order Auto接續。
  */
 const UPLOAD_BATCH_SIZE = 10
 
@@ -94,10 +94,10 @@ export async function uploadImages(taskId: string, files: File[]): Promise<Input
 }
 
 /**
- * 獲取當前用戶的圖片生成限制
+ * Get current user image generation limits
  */
 export interface ImageGenerationLimits {
-  max_images: number          // 0 = 無上限
+  max_images: number          // 0 = 無Upper limit
   max_outputs_per_image: number
 }
 
@@ -107,19 +107,19 @@ export async function getLimits(): Promise<ImageGenerationLimits> {
 }
 
 /**
- * 開始圖片生成
+ * StartImageGenerate
  */
 export async function startGeneration(taskId: string): Promise<ImageGenerationTask> {
   const response = await apiClient.post(`/image-generation/tasks/${taskId}/start`)
-  return response as unknown as ImageGenerationTask  // 響應攔截器已返回 data
+  return response as unknown as ImageGenerationTask  // ResponseIntercept器已Back data
 }
 
 /**
- * 獲取任務狀態
+ * Fetch任務State
  */
 export async function getTaskStatus(taskId: string): Promise<ImageGenerationTask> {
   const response = await apiClient.get(`/image-generation/tasks/${taskId}`)
-  return response as unknown as ImageGenerationTask  // 響應攔截器已返回 data
+  return response as unknown as ImageGenerationTask  // ResponseIntercept器已Back data
 }
 
 /**
@@ -129,11 +129,11 @@ export async function listTasks(page = 1, pageSize = 20): Promise<TaskListRespon
   const response = await apiClient.get('/image-generation/tasks', {
     params: { page, page_size: pageSize },
   })
-  return response as unknown as TaskListResponse  // 響應攔截器已返回 data
+  return response as unknown as TaskListResponse  // ResponseIntercept器已Back data
 }
 
 /**
- * 獲取預簽名 URL（繞過 CORS 限制）
+ * Fetch預簽名 URL（繞過 CORS Limit）
  */
 export interface PresignedUrlResponse {
   presigned_url: string
@@ -149,7 +149,7 @@ export async function getPresignedUrl(fileUrl: string, expiresIn = 3600): Promis
 }
 
 /**
- * 通過後端代理下載圖片（繞過 CORS）
+ * Download images via backend proxy (bypass CORS)
  */
 export async function downloadImage(fileUrl: string, fileName: string): Promise<void> {
   const { downloadFile } = await import('./client')
@@ -158,7 +158,7 @@ export async function downloadImage(fileUrl: string, fileName: string): Promise<
 }
 
 /**
- * 刪除單個任務
+ * Delete單個任務
  */
 export async function deleteTask(taskId: string): Promise<{ message: string; task_id: string }> {
   const response = await apiClient.delete(`/image-generation/tasks/${taskId}`)
@@ -166,7 +166,7 @@ export async function deleteTask(taskId: string): Promise<{ message: string; tas
 }
 
 /**
- * 批量刪除任務
+ * Batch delete任務
  */
 export async function deleteTasksBatch(taskIds: string[]): Promise<{
   message: string

@@ -58,7 +58,7 @@ import { toast } from '@/components/ui/use-toast'
 import { useLocale } from '@/components/providers/locale-provider'
 
 // =============================================
-// 聲音提醒 Hook
+// Sound notification Hook
 // =============================================
 
 function useNotificationSound() {
@@ -66,11 +66,11 @@ function useNotificationSound() {
   const [soundEnabled, setSoundEnabled] = useState(true)
 
   useEffect(() => {
-    // 創建音頻元素
+    // Create audio element
     audioRef.current = new Audio('/audio/notification.mp3')
     audioRef.current.volume = 0.5
 
-    // 從 localStorage 讀取設定
+    // Read from localStorage settings
     const saved = localStorage.getItem('agent-sound-enabled')
     if (saved !== null) {
       setSoundEnabled(saved === 'true')
@@ -81,7 +81,7 @@ function useNotificationSound() {
     if (soundEnabled && audioRef.current) {
       audioRef.current.currentTime = 0
       audioRef.current.play().catch(() => {
-        // 忽略自動播放限制錯誤
+        // Ignore autoplay restriction error
       })
     }
   }, [soundEnabled])
@@ -108,7 +108,7 @@ interface Message {
   content: string
   options?: AgentSlotOption[]
   charts?: any[]
-  suggestions?: AgentFollowUpSuggestion[]  // 後續建議按鈕
+  suggestions?: AgentFollowUpSuggestion[]  // Follow-up suggestion buttons
   timestamp: Date
 }
 
@@ -333,7 +333,7 @@ function ClarificationCard({
   )
 }
 
-// 訊息時間格式化
+// Message time formatting
 function formatMessageTime(date: Date, t: Record<string, string>): string {
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
@@ -401,7 +401,7 @@ function MessageBubble({ message }: { message: Message }) {
             {message.content}
           </ReactMarkdown>
         </div>
-        {/* 時間戳和操作按鈕 */}
+        {/* Timestamp and action buttons */}
         <div className={cn(
           "mt-2 flex items-center gap-3 text-xs",
           isUser ? "text-white/70" : "text-slate-400"
@@ -443,22 +443,22 @@ export default function AgentPage() {
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // 聲音提醒
+  // Sound notification
   const { playSound } = useNotificationSound()
 
-  // 獲取建議
+  // Get suggestions
   const { data: suggestionsData } = useQuery({
     queryKey: ['agent-suggestions'],
     queryFn: () => api.getAgentSuggestions(),
   })
 
-  // 獲取歷史對話
+  // Get conversation history
   const { data: historyData, refetch: refetchHistory } = useQuery({
     queryKey: ['agent-history'],
     queryFn: () => api.getAgentConversations(),
   })
 
-  // 加載歷史對話
+  // Load conversation history
   const loadConversation = async (id: string) => {
     if (id === conversationId) return
     
@@ -490,7 +490,7 @@ export default function AgentPage() {
     }
   }
 
-  // 發送訊息
+  // Send message
   const chatMutation = useMutation({
     mutationFn: (content: string) => api.agentChat({
       content,
@@ -517,7 +517,7 @@ export default function AgentPage() {
 
       setMessages(prev => [...prev, newMessage])
 
-      // 播放音效
+      // Play sound effect
       playSound()
 
       if (response.type === 'clarification') {
@@ -537,7 +537,7 @@ export default function AgentPage() {
     }
   })
 
-  // 發送澄清回應
+  // Send clarification response
   const clarifyMutation = useMutation({
     mutationFn: () => api.agentClarify({
       conversation_id: conversationId!,
@@ -559,7 +559,7 @@ export default function AgentPage() {
 
       setMessages(prev => [...prev, newMessage])
 
-      // 播放音效
+      // Play sound effect
       playSound()
 
       if (response.type === 'clarification') {
@@ -658,26 +658,26 @@ export default function AgentPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // 鍵盤快捷鍵
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
       const modKey = isMac ? e.metaKey : e.ctrlKey
 
-      // Cmd/Ctrl + K: 新對話
+      // Cmd/Ctrl + K: New conversation
       if (modKey && e.key === 'k') {
         e.preventDefault()
         handleNewConversation()
         inputRef.current?.focus()
       }
 
-      // Cmd/Ctrl + /: 聚焦輸入框
+      // Cmd/Ctrl + /: Focus input field
       if (modKey && e.key === '/') {
         e.preventDefault()
         inputRef.current?.focus()
       }
 
-      // Escape: 取消焦點
+      // Escape: Cancel focus
       if (e.key === 'Escape') {
         inputRef.current?.blur()
         setIsSidebarOpen(false)
@@ -688,7 +688,7 @@ export default function AgentPage() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  // 滾動檢測
+  // Scroll detection
   const handleScroll = () => {
     const container = messagesContainerRef.current
     if (!container) return
@@ -707,7 +707,7 @@ export default function AgentPage() {
     setPendingClarification(null)
     setSelections({})
     setIsSidebarOpen(false)
-    // 自動聚焦輸入框
+    // AutoFocus input field
     setTimeout(() => inputRef.current?.focus(), 100)
   }
 
@@ -840,7 +840,7 @@ export default function AgentPage() {
               <p className="text-slate-500 mb-4 max-w-md">
                 {t['agent.welcome_desc']}
               </p>
-              {/* 鍵盤快捷鍵提示 - 只在桌面顯示 */}
+              {/* Keyboard shortcut hints - desktop only */}
               <div className="hidden sm:flex items-center gap-4 text-xs text-slate-400 mb-6">
                 <span className="flex items-center gap-1">
                   <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">⌘K</kbd>
@@ -885,7 +885,7 @@ export default function AgentPage() {
           ) : (
             <AnimatePresence>
               {messages.map((message, index) => {
-                // 計算是否為最後一條有效的 AI 訊息（用於顯示 follow-up）
+                // Determine if this is the last valid AI message (for displaying follow-up)
                 const lastAssistantIndex = messages.findLastIndex(
                   m => m.role === 'assistant' && m.type !== 'thinking'
                 )
@@ -919,23 +919,23 @@ export default function AgentPage() {
                     </div>
                   )}
 
-                  {/* Follow-up Suggestions + 重新生成 - 只顯示在最後一條 AI 訊息 */}
+                  {/* Follow-up suggestions + re-generate - shown only for the last AI message */}
                   {isLastAssistantMessage &&
                    message.role === 'assistant' &&
                    message.type !== 'thinking' &&
                    !isLoading && (
                     <div className="ml-11 mt-3 space-y-2">
-                      {/* 重新生成按鈕 */}
+                      {/* Regenerate button */}
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => {
-                            // 找到最後一條用戶訊息
+                            // Find the last user message
                             const lastUserMessage = [...messages].reverse().find(m => m.role === 'user')
                             if (lastUserMessage) {
-                              // 移除最後一條 AI 回覆
+                              // Remove the last AI reply
                               setMessages(prev => prev.filter(m => m.id !== message.id))
-                              // 添加 thinking 狀態
+                              // Add thinking state
                               const thinkingMessage: Message = {
                                 id: 'thinking',
                                 role: 'assistant',
@@ -944,7 +944,7 @@ export default function AgentPage() {
                                 timestamp: new Date()
                               }
                               setMessages(prev => [...prev, thinkingMessage])
-                              // 重新發送
+                              // Re-send
                               chatMutation.mutate(lastUserMessage.content)
                             }
                           }}
@@ -956,11 +956,11 @@ export default function AgentPage() {
                         </button>
                       </div>
 
-                      {/* Follow-up 建議按鈕 */}
+                      {/* Follow-up suggestion buttons */}
                       {message.suggestions && message.suggestions.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {message.suggestions.map((suggestion, i) => {
-                            const isNewTopicButton = suggestion.text.includes('問其他嘢')
+                            const isNewTopicButton = suggestion.text.includes('Ask something else')
 
                             return (
                               <button
@@ -1014,7 +1014,7 @@ export default function AgentPage() {
           )}
           <div ref={messagesEndRef} />
 
-          {/* 滾動到底部按鈕 */}
+          {/* Scroll to bottom button */}
           <AnimatePresence>
             {showScrollButton && (
               <motion.button
@@ -1036,7 +1036,7 @@ export default function AgentPage() {
           <QuickActions
             onAction={(query) => {
               setInput(query)
-              // 自動發送
+              // Auto-send
               setTimeout(() => {
                 const userMessage: Message = {
                   id: Date.now().toString(),

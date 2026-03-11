@@ -1,7 +1,7 @@
 'use client'
 
 // =============================================
-// 對話列表組件 - 支持編輯模式和批量刪除
+// 對話List組items - SupportEdit模式和Batch delete
 // =============================================
 
 import { useState } from 'react'
@@ -54,7 +54,7 @@ interface ConversationListProps {
 }
 
 // =============================================
-// 相對時間格式化
+// 相對TimeFormat化
 // =============================================
 
 function formatRelativeTime(dateStr: string): string {
@@ -66,8 +66,8 @@ function formatRelativeTime(dateStr: string): string {
   const diffDays = Math.floor(diffMs / 86400000)
 
   if (diffMins < 1) return '剛剛'
-  if (diffMins < 60) return `${diffMins} 分鐘前`
-  if (diffHours < 24) return `${diffHours} 小時前`
+  if (diffMins < 60) return `${diffMins} minutes前`
+  if (diffHours < 24) return `${diffHours} hours前`
   if (diffDays < 7) return `${diffDays} 天前`
 
   return date.toLocaleDateString('zh-HK', {
@@ -93,20 +93,20 @@ export function ConversationList({
 
   const queryClient = useQueryClient()
 
-  // 批量刪除 mutation
+  // Batch delete mutation
   const deleteMutation = useMutation({
     mutationFn: (ids: string[]) => api.deleteAgentConversations(ids),
     onSuccess: (data) => {
-      // 刷新對話列表
+      // 刷New conversationList
       queryClient.invalidateQueries({ queryKey: ['agent-history'] })
-      // 重置狀態
+      // ResetState
       setSelectedIds(new Set())
       setIsEditMode(false)
       setShowDeleteDialog(false)
     },
   })
 
-  // 切換選擇
+  // 切換Select
   const toggleSelect = (id: string) => {
     const newSelected = new Set(selectedIds)
     if (newSelected.has(id)) {
@@ -117,7 +117,7 @@ export function ConversationList({
     setSelectedIds(newSelected)
   }
 
-  // 全選/取消全選
+  // Select all / Deselect all
   const toggleSelectAll = () => {
     if (selectedIds.size === conversations.length) {
       setSelectedIds(new Set())
@@ -126,13 +126,13 @@ export function ConversationList({
     }
   }
 
-  // 退出編輯模式
+  // 退出Edit模式
   const exitEditMode = () => {
     setIsEditMode(false)
     setSelectedIds(new Set())
   }
 
-  // 確認刪除
+  // ConfirmDelete
   const handleDeleteConfirm = () => {
     if (selectedIds.size > 0) {
       deleteMutation.mutate(Array.from(selectedIds))
@@ -144,7 +144,7 @@ export function ConversationList({
       {/* Header */}
       <div className="p-3 border-b bg-white">
         {isEditMode ? (
-          // 編輯模式 Header
+          // Edit模式 Header
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Button
@@ -158,10 +158,10 @@ export function ConversationList({
                 ) : (
                   <Square className="w-4 h-4 mr-1" />
                 )}
-                {selectedIds.size === conversations.length ? '取消全選' : '全選'}
+                {selectedIds.size === conversations.length ? 'Cancel全選' : '全選'}
               </Button>
               <span className="text-sm text-slate-500">
-                已選 {selectedIds.size} 個
+                Selected {selectedIds.size} 個
               </span>
             </div>
             <div className="flex items-center gap-1">
@@ -173,7 +173,7 @@ export function ConversationList({
                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
               >
                 <Trash2 className="w-4 h-4 mr-1" />
-                刪除
+                Delete
               </Button>
               <Button
                 variant="ghost"
@@ -192,7 +192,7 @@ export function ConversationList({
               className="flex-1 gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-sm"
             >
               <Plus className="w-4 h-4" />
-              新對話
+              New conversation
             </Button>
             {conversations.length > 0 && (
               <Button
@@ -200,7 +200,7 @@ export function ConversationList({
                 size="icon"
                 onClick={() => setIsEditMode(true)}
                 className="flex-shrink-0"
-                title="編輯"
+                title="Edit"
               >
                 <Edit3 className="w-4 h-4" />
               </Button>
@@ -214,7 +214,7 @@ export function ConversationList({
         {conversations.length === 0 ? (
           <div className="text-center text-slate-400 py-8 text-sm">
             <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-30" />
-            暫無歷史對話
+            暫無History對話
           </div>
         ) : (
           <AnimatePresence>
@@ -259,7 +259,7 @@ export function ConversationList({
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">
-                        {conv.title || '新對話'}
+                        {conv.title || 'New conversation'}
                       </div>
                       <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
                         <Clock className="w-3 h-3" />
@@ -280,15 +280,15 @@ export function ConversationList({
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-red-500" />
-              確認刪除
+              ConfirmDelete
             </AlertDialogTitle>
             <AlertDialogDescription>
-              確定要刪除選中的 {selectedIds.size} 個對話嗎？此操作無法撤銷。
+              OK要Delete選中的 {selectedIds.size} 個對話嗎？此Operation無法撤銷。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteMutation.isPending}>
-              取消
+              Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
@@ -298,12 +298,12 @@ export function ConversationList({
               {deleteMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  刪除中...
+                  Delete中...
                 </>
               ) : (
                 <>
                   <Trash2 className="w-4 h-4 mr-2" />
-                  確認刪除
+                  ConfirmDelete
                 </>
               )}
             </AlertDialogAction>

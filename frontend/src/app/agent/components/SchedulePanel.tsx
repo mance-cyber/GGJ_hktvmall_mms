@@ -1,7 +1,7 @@
 'use client'
 
 // =============================================
-// 排程面板組件 - 顯示和管理 AI 排程報告
+// Schedule Panel Component - Display and Manage AI Scheduled Reports
 // =============================================
 
 import { useState } from 'react'
@@ -66,11 +66,11 @@ interface SchedulePanelProps {
 }
 
 // =============================================
-// 相對時間格式化
+// Relative Time Formatting
 // =============================================
 
 function formatNextRunTime(dateStr: string | null): string {
-  if (!dateStr) return '未設定'
+  if (!dateStr) return 'Not configured'
 
   const date = new Date(dateStr)
   const now = new Date()
@@ -79,13 +79,13 @@ function formatNextRunTime(dateStr: string | null): string {
   const diffHours = Math.floor(diffMs / 3600000)
   const diffDays = Math.floor(diffMs / 86400000)
 
-  if (diffMs < 0) return '已過期'
-  if (diffMins < 1) return '即將執行'
-  if (diffMins < 60) return `${diffMins} 分鐘後`
-  if (diffHours < 24) return `${diffHours} 小時後`
-  if (diffDays < 7) return `${diffDays} 天後`
+  if (diffMs < 0) return 'Expired'
+  if (diffMins < 1) return 'Running soon'
+  if (diffMins < 60) return `in ${diffMins} min`
+  if (diffHours < 24) return `in ${diffHours} hr`
+  if (diffDays < 7) return `in ${diffDays} days`
 
-  return date.toLocaleDateString('zh-HK', {
+  return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
@@ -94,7 +94,7 @@ function formatNextRunTime(dateStr: string | null): string {
 }
 
 // =============================================
-// 排程卡片組件
+// Schedule Card Component
 // =============================================
 
 function ScheduleCard({
@@ -168,7 +168,7 @@ function ScheduleCard({
         )}
         <span className="flex items-center gap-1">
           <RefreshCw className="w-3 h-3" />
-          {schedule.run_count} 次
+          {schedule.run_count} runs
         </span>
       </div>
 
@@ -177,7 +177,7 @@ function ScheduleCard({
         <div className="mt-2 flex items-center gap-1 text-xs">
           <CalendarClock className="w-3 h-3 text-purple-500" />
           <span className="text-slate-600">
-            下次執行: {formatNextRunTime(schedule.next_run_at)}
+            Next run: {formatNextRunTime(schedule.next_run_at)}
           </span>
         </div>
       )}
@@ -197,7 +197,7 @@ function ScheduleCard({
               className="h-7 text-xs text-green-600 hover:text-green-700 hover:bg-green-50"
             >
               <Play className="w-3 h-3 mr-1" />
-              恢復
+              Resume
             </Button>
           ) : (
             <Button
@@ -211,7 +211,7 @@ function ScheduleCard({
               className="h-7 text-xs text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
             >
               <Pause className="w-3 h-3 mr-1" />
-              暫停
+              Pause
             </Button>
           )}
           <Button
@@ -225,7 +225,7 @@ function ScheduleCard({
             className="h-7 text-xs"
           >
             <RefreshCw className="w-3 h-3 mr-1" />
-            立即執行
+            Run Now
           </Button>
         </div>
 
@@ -249,7 +249,7 @@ function ScheduleCard({
               className="text-red-600 focus:text-red-700 focus:bg-red-50"
             >
               <Trash2 className="w-4 h-4 mr-2" />
-              刪除排程
+              Delete Schedule
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -270,17 +270,17 @@ export function SchedulePanel({
   const [deleteTarget, setDeleteTarget] = useState<ScheduledReport | null>(null)
   const queryClient = useQueryClient()
 
-  // 獲取排程列表
+  // Fetch schedule list
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['schedules', conversationId],
     queryFn: () => listSchedules({
       conversation_id: conversationId || undefined,
       limit: compact ? 5 : 20,
     }),
-    refetchInterval: 60000, // 每分鐘刷新
+    refetchInterval: 60000, // Refresh every minute
   })
 
-  // 暫停排程
+  // Pause schedule
   const pauseMutation = useMutation({
     mutationFn: pauseSchedule,
     onSuccess: () => {
@@ -288,7 +288,7 @@ export function SchedulePanel({
     },
   })
 
-  // 恢復排程
+  // Resume schedule
   const resumeMutation = useMutation({
     mutationFn: resumeSchedule,
     onSuccess: () => {
@@ -296,7 +296,7 @@ export function SchedulePanel({
     },
   })
 
-  // 刪除排程
+  // Delete schedule
   const deleteMutation = useMutation({
     mutationFn: deleteSchedule,
     onSuccess: () => {
@@ -305,7 +305,7 @@ export function SchedulePanel({
     },
   })
 
-  // 立即觸發
+  // Trigger immediately
   const triggerMutation = useMutation({
     mutationFn: triggerSchedule,
     onSuccess: () => {
@@ -334,7 +334,7 @@ export function SchedulePanel({
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
         <AlertCircle className="w-8 h-8 text-red-400 mb-2" />
-        <p className="text-sm text-slate-500">無法載入排程</p>
+        <p className="text-sm text-slate-500">Failed to load schedules</p>
         <Button
           variant="ghost"
           size="sm"
@@ -342,7 +342,7 @@ export function SchedulePanel({
           className="mt-2"
         >
           <RefreshCw className="w-4 h-4 mr-1" />
-          重試
+          Retry
         </Button>
       </div>
     )
@@ -353,9 +353,9 @@ export function SchedulePanel({
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
         <CalendarClock className="w-10 h-10 text-slate-300 mb-3" />
-        <p className="text-sm text-slate-500 mb-1">暫無排程報告</p>
+        <p className="text-sm text-slate-500 mb-1">No scheduled reports</p>
         <p className="text-xs text-slate-400">
-          同 Jap仔 講「每日 9 點發送價格報告」即可創建
+          Tell Jap to &quot;send a daily price report at 9am&quot; to create one
         </p>
       </div>
     )
@@ -367,7 +367,7 @@ export function SchedulePanel({
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-slate-700 flex items-center gap-2">
           <CalendarClock className="w-4 h-4 text-purple-500" />
-          排程報告
+          Scheduled Reports
           <span className="text-xs text-slate-400">({schedules.length})</span>
         </h3>
         <Button
@@ -405,10 +405,10 @@ export function SchedulePanel({
           variant="ghost"
           className="w-full text-purple-600 hover:text-purple-700"
           onClick={() => {
-            // 可以導航到完整排程頁面或展開面板
+            // Navigate to full schedule page or expand panel
           }}
         >
-          查看全部 {data.total} 個排程
+          View all {data.total} schedules
           <ChevronRight className="w-4 h-4 ml-1" />
         </Button>
       )}
@@ -422,15 +422,15 @@ export function SchedulePanel({
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-red-500" />
-              確認刪除排程
+              Confirm Delete Schedule
             </AlertDialogTitle>
             <AlertDialogDescription>
-              確定要刪除排程「{deleteTarget?.name}」嗎？此操作無法撤銷。
+              Are you sure you want to delete the schedule &quot;{deleteTarget?.name}&quot;? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteMutation.isPending}>
-              取消
+              Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
@@ -440,12 +440,12 @@ export function SchedulePanel({
               {deleteMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  刪除中...
+                  Deleting...
                 </>
               ) : (
                 <>
                   <Trash2 className="w-4 h-4 mr-2" />
-                  確認刪除
+                  Confirm Delete
                 </>
               )}
             </AlertDialogAction>

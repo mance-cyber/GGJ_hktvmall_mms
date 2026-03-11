@@ -36,7 +36,7 @@ import { HoloButton } from '@/components/ui/future-tech'
 import { useLocale } from '@/components/providers/locale-provider'
 
 // =============================================
-// 競品建庫流程 Dialog（SSE 串流版）
+// Competitor建庫流程 Dialog（SSE 串流版）
 // =============================================
 
 type PipelinePhase = 'idle' | 'running' | 'done' | 'error'
@@ -58,34 +58,34 @@ const STEPS = ['build', 'tag', 'match'] as const
 type StepKey = typeof STEPS[number]
 
 // =============================================
-// 每步驟的活動訊息（輪播顯示）
+// 每步驟的活動訊息（輪播Display）
 // =============================================
 
 const STEP_ACTIVITY_MESSAGES: Record<StepKey, string[]> = {
   build: [
-    '連接競品平台 API...',
-    '抓取商品列表頁...',
-    '解析商品數據...',
-    '比對現有數據庫記錄...',
-    '寫入新商品 / 更新已有商品...',
-    '處理商品圖片與規格...',
-    '清理重複數據...',
+    'ConnectionCompetitor平台 API...',
+    '抓取Product list頁...',
+    'ParseproductsData...',
+    '比對現有Data庫Record...',
+    '寫入新products / Update已有products...',
+    'ProcessingproductsImage與規格...',
+    'Clean up重複Data...',
   ],
   tag: [
-    '載入未打標商品...',
+    'Load未打標products...',
     '執行關鍵詞規則引擎...',
     '分類：鮮魚 / 貝類 / 蟹類...',
-    '無法匹配規則的商品送 AI 分類...',
-    'Claude Haiku 分析商品名稱中...',
+    '無法Match規則的products送 AI 分類...',
+    'Claude Haiku AnalysisproductsName中...',
     '寫入分類標籤...',
   ],
   match: [
-    '載入自家商品列表...',
-    '載入已打標競品...',
-    '計算 Level 1 直接匹配...',
-    '計算 Level 2 相似匹配...',
-    '計算 Level 3 同類匹配...',
-    '寫入匹配關係...',
+    'Load自家Product list...',
+    'Load已打標Competitor...',
+    'Calculate Level 1 direct match...',
+    'Calculate Level 2 similar match...',
+    'Calculate Level 3 same-category match...',
+    '寫入Match關係...',
   ],
 }
 
@@ -124,7 +124,7 @@ function timeStamp(): string {
 }
 
 // =============================================
-// 主組件
+// 主組items
 // =============================================
 
 export function CatalogPipelineDialog() {
@@ -144,7 +144,7 @@ export function CatalogPipelineDialog() {
   })
   // 從輪詢取得的即時耗時（秒）
   const [heartbeatElapsed, setHeartbeatElapsed] = useState(0)
-  // 當前步驟即時進度（匹配步驟的逐商品進度）
+  // 當前步驟即時進度（Match步驟的逐products進度）
   const [progress, setProgress] = useState<{
     current: number; total: number; failed?: number; message?: string
   } | null>(null)
@@ -156,7 +156,7 @@ export function CatalogPipelineDialog() {
 
   const isRunning = phase === 'running'
 
-  // 寫日誌（不可變）
+  // 寫Log（不可變）
   const addLog = useCallback((message: string, type: LogEntry['type'] = 'info') => {
     setLogs(prev => [...prev, { time: timeStamp(), message, type }])
     setTimeout(() => logsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
@@ -183,7 +183,7 @@ export function CatalogPipelineDialog() {
   const stepNames: Record<StepKey, string> = {
     build: '建庫',
     tag: '打標',
-    match: '匹配',
+    match: 'Match',
   }
 
   // =============================================
@@ -205,10 +205,10 @@ export function CatalogPipelineDialog() {
     const controller = new AbortController()
     abortRef.current = controller
 
-    addLog('═══ 開始競品建庫流程 ═══', 'step')
-    addLog(`目標平台: ${platform === 'all' ? '全部' : platform}`, 'info')
+    addLog('═══ StartCompetitor建庫流程 ═══', 'step')
+    addLog(`Target平台: ${platform === 'all' ? 'All' : platform}`, 'info')
 
-    // 記錄已輸出過的日誌，避免重複
+    // Track previously output logs to avoid duplicates
     const loggedStarts = new Set<StepKey>()
     const loggedDones = new Set<StepKey>()
 
@@ -216,8 +216,8 @@ export function CatalogPipelineDialog() {
       // 啟動後台任務
       const { task_id: taskId } = await api.startPipeline(platform)
 
-      // 輪詢進度（每 2 秒一次短請求，完全不受反代超時限制）
-      // 連續錯誤上限：防止無限輪詢
+      // 輪詢進度（每 2 秒一次短Request，完全不受反代TimeoutLimit）
+      // 連續ErrorUpper limit：Prevent無限輪詢
       const MAX_CONSECUTIVE_ERRORS = 20
       let consecutiveErrors = 0
 
@@ -229,60 +229,60 @@ export function CatalogPipelineDialog() {
         let p
         try {
           p = await api.getPipelineProgress(taskId)
-          consecutiveErrors = 0  // 成功時重置計數
+          consecutiveErrors = 0  // Success時Reset計數
         } catch (pollErr: any) {
           consecutiveErrors++
           const msg = pollErr.message ?? ''
 
-          // 404 = 任務不存在（DB 已持久化，僅過期或誤刪才會 404）
-          if (msg.includes('404') || msg.includes('不存在') || msg.includes('過期')) {
-            addLog('✗ 任務不存在或已過期，請重試。', 'error')
+          // 404 = 任務不存在（DB 已持久化，僅Expired或誤刪才會 404）
+          if (msg.includes('404') || msg.includes('不存在') || msg.includes('Expired')) {
+            addLog('✗ 任務不存在或已Expired，請Retry。', 'error')
             setPhase('error')
             break
           }
 
-          // 連續錯誤太多 → 放棄
+          // 連續Error太多 → 放棄
           if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-            addLog(`✗ 連續 ${consecutiveErrors} 次輪詢失敗，停止。最後錯誤: ${msg}`, 'error')
+            addLog(`✗ 連續 ${consecutiveErrors} 次輪詢Failed，Stopped。最後Error: ${msg}`, 'error')
             setPhase('error')
             break
           }
 
-          // 502/503 或其他瞬時錯誤 → 下次重試
+          // 502/503 或其他瞬時Error → 下次Retry
           if (consecutiveErrors % 5 === 0) {
-            addLog(`⚠ 輪詢暫時失敗 (${consecutiveErrors}/${MAX_CONSECUTIVE_ERRORS})，重試中...`, 'info')
+            addLog(`⚠ 輪詢暫時Failed (${consecutiveErrors}/${MAX_CONSECUTIVE_ERRORS})，Retry中...`, 'info')
           }
           continue
         }
 
-        // 先更新已完成步驟（保證「完成」日誌在「開始下一步」之前）
+        // 先Update已Complete步驟（保證「Complete」Log在「Start下一步」之前）
         for (const step of STEPS) {
           if (p.step_results[step] && !loggedDones.has(step)) {
             const dur = (p.step_durations[step] ?? 0) * 1000
             updateStep(step, { status: 'done', data: { result: p.step_results[step] }, duration: dur })
-            addLog(`✓ ${stepNames[step]}完成 (${formatDuration(dur)})`, 'success')
+            addLog(`✓ ${stepNames[step]}Complete (${formatDuration(dur)})`, 'success')
             logStepResult(step, p.step_results[step], addLog)
             setExpandedStep(step)
             loggedDones.add(step)
           }
         }
 
-        // 再更新當前步驟 → running
+        // 再Update當前步驟 → running
         if (p.current_step) {
           const step = p.current_step as StepKey
           if (!loggedStarts.has(step)) {
             updateStep(step, { status: 'running', error: undefined, data: undefined, duration: undefined })
-            addLog(`▶ 開始步驟 ${p.current_step_number}/${p.total_steps}: ${stepNames[step]}`, 'step')
+            addLog(`▶ Start步驟 ${p.current_step_number}/${p.total_steps}: ${stepNames[step]}`, 'step')
             loggedStarts.add(step)
           }
           setHeartbeatElapsed(p.elapsed * 1000)
-          // 即時進度（匹配步驟的逐商品進度）
+          // 即時進度（Match步驟的逐products進度）
           setProgress(p.progress ?? null)
         }
 
-        // 全部完成
+        // AllComplete
         if (p.status === 'done') {
-          addLog('═══ 流程全部完成 ═══', 'success')
+          addLog('═══ 流程AllComplete ═══', 'success')
           setPhase('done')
           queryClient.invalidateQueries({ queryKey: ['competitors'] })
           break
@@ -294,7 +294,7 @@ export function CatalogPipelineDialog() {
           if (!loggedDones.has(errStep)) {
             const dur = (p.step_durations[errStep] ?? 0) * 1000
             updateStep(errStep, { status: 'error', error: p.step_errors[errStep], duration: dur })
-            addLog(`✗ ${stepNames[errStep]}失敗: ${p.step_errors[errStep]}`, 'error')
+            addLog(`✗ ${stepNames[errStep]}Failed: ${p.step_errors[errStep]}`, 'error')
             setExpandedStep(errStep)
           }
           setPhase('error')
@@ -304,13 +304,13 @@ export function CatalogPipelineDialog() {
       }
     } catch (err: any) {
       if (err.name === 'AbortError') return
-      addLog(`✗ 啟動失敗: ${humanizeError(err)}`, 'error')
+      addLog(`✗ 啟動Failed: ${humanizeError(err)}`, 'error')
       setPhase('error')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [platform, updateStep, queryClient, addLog])
 
-  // 處理 Dialog 關閉：執行中禁止關閉
+  // Handle dialog close: disabled during executionClose
   const handleDialogClose = useCallback((nextOpen: boolean) => {
     if (!nextOpen && isRunning) return
     if (!nextOpen) {
@@ -344,7 +344,7 @@ export function CatalogPipelineDialog() {
           <DialogDescription>{t['competitors.catalog_desc']}</DialogDescription>
         </DialogHeader>
 
-        {/* ========== idle：平台選擇 ========== */}
+        {/* ========== idle：平台Select ========== */}
         {phase === 'idle' && (
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -363,15 +363,15 @@ export function CatalogPipelineDialog() {
             <div className="rounded-lg bg-blue-50 p-3 text-sm text-blue-700 space-y-1.5">
               <p className="font-medium">流程步驟</p>
               <ol className="text-xs space-y-1 list-decimal list-inside">
-                <li><b>建庫</b> — 抓取競品平台商品數據入庫</li>
-                <li><b>打標</b> — 規則 + AI 自動分類標籤</li>
-                <li><b>匹配</b> — AI 配對自家商品與競品</li>
+                <li><b>建庫</b> — 抓取Competitor平台productsData入庫</li>
+                <li><b>打標</b> — 規則 + AI Auto分類標籤</li>
+                <li><b>Match</b> — AI Pair自家products與Competitor</li>
               </ol>
             </div>
           </div>
         )}
 
-        {/* ========== 執行中 / 完成 / 錯誤 ========== */}
+        {/* ========== 執行中 / Complete / Error ========== */}
         {phase !== 'idle' && (
           <div className="space-y-3 py-3">
             {/* 步驟指示器 */}
@@ -422,7 +422,7 @@ export function CatalogPipelineDialog() {
 
                       <span className="text-sm font-medium flex-1">{stepLabels[step]}</span>
 
-                      {/* 耗時：running 時用 heartbeat 即時值 */}
+                      {/* Duration: use heartbeat real-time value when running */}
                       {s.status === 'running' && (
                         <span className="text-xs text-blue-500 tabular-nums flex items-center gap-1">
                           <Clock className="w-3 h-3" />
@@ -443,7 +443,7 @@ export function CatalogPipelineDialog() {
                       )}
                     </div>
 
-                    {/* 即時進度條（匹配步驟的逐商品進度） */}
+                    {/* 即時進度條（Match步驟的逐products進度） */}
                     {s.status === 'running' && progress && progress.total > 0 && (
                       <div className="px-3 pb-2 space-y-1">
                         <div className="flex items-center justify-between text-[11px]">
@@ -453,7 +453,7 @@ export function CatalogPipelineDialog() {
                           <span className="text-blue-500 tabular-nums flex-shrink-0 ml-2">
                             {progress.current}/{progress.total}
                             {(progress.failed ?? 0) > 0 && (
-                              <span className="text-red-400 ml-1">({progress.failed} 失敗)</span>
+                              <span className="text-red-400 ml-1">({progress.failed} Failed)</span>
                             )}
                           </span>
                         </div>
@@ -466,7 +466,7 @@ export function CatalogPipelineDialog() {
                       </div>
                     )}
 
-                    {/* 展開詳情 */}
+                    {/* 展開Details */}
                     {isExpanded && s.status === 'done' && s.data && (
                       <div className="px-3 pb-2.5 pt-0">
                         <StepDetail step={step} data={s.data} platform={platform} />
@@ -484,7 +484,7 @@ export function CatalogPipelineDialog() {
               })}
             </div>
 
-            {/* ========== 活動日誌面板 ========== */}
+            {/* ========== 活動Log面板 ========== */}
             <div className="rounded-lg border border-slate-700 bg-slate-900 overflow-hidden">
               <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 border-b border-slate-700">
                 <Terminal className="w-3.5 h-3.5 text-slate-400" />
@@ -519,7 +519,7 @@ export function CatalogPipelineDialog() {
               </div>
             </div>
 
-            {/* 完成摘要 */}
+            {/* Complete摘要 */}
             {phase === 'done' && (
               <div className="rounded-lg bg-green-50 border border-green-200 p-3 text-sm text-green-700">
                 <p className="font-medium">{t['competitors.catalog_done']}</p>
@@ -547,7 +547,7 @@ export function CatalogPipelineDialog() {
           )}
           {isRunning && (
             <p className="text-xs text-muted-foreground text-center w-full">
-              處理中，請勿關閉此視窗...
+              Processing, please do not close this window...
             </p>
           )}
           {phase === 'error' && (
@@ -573,7 +573,7 @@ export function CatalogPipelineDialog() {
 }
 
 // =============================================
-// 日誌：步驟結果摘要
+// Log：步驟Result摘要
 // =============================================
 
 function logStepResult(
@@ -590,24 +590,24 @@ function logStepResult(
     for (const [name, stats] of entries) {
       const s = stats as any
       if (s?.skipped) {
-        addLog(`  ${name}: 已跳過 (${s.reason})`, 'info')
+        addLog(`  ${name}: 已Skip (${s.reason})`, 'info')
       } else if (s) {
-        addLog(`  ${name}: 新增 ${s.new ?? 0} / 更新 ${s.updated ?? 0} / 未變 ${s.unchanged ?? 0}`, 'info')
+        addLog(`  ${name}: Add ${s.new ?? 0} / Update ${s.updated ?? 0} / 未變 ${s.unchanged ?? 0}`, 'info')
       }
     }
   } else if (step === 'tag') {
-    addLog(`  規則打標 ${result.rule_tagged ?? 0} / AI 打標 ${result.ai_tagged ?? 0} / 跳過 ${result.skipped ?? 0}`, 'info')
+    addLog(`  規則打標 ${result.rule_tagged ?? 0} / AI 打標 ${result.ai_tagged ?? 0} / Skip ${result.skipped ?? 0}`, 'info')
   } else if (step === 'match') {
     if ('products_matched' in result) {
-      addLog(`  匹配商品 ${result.products_matched ?? 0} / L1 ${result.total_level_1 ?? 0} / L2 ${result.total_level_2 ?? 0} / L3 ${result.total_level_3 ?? 0}`, 'info')
+      addLog(`  Matchproducts ${result.products_matched ?? 0} / L1 ${result.total_level_1 ?? 0} / L2 ${result.total_level_2 ?? 0} / L3 ${result.total_level_3 ?? 0}`, 'info')
     } else {
-      addLog(`  匹配 ${result.matched ?? 0} / L1 ${result.level_1 ?? 0} / L2 ${result.level_2 ?? 0} / L3 ${result.level_3 ?? 0}`, 'info')
+      addLog(`  Match ${result.matched ?? 0} / L1 ${result.level_1 ?? 0} / L2 ${result.level_2 ?? 0} / L3 ${result.level_3 ?? 0}`, 'info')
     }
   }
 }
 
 // =============================================
-// 步驟詳情面板
+// 步驟Details面板
 // =============================================
 
 function StepDetail({ step, data, platform }: { step: StepKey; data: any; platform: string }) {
@@ -633,7 +633,7 @@ function BuildDetail({ result, platform }: { result: any; platform: string }) {
           return (
             <div key={name} className="rounded bg-slate-50 p-2 text-xs">
               <span className="font-medium capitalize">{name}</span>
-              <span className="text-muted-foreground ml-2">已跳過: {stats.reason}</span>
+              <span className="text-muted-foreground ml-2">已Skip: {stats.reason}</span>
             </div>
           )
         }
@@ -641,12 +641,12 @@ function BuildDetail({ result, platform }: { result: any; platform: string }) {
           <div key={name} className="rounded bg-slate-50 p-2">
             <p className="text-xs font-medium capitalize mb-1">{name}</p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
-              <StatRow label="新增" value={stats.new ?? stats.added ?? 0} color="text-green-600" />
-              <StatRow label="更新" value={stats.updated ?? 0} color="text-blue-600" />
+              <StatRow label="Add" value={stats.new ?? stats.added ?? 0} color="text-green-600" />
+              <StatRow label="Update" value={stats.updated ?? 0} color="text-blue-600" />
               <StatRow label="未變" value={stats.unchanged ?? 0} color="text-slate-500" />
               <StatRow label="總抓取" value={stats.total_fetched ?? 0} color="text-slate-700" />
               {(stats.skipped_store_limit ?? 0) > 0 && (
-                <StatRow label="達上限跳過" value={stats.skipped_store_limit} color="text-yellow-600" />
+                <StatRow label="達Upper limitSkip" value={stats.skipped_store_limit} color="text-yellow-600" />
               )}
             </div>
           </div>
@@ -662,9 +662,9 @@ function TagDetail({ result }: { result: any }) {
       <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
         <StatRow label="規則打標" value={result.rule_tagged ?? 0} color="text-green-600" />
         <StatRow label="AI 打標" value={result.ai_tagged ?? 0} color="text-blue-600" />
-        <StatRow label="跳過" value={result.skipped ?? 0} color="text-slate-500" />
+        <StatRow label="Skip" value={result.skipped ?? 0} color="text-slate-500" />
         {(result.failed ?? 0) > 0 && (
-          <StatRow label="失敗" value={result.failed} color="text-red-600" />
+          <StatRow label="Failed" value={result.failed} color="text-red-600" />
         )}
       </div>
     </div>
@@ -678,16 +678,16 @@ function MatchDetail({ result }: { result: any }) {
       <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
         {isAll ? (
           <>
-            <StatRow label="匹配商品數" value={result.products_matched ?? 0} color="text-green-600" />
-            <StatRow label="處理競品數" value={result.competitors_processed ?? 0} color="text-blue-600" />
+            <StatRow label="Matchproducts數" value={result.products_matched ?? 0} color="text-green-600" />
+            <StatRow label="ProcessingCompetitor數" value={result.competitors_processed ?? 0} color="text-blue-600" />
             <StatRow label="Level 1 (直接)" value={result.total_level_1 ?? 0} color="text-green-700" />
             <StatRow label="Level 2 (相似)" value={result.total_level_2 ?? 0} color="text-blue-700" />
             <StatRow label="Level 3 (同類)" value={result.total_level_3 ?? 0} color="text-slate-600" />
           </>
         ) : (
           <>
-            <StatRow label="匹配數" value={result.matched ?? 0} color="text-green-600" />
-            <StatRow label="跳過" value={result.skipped ?? 0} color="text-slate-500" />
+            <StatRow label="Match數" value={result.matched ?? 0} color="text-green-600" />
+            <StatRow label="Skip" value={result.skipped ?? 0} color="text-slate-500" />
             <StatRow label="Level 1 (直接)" value={result.level_1 ?? 0} color="text-green-700" />
             <StatRow label="Level 2 (相似)" value={result.level_2 ?? 0} color="text-blue-700" />
             <StatRow label="Level 3 (同類)" value={result.level_3 ?? 0} color="text-slate-600" />
@@ -707,17 +707,17 @@ function StatRow({ label, value, color }: { label: string; value: number; color:
   )
 }
 
-// 網絡錯誤友好化
+// 網絡Error友好化
 function humanizeError(err: unknown): string {
   if (err instanceof DOMException && err.name === 'TimeoutError') {
-    return '請求超時，伺服器處理時間過長。請稍後重試。'
+    return 'Request timed out, server processing took too long. Please try again later.'
   }
   if (err instanceof TypeError && (err.message === 'Failed to fetch' || err.message === 'Load failed')) {
-    return '無法連接伺服器，可能是網絡中斷或伺服器超時。請檢查網絡後重試。'
+    return 'Cannot connect to server, possibly network down or server timeout. Please check your network and retry.'
   }
   if (err instanceof Error) {
     if (err.message.includes('ERR_CONNECTION_CLOSED') || err.message.includes('connection closed')) {
-      return '伺服器連接中斷，操作可能耗時過長。請稍後重試。'
+      return 'Server connection interrupted, operation may be taking too long. Please try again later.'
     }
     return err.message
   }

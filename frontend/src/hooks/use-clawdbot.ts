@@ -1,10 +1,10 @@
 // ==================== Clawdbot Hook ====================
-// 用途: 在前端調用 clawdbot 抓取功能
+// 用途: 在Frontend調用 clawdbot 抓取Feature
 
 import { useState, useEffect } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 
-// ==================== 類型定義 ====================
+// ==================== Type definitions ====================
 
 export interface ClawdbotScrapeResult {
   success: boolean;
@@ -25,7 +25,7 @@ export interface ClawdbotHealthStatus {
   error?: string;
 }
 
-// ==================== API 調用函數 ====================
+// ==================== API 調用Function ====================
 
 /**
  * 調用 Clawdbot API
@@ -44,14 +44,14 @@ async function callClawdbotAPI(
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error || '抓取失敗');
+    throw new Error(error.error || '抓取Failed');
   }
 
   return response.json();
 }
 
 /**
- * 檢查 Clawdbot 健康狀態
+ * Check Clawdbot health status
  */
 async function checkClawdbotHealth(): Promise<ClawdbotHealthStatus> {
   const response = await fetch('/api/v1/scrape/clawdbot');
@@ -63,27 +63,27 @@ async function checkClawdbotHealth(): Promise<ClawdbotHealthStatus> {
 export function useClawdbot() {
   const [isConnected, setIsConnected] = useState(false);
 
-  // 健康檢查
+  // 健康Check
   const { data: healthStatus, refetch: checkHealth } = useQuery({
     queryKey: ['clawdbot', 'health'],
     queryFn: checkClawdbotHealth,
-    refetchInterval: 30000, // 每 30 秒檢查一次
+    refetchInterval: 30000, // 每 30 秒Check一次
   });
 
-  // React Query v5: 使用 useEffect 響應數據變化
+  // React Query v5: 使用 useEffect ResponseData變化
   useEffect(() => {
     if (healthStatus) {
       setIsConnected(healthStatus.status === 'connected');
     }
   }, [healthStatus]);
 
-  // 抓取單個商品
+  // 抓取單個products
   const scrapeProductMutation = useMutation({
     mutationFn: (url: string) =>
       callClawdbotAPI('scrape_product', { url }),
   });
 
-  // 抓取搜尋排名
+  // 抓取SearchRanking
   const scrapeSearchRankMutation = useMutation({
     mutationFn: ({ keyword, targetUrl }: { keyword: string; targetUrl: string }) =>
       callClawdbotAPI('scrape_search_rank', { keyword, targetUrl }),
@@ -95,31 +95,31 @@ export function useClawdbot() {
       callClawdbotAPI('scrape_batch', { urls }),
   });
 
-  // 自定義抓取
+  // Custom抓取
   const scrapeCustomMutation = useMutation({
     mutationFn: (task: any) =>
       callClawdbotAPI('scrape_custom', { task }),
   });
 
   return {
-    // 狀態
+    // State
     isConnected,
     healthStatus,
 
-    // 方法
+    // Method
     checkHealth,
     scrapeProduct: scrapeProductMutation.mutateAsync,
     scrapeSearchRank: scrapeSearchRankMutation.mutateAsync,
     scrapeBatch: scrapeBatchMutation.mutateAsync,
     scrapeCustom: scrapeCustomMutation.mutateAsync,
 
-    // Loading 狀態 (React Query v5: isLoading → isPending)
+    // Loading State (React Query v5: isLoading → isPending)
     isScrapingProduct: scrapeProductMutation.isPending,
     isScrapingSearchRank: scrapeSearchRankMutation.isPending,
     isScrapingBatch: scrapeBatchMutation.isPending,
     isScrapingCustom: scrapeCustomMutation.isPending,
 
-    // 錯誤
+    // Error
     productError: scrapeProductMutation.error,
     searchRankError: scrapeSearchRankMutation.error,
     batchError: scrapeBatchMutation.error,

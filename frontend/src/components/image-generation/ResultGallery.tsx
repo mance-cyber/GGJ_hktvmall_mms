@@ -1,5 +1,5 @@
 // =============================================
-// 圖片生成結果展示組件
+// ImageGenerateResult展示組items
 // =============================================
 
 'use client'
@@ -19,7 +19,7 @@ export function ResultGallery({ images }: ResultGalleryProps) {
   const [presignedUrls, setPresignedUrls] = useState<Record<string, string>>({})
   const [loadingUrls, setLoadingUrls] = useState<Set<string>>(new Set())
 
-  // 獲取單個圖片的預簽名 URL
+  // Fetch單個Image的預簽名 URL
   const fetchPresignedUrl = useCallback(async (image: OutputImage) => {
     if (presignedUrls[image.id] || loadingUrls.has(image.id)) {
       return
@@ -49,7 +49,7 @@ export function ResultGallery({ images }: ResultGalleryProps) {
     }
   }, [presignedUrls, loadingUrls])
 
-  // 當圖片列表變化時，預加載所有預簽名 URL
+  // 當ImageList變化時，預Loading所有預簽名 URL
   useEffect(() => {
     images.forEach(image => {
       if (!presignedUrls[image.id] && !loadingUrls.has(image.id)) {
@@ -60,19 +60,19 @@ export function ResultGallery({ images }: ResultGalleryProps) {
 
   const handleDownload = async (image: OutputImage) => {
     try {
-      // 使用後端代理下載（繞過 CORS）
+      // 使用Backend代理Download（繞過 CORS）
       await downloadImage(image.file_path, image.file_name)
     } catch (error) {
       console.error('Download failed:', error)
     }
   }
 
-  // 獲取圖片顯示 URL
+  // FetchImageDisplay URL
   const getImageUrl = (image: OutputImage): string => {
     return presignedUrls[image.id] || image.file_path
   }
 
-  // 檢查圖片 URL 是否正在加載
+  // CheckImage URL whethercurrentlyLoading
   const isLoading = (imageId: string): boolean => {
     return loadingUrls.has(imageId) && !presignedUrls[imageId]
   }
@@ -80,14 +80,14 @@ export function ResultGallery({ images }: ResultGalleryProps) {
   if (images.length === 0) {
     return (
       <div className="text-center py-12 text-gray-500">
-        <p>尚無生成圖片</p>
+        <p>尚無GenerateImage</p>
       </div>
     )
   }
 
   return (
     <>
-      {/* 圖片網格 */}
+      {/* Image網格 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {images.map((image) => (
           <div
@@ -108,7 +108,7 @@ export function ResultGallery({ images }: ResultGalleryProps) {
               />
             )}
 
-            {/* 操作按鈕 */}
+            {/* Action buttons */}
             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all">
               <div className="absolute bottom-4 left-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
@@ -136,12 +136,12 @@ export function ResultGallery({ images }: ResultGalleryProps) {
                   "
                 >
                   <Download className="w-4 h-4" />
-                  下載
+                  Download
                 </button>
               </div>
             </div>
 
-            {/* 文件信息 */}
+            {/* 文items信息 */}
             <div className="absolute top-2 left-2 right-2">
               <div className="bg-black bg-opacity-50 text-white px-3 py-1 rounded text-xs">
                 {image.file_name}
@@ -167,7 +167,7 @@ export function ResultGallery({ images }: ResultGalleryProps) {
               unoptimized
             />
 
-            {/* 關閉按鈕 */}
+            {/* Closebutton */}
             <button
               onClick={() => setSelectedImage(null)}
               className="
@@ -177,10 +177,10 @@ export function ResultGallery({ images }: ResultGalleryProps) {
                 hover:bg-gray-100
               "
             >
-              關閉
+              Close
             </button>
 
-            {/* 下載按鈕 */}
+            {/* Downloadbutton */}
             <button
               onClick={() => handleDownload(selectedImage)}
               className="
@@ -192,7 +192,7 @@ export function ResultGallery({ images }: ResultGalleryProps) {
               "
             >
               <Download className="w-5 h-5" />
-              下載圖片
+              DownloadImage
             </button>
           </div>
         </div>

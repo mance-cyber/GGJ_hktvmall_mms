@@ -70,7 +70,7 @@ export default function MarketResponsePage() {
     return () => clearTimeout(timeoutId)
   }
 
-  // 匯出報告功能
+  // ExportReportFeature
   const handleExportReport = () => {
     toast({
       title: t['market_response.toast_developing_title'],
@@ -78,7 +78,7 @@ export default function MarketResponsePage() {
     })
   }
 
-  // 使用現有 API 獲取數據
+  // Fetch data using existing APIs
   const { data: products } = useQuery({
     queryKey: ['products-for-mrc'],
     queryFn: () => api.getProducts(1, 100),
@@ -99,7 +99,7 @@ export default function MarketResponsePage() {
     queryFn: () => api.getCategories(1, 20),
   })
 
-  // 計算統計數據
+  // CalculateStatistics
   const stats = {
     total_skus: products?.total || 0,
     products_with_competitors: competitors?.data?.reduce((sum, c) => sum + c.product_count, 0) || 0,
@@ -107,7 +107,7 @@ export default function MarketResponsePage() {
     unread_alerts: alerts?.unread_count || 0,
   }
 
-  // 搜索結果使用現有商品數據過濾
+  // SearchFilter results using existing product data
   const searchResults = debouncedQuery.length > 0
     ? products?.data?.filter((p) =>
         p.name?.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
@@ -116,11 +116,11 @@ export default function MarketResponsePage() {
     : []
   const searchLoading = false
 
-  // 季節性商品（使用現有商品數據）
+  // Seasonal products (using existing product data)
   const seasonalProducts = products?.data?.slice(0, 5) || []
   const seasonalLoading = !products
 
-  // 分類數據轉換
+  // Convert category data
   const categoryData = categories?.items?.map((cat, idx) => ({
     name: cat.name,
     count: cat.total_products,
@@ -360,7 +360,7 @@ function CategoryCard({ category, index }: { category: CategoryData, index: numb
 }
 
 // =============================================
-// 功能介紹卡片組件
+// Feature Introduction Card Components
 // =============================================
 
 function FeatureCard({

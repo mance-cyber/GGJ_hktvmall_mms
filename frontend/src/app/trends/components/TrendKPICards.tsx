@@ -1,5 +1,5 @@
 // =============================================
-// 趨勢 KPI 卡片組件
+// Trend KPI Card組items
 // =============================================
 
 'use client'
@@ -20,25 +20,25 @@ interface TrendKPICardsProps {
 }
 
 export function TrendKPICards({ summary }: TrendKPICardsProps) {
-  // 格式化百分比
+  // Format化Percentage
   const formatPercent = (value: number | null) => {
     if (value === null) return '--'
     const sign = value > 0 ? '+' : ''
     return `${sign}${value.toFixed(1)}%`
   }
 
-  // 格式化價格
+  // Format化Price
   const formatPrice = (value: number | null) => {
     if (value === null) return '--'
     return `$${Number(value).toLocaleString()}`
   }
 
-  // KPI 卡片數據
+  // KPI CardData
   const kpis = [
     {
       title: '當前價差',
       value: formatPercent(summary.price_gap_current),
-      description: '與競爭對手平均價格比較',
+      description: '與競爭Competitor平均PriceCompare',
       icon: Target,
       color:
         summary.price_gap_current === null
@@ -53,7 +53,7 @@ export function TrendKPICards({ summary }: TrendKPICardsProps) {
     {
       title: '平均價差',
       value: formatPercent(summary.price_gap_avg),
-      description: '期間內平均價格差異',
+      description: '期間內平均Price差異',
       icon: BarChart3,
       color:
         summary.price_gap_avg === null
@@ -66,17 +66,17 @@ export function TrendKPICards({ summary }: TrendKPICardsProps) {
       trend: summary.price_gap_avg,
     },
     {
-      title: '競爭對手最低價',
+      title: '競爭Competitor最低價',
       value: formatPrice(summary.lowest_competitor_price),
-      description: '競爭對手中的最低價格',
+      description: '競爭Competitor中的最低Price',
       icon: DollarSign,
       color: 'blue',
       trend: null,
     },
     {
-      title: '價格波動率',
+      title: 'Price波動率',
       value: formatPercent(summary.volatility),
-      description: '自家產品價格波動程度',
+      description: '自家ProductPrice波動程度',
       icon: Activity,
       color:
         summary.volatility === null
@@ -88,7 +88,7 @@ export function TrendKPICards({ summary }: TrendKPICardsProps) {
     },
   ]
 
-  // 顏色配置
+  // 顏色Configuration
   const colorConfig: Record<string, { bg: string; text: string; icon: string }> = {
     green: {
       bg: 'bg-green-50',
@@ -140,22 +140,22 @@ export function TrendKPICards({ summary }: TrendKPICardsProps) {
               </div>
             </div>
 
-            {/* 趨勢指示器 */}
+            {/* Trend指示器 */}
             {kpi.trend !== null && (
               <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-100">
                 <div className="flex items-center gap-1 text-xs sm:text-sm">
                   {kpi.trend > 0 ? (
                     <>
                       <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-red-500" />
-                      <span className="text-red-600 truncate">高於競爭對手</span>
+                      <span className="text-red-600 truncate">高於競爭Competitor</span>
                     </>
                   ) : kpi.trend < 0 ? (
                     <>
                       <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
-                      <span className="text-green-600 truncate">低於競爭對手</span>
+                      <span className="text-green-600 truncate">低於競爭Competitor</span>
                     </>
                   ) : (
-                    <span className="text-gray-500 truncate">與競爭對手持平</span>
+                    <span className="text-gray-500 truncate">與競爭Competitor持平</span>
                   )}
                 </div>
               </div>

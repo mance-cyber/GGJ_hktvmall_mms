@@ -1,5 +1,5 @@
 // =============================================
-// i18n 類型定義 — 扁平化 key-value 結構
+// i18n Type definitions — Flatten key-value structure
 // =============================================
 
 export type Locale = 'zh-HK' | 'en'
@@ -19,7 +19,7 @@ export interface TranslationDict {
   'common.operator': string
   'common.viewer': string
 
-  // ==================== 側欄 ====================
+  // ==================== 側Bar ====================
   'sidebar.system_name': string
   'sidebar.overview': string
   'sidebar.dashboard': string
@@ -49,7 +49,7 @@ export interface TranslationDict {
   'sidebar.data_export': string
   'sidebar.settings': string
 
-  // ==================== 移動端底部導航 ====================
+  // ==================== 移動端底部Navigation ====================
   'mobile.home': string
   'mobile.alerts': string
   'mobile.ai': string
@@ -59,6 +59,6 @@ export interface TranslationDict {
   'mobile.price_trends': string
   'mobile.settings': string
 
-  // 各頁面 key 在遷移時逐步追加
+  // 各page key 在Migrate時逐步追加
   [key: string]: string
 }

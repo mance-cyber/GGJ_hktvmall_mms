@@ -111,7 +111,7 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-3 sm:mb-4">
                 <div className="text-center p-2 rounded-lg bg-gray-50">
                   <div className="text-base sm:text-lg font-bold text-gray-700">{competitor.total_products}</div>
-                  <div className="text-[10px] sm:text-xs text-gray-400">總商品</div>
+                  <div className="text-[10px] sm:text-xs text-gray-400">總products</div>
                 </div>
                 <div className="text-center p-2 rounded-lg bg-teal-50">
                   <div className="text-base sm:text-lg font-bold text-teal-600">{competitor.fresh_products}</div>
@@ -123,7 +123,7 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
                 </div>
                 <div className="text-center p-2 rounded-lg bg-purple-50">
                   <div className="text-base sm:text-lg font-bold text-purple-600">{competitor.unique_products}</div>
-                  <div className="text-[10px] sm:text-xs text-gray-400">獨有商品</div>
+                  <div className="text-[10px] sm:text-xs text-gray-400">獨有products</div>
                 </div>
               </div>
 
@@ -177,7 +177,7 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
 
               {recent_changes.length === 0 && totalCompared === 0 && (
                 <p className="text-xs sm:text-sm text-gray-400 text-center py-2">
-                  暫無比較數據
+                  暫無CompareData
                 </p>
               )}
             </div>

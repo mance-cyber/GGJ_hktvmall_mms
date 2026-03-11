@@ -32,19 +32,19 @@ export function FileImporter({ onProductsChange, className }: FileImporterProps)
   const [fileName, setFileName] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // 下載模板
+  // Download模板
   const handleDownloadTemplate = () => {
     window.open(api.getImportTemplateUrl(), '_blank')
   }
 
-  // 解析 CSV 內容
+  // Parse CSV Content
   const parseCSV = (content: string): ParsedProduct[] => {
     const lines = content.trim().split('\n')
     if (lines.length < 2) {
-      throw new Error('文件至少需要包含表頭和一行數據')
+      throw new Error('File must contain at least a header and one data row')
     }
 
-    // 解析表頭
+    // Parse表頭
     const headers = lines[0].split(',').map((h) => h.trim().toLowerCase())
     const nameIndex = headers.indexOf('name')
 
@@ -52,18 +52,18 @@ export function FileImporter({ onProductsChange, className }: FileImporterProps)
       throw new Error('缺少必填字段: name')
     }
 
-    // 解析數據行
+    // ParseData行
     const products: ParsedProduct[] = []
 
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim()
       if (!line) continue
 
-      // 簡單 CSV 解析（不處理引號內的逗號）
+      // Simple CSV parsing (does not handle commas in quotes)
       const values = line.split(',').map((v) => v.trim())
       const errors: string[] = []
 
-      // 獲取字段值
+      // Fetch字段值
       const getValue = (field: string): string => {
         const index = headers.indexOf(field)
         return index >= 0 && values[index] ? values[index] : ''
@@ -71,17 +71,17 @@ export function FileImporter({ onProductsChange, className }: FileImporterProps)
 
       const name = getValue('name')
       if (!name) {
-        errors.push('商品名稱不能為空')
+        errors.push('productsName不能為空')
       }
 
-      // 解析 features（逗號分隔轉數組，但要處理中文逗號）
+      // Parse features (comma-separated to array, handle Chinese commas)
       const featuresRaw = getValue('features')
       const features = featuresRaw
         ? featuresRaw.split(/[,，]/).map((f) => f.trim()).filter(Boolean)
         : []
 
       products.push({
-        name: name || `未命名商品 ${i}`,
+        name: name || `未命名products ${i}`,
         brand: getValue('brand') || undefined,
         features,
         target_audience: getValue('target_audience') || undefined,
@@ -95,13 +95,13 @@ export function FileImporter({ onProductsChange, className }: FileImporterProps)
     return products
   }
 
-  // 處理文件
+  // Processing文items
   const handleFile = useCallback(
     (file: File) => {
       setParseError(null)
       setFileName(file.name)
 
-      // 檢查文件類型
+      // Check文itemsType
       const validTypes = [
         'text/csv',
         'application/vnd.ms-excel',
@@ -113,11 +113,11 @@ export function FileImporter({ onProductsChange, className }: FileImporterProps)
         file.name.endsWith('.xlsx')
 
       if (!isValidType) {
-        setParseError('請上傳 CSV 或 Excel 文件')
+        setParseError('Please upload a CSV or Excel file')
         return
       }
 
-      // 讀取文件
+      // 讀取文items
       const reader = new FileReader()
       reader.onload = (e) => {
         try {
@@ -125,30 +125,30 @@ export function FileImporter({ onProductsChange, className }: FileImporterProps)
           const products = parseCSV(content)
 
           if (products.length === 0) {
-            throw new Error('未找到有效數據')
+            throw new Error('未找到ValidData')
           }
 
           if (products.length > 100) {
-            throw new Error('單次最多導入 100 個商品')
+            throw new Error('單次最多Import 100 個products')
           }
 
           setParsedProducts(products)
 
-          // 過濾掉有錯誤的項目，傳遞給父組件
+          // Filter掉有Error的項目，傳遞給父組items
           const validProducts = products
             .filter((p) => p._errors.length === 0)
             .map(({ _rowIndex, _errors, ...product }) => product)
 
           onProductsChange(validProducts)
         } catch (err) {
-          setParseError(err instanceof Error ? err.message : '解析文件失敗')
+          setParseError(err instanceof Error ? err.message : 'Parse文itemsFailed')
           setParsedProducts([])
           onProductsChange([])
         }
       }
 
       reader.onerror = () => {
-        setParseError('讀取文件失敗')
+        setParseError('讀取文itemsFailed')
       }
 
       reader.readAsText(file)
@@ -156,7 +156,7 @@ export function FileImporter({ onProductsChange, className }: FileImporterProps)
     [onProductsChange]
   )
 
-  // 拖放處理
+  // 拖放Processing
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(true)
@@ -180,7 +180,7 @@ export function FileImporter({ onProductsChange, className }: FileImporterProps)
     [handleFile]
   )
 
-  // 文件選擇處理
+  // 文itemsSelectProcessing
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
@@ -191,7 +191,7 @@ export function FileImporter({ onProductsChange, className }: FileImporterProps)
     [handleFile]
   )
 
-  // 清除導入
+  // ClearImport
   const handleClear = () => {
     setParsedProducts([])
     setFileName(null)
@@ -202,7 +202,7 @@ export function FileImporter({ onProductsChange, className }: FileImporterProps)
     }
   }
 
-  // 移除單個商品
+  // 移除單個products
   const handleRemoveProduct = (index: number) => {
     const newProducts = parsedProducts.filter((_, i) => i !== index)
     setParsedProducts(newProducts)
@@ -219,11 +219,11 @@ export function FileImporter({ onProductsChange, className }: FileImporterProps)
 
   return (
     <div className={cn('space-y-4', className)}>
-      {/* 模板下載 */}
+      {/* 模板Download */}
       <div className="flex items-center justify-between px-3 py-2 bg-blue-50 rounded-lg">
         <div className="flex items-center gap-2 text-sm text-blue-700">
           <FileSpreadsheet className="w-4 h-4" />
-          <span>請按照模板格式填寫商品資訊</span>
+          <span>Please fill in product info following the template format</span>
         </div>
         <Button
           variant="ghost"
@@ -232,11 +232,11 @@ export function FileImporter({ onProductsChange, className }: FileImporterProps)
           className="text-blue-600 hover:text-blue-800"
         >
           <Download className="w-4 h-4 mr-1" />
-          下載模板
+          Download模板
         </Button>
       </div>
 
-      {/* 上傳區域 */}
+      {/* UploadArea */}
       {parsedProducts.length === 0 ? (
         <div
           onDragOver={handleDragOver}
@@ -266,9 +266,9 @@ export function FileImporter({ onProductsChange, className }: FileImporterProps)
           />
 
           <p className="text-sm font-medium text-slate-700">
-            {isDragging ? '放開以上傳文件' : '拖放文件到此處，或點擊選擇文件'}
+            {isDragging ? '放開以Upload文items' : '拖放文items到此處，或點擊Select文items'}
           </p>
-          <p className="text-xs text-slate-500 mt-1">支持 CSV、Excel 格式，最多 100 個商品</p>
+          <p className="text-xs text-slate-500 mt-1">Support CSV、Excel Format，最多 100 個products</p>
 
           {parseError && (
             <div className="mt-4 flex items-center justify-center gap-2 text-sm text-red-600">
@@ -278,20 +278,20 @@ export function FileImporter({ onProductsChange, className }: FileImporterProps)
           )}
         </div>
       ) : (
-        /* 預覽列表 */
+        /* 預覽List */
         <div className="space-y-3">
           {/* 摘要 */}
           <div className="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-lg">
             <div className="flex items-center gap-3">
               <span className="text-sm text-slate-600">
-                文件: <span className="font-medium">{fileName}</span>
+                文items: <span className="font-medium">{fileName}</span>
               </span>
               <HoloBadge variant="success">
-                <Check className="w-3 h-3 mr-1" /> {validCount} 個有效
+                <Check className="w-3 h-3 mr-1" /> {validCount} 個Valid
               </HoloBadge>
               {errorCount > 0 && (
                 <HoloBadge variant="error">
-                  <AlertCircle className="w-3 h-3 mr-1" /> {errorCount} 個錯誤
+                  <AlertCircle className="w-3 h-3 mr-1" /> {errorCount} 個Error
                 </HoloBadge>
               )}
             </div>
@@ -302,20 +302,20 @@ export function FileImporter({ onProductsChange, className }: FileImporterProps)
               className="text-slate-500 hover:text-red-500"
             >
               <Trash2 className="w-4 h-4 mr-1" />
-              清除
+              Clear
             </Button>
           </div>
 
-          {/* 商品列表 */}
+          {/* Product list */}
           <div className="border border-slate-200 rounded-lg overflow-hidden max-h-[300px] overflow-y-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 sticky top-0">
                 <tr>
                   <th className="px-3 py-2 text-left font-medium text-slate-600">行號</th>
-                  <th className="px-3 py-2 text-left font-medium text-slate-600">商品名稱</th>
+                  <th className="px-3 py-2 text-left font-medium text-slate-600">productsName</th>
                   <th className="px-3 py-2 text-left font-medium text-slate-600">品牌</th>
-                  <th className="px-3 py-2 text-left font-medium text-slate-600">狀態</th>
-                  <th className="px-3 py-2 text-center font-medium text-slate-600">操作</th>
+                  <th className="px-3 py-2 text-left font-medium text-slate-600">State</th>
+                  <th className="px-3 py-2 text-center font-medium text-slate-600">Operation</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">

@@ -1,5 +1,5 @@
 // =============================================
-// 產品選擇器組件
+// ProductSelect器組items
 // =============================================
 
 'use client'
@@ -22,7 +22,7 @@ export function ProductSelector({
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
 
-  // 過濾產品
+  // FilterProduct
   const filteredProducts = useMemo(() => {
     if (!search.trim()) return products
     const lowerSearch = search.toLowerCase()
@@ -33,13 +33,13 @@ export function ProductSelector({
     )
   }, [products, search])
 
-  // 當前選中的產品
+  // 當前選中的Product
   const selectedProduct = useMemo(
     () => products.find((p) => p.id === selectedId),
     [products, selectedId]
   )
 
-  // 格式化價格
+  // Format化Price
   const formatPrice = (price: number | null) => {
     if (price === null) return '--'
     return `$${price.toLocaleString()}`
@@ -47,7 +47,7 @@ export function ProductSelector({
 
   return (
     <div className="relative">
-      {/* 選擇器按鈕 */}
+      {/* Select器button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -67,11 +67,11 @@ export function ProductSelector({
                 <span className="text-gray-300">•</span>
                 <span>{formatPrice(selectedProduct.current_price)}</span>
                 <span className="text-gray-300">•</span>
-                <span>{selectedProduct.competitor_count} 個競爭對手</span>
+                <span>{selectedProduct.competitor_count} 個競爭Competitor</span>
               </div>
             </div>
           ) : (
-            <span className="text-gray-500">選擇產品...</span>
+            <span className="text-gray-500">SelectProduct...</span>
           )}
         </div>
         <ChevronDown
@@ -90,15 +90,15 @@ export function ProductSelector({
             onClick={() => setIsOpen(false)}
           />
 
-          {/* 選單內容 */}
+          {/* 選單Content */}
           <div className="absolute z-[9999] w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
-            {/* 搜尋框 */}
+            {/* Search框 */}
             <div className="p-3 border-b border-gray-100">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="搜尋產品名稱或 SKU..."
+                  placeholder="SearchProductName或 SKU..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
@@ -107,11 +107,11 @@ export function ProductSelector({
               </div>
             </div>
 
-            {/* 產品列表 */}
+            {/* ProductList */}
             <div className="max-h-64 overflow-y-auto">
               {filteredProducts.length === 0 ? (
                 <div className="px-4 py-8 text-center text-gray-500 text-sm">
-                  找不到符合的產品
+                  找不到符合的Product
                 </div>
               ) : (
                 filteredProducts.map((product) => (
@@ -153,7 +153,7 @@ export function ProductSelector({
                       </div>
                     </div>
                     <div className="flex-shrink-0 text-xs text-gray-400">
-                      {product.competitor_count} 競爭對手
+                      {product.competitor_count} 競爭Competitor
                     </div>
                   </button>
                 ))

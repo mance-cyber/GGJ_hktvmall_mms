@@ -53,7 +53,7 @@ export default function AISettingsPage() {
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle')
   const [testMessage, setTestMessage] = useState('')
 
-  // 動態獲取的模型列表
+  // Dynamically fetched model list
   const [fetchedModels, setFetchedModels] = useState<FetchedModel[]>([])
   const [fetchModelsStatus, setFetchModelsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [fetchModelsError, setFetchModelsError] = useState('')
@@ -159,7 +159,7 @@ export default function AISettingsPage() {
     const newKey = apiKey.trim()
     const newUrl = baseUrl.trim()
 
-    // 如果有輸入新的 API Key，使用新的配置
+    // If new API Key is entered, use new config
     if (newKey) {
       if (!newUrl && !config?.base_url) {
         setFetchModelsStatus('error')
@@ -171,14 +171,14 @@ export default function AISettingsPage() {
         baseUrl: newUrl || config?.base_url,
       })
     }
-    // 否則使用已保存的配置
+    // Otherwise use saved config
     else if (config?.api_key_set) {
       fetchModelsMutation.mutate({
         useSaved: true,
-        baseUrl: newUrl || undefined,  // 如果有輸入新 URL 則使用，否則讓後端用保存的
+        baseUrl: newUrl || undefined,  // If new URL entered, use it; otherwise let backend use saved value
       })
     }
-    // 都沒有，顯示錯誤
+    // Neither provided, show error
     else {
       setFetchModelsStatus('error')
       setFetchModelsError(t['ai_settings.error_set_api_key'])

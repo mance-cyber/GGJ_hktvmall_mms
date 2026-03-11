@@ -1,7 +1,7 @@
 'use client'
 
 // =============================================
-// 首頁 - Future Tech Design
+// Home - Future Tech Design
 // =============================================
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -51,7 +51,7 @@ import {
 } from '@/components/ui/future-tech'
 
 // =============================================
-// 主頁面
+// Main page
 // =============================================
 
 export default function DashboardPage() {
@@ -86,13 +86,13 @@ export default function DashboardPage() {
     },
   })
 
-  // 計算統計數據
+  // CalculateStatistics
   const totalProducts = categories?.items.reduce((sum, cat) => sum + cat.total_products, 0) || 0
   const activeCategories = categories?.items.filter(cat => cat.is_active).length || 0
   const activeCompetitors = competitors?.data.filter(c => c.is_active).length || 0
   const competitorProducts = competitors?.data.reduce((sum, c) => sum + c.product_count, 0) || 0
 
-  // 今日數據
+  // Today data
   const todayAlerts = alerts?.data.filter(a => {
     const alertDate = new Date(a.created_at)
     const today = new Date()
@@ -102,7 +102,7 @@ export default function DashboardPage() {
   const priceDrops = todayAlerts.filter(a => a.alert_type === 'price_drop').length
   const priceIncreases = todayAlerts.filter(a => a.alert_type === 'price_increase').length
 
-  // Loading 狀態
+  // Loading State
   if (categoriesLoading) {
     return (
       <div className="relative min-h-[60vh]">
@@ -126,11 +126,11 @@ export default function DashboardPage() {
   return (
     <PageTransition>
       <div className="relative min-h-screen">
-        {/* 背景數據流 - 手機隱藏 */}
+        {/* Background data stream - hidden on mobile */}
         <DataStreamBg density="low" color="cyan" className="opacity-20 hidden sm:block" />
 
         <div className="relative z-10 space-mobile">
-          {/* ========== 頁面標題 ========== */}
+          {/* ========== Page title ========== */}
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
               <motion.div
@@ -173,7 +173,7 @@ export default function DashboardPage() {
             </motion.div>
           </div>
 
-          {/* ========== 系統狀態 - 手機簡化 ========== */}
+          {/* ========== System Status - Simplified for mobile ========== */}
           <HoloCard glowColor="cyan" className="card-mobile">
             <div className="flex items-center justify-between mb-2 sm:mb-3">
               <div className="flex items-center gap-2">
@@ -196,7 +196,7 @@ export default function DashboardPage() {
             </div>
           </HoloCard>
 
-          {/* ========== 今日摘要 ========== */}
+          {/* ========== Today's Summary ========== */}
           <HoloCard glowColor="blue" className="card-mobile">
             <div className="flex items-center gap-2 mb-2 sm:mb-3">
               <Sparkles className="w-4 h-4 text-amber-500" />
@@ -234,7 +234,7 @@ export default function DashboardPage() {
             </div>
           </HoloCard>
 
-          {/* ========== 待處理事項 ========== */}
+          {/* ========== Pending Items ========== */}
           {(alerts?.unread_count || 0) > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -267,7 +267,7 @@ export default function DashboardPage() {
             </motion.div>
           )}
 
-          {/* ========== 關鍵指標 ========== */}
+          {/* ========== Key Metrics ========== */}
           <StaggerContainer className="grid grid-cols-2 xs:grid-cols-4 gap-1.5 sm:gap-3">
             <DataMetric
               label={t['dashboard.categories']}
@@ -295,11 +295,11 @@ export default function DashboardPage() {
             />
           </StaggerContainer>
 
-          {/* ========== 主內容區域 ========== */}
+          {/* ========== Main Content Area ========== */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
-            {/* 左側：快速操作 + 競爭對手 */}
+            {/* Left: Quick actions + competitors */}
             <div className="lg:col-span-2 space-y-3 sm:space-y-4">
-              {/* 快速操作 */}
+              {/* Quick Actions */}
               <HoloCard glowColor="cyan" className="card-mobile">
                 <div className="flex items-center gap-2 mb-2 sm:mb-3">
                   <Zap className="w-4 h-4 text-amber-500" />
@@ -333,7 +333,7 @@ export default function DashboardPage() {
                 </div>
               </HoloCard>
 
-              {/* 競爭對手概覽 */}
+              {/* Competitor Overview */}
               <HoloCard glowColor="blue" scanLine className="overflow-hidden">
                 <HoloPanelHeader
                   title={t['dashboard.competitor_monitoring']}
@@ -371,7 +371,7 @@ export default function DashboardPage() {
               </HoloCard>
             </div>
 
-            {/* 右側：最近警報 */}
+            {/* Right: Recent Alerts */}
             <div className="space-y-6">
               <HoloCard glowColor="purple" className="overflow-hidden lg:sticky lg:top-6">
                 <HoloPanelHeader
@@ -420,7 +420,7 @@ export default function DashboardPage() {
 }
 
 // =============================================
-// 子組件
+// Sub-components
 // =============================================
 
 function SystemStatus({

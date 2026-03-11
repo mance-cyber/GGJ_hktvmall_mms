@@ -1,7 +1,7 @@
 'use client'
 
 // =============================================
-// 應用外殼 - Future Tech 風格佈局
+// 應用外殼 - Future Tech 風格Layout
 // =============================================
 
 import { usePathname } from 'next/navigation'
@@ -11,11 +11,11 @@ import { useLocale } from './providers/locale-provider'
 import { ClickSpark } from './ui/click-spark'
 import { GlobalChatWidget } from './GlobalChatWidget'
 
-// 不需要顯示側邊欄的公共頁面
+// 不NeedDisplaySidebar的公共page
 const publicPaths = ['/login', '/register']
 
 // =============================================
-// 動態背景組件
+// 動態背景組items
 // =============================================
 function AnimatedBackground() {
   return (
@@ -57,15 +57,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
   const { t } = useLocale()
 
-  // 公共頁面不顯示側邊欄
+  // 公共page不DisplaySidebar
   const isPublicPage = publicPaths.some(path => pathname.startsWith(path))
 
-  // 如果是公共頁面，直接渲染 children
+  // If public page, render directly children
   if (isPublicPage) {
     return <>{children}</>
   }
 
-  // 非公共頁面：等待認證檢查完成
+  // Non-public pages: wait for auth check to complete
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -77,12 +77,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     )
   }
 
-  // 未登入，返回空（auth-provider 會處理跳轉到 login）
+  // Not logged in, return empty (auth-provider handles redirect to login)
   if (!user) {
     return null
   }
 
-  // 已登入用戶顯示完整佈局（Future Tech 風格）
+  // Logged in users see full layout (Future Tech style)
   return (
     <ClickSpark
       sparkColor="#a855f7"
@@ -95,7 +95,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* 動態背景 */}
         <AnimatedBackground />
 
-        {/* 主內容 */}
+        {/* 主Content */}
         <div className="relative z-10 flex min-h-screen">
           <Sidebar />
           <main className="flex-1 min-w-0 overflow-x-hidden px-2 py-3 sm:p-4 lg:p-6 lg:ml-72 pb-24 lg:pb-6">
@@ -104,7 +104,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <MobileBottomNav />
         </div>
 
-        {/* 全局浮動聊天組件 */}
+        {/* 全局浮動聊天組items */}
         <GlobalChatWidget />
       </div>
     </ClickSpark>

@@ -1,5 +1,5 @@
 // =============================================
-// 圖片生成上傳頁面
+// Image Generation Upload Page
 // =============================================
 
 'use client'
@@ -23,7 +23,7 @@ export default function ImageGenerationUploadPage() {
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // 根據角色計算限制
+  // Calculate limits based on role
   const maxFiles = isAdmin ? 999 : 5
   const maxOutputsPerImage = isAdmin ? 10 : 5
   const outputOptions = useMemo(
@@ -41,20 +41,20 @@ export default function ImageGenerationUploadPage() {
     setError(null)
 
     try {
-      // 1. 創建任務
+      // 1. Create task
       const task = await createTask({
         mode,
         style_description: styleDescription || undefined,
         outputs_per_image: outputsPerImage,
       })
 
-      // 2. 上傳圖片
+      // 2. Upload images
       await uploadImages(task.id, files)
 
-      // 3. 開始生成
+      // 3. Start generation
       await startGeneration(task.id)
 
-      // 4. 跳轉到結果頁面
+      // 4. Redirect to results page
       router.push(`/image-generation/results/${task.id}`)
     } catch (err: any) {
       console.error('Image generation error:', err)
@@ -66,7 +66,7 @@ export default function ImageGenerationUploadPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
-      {/* 標題 */}
+      {/* Title */}
       <div className="mb-8 flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">{t['image_gen.upload_title']}</h1>
@@ -88,12 +88,12 @@ export default function ImageGenerationUploadPage() {
         </button>
       </div>
 
-      {/* 生成模式選擇 */}
+      {/* Generate模式Select */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">{t['image_gen.select_mode']}</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* 白底圖模式 */}
+          {/* White background mode */}
           <label
             className={`
               relative flex items-start p-4 border-2 rounded-lg cursor-pointer
@@ -125,7 +125,7 @@ export default function ImageGenerationUploadPage() {
             </div>
           </label>
 
-          {/* 專業攝影模式 */}
+          {/* Professional photo mode */}
           <label
             className={`
               relative flex items-start p-4 border-2 rounded-lg cursor-pointer
@@ -158,7 +158,7 @@ export default function ImageGenerationUploadPage() {
           </label>
         </div>
 
-        {/* 風格描述（專業攝影模式才顯示） */}
+        {/* Style description (shown only for professional photo mode) */}
         {mode === 'professional_photo' && (
           <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -181,7 +181,7 @@ export default function ImageGenerationUploadPage() {
           </div>
         )}
 
-        {/* 每張圖片輸出數量 */}
+        {/* Outputs per image */}
         <div className="mt-6 pt-6 border-t border-gray-200">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t['image_gen.outputs_per_image']}
@@ -215,20 +215,20 @@ export default function ImageGenerationUploadPage() {
         </div>
       </div>
 
-      {/* 圖片上傳區域 */}
+      {/* Image upload area */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">{t['image_gen.upload_section']}</h2>
         <ImageUploadZone onFilesChange={setFiles} maxFiles={maxFiles} />
       </div>
 
-      {/* 錯誤訊息 */}
+      {/* Error message */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
           <p className="text-sm text-red-800">{error}</p>
         </div>
       )}
 
-      {/* 提交按鈕 */}
+      {/* Submit button */}
       <div className="flex justify-end gap-4">
         <button
           type="button"
