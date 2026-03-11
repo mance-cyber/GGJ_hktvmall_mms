@@ -639,7 +639,7 @@ export default function CompetitorDetailPage() {
                   {/* Product info */}
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900 leading-relaxed mb-2">
-                      {priceHistory.product.name}
+                      {priceHistory.product.name_en || priceHistory.product.name}
                     </h3>
                     <div className="flex items-center space-x-2">
                       {priceHistory.product.url && (
@@ -836,7 +836,7 @@ function ProductRow({
           {product.image_url ? (
             <img
               src={product.image_url}
-              alt={product.name}
+              alt={product.name_en || product.name}
               className="w-full h-full object-cover transition-transform group-hover:scale-110"
             />
           ) : (
@@ -848,7 +848,7 @@ function ProductRow({
             "text-sm font-medium truncate transition-colors",
             isSelected ? "text-cyan-700" : "text-gray-900"
           )}>
-            {product.name}
+            {product.name_en || product.name}
           </h3>
           <div className="flex items-center space-x-2 mt-0.5">
             {product.category && (

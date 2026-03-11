@@ -53,7 +53,7 @@ interface ProductDetailPanelProps {
 
 export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
   const { product, competitors, our_price_rank, total_competitors } = data
-  const productName = product.name.replace(/^GOGOJAP-/, '')
+  const productName = (product.name_en || product.name).replace(/^GOGOJAP-/, '')
 
   const { data: history, isLoading: historyLoading } = useQuery({
     queryKey: ['price-history', product.id],
@@ -254,8 +254,8 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
                           </div>
                         </td>
                         <td className="py-2 px-2">
-                          <span className="text-[11px] text-gray-500 line-clamp-2 leading-tight" title={comp.product_name}>
-                            {comp.product_name}
+                          <span className="text-[11px] text-gray-500 line-clamp-2 leading-tight" title={comp.product_name_en || comp.product_name}>
+                            {comp.product_name_en || comp.product_name}
                           </span>
                         </td>
                         <td className="py-2 px-2 text-right">

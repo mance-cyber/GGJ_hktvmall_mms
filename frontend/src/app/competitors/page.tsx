@@ -124,7 +124,7 @@ export default function CompetitorsPage() {
     // Search
     if (search.trim()) {
       const q = search.toLowerCase()
-      items = items.filter(i => i.product.name.toLowerCase().includes(q))
+      items = items.filter(i => (i.product.name_en || i.product.name).toLowerCase().includes(q) || i.product.name.toLowerCase().includes(q))
     }
 
     // Category

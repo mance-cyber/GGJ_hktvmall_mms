@@ -75,7 +75,7 @@ export function ProductComparisonCard({ data, selected, onClick }: ProductCompar
             'font-medium text-sm truncate min-w-0 flex-1',
             selected ? 'text-teal-700' : 'text-gray-800'
           )}>
-            {product.name.replace(/^GOGOJAP-/, '')}
+            {(product.name_en || product.name).replace(/^GOGOJAP-/, '')}
           </span>
           {selected ? (
             <ChevronUp className="w-3.5 h-3.5 text-teal-400 shrink-0" />

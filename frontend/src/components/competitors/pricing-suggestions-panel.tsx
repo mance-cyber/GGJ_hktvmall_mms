@@ -81,7 +81,7 @@ export function PricingSuggestionsPanel() {
                 {s.category && (
                   <span className="text-[10px] text-gray-400 uppercase tracking-wider">{s.category}</span>
                 )}
-                <h4 className="font-semibold text-gray-800 text-sm truncate">{s.product_name}</h4>
+                <h4 className="font-semibold text-gray-800 text-sm truncate">{s.product_name_en || s.product_name}</h4>
               </div>
               <span className={cn('text-[10px] px-2 py-0.5 rounded-full border shrink-0', pCfg.bg, pCfg.border, pCfg.text)}>
                 {pCfg.label}

@@ -163,7 +163,7 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
                            change.change_type === 'price_increase' ? '↑' :
                            change.change_type}
                         </span>
-                        <span className="text-gray-600 truncate flex-1">{change.product_name}</span>
+                        <span className="text-gray-600 truncate flex-1">{change.product_name_en || change.product_name}</span>
                         {change.old_price && change.new_price && (
                           <span className="text-gray-400 font-mono shrink-0">
                             ${change.old_price}→${change.new_price}

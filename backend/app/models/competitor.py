@@ -49,6 +49,7 @@ class CompetitorProduct(Base):
     sku: Mapped[Optional[str]] = mapped_column(String(100))
     category: Mapped[Optional[str]] = mapped_column(String(255))
     image_url: Mapped[Optional[str]] = mapped_column(String(1000))
+    name_en: Mapped[Optional[str]] = mapped_column(String(500), comment="English product name")
 
     # 新增欄位
     brand: Mapped[Optional[str]] = mapped_column(String(255))

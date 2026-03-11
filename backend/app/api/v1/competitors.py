@@ -1028,6 +1028,7 @@ async def get_comparison_products(
                 "competitor_name": row.comp_name,
                 "competitor_tier": row.comp_tier,
                 "product_name": cp.name,
+                "product_name_en": cp.name_en,
                 "price": float(latest.price) if latest and latest.price else None,
                 "original_price": float(latest.original_price) if latest and latest.original_price else None,
                 "unit_price_per_100g": float(latest.unit_price_per_100g) if latest and latest.unit_price_per_100g else None,
@@ -1051,6 +1052,7 @@ async def get_comparison_products(
                 "competitor_name": row.comp_name,
                 "competitor_tier": row.comp_tier,
                 "product_name": cp.name,
+                "product_name_en": cp.name_en,
                 "price": float(latest.price) if latest and latest.price else None,
                 "original_price": float(latest.original_price) if latest and latest.original_price else None,
                 "unit_price_per_100g": float(latest.unit_price_per_100g) if latest and latest.unit_price_per_100g else None,
@@ -1079,6 +1081,7 @@ async def get_comparison_products(
             "product": {
                 "id": str(product.id),
                 "name": product.name,
+                "name_en": product.name_en,
                 "sku": product.sku,
                 "price": float(product.price) if product.price else None,
                 "image_url": (product.images[0] if product.images else None),

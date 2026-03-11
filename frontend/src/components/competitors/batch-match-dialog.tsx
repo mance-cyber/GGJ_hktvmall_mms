@@ -312,7 +312,7 @@ export function BatchMatchDialog({
                   )}
                   <div className="flex-1 min-w-0">
                     <span className="font-medium text-slate-700 truncate block">
-                      {item.product_name}
+                      {item.product_name_en || item.product_name}
                     </span>
                     {item.error ? (
                       <span className="text-xs text-red-500">Error: {item.error}</span>
