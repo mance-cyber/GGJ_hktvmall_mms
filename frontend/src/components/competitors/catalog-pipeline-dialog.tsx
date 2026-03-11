@@ -235,7 +235,7 @@ export function CatalogPipelineDialog() {
           const msg = pollErr.message ?? ''
 
           // 404 = task does not exist (DB persisted, only expired or accidentally deleted would 404)
-          if (msg.includes('404') || msg.includes('不存在') || msg.includes('Expired')) {
+          if (msg.includes('404') || msg.includes('not found') || msg.includes('Expired')) {
             addLog('✗ Task does not exist or has expired, please retry.', 'error')
             setPhase('error')
             break

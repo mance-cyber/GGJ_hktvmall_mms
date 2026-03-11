@@ -242,10 +242,10 @@ export function BatchMatchDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="鮮魚">Fresh Fish</SelectItem>
-                  <SelectItem value="貝類">Shellfish</SelectItem>
-                  <SelectItem value="蟹類">Crab</SelectItem>
-                  <SelectItem value="其他海鮮">Other Seafood</SelectItem>
+                  <SelectItem value="Fresh Fish">Fresh Fish</SelectItem>
+                  <SelectItem value="Shellfish">Shellfish</SelectItem>
+                  <SelectItem value="Crab">Crab</SelectItem>
+                  <SelectItem value="Other Seafood">Other Seafood</SelectItem>
                 </SelectContent>
               </Select>
             </div>
