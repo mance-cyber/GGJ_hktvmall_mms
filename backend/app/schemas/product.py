@@ -58,6 +58,9 @@ class ProductResponse(ProductBase):
     """商品響應"""
     id: UUID
     hktv_product_id: Optional[str] = None
+    name_zh: Optional[str] = None
+    name_ja: Optional[str] = None
+    name_en: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

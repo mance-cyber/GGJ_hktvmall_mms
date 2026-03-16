@@ -2,6 +2,7 @@
 
 import { ComparisonSummary } from '@/lib/api'
 import { Building2, Package, AlertTriangle, TrendingUp, Clock, Target } from 'lucide-react'
+import { useLocale } from '@/components/providers/locale-provider'
 
 interface DashboardStatsProps {
   summary: ComparisonSummary | undefined
@@ -43,6 +44,7 @@ function StatCard({
 }
 
 export function DashboardStats({ summary, isLoading }: DashboardStatsProps) {
+  const { t } = useLocale()
   if (isLoading || !summary) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
@@ -60,40 +62,40 @@ export function DashboardStats({ summary, isLoading }: DashboardStatsProps) {
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
       <StatCard
         icon={Building2}
-        label="Tracked Merchants"
+        label={t('competitors.stats.tracked_merchants')}
         value={summary.total_competitors}
         color="teal"
       />
       <StatCard
         icon={Package}
-        label="Competitor Products"
+        label={t('competitors.stats.competitor_products')}
         value={summary.total_tracked_products}
-        sub={`${summary.mapped_competitors} paired`}
+        sub={t('competitors.stats.paired', { n: summary.mapped_competitors })}
         color="blue"
       />
       <StatCard
         icon={Target}
-        label="Own Products"
+        label={t('competitors.stats.own_products')}
         value={summary.our_products}
         color="purple"
       />
       <StatCard
         icon={TrendingUp}
-        label="We Are Cheapest"
+        label={t('competitors.stats.we_cheapest')}
         value={`${summary.we_are_cheapest_pct}%`}
         color="emerald"
       />
       <StatCard
         icon={AlertTriangle}
-        label="24h Alert"
+        label={t('competitors.stats.alerts_24h')}
         value={summary.price_alerts_24h}
         color={summary.price_alerts_24h > 0 ? 'amber' : 'teal'}
       />
       <StatCard
         icon={Clock}
-        label="Avg. Price Gap"
+        label={t('competitors.stats.avg_price_gap')}
         value={`${summary.avg_price_diff_pct > 0 ? '+' : ''}${summary.avg_price_diff_pct}%`}
-        sub={summary.last_scan ? `Scan: ${new Date(summary.last_scan).toLocaleTimeString('en-HK', { hour: '2-digit', minute: '2-digit' })}` : 'Not scanned'}
+        sub={summary.last_scan ? t('competitors.stats.last_scan', { time: new Date(summary.last_scan).toLocaleTimeString('en-HK', { hour: '2-digit', minute: '2-digit' }) }) : t('competitors.stats.not_scanned')}
         color={summary.avg_price_diff_pct > 0 ? 'emerald' : 'red'}
       />
     </div>

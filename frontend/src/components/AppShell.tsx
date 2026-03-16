@@ -71,7 +71,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-3">
           <div className="animate-spin w-8 h-8 border-3 border-cyan-500 border-t-transparent rounded-full" />
-          <p className="text-sm text-slate-400">{t['common.loading']}</p>
+          <p className="text-sm text-slate-400">{t('common.loading')}</p>
         </div>
       </div>
     )

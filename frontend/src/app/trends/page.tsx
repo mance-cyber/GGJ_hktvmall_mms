@@ -57,8 +57,8 @@ export default function TrendsPage() {
               <TrendingUp className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{t['trends.title']}</h1>
-              <p className="text-gray-500 text-sm">{t['trends.subtitle']}</p>
+              <h1 className="text-2xl font-bold text-gray-900">{t('trends.title')}</h1>
+              <p className="text-gray-500 text-sm">{t('trends.subtitle')}</p>
             </div>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -82,13 +82,13 @@ export default function TrendsPage() {
               <TrendingUp className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{t['trends.title']}</h1>
+              <h1 className="text-2xl font-bold text-gray-900">{t('trends.title')}</h1>
             </div>
           </div>
           <HoloCard className="p-6 border-red-200 bg-red-50/50">
             <div className="flex items-center text-red-600">
               <AlertCircle className="w-5 h-5 mr-3" />
-              <span className="font-medium">{t['trends.load_error']}</span>
+              <span className="font-medium">{t('trends.load_error')}</span>
             </div>
           </HoloCard>
         </div>
@@ -106,15 +106,15 @@ export default function TrendsPage() {
               <TrendingUp className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{t['trends.title']}</h1>
-              <p className="text-gray-500 text-sm">{t['trends.subtitle']}</p>
+              <h1 className="text-2xl font-bold text-gray-900">{t('trends.title')}</h1>
+              <p className="text-gray-500 text-sm">{t('trends.subtitle')}</p>
             </div>
           </div>
           <HoloCard className="p-12 text-center">
             <TrendingUp className="w-16 h-16 text-emerald-500 mx-auto mb-4 opacity-50" />
-            <h2 className="text-xl font-semibold text-gray-700 mb-2">{t['trends.empty_title']}</h2>
+            <h2 className="text-xl font-semibold text-gray-700 mb-2">{t('trends.empty_title')}</h2>
             <p className="text-gray-500">
-              {t['trends.empty_desc']}
+              {t('trends.empty_desc')}
             </p>
           </HoloCard>
         </div>
@@ -132,8 +132,8 @@ export default function TrendsPage() {
               <TrendingUp className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{t['trends.title']}</h1>
-              <p className="text-gray-500 text-sm">{t['trends.subtitle']}</p>
+              <h1 className="text-2xl font-bold text-gray-900">{t('trends.title')}</h1>
+              <p className="text-gray-500 text-sm">{t('trends.subtitle')}</p>
             </div>
           </div>
           {selectedProductId && (
@@ -143,7 +143,7 @@ export default function TrendsPage() {
               className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <RefreshCw className={`w-4 h-4 ${isLoadingTrend ? 'animate-spin' : ''}`} />
-              {t['trends.refresh']}
+              {t('trends.refresh')}
             </button>
           )}
         </div>
@@ -172,9 +172,9 @@ export default function TrendsPage() {
         {!selectedProductId ? (
           <HoloCard className="p-12 text-center">
             <TrendingUp className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-700 mb-2">{t['trends.select_product']}</h2>
+            <h2 className="text-xl font-semibold text-gray-700 mb-2">{t('trends.select_product')}</h2>
             <p className="text-gray-500">
-              {t['trends.select_hint']}
+              {t('trends.select_hint')}
             </p>
           </HoloCard>
         ) : isLoadingTrend ? (
@@ -191,7 +191,7 @@ export default function TrendsPage() {
           <HoloCard className="p-6 border-red-200 bg-red-50/50">
             <div className="flex items-center text-red-600">
               <AlertCircle className="w-5 h-5 mr-3" />
-              <span className="font-medium">{t['trends.trend_load_error']}</span>
+              <span className="font-medium">{t('trends.trend_load_error')}</span>
             </div>
           </HoloCard>
         ) : trendData ? (
@@ -201,7 +201,7 @@ export default function TrendsPage() {
 
             {/* PriceTrendChart */}
             <HoloCard className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t['trends.section_chart']}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('trends.section_chart')}</h3>
               <PriceTrendChart
                 trends={trendData.trends}
                 ownProduct={trendData.own_product}
@@ -211,7 +211,7 @@ export default function TrendsPage() {
 
             {/* DataTable */}
             <HoloCard className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t['trends.section_table']}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('trends.section_table')}</h3>
               <PriceDataTable
                 trends={trendData.trends}
                 ownProduct={trendData.own_product}

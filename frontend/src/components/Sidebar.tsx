@@ -40,7 +40,7 @@ import { useAuth } from '@/components/providers/auth-provider'
 import { useLocale } from '@/components/providers/locale-provider'
 import { usePermissions, PERMISSIONS } from '@/hooks/usePermissions'
 import { LocaleToggle } from '@/components/LocaleToggle'
-import type { TranslationDict } from '@/i18n/types'
+import type { TranslateFunction } from '@/i18n/utils'
 
 // =============================================
 // Navigation item type definitions
@@ -136,46 +136,46 @@ const categoryColors = {
 // Navigation configuration - grouped by feature (with permissions and colors)
 // =============================================
 
-function getNavigationGroups(t: TranslationDict): NavGroup[] {
+function getNavigationGroups(t: TranslateFunction): NavGroup[] {
   return [
     {
-      title: t['sidebar.overview'],
+      title: t('sidebar.overview'),
       color: categoryColors.blue,
       items: [
-        { name: t['sidebar.dashboard'], href: '/', icon: LayoutDashboard },
-        { name: t['sidebar.roi'], href: '/roi', icon: DollarSign, description: t['sidebar.roi_desc'] },
+        { name: t('sidebar.dashboard'), href: '/', icon: LayoutDashboard },
+        { name: t('sidebar.roi'), href: '/roi', icon: DollarSign, description: t('sidebar.roi_desc') },
       ]
     },
     {
-      title: t['sidebar.market_intel'],
+      title: t('sidebar.market_intel'),
       color: categoryColors.emerald,
       items: [
         {
-          name: t['sidebar.ai_assistant'],
+          name: t('sidebar.ai_assistant'),
           href: '/agent',
           icon: MessageSquare,
           permissions: [PERMISSIONS.AGENT_READ]
         },
         {
-          name: t['sidebar.market_response'],
+          name: t('sidebar.market_response'),
           href: '/market-response',
           icon: Globe,
           permissions: [PERMISSIONS.COMPETITORS_READ]
         },
         {
-          name: t['sidebar.competitor_monitor'],
+          name: t('sidebar.competitor_monitor'),
           href: '/competitors',
           icon: Eye,
           permissions: [PERMISSIONS.COMPETITORS_READ]
         },
         {
-          name: t['sidebar.price_trends'],
+          name: t('sidebar.price_trends'),
           href: '/trends',
           icon: TrendingUp,
           permissions: [PERMISSIONS.PRICES_READ]
         },
         {
-          name: t['sidebar.seo_ranking'],
+          name: t('sidebar.seo_ranking'),
           href: '/seo-ranking',
           icon: Search,
           permissions: [PERMISSIONS.COMPETITORS_READ]
@@ -183,48 +183,48 @@ function getNavigationGroups(t: TranslationDict): NavGroup[] {
       ]
     },
     {
-      title: t['sidebar.product_mgmt'],
+      title: t('sidebar.product_mgmt'),
       color: categoryColors.purple,
       items: [
         {
-          name: t['sidebar.pricing_approval'],
+          name: t('sidebar.pricing_approval'),
           href: '/pricing-approval',
           icon: ClipboardCheck,
-          description: t['sidebar.pricing_approval_desc'],
+          description: t('sidebar.pricing_approval_desc'),
           permissions: [PERMISSIONS.PRICES_READ]
         },
         {
-          name: t['sidebar.product_library'],
+          name: t('sidebar.product_library'),
           href: '/products',
           icon: Package,
           permissions: [PERMISSIONS.COMPETITORS_READ]
         },
         {
-          name: t['sidebar.categories'],
+          name: t('sidebar.categories'),
           href: '/categories',
           icon: FolderOpen,
           permissions: [PERMISSIONS.COMPETITORS_READ]
         },
         {
-          name: t['sidebar.ai_image'],
+          name: t('sidebar.ai_image'),
           href: '/image-generation/upload',
           icon: Image,
           permissions: [PERMISSIONS.AGENT_READ]
         },
         {
-          name: t['sidebar.content_pipeline'],
+          name: t('sidebar.content_pipeline'),
           href: '/content-pipeline',
           icon: Zap,
           permissions: [PERMISSIONS.AGENT_READ]
         },
         {
-          name: t['sidebar.content_history'],
+          name: t('sidebar.content_history'),
           href: '/content-history',
           icon: Clock,
           permissions: [PERMISSIONS.AGENT_READ]
         },
         {
-          name: t['sidebar.ai_analysis'],
+          name: t('sidebar.ai_analysis'),
           href: '/ai-analysis',
           icon: Brain,
           permissions: [PERMISSIONS.AGENT_READ]
@@ -232,11 +232,11 @@ function getNavigationGroups(t: TranslationDict): NavGroup[] {
       ]
     },
     {
-      title: t['sidebar.notifications'],
+      title: t('sidebar.notifications'),
       color: categoryColors.orange,
       items: [
         {
-          name: t['sidebar.alert_center'],
+          name: t('sidebar.alert_center'),
           href: '/alerts',
           icon: Bell,
           permissions: [PERMISSIONS.NOTIFICATIONS_READ]
@@ -244,31 +244,31 @@ function getNavigationGroups(t: TranslationDict): NavGroup[] {
       ]
     },
     {
-      title: t['sidebar.system'],
+      title: t('sidebar.system'),
       color: categoryColors.pink,
       roles: ['admin'],
       items: [
         {
-          name: t['sidebar.agent_team'],
+          name: t('sidebar.agent_team'),
           href: '/agent-team',
           icon: Bot,
-          description: t['sidebar.agent_team_desc'],
+          description: t('sidebar.agent_team_desc'),
           permissions: [PERMISSIONS.SYSTEM_SETTINGS_READ]
         },
         {
-          name: t['sidebar.ai_settings'],
+          name: t('sidebar.ai_settings'),
           href: '/ai-settings',
           icon: Brain,
           permissions: [PERMISSIONS.SYSTEM_SETTINGS_READ]
         },
         {
-          name: t['sidebar.data_export'],
+          name: t('sidebar.data_export'),
           href: '/export',
           icon: Download,
           permissions: [PERMISSIONS.REPORTS_EXPORT]
         },
         {
-          name: t['sidebar.settings'],
+          name: t('sidebar.settings'),
           href: '/settings',
           icon: Settings,
           permissions: [PERMISSIONS.SYSTEM_SETTINGS_READ]
@@ -354,7 +354,7 @@ export function Sidebar() {
             <div className="text-gray-900 font-semibold text-lg">GoGoJap</div>
             <div className="text-gray-500 text-xs flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-              {t['sidebar.system_name']}
+              {t('sidebar.system_name')}
             </div>
           </div>
         </div>
@@ -450,7 +450,7 @@ export function Sidebar() {
                 </p>
                 <p className="text-xs text-gray-500 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                  {role === 'admin' ? t['common.admin'] : role === 'operator' ? t['common.operator'] : t['common.viewer']}
+                  {role === 'admin' ? t('common.admin') : role === 'operator' ? t('common.operator') : t('common.viewer')}
                 </p>
               </div>
             </div>
@@ -460,7 +460,7 @@ export function Sidebar() {
               className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50/50 rounded-lg transition-all border border-transparent hover:border-red-200"
             >
               <LogOut className="w-4 h-4" />
-              {t['common.logout']}
+              {t('common.logout')}
             </button>
           </div>
         )}
@@ -525,18 +525,18 @@ export function MobileBottomNav() {
 
   // Main nav items (displayed in bottom bar)
   const quickNav = [
-    { name: t['mobile.home'], href: '/', icon: LayoutDashboard },
-    { name: t['mobile.alerts'], href: '/alerts', icon: Bell, badge: unreadCount },
-    { name: t['mobile.ai'], href: '/agent', icon: MessageSquare },
+    { name: t('mobile.home'), href: '/', icon: LayoutDashboard },
+    { name: t('mobile.alerts'), href: '/alerts', icon: Bell, badge: unreadCount },
+    { name: t('mobile.ai'), href: '/agent', icon: MessageSquare },
   ]
 
   // More menu items
   const moreItems = [
-    { name: t['mobile.competitor_monitor'], href: '/competitors', icon: Eye },
-    { name: t['mobile.product_library'], href: '/products', icon: Package },
-    { name: t['mobile.ai_content'], href: '/ai-content', icon: Sparkles },
-    { name: t['mobile.price_trends'], href: '/trends', icon: TrendingUp },
-    { name: t['mobile.settings'], href: '/settings', icon: Settings },
+    { name: t('mobile.competitor_monitor'), href: '/competitors', icon: Eye },
+    { name: t('mobile.product_library'), href: '/products', icon: Package },
+    { name: t('mobile.ai_content'), href: '/ai-content', icon: Sparkles },
+    { name: t('mobile.price_trends'), href: '/trends', icon: TrendingUp },
+    { name: t('mobile.settings'), href: '/settings', icon: Settings },
   ]
 
   // Check if current page is in the more menu
@@ -633,7 +633,7 @@ export function MobileBottomNav() {
             )}
           >
             <Menu className={cn("w-5 h-5", (showMore || isMoreActive) && "scale-110")} />
-            <span className="text-[10px] mt-1 font-medium">{t['common.more']}</span>
+            <span className="text-[10px] mt-1 font-medium">{t('common.more')}</span>
           </button>
         </nav>
       </div>

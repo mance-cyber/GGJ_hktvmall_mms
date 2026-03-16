@@ -117,7 +117,7 @@ export default function DashboardPage() {
               <Cpu className="relative w-12 h-12 text-cyan-500" />
             </motion.div>
           </div>
-          <p className="text-sm text-slate-500">{t['dashboard.loading_data']}</p>
+          <p className="text-sm text-slate-500">{t('dashboard.loading_data')}</p>
         </div>
       </div>
     )
@@ -138,7 +138,7 @@ export default function DashboardPage() {
                 animate={{ opacity: 1, x: 0 }}
                 className="flex items-center gap-2"
               >
-                <h1 className="page-title truncate">{t['dashboard.title']}</h1>
+                <h1 className="page-title truncate">{t('dashboard.title')}</h1>
                 <PulseStatus status="online" size="sm" />
               </motion.div>
               <motion.p
@@ -166,8 +166,8 @@ export default function DashboardPage() {
               />
               <Link href="/competitors">
                 <HoloButton variant="primary" size="sm" icon={<Zap className="w-3.5 h-3.5" />}>
-                  <span className="hidden xs:inline">{t['dashboard.scrape']}</span>
-                  <span className="xs:hidden" aria-label={t['dashboard.scrape']}></span>
+                  <span className="hidden xs:inline">{t('dashboard.scrape')}</span>
+                  <span className="xs:hidden" aria-label={t('dashboard.scrape')}></span>
                 </HoloButton>
               </Link>
             </motion.div>
@@ -180,19 +180,19 @@ export default function DashboardPage() {
                 <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-br from-cyan-50 to-blue-50 flex items-center justify-center">
                   <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-600" />
                 </div>
-                <h2 className="text-sm sm:text-base font-semibold text-slate-800">{t['dashboard.system_status']}</h2>
+                <h2 className="text-sm sm:text-base font-semibold text-slate-800">{t('dashboard.system_status')}</h2>
               </div>
               <HoloBadge variant="info" size="sm">
-                <span className="hidden sm:inline">{t['dashboard.realtime']}</span>
-                <span className="sm:hidden">{t['dashboard.online']}</span>
+                <span className="hidden sm:inline">{t('dashboard.realtime')}</span>
+                <span className="sm:hidden">{t('dashboard.online')}</span>
               </HoloBadge>
             </div>
 
             <div className="grid grid-cols-2 xs:grid-cols-4 gap-1.5 sm:gap-3">
               <SystemStatus icon={Wifi} label="API" status="online" />
-              <SystemStatus icon={Database} label={t['dashboard.database']} status="online" />
+              <SystemStatus icon={Database} label={t('dashboard.database')} status="online" />
               <SystemStatus icon={Cpu} label="AI" status="processing" />
-              <SystemStatus icon={Bell} label={t['dashboard.notifications']} status="online" />
+              <SystemStatus icon={Bell} label={t('dashboard.notifications')} status="online" />
             </div>
           </HoloCard>
 
@@ -200,33 +200,33 @@ export default function DashboardPage() {
           <HoloCard glowColor="blue" className="card-mobile">
             <div className="flex items-center gap-2 mb-2 sm:mb-3">
               <Sparkles className="w-4 h-4 text-amber-500" />
-              <h2 className="text-sm sm:text-base font-semibold text-slate-800">{t['dashboard.today_summary']}</h2>
+              <h2 className="text-sm sm:text-base font-semibold text-slate-800">{t('dashboard.today_summary')}</h2>
             </div>
             <div className="grid grid-cols-2 xs:grid-cols-4 gap-1.5 sm:gap-3">
               <TodayStat
                 icon={Bell}
-                label={t['dashboard.alerts']}
+                label={t('dashboard.alerts')}
                 value={todayAlerts.length}
                 color="cyan"
                 highlight={todayAlerts.length > 0}
               />
               <TodayStat
                 icon={TrendingDown}
-                label={t['dashboard.price_drop']}
+                label={t('dashboard.price_drop')}
                 value={priceDrops}
                 color="green"
                 highlight={priceDrops > 0}
               />
               <TodayStat
                 icon={TrendingUp}
-                label={t['dashboard.price_increase']}
+                label={t('dashboard.price_increase')}
                 value={priceIncreases}
                 color="orange"
                 highlight={priceIncreases > 0}
               />
               <TodayStat
                 icon={Eye}
-                label={t['dashboard.unread']}
+                label={t('dashboard.unread')}
                 value={alerts?.unread_count || 0}
                 color="purple"
                 highlight={(alerts?.unread_count || 0) > 0}
@@ -244,12 +244,12 @@ export default function DashboardPage() {
                 <div className="px-3 py-2 sm:px-4 sm:py-3 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <AlertTriangle className="w-4 h-4 text-amber-500" />
-                    <h2 className="text-sm font-semibold text-slate-800">{t['dashboard.pending']}</h2>
+                    <h2 className="text-sm font-semibold text-slate-800">{t('dashboard.pending')}</h2>
                     <HoloBadge variant="warning" size="sm">{alerts?.unread_count}</HoloBadge>
                   </div>
                   <Link href="/alerts">
                     <HoloButton variant="ghost" size="sm" className="text-xs px-2">
-                      {t['dashboard.all']}
+                      {t('dashboard.all')}
                       <ChevronRight className="w-3 h-3 ml-0.5" />
                     </HoloButton>
                   </Link>
@@ -270,25 +270,25 @@ export default function DashboardPage() {
           {/* ========== Key Metrics ========== */}
           <StaggerContainer className="grid grid-cols-2 xs:grid-cols-4 gap-1.5 sm:gap-3">
             <DataMetric
-              label={t['dashboard.categories']}
+              label={t('dashboard.categories')}
               value={categories?.total || 0}
               color="cyan"
               icon={<FolderOpen className="w-4 h-4 text-cyan-500" />}
             />
             <DataMetric
-              label={t['dashboard.products']}
+              label={t('dashboard.products')}
               value={totalProducts}
               color="blue"
               icon={<Package className="w-4 h-4 text-blue-500" />}
             />
             <DataMetric
-              label={t['dashboard.competitors']}
+              label={t('dashboard.competitors')}
               value={competitors?.total || 0}
               color="purple"
               icon={<Building2 className="w-4 h-4 text-violet-500" />}
             />
             <DataMetric
-              label={t['dashboard.own_products']}
+              label={t('dashboard.own_products')}
               value={products?.total || 0}
               color="green"
               icon={<Sparkles className="w-4 h-4 text-emerald-500" />}
@@ -303,30 +303,30 @@ export default function DashboardPage() {
               <HoloCard glowColor="cyan" className="card-mobile">
                 <div className="flex items-center gap-2 mb-2 sm:mb-3">
                   <Zap className="w-4 h-4 text-amber-500" />
-                  <h2 className="text-sm sm:text-base font-semibold text-slate-800">{t['dashboard.quick_actions']}</h2>
+                  <h2 className="text-sm sm:text-base font-semibold text-slate-800">{t('dashboard.quick_actions')}</h2>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
                   <QuickAction
                     icon={Plus}
-                    label={t['dashboard.add']}
+                    label={t('dashboard.add')}
                     href="/competitors"
                     color="cyan"
                   />
                   <QuickAction
                     icon={Zap}
-                    label={t['dashboard.scrape']}
+                    label={t('dashboard.scrape')}
                     href="/competitors"
                     color="blue"
                   />
                   <QuickAction
                     icon={Sparkles}
-                    label={t['dashboard.content']}
+                    label={t('dashboard.content')}
                     href="/ai-content"
                     color="purple"
                   />
                   <QuickAction
                     icon={BarChart3}
-                    label={t['dashboard.analysis']}
+                    label={t('dashboard.analysis')}
                     href="/ai-analysis"
                     color="green"
                   />
@@ -336,17 +336,17 @@ export default function DashboardPage() {
               {/* Competitor Overview */}
               <HoloCard glowColor="blue" scanLine className="overflow-hidden">
                 <HoloPanelHeader
-                  title={t['dashboard.competitor_monitoring']}
+                  title={t('dashboard.competitor_monitoring')}
                   subtitle={
                     <span className="text-xs sm:text-sm whitespace-nowrap">
-                      {activeCompetitors}{t['dashboard.active_monitors']}
+                      {activeCompetitors}{t('dashboard.active_monitors')}
                     </span>
                   }
                   icon={<Building2 className="w-5 h-5" />}
                   action={
                     <Link href="/competitors">
                       <HoloButton variant="ghost" size="sm">
-                        {t['dashboard.manage']}
+                        {t('dashboard.manage')}
                         <ChevronRight className="w-4 h-4 ml-1" />
                       </HoloButton>
                     </Link>
@@ -359,10 +359,10 @@ export default function DashboardPage() {
                   {(!competitors?.data || competitors.data.length === 0) && (
                     <div className="px-6 py-12 text-center">
                       <Building2 className="w-12 h-12 mx-auto text-slate-300 mb-3" />
-                      <p className="text-slate-500 mb-3">{t['dashboard.no_competitors']}</p>
+                      <p className="text-slate-500 mb-3">{t('dashboard.no_competitors')}</p>
                       <Link href="/competitors">
                         <HoloButton variant="primary" size="sm" icon={<Plus className="w-4 h-4" />}>
-                          {t['dashboard.add_now']}
+                          {t('dashboard.add_now')}
                         </HoloButton>
                       </Link>
                     </div>
@@ -375,13 +375,13 @@ export default function DashboardPage() {
             <div className="space-y-6">
               <HoloCard glowColor="purple" className="overflow-hidden lg:sticky lg:top-6">
                 <HoloPanelHeader
-                  title={t['dashboard.recent_alerts']}
-                  subtitle={t['dashboard.price_change_notifications']}
+                  title={t('dashboard.recent_alerts')}
+                  subtitle={t('dashboard.price_change_notifications')}
                   icon={<Bell className="w-5 h-5" />}
                   action={
                     alerts?.unread_count ? (
                       <HoloBadge variant="error" pulse>
-                        {alerts.unread_count} {t['dashboard.unread']}
+                        {alerts.unread_count} {t('dashboard.unread')}
                       </HoloBadge>
                     ) : null
                   }
@@ -397,15 +397,15 @@ export default function DashboardPage() {
                   {(!alerts?.data || alerts.data.length === 0) && (
                     <div className="px-6 py-12 text-center">
                       <Bell className="w-12 h-12 mx-auto text-slate-300 mb-3" />
-                      <p className="text-slate-500">{t['dashboard.no_alerts']}</p>
-                      <p className="text-xs text-slate-400 mt-1">{t['dashboard.alerts_empty_hint']}</p>
+                      <p className="text-slate-500">{t('dashboard.no_alerts')}</p>
+                      <p className="text-xs text-slate-400 mt-1">{t('dashboard.alerts_empty_hint')}</p>
                     </div>
                   )}
                 </div>
                 {alerts?.data && alerts.data.length > 0 && (
                   <div className="px-6 py-3 border-t border-slate-100 bg-slate-50/50">
                     <Link href="/alerts" className="flex items-center justify-center text-cyan-600 hover:text-cyan-700 text-sm font-medium transition-colors">
-                      {t['dashboard.view_all_alerts']}
+                      {t('dashboard.view_all_alerts')}
                       <ArrowRight className="w-4 h-4 ml-1" />
                     </Link>
                   </div>
@@ -532,10 +532,10 @@ function CompetitorRow({ competitor }: { competitor: any }) {
         <div className="flex items-center gap-3 flex-shrink-0">
           <div className="text-right hidden sm:block">
             <p className="text-sm font-bold text-slate-700">{competitor.product_count}</p>
-            <p className="text-xs text-slate-400">{t['dashboard.products']}</p>
+            <p className="text-xs text-slate-400">{t('dashboard.products')}</p>
           </div>
           <HoloBadge variant={competitor.is_active ? "success" : "default"}>
-            {competitor.is_active ? t['dashboard.active'] : t['dashboard.inactive']}
+            {competitor.is_active ? t('dashboard.active') : t('dashboard.inactive')}
           </HoloBadge>
           <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-cyan-500 transition-colors hidden sm:block" />
         </div>
@@ -600,7 +600,7 @@ function AlertRow({
           <button
             onClick={(e) => { e.preventDefault(); onMarkRead(); }}
             className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
-            title={t['dashboard.mark_read']}
+            title={t('dashboard.mark_read')}
           >
             <Eye className="w-4 h-4 text-slate-400 hover:text-cyan-500" />
           </button>
@@ -619,16 +619,16 @@ function ActionableAlertRow({
 }) {
   const { t } = useLocale()
   const alertTypeConfig: Record<string, { icon: React.ElementType; color: string; action: string }> = {
-    price_drop: { icon: TrendingDown, color: 'text-emerald-600', action: t['dashboard.view_price_drop'] },
-    price_increase: { icon: TrendingUp, color: 'text-red-500', action: t['dashboard.analyze_price_increase'] },
-    out_of_stock: { icon: XCircle, color: 'text-amber-600', action: t['dashboard.view_out_of_stock'] },
-    back_in_stock: { icon: CheckCircle2, color: 'text-blue-600', action: t['dashboard.view_back_in_stock'] },
+    price_drop: { icon: TrendingDown, color: 'text-emerald-600', action: t('dashboard.view_price_drop') },
+    price_increase: { icon: TrendingUp, color: 'text-red-500', action: t('dashboard.analyze_price_increase') },
+    out_of_stock: { icon: XCircle, color: 'text-amber-600', action: t('dashboard.view_out_of_stock') },
+    back_in_stock: { icon: CheckCircle2, color: 'text-blue-600', action: t('dashboard.view_back_in_stock') },
   }
 
   const config = alertTypeConfig[alert.alert_type] || {
     icon: Bell,
     color: 'text-slate-600',
-    action: t['dashboard.view_details']
+    action: t('dashboard.view_details')
   }
   const Icon = config.icon
 
@@ -652,7 +652,7 @@ function ActionableAlertRow({
         onClick={onMarkRead}
       >
         <span className="hidden sm:inline">{config.action}</span>
-        <span className="sm:hidden">{t['dashboard.view']}</span>
+        <span className="sm:hidden">{t('dashboard.view')}</span>
         <ArrowRight className="w-4 h-4 ml-1" />
       </HoloButton>
     </motion.div>

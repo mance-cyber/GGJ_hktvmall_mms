@@ -38,15 +38,15 @@ export default function LoginPage() {
   const { t } = useLocale()
 
   const formSchema = useMemo(() => z.object({
-    username: z.string().email({ message: t['login.email_invalid'] }),
-    password: z.string().min(1, { message: t['login.password_required'] }),
+    username: z.string().email({ message: t('login.email_invalid') }),
+    password: z.string().min(1, { message: t('login.password_required') }),
   }), [t])
 
   // Development mode test account
   const devAccounts = useMemo(() => [
-    { email: 'admin@dev.local', password: 'admin123', role: t['common.admin'], color: 'from-red-500 to-orange-500' },
-    { email: 'operator@dev.local', password: 'operator123', role: t['common.operator'], color: 'from-blue-500 to-cyan-500' },
-    { email: 'viewer@dev.local', password: 'viewer123', role: t['common.viewer'], color: 'from-green-500 to-emerald-500' },
+    { email: 'admin@dev.local', password: 'admin123', role: t('common.admin'), color: 'from-red-500 to-orange-500' },
+    { email: 'operator@dev.local', password: 'operator123', role: t('common.operator'), color: 'from-blue-500 to-cyan-500' },
+    { email: 'viewer@dev.local', password: 'viewer123', role: t('common.viewer'), color: 'from-green-500 to-emerald-500' },
   ], [t])
 
   // Detect if development environment
@@ -69,14 +69,14 @@ export default function LoginPage() {
     try {
       await login(values)
       toast({
-        title: t['login.success'],
-        description: t['login.welcome_desc'],
+        title: t('login.success'),
+        description: t('login.welcome_desc'),
       })
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: t['login.failed'],
-        description: error.message || t['login.invalid_credentials'],
+        title: t('login.failed'),
+        description: error.message || t('login.invalid_credentials'),
       })
     } finally {
       setIsLoading(false)
@@ -89,14 +89,14 @@ export default function LoginPage() {
     try {
       await login({ username: email, password })
       toast({
-        title: t['login.dev_success'],
-        description: t['login.dev_success_desc'].replace('{role}', role),
+        title: t('login.dev_success'),
+        description: t('login.dev_success_desc').replace('{role}', role),
       })
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: t['login.dev_failed'],
-        description: error.message || t['login.dev_failed_desc'],
+        title: t('login.dev_failed'),
+        description: error.message || t('login.dev_failed_desc'),
       })
     } finally {
       setIsLoading(false)
@@ -136,8 +136,8 @@ export default function LoginPage() {
                   className="w-[120px] h-[120px] object-contain"
                 />
               </motion.div>
-              <h1 className="text-2xl font-bold text-slate-800">{t['login.welcome_back']}</h1>
-              <p className="text-slate-500 mt-1">{t['login.subtitle']}</p>
+              <h1 className="text-2xl font-bold text-slate-800">{t('login.welcome_back')}</h1>
+              <p className="text-slate-500 mt-1">{t('login.subtitle')}</p>
             </div>
 
             {/* Login form */}
@@ -148,7 +148,7 @@ export default function LoginPage() {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-slate-700">{t['login.email']}</FormLabel>
+                      <FormLabel className="text-slate-700">{t('login.email')}</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -168,7 +168,7 @@ export default function LoginPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-slate-700">{t['login.password']}</FormLabel>
+                      <FormLabel className="text-slate-700">{t('login.password')}</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -190,7 +190,7 @@ export default function LoginPage() {
                   disabled={isLoading}
                   loading={isLoading}
                 >
-                  {isLoading ? t['login.logging_in'] : t['login.login']}
+                  {isLoading ? t('login.logging_in') : t('login.login')}
                 </HoloButton>
               </form>
             </Form>
@@ -202,7 +202,7 @@ export default function LoginPage() {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-white/80 backdrop-blur-sm px-3 text-slate-400">
-                  {t['login.or_use']}
+                  {t('login.or_use')}
                 </span>
               </div>
             </div>
@@ -215,14 +215,14 @@ export default function LoginPage() {
                     loginGoogle(credentialResponse.credential)
                       .then(() => {
                         toast({
-                          title: t['login.success'],
-                          description: t['login.welcome_desc'],
+                          title: t('login.success'),
+                          description: t('login.welcome_desc'),
                         })
                       })
                       .catch(err => {
                         toast({
                           variant: 'destructive',
-                          title: t['login.google_failed'],
+                          title: t('login.google_failed'),
                           description: err.message
                         })
                       })
@@ -231,8 +231,8 @@ export default function LoginPage() {
                 onError={() => {
                   toast({
                     variant: 'destructive',
-                    title: t['login.google_failed'],
-                    description: t['login.google_error_desc']
+                    title: t('login.google_failed'),
+                    description: t('login.google_error_desc')
                   })
                 }}
                 useOneTap
@@ -250,7 +250,7 @@ export default function LoginPage() {
                   <div className="relative flex justify-center text-xs uppercase">
                     <span className="bg-amber-50 backdrop-blur-sm px-3 text-amber-600 font-medium flex items-center gap-1">
                       <Zap className="w-3 h-3" />
-                      {t['login.dev_quick_login']}
+                      {t('login.dev_quick_login')}
                     </span>
                   </div>
                 </div>
@@ -277,7 +277,7 @@ export default function LoginPage() {
                   ))}
                   <p className="text-xs text-amber-600 text-center mt-3 flex items-center justify-center gap-1">
                     <span>⚠️</span>
-                    <span>{t['login.dev_only_hint']}</span>
+                    <span>{t('login.dev_only_hint')}</span>
                   </p>
                 </div>
               </>

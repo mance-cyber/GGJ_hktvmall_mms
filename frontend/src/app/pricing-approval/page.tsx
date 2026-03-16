@@ -80,8 +80,8 @@ export default function PricingApprovalPage() {
     try {
       await approveProposal.mutateAsync(dialogProposal.id)
       toast({
-        title: t['pricing.approve_success'],
-        description: t['pricing.approve_desc'].replace('{name}', dialogProposal.product_name ?? ''),
+        title: t('pricing.approve_success'),
+        description: t('pricing.approve_desc').replace('{name}', dialogProposal.product_name ?? ''),
       })
       setDialogOpen(false)
       setSelectedIds((prev) => {
@@ -91,8 +91,8 @@ export default function PricingApprovalPage() {
       })
     } catch (error) {
       toast({
-        title: t['pricing.approve_failed'],
-        description: error instanceof Error ? error.message : t['pricing.retry_later'],
+        title: t('pricing.approve_failed'),
+        description: error instanceof Error ? error.message : t('pricing.retry_later'),
         variant: 'destructive',
       })
     }
@@ -106,8 +106,8 @@ export default function PricingApprovalPage() {
     try {
       await rejectProposal.mutateAsync(id)
       toast({
-        title: t['pricing.rejected'],
-        description: t['pricing.reject_desc'].replace('{name}', proposal.product_name ?? ''),
+        title: t('pricing.rejected'),
+        description: t('pricing.reject_desc').replace('{name}', proposal.product_name ?? ''),
       })
       setSelectedIds((prev) => {
         const newSet = new Set(prev)
@@ -116,8 +116,8 @@ export default function PricingApprovalPage() {
       })
     } catch (error) {
       toast({
-        title: t['pricing.reject_failed'],
-        description: error instanceof Error ? error.message : t['pricing.retry_later'],
+        title: t('pricing.reject_failed'),
+        description: error instanceof Error ? error.message : t('pricing.retry_later'),
         variant: 'destructive',
       })
     }
@@ -130,14 +130,14 @@ export default function PricingApprovalPage() {
     try {
       const result = await batchApprove.mutateAsync(Array.from(selectedIds))
       toast({
-        title: t['pricing.batch_approve_done'],
-        description: t['pricing.batch_result'].replace('{success}', String(result.succeeded)).replace('{failed}', String(result.failed)),
+        title: t('pricing.batch_approve_done'),
+        description: t('pricing.batch_result').replace('{success}', String(result.succeeded)).replace('{failed}', String(result.failed)),
       })
       setSelectedIds(new Set())
     } catch (error) {
       toast({
-        title: t['pricing.batch_approve_failed'],
-        description: error instanceof Error ? error.message : t['pricing.retry_later'],
+        title: t('pricing.batch_approve_failed'),
+        description: error instanceof Error ? error.message : t('pricing.retry_later'),
         variant: 'destructive',
       })
     }
@@ -150,14 +150,14 @@ export default function PricingApprovalPage() {
     try {
       const result = await batchReject.mutateAsync(Array.from(selectedIds))
       toast({
-        title: t['pricing.batch_reject_done'],
-        description: t['pricing.batch_result'].replace('{success}', String(result.succeeded)).replace('{failed}', String(result.failed)),
+        title: t('pricing.batch_reject_done'),
+        description: t('pricing.batch_result').replace('{success}', String(result.succeeded)).replace('{failed}', String(result.failed)),
       })
       setSelectedIds(new Set())
     } catch (error) {
       toast({
-        title: t['pricing.batch_reject_failed'],
-        description: error instanceof Error ? error.message : t['pricing.retry_later'],
+        title: t('pricing.batch_reject_failed'),
+        description: error instanceof Error ? error.message : t('pricing.retry_later'),
         variant: 'destructive',
       })
     }
@@ -168,13 +168,13 @@ export default function PricingApprovalPage() {
     try {
       const result = await triggerAI.mutateAsync()
       toast({
-        title: t['pricing.ai_done'],
-        description: t['pricing.ai_result'].replace('{count}', String(result.generated_proposals)),
+        title: t('pricing.ai_done'),
+        description: t('pricing.ai_result').replace('{count}', String(result.generated_proposals)),
       })
     } catch (error) {
       toast({
-        title: t['pricing.ai_failed'],
-        description: error instanceof Error ? error.message : t['pricing.retry_later'],
+        title: t('pricing.ai_failed'),
+        description: error instanceof Error ? error.message : t('pricing.retry_later'),
         variant: 'destructive',
       })
     }
@@ -194,8 +194,8 @@ export default function PricingApprovalPage() {
       {/* Page title */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t['pricing.title']}</h1>
-          <p className="text-gray-500 mt-1">{t['pricing.subtitle']}</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('pricing.title')}</h1>
+          <p className="text-gray-500 mt-1">{t('pricing.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           <HoloButton
@@ -204,7 +204,7 @@ export default function PricingApprovalPage() {
             disabled={isLoading}
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            {t['pricing.refresh']}
+            {t('pricing.refresh')}
           </HoloButton>
           <HoloButton
             variant="primary"
@@ -216,7 +216,7 @@ export default function PricingApprovalPage() {
             ) : (
               <Sparkles className="w-4 h-4 mr-2" />
             )}
-            {t['pricing.trigger_ai']}
+            {t('pricing.trigger_ai')}
           </HoloButton>
         </div>
       </div>

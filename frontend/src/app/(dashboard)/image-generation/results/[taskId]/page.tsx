@@ -67,7 +67,7 @@ export default function ImageGenerationResultPage({
       }
     } catch (err: any) {
       console.error('Failed to fetch task status:', err)
-      setError(err.response?.data?.detail || t['image_gen.error_fetch_status'])
+      setError(err.response?.data?.detail || t('image_gen.error_fetch_status'))
     } finally {
       setIsLoading(false)
     }
@@ -99,12 +99,12 @@ export default function ImageGenerationResultPage({
 
     const defaultConfig = { color: 'bg-blue-500', key: 'image_gen.status_processing' }
     const { color: statusColor, key: statusKey } = statusConfig[status] || defaultConfig
-    const statusText = t[statusKey]
+    const statusText = t(statusKey)
 
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-900">{t['image_gen.results_progress']}</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t('image_gen.results_progress')}</h2>
           <span className={`text-sm font-medium ${status === 'completed' ? 'text-green-600' : status === 'failed' ? 'text-red-600' : 'text-blue-600'}`}>
             {statusText}
           </span>
@@ -124,13 +124,13 @@ export default function ImageGenerationResultPage({
           {status === 'analyzing' && (
             <div className="flex items-center gap-2 text-sm text-purple-600">
               <Brain className="w-4 h-4 animate-pulse" />
-              {t['image_gen.results_analyzing_image']}
+              {t('image_gen.results_analyzing_image')}
             </div>
           )}
           {status === 'processing' && (
             <div className="flex items-center gap-2 text-sm text-blue-600">
               <Sparkles className="w-4 h-4 animate-spin" />
-              {t['image_gen.results_generating_images']}
+              {t('image_gen.results_generating_images')}
             </div>
           )}
         </div>
@@ -149,9 +149,9 @@ export default function ImageGenerationResultPage({
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-start gap-3">
           <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-medium text-green-900">{t['image_gen.results_completed']}</h3>
+            <h3 className="font-medium text-green-900">{t('image_gen.results_completed')}</h3>
             <p className="text-sm text-green-700 mt-1">
-              {t['image_gen.results_completed_count'].replace('{count}', String(task.output_images.length))}
+              {t('image_gen.results_completed_count').replace('{count}', String(task.output_images.length))}
             </p>
           </div>
         </div>
@@ -163,9 +163,9 @@ export default function ImageGenerationResultPage({
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start gap-3">
           <XCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-medium text-red-900">{t['image_gen.results_failed']}</h3>
+            <h3 className="font-medium text-red-900">{t('image_gen.results_failed')}</h3>
             <p className="text-sm text-red-700 mt-1">
-              {error_message || t['image_gen.results_unknown_error']}
+              {error_message || t('image_gen.results_unknown_error')}
             </p>
           </div>
         </div>
@@ -195,7 +195,7 @@ export default function ImageGenerationResultPage({
             onClick={() => router.push('/image-generation/upload')}
             className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
           >
-            {t['image_gen.results_back_to_upload']}
+            {t('image_gen.results_back_to_upload')}
           </button>
         </div>
       </div>
@@ -215,9 +215,9 @@ export default function ImageGenerationResultPage({
           <ArrowLeft className="w-6 h-6" />
         </button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{t['image_gen.results_title']}</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('image_gen.results_title')}</h1>
           <p className="text-gray-600 mt-1">
-            {t['image_gen.results_mode_label']}{task.mode === 'white_bg_topview' ? t['image_gen.mode_white_bg_topview'] : t['image_gen.mode_professional_photo']}
+            {t('image_gen.results_mode_label')}{task.mode === 'white_bg_topview' ? t('image_gen.mode_white_bg_topview') : t('image_gen.mode_professional_photo')}
           </p>
         </div>
       </div>
@@ -232,7 +232,7 @@ export default function ImageGenerationResultPage({
       {task.input_images.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            {t['image_gen.results_input_images'].replace('{count}', String(task.input_images.length))}
+            {t('image_gen.results_input_images').replace('{count}', String(task.input_images.length))}
           </h2>
           <div className="space-y-6">
             {task.input_images.map((image) => (
@@ -262,7 +262,7 @@ export default function ImageGenerationResultPage({
                       {image.analysis_result && (
                         <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
                           <Brain className="w-3 h-3" />
-                          {t['image_gen.results_ai_analyzed']}
+                          {t('image_gen.results_ai_analyzed')}
                         </span>
                       )}
                     </div>
@@ -273,7 +273,7 @@ export default function ImageGenerationResultPage({
                         {/* ProductType */}
                         {image.analysis_result.product_type && (
                           <p className="text-sm text-gray-600 mb-2">
-                            <span className="font-medium">{t['image_gen.results_product_type']}</span>
+                            <span className="font-medium">{t('image_gen.results_product_type')}</span>
                             {image.analysis_result.product_type}
                           </p>
                         )}
@@ -281,7 +281,7 @@ export default function ImageGenerationResultPage({
                         {/* 視覺Description */}
                         {image.analysis_result.visual_description && (
                           <p className="text-sm text-gray-600 mb-2">
-                            <span className="font-medium">{t['image_gen.results_ai_description']}</span>
+                            <span className="font-medium">{t('image_gen.results_ai_description')}</span>
                             {image.analysis_result.visual_description}
                           </p>
                         )}
@@ -299,12 +299,12 @@ export default function ImageGenerationResultPage({
                               {showAnalysis[image.id] ? (
                                 <>
                                   <ChevronUp className="w-4 h-4" />
-                                  {t['image_gen.results_hide_prompt']}
+                                  {t('image_gen.results_hide_prompt')}
                                 </>
                               ) : (
                                 <>
                                   <ChevronDown className="w-4 h-4" />
-                                  {t['image_gen.results_show_prompt']}
+                                  {t('image_gen.results_show_prompt')}
                                 </>
                               )}
                             </button>
@@ -323,7 +323,7 @@ export default function ImageGenerationResultPage({
                     {task.status === 'analyzing' && !image.analysis_result && (
                       <div className="mt-3 flex items-center gap-2 text-sm text-purple-600">
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        {t['image_gen.results_analyzing_image']}
+                        {t('image_gen.results_analyzing_image')}
                       </div>
                     )}
                   </div>
@@ -338,7 +338,7 @@ export default function ImageGenerationResultPage({
       {task.status === 'completed' && task.output_images.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            {t['image_gen.results_output_images'].replace('{count}', String(task.output_images.length))}
+            {t('image_gen.results_output_images').replace('{count}', String(task.output_images.length))}
           </h2>
           <ResultGallery images={task.output_images} />
         </div>
@@ -348,15 +348,15 @@ export default function ImageGenerationResultPage({
       {task.status === 'analyzing' && (
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 text-center">
           <Brain className="w-12 h-12 text-purple-600 mx-auto mb-3 animate-pulse" />
-          <p className="text-purple-800 font-medium">{t['image_gen.results_analyzing_images']}</p>
-          <p className="text-purple-600 text-sm mt-1">{t['image_gen.results_analyzing_strategy']}</p>
+          <p className="text-purple-800 font-medium">{t('image_gen.results_analyzing_images')}</p>
+          <p className="text-purple-600 text-sm mt-1">{t('image_gen.results_analyzing_strategy')}</p>
         </div>
       )}
       {(task.status === 'processing' || task.status === 'pending') && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
           <Sparkles className="w-12 h-12 text-blue-600 mx-auto mb-3 animate-spin" />
-          <p className="text-blue-800 font-medium">{t['image_gen.results_generating_images']}</p>
-          <p className="text-blue-600 text-sm mt-1">{t['image_gen.results_auto_update']}</p>
+          <p className="text-blue-800 font-medium">{t('image_gen.results_generating_images')}</p>
+          <p className="text-blue-600 text-sm mt-1">{t('image_gen.results_auto_update')}</p>
         </div>
       )}
     </div>

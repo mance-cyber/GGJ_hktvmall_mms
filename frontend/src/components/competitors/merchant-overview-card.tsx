@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { MerchantOverview } from '@/lib/api'
 import { ChevronDown, ChevronUp, Package, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useLocale, localeName } from '@/components/providers/locale-provider'
 import { TierBadge } from './tier-badge'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -12,6 +13,7 @@ interface MerchantOverviewCardProps {
 }
 
 export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
+  const { t, locale } = useLocale()
   const [expanded, setExpanded] = useState(false)
   const { competitor, price_comparison, recent_changes } = data
 
@@ -42,7 +44,7 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
             <Package className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             <span>{competitor.total_products}</span>
             {competitor.overlap_products > 0 && (
-              <span className="hidden sm:inline text-teal-500">({competitor.overlap_products} overlap)</span>
+              <span className="hidden sm:inline text-teal-500">{t('competitors.merchant.overlap', { n: competitor.overlap_products })}</span>
             )}
           </div>
 
@@ -111,19 +113,19 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-3 sm:mb-4">
                 <div className="text-center p-2 rounded-lg bg-gray-50">
                   <div className="text-base sm:text-lg font-bold text-gray-700">{competitor.total_products}</div>
-                  <div className="text-[10px] sm:text-xs text-gray-400">Total Products</div>
+                  <div className="text-[10px] sm:text-xs text-gray-400">{t('competitors.merchant.total_products')}</div>
                 </div>
                 <div className="text-center p-2 rounded-lg bg-teal-50">
                   <div className="text-base sm:text-lg font-bold text-teal-600">{competitor.fresh_products}</div>
-                  <div className="text-[10px] sm:text-xs text-gray-400">Fresh Products</div>
+                  <div className="text-[10px] sm:text-xs text-gray-400">{t('competitors.merchant.fresh_products')}</div>
                 </div>
                 <div className="text-center p-2 rounded-lg bg-amber-50">
                   <div className="text-base sm:text-lg font-bold text-amber-600">{competitor.overlap_products}</div>
-                  <div className="text-[10px] sm:text-xs text-gray-400">Overlap</div>
+                  <div className="text-[10px] sm:text-xs text-gray-400">{t('competitors.merchant.overlap_label')}</div>
                 </div>
                 <div className="text-center p-2 rounded-lg bg-purple-50">
                   <div className="text-base sm:text-lg font-bold text-purple-600">{competitor.unique_products}</div>
-                  <div className="text-[10px] sm:text-xs text-gray-400">Unique Products</div>
+                  <div className="text-[10px] sm:text-xs text-gray-400">{t('competitors.merchant.unique_products')}</div>
                 </div>
               </div>
 
@@ -131,15 +133,15 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
                 <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-3 sm:mb-4 text-[10px] sm:text-xs">
                   <span className="flex items-center gap-1 text-emerald-500">
                     <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                    They're more expensive: {price_comparison.expensive_count}
+                    {t('competitors.merchant.more_expensive', { n: price_comparison.expensive_count })}
                   </span>
                   <span className="flex items-center gap-1 text-gray-400">
                     <span className="w-2 h-2 rounded-full bg-gray-300" />
-                    Similar: {price_comparison.same_count}
+                    {t('competitors.merchant.similar_price', { n: price_comparison.same_count })}
                   </span>
                   <span className="flex items-center gap-1 text-red-500">
                     <span className="w-2 h-2 rounded-full bg-red-400" />
-                    They're cheaper: {price_comparison.cheaper_count}
+                    {t('competitors.merchant.cheaper', { n: price_comparison.cheaper_count })}
                   </span>
                 </div>
               )}
@@ -148,7 +150,7 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
                 <div>
                   <h4 className="text-[10px] sm:text-xs text-gray-400 mb-2 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" />
-                    Changes in Last 7 Days
+                    {t('competitors.merchant.recent_changes')}
                   </h4>
                   <div className="space-y-1.5">
                     {recent_changes.map((change, i) => (
@@ -163,7 +165,7 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
                            change.change_type === 'price_increase' ? '↑' :
                            change.change_type}
                         </span>
-                        <span className="text-gray-600 truncate flex-1">{change.product_name_en || change.product_name}</span>
+                        <span className="text-gray-600 truncate flex-1">{localeName({ name: change.product_name, name_en: change.product_name_en }, locale)}</span>
                         {change.old_price && change.new_price && (
                           <span className="text-gray-400 font-mono shrink-0">
                             ${change.old_price}→${change.new_price}
@@ -177,7 +179,7 @@ export function MerchantOverviewCard({ data }: MerchantOverviewCardProps) {
 
               {recent_changes.length === 0 && totalCompared === 0 && (
                 <p className="text-xs sm:text-sm text-gray-400 text-center py-2">
-                  No comparison data yet
+                  {t('competitors.merchant.no_data')}
                 </p>
               )}
             </div>

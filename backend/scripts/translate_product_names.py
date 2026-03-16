@@ -1,21 +1,27 @@
 """
 Batch translate product names to English using OpenClaw Gateway API.
-Usage: python backend/scripts/translate_product_names.py
+SYNC version using psycopg2 + requests.
+Supports --offset N --limit N for batch mode (used by wrapper for crash recovery).
 """
-import asyncio
-import httpx
-import time
 import os
-import ssl
 import sys
+import time
+import traceback
+import datetime
+import argparse
 
-# Fix Windows console encoding + unbuffered output
-sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-sys.stderr.reconfigure(encoding='utf-8', errors='replace')
-os.environ['PYTHONUNBUFFERED'] = '1'
+# Fix Windows console encoding
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+except Exception:
+    pass
+try:
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+except Exception:
+    pass
 
 # Load .env
-env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+env_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env'))
 if os.path.exists(env_path):
     with open(env_path, encoding='utf-8') as f:
         for line in f:
@@ -27,137 +33,203 @@ if os.path.exists(env_path):
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 if not DATABASE_URL:
     print("ERROR: DATABASE_URL not set")
-    exit(1)
+    sys.exit(1)
 
 GATEWAY_URL = os.environ.get("GATEWAY_URL", "http://localhost:18789/v1/chat/completions")
 GATEWAY_TOKEN = os.environ.get("OPENCLAW_GATEWAY_TOKEN", "")
-BATCH_SIZE = 5
-DELAY = 1.0
+
+log_path = os.path.normpath(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'logs', 'translate_error.log')
+)
+os.makedirs(os.path.dirname(log_path), exist_ok=True)
 
 
-async def translate_name(client: httpx.AsyncClient, name: str, retries: int = 3) -> str:
-    headers = {}
+def log(msg):
+    ts = datetime.datetime.now().strftime('%H:%M:%S')
+    line = f"[{ts}] {msg}"
+    try:
+        print(line, flush=True)
+    except Exception:
+        pass
+    try:
+        with open(log_path, 'a', encoding='utf-8') as f:
+            f.write(line + '\n')
+    except Exception:
+        pass
+
+
+def parse_db_url(url):
+    import urllib.parse
+    url = url.replace('+asyncpg', '').replace('postgresql+psycopg2://', 'postgresql://')
+    parsed = urllib.parse.urlparse(url)
+    kwargs = {
+        'host': parsed.hostname,
+        'port': parsed.port or 5432,
+        'dbname': parsed.path.lstrip('/'),
+        'user': parsed.username,
+        'password': parsed.password,
+        'sslmode': 'require',
+        'connect_timeout': 30,
+    }
+    qs = urllib.parse.parse_qs(parsed.query)
+    if 'sslmode' in qs:
+        kwargs['sslmode'] = qs['sslmode'][0]
+    return kwargs
+
+
+def get_conn():
+    import psycopg2
+    kwargs = parse_db_url(DATABASE_URL)
+    for attempt in range(3):
+        try:
+            conn = psycopg2.connect(**kwargs)
+            conn.autocommit = True
+            return conn
+        except Exception as e:
+            log(f"  [DB connect attempt {attempt+1}/3 failed: {e}]")
+            if attempt < 2:
+                time.sleep(5)
+    raise RuntimeError("Failed to connect to DB after 3 attempts")
+
+
+def translate_name(name: str, retries: int = 3) -> str:
+    import requests
+    headers = {'Content-Type': 'application/json'}
     if GATEWAY_TOKEN:
-        headers["Authorization"] = f"Bearer {GATEWAY_TOKEN}"
+        headers['Authorization'] = f"Bearer {GATEWAY_TOKEN}"
+
     for attempt in range(retries):
         try:
-            resp = await client.post(GATEWAY_URL, headers=headers, json={
+            resp = requests.post(GATEWAY_URL, headers=headers, json={
                 "model": "anthropic/claude-sonnet-4-6",
                 "messages": [{"role": "user", "content": (
                     f"Translate this HKTVmall product name to concise English. "
                     f"Keep brand names, weights, and specs. Return ONLY the English name:\n{name}"
                 )}],
                 "max_tokens": 150,
-            }, timeout=30.0)
+            }, timeout=60)
+
             if resp.status_code == 200:
-                return resp.json()["choices"][0]["message"]["content"].strip().strip('"')
+                try:
+                    return resp.json()["choices"][0]["message"]["content"].strip().strip('"')
+                except (KeyError, IndexError, ValueError) as e:
+                    log(f"  Unexpected API response structure: {e}")
+                    return None
             elif resp.status_code in (502, 503, 429):
-                wait = (attempt + 1) * 3
-                print(f"  Retry {attempt+1}/{retries} after {resp.status_code}, waiting {wait}s...")
-                await asyncio.sleep(wait)
-                continue
+                wait = (attempt + 1) * 5
+                log(f"  API {resp.status_code}, retry {attempt+1}/{retries} in {wait}s")
+                time.sleep(wait)
             else:
-                print(f"  API error {resp.status_code}")
+                log(f"  API error {resp.status_code}: {resp.text[:100]}")
                 return None
         except Exception as e:
+            log(f"  Translate error (attempt {attempt+1}): {e}")
             if attempt < retries - 1:
-                await asyncio.sleep(3)
-                continue
-            print(f"  Error: {e}")
-            return None
+                time.sleep(3)
     return None
 
 
-async def main():
-    import asyncpg
+_ALLOWED_TABLES = frozenset({"competitor_products", "products"})
 
-    # Parse URL for asyncpg (handle sslmode)
-    url = DATABASE_URL.replace('+asyncpg', '')
-    if url.startswith('postgresql://'):
-        url = url.replace('postgresql://', 'postgres://')
 
-    # Connect with SSL
-    ssl_ctx = ssl.create_default_context()
-    ssl_ctx.check_hostname = False
-    ssl_ctx.verify_mode = ssl.CERT_NONE
+def db_write(table, item_id, name_en):
+    """Fresh connection per write — sidesteps any idle timeout."""
+    if table not in _ALLOWED_TABLES:
+        log(f"  Rejected invalid table name: {table}")
+        return False
+    for attempt in range(3):
+        conn = None
+        try:
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(f"UPDATE {table} SET name_en = %s WHERE id = %s", (name_en, item_id))
+            cur.close()
+            conn.close()
+            return True
+        except Exception as e:
+            log(f"  DB write attempt {attempt+1}/3 failed: {e}")
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+            if attempt < 2:
+                time.sleep(2)
+    return False
 
-    # Remove sslmode from URL if present
-    if '?sslmode=' in url:
-        url = url.split('?sslmode=')[0]
 
-    print("Connecting to database...")
-    conn = await asyncio.wait_for(asyncpg.connect(url, ssl=ssl_ctx), timeout=30)
-    print("Connected!")
-
-    # Get competitor products without name_en
-    cp_rows = await conn.fetch(
-        "SELECT id, name FROM competitor_products WHERE name_en IS NULL AND is_active = true ORDER BY created_at"
+def fetch_todo():
+    """Fetch all items that still need translation."""
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT id, name FROM competitor_products WHERE name_en IS NULL AND is_active = true ORDER BY id"
     )
-    print(f"Competitor products to translate: {len(cp_rows)}")
-
-    # Get own products without name_en
-    own_rows = await conn.fetch(
-        "SELECT id, name FROM products WHERE name_en IS NULL AND status = 'active' ORDER BY created_at"
+    cp_rows = cur.fetchall()
+    cur.execute(
+        "SELECT id, name FROM products WHERE name_en IS NULL AND status = 'active' ORDER BY id"
     )
-    print(f"Own products to translate: {len(own_rows)}")
+    own_rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [('competitor_products', r) for r in cp_rows] + [('products', r) for r in own_rows]
 
-    total = len(cp_rows) + len(own_rows)
-    done = 0
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--offset', type=int, default=0, help='Start from item N (0-indexed)')
+    parser.add_argument('--limit', type=int, default=0, help='Process at most N items (0=all)')
+    args = parser.parse_args()
+
+    log(f"Fetching items to translate (offset={args.offset}, limit={args.limit})...")
+    all_items = fetch_todo()
+    total_remaining = len(all_items)
+    log(f"Total remaining: {total_remaining}")
+
+    # Slice to batch
+    items = all_items[args.offset:]
+    if args.limit > 0:
+        items = items[:args.limit]
+
+    batch_total = len(items)
+    log(f"This batch: {batch_total} items")
+
+    if batch_total == 0:
+        log("Nothing to do!")
+        return
+
     translated = 0
+    for idx, (table, (item_id, name)) in enumerate(items):
+        done = idx + 1
 
-    async with httpx.AsyncClient() as client:
-        # Competitor products
-        for i in range(0, len(cp_rows), BATCH_SIZE):
-            batch = cp_rows[i:i+BATCH_SIZE]
-            for row in batch:
+        try:
+            name_en = translate_name(name)
+        except Exception as e:
+            log(f"  [{done}/{batch_total}] translate exception: {e}")
+            name_en = None
+
+        if name_en:
+            saved = db_write(table, item_id, name_en)
+            if saved:
+                translated += 1
                 try:
-                    name_en = await translate_name(client, row['name'])
-                    done += 1
-                    if name_en:
-                        await conn.execute(
-                            "UPDATE competitor_products SET name_en = $1 WHERE id = $2",
-                            name_en, row['id']
-                        )
-                        translated += 1
-                        try:
-                            print(f"  [{done}/{total}] {row['name']} → {name_en}", flush=True)
-                        except Exception:
-                            print(f"  [{done}/{total}] [name_en saved]", flush=True)
-                    else:
-                        print(f"  [{done}/{total}] SKIP", flush=True)
-                except Exception as e:
-                    done += 1
-                    print(f"  [{done}/{total}] ERROR: {e}", flush=True)
-            if i + BATCH_SIZE < len(cp_rows):
-                await asyncio.sleep(DELAY)
+                    log(f"  [{done}/{batch_total}] {name} → {name_en}")
+                except Exception:
+                    log(f"  [{done}/{batch_total}] [saved to {table} id={item_id}]")
+            else:
+                log(f"  [{done}/{batch_total}] WRITE FAILED for id={item_id}")
+        else:
+            log(f"  [{done}/{batch_total}] SKIP (no translation) for id={item_id}")
 
-        # Own products
-        for i in range(0, len(own_rows), BATCH_SIZE):
-            batch = own_rows[i:i+BATCH_SIZE]
-            for row in batch:
-                try:
-                    name_en = await translate_name(client, row['name'])
-                    done += 1
-                    if name_en:
-                        await conn.execute(
-                            "UPDATE products SET name_en = $1 WHERE id = $2",
-                            name_en, row['id']
-                        )
-                        translated += 1
-                        try:
-                            print(f"  [{done}/{total}] {row['name']} → {name_en}", flush=True)
-                        except Exception:
-                            print(f"  [{done}/{total}] [own name_en saved]", flush=True)
-                    else:
-                        print(f"  [{done}/{total}] SKIP", flush=True)
-                except Exception as e:
-                    done += 1
-                    print(f"  [{done}/{total}] ERROR: {e}", flush=True)
-            if i + BATCH_SIZE < len(own_rows):
-                await asyncio.sleep(DELAY)
+    log(f"Batch done: translated {translated}/{batch_total}")
 
-    await conn.close()
-    print(f"\nDone! Translated {translated}/{total} products.")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        main()
+    except KeyboardInterrupt:
+        log("Interrupted by user.")
+        sys.exit(0)
+    except Exception as e:
+        log(f"FATAL ({type(e).__name__}): {e}\n{traceback.format_exc()}")
+        sys.exit(1)

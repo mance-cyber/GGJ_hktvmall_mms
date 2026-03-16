@@ -37,8 +37,13 @@ async def list_products(
     query = select(Product)
 
     if search:
+        from app.services.agent.tools.sql_helpers import escape_like_pattern
+        safe = escape_like_pattern(search)
         query = query.where(
-            Product.name.ilike(f"%{search}%") | Product.sku.ilike(f"%{search}%")
+            Product.name.ilike(f"%{safe}%")
+            | Product.sku.ilike(f"%{safe}%")
+            | Product.name_en.ilike(f"%{safe}%")
+            | Product.name_zh.ilike(f"%{safe}%")
         )
     if status:
         query = query.where(Product.status == status)

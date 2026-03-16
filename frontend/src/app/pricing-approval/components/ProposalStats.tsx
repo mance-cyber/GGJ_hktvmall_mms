@@ -6,6 +6,7 @@
 
 import { Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react'
 import { HoloCard } from '@/components/ui/future-tech'
+import { useLocale } from '@/components/providers/locale-provider'
 
 interface ProposalStatsProps {
   pending: number
@@ -15,27 +16,29 @@ interface ProposalStatsProps {
 }
 
 export function ProposalStats({ pending, approved, rejected, failed }: ProposalStatsProps) {
+  const { t } = useLocale()
+
   const stats = [
     {
-      title: 'Pending',
+      title: t('pricing.stats.pending'),
       value: pending,
       icon: Clock,
       color: 'orange',
     },
     {
-      title: 'Approved',
+      title: t('pricing.stats.approved'),
       value: approved,
       icon: CheckCircle,
       color: 'green',
     },
     {
-      title: 'Rejected',
+      title: t('pricing.stats.rejected'),
       value: rejected,
       icon: XCircle,
       color: 'gray',
     },
     {
-      title: 'Failed',
+      title: t('pricing.stats.failed'),
       value: failed,
       icon: AlertTriangle,
       color: 'red',

@@ -248,7 +248,12 @@ async def list_competitor_products(
         CompetitorProduct.is_active == True,
     )
     if search:
-        query = query.where(CompetitorProduct.name.ilike(f"%{search}%"))
+        from app.services.agent.tools.sql_helpers import escape_like_pattern
+        safe = escape_like_pattern(search)
+        query = query.where(
+            CompetitorProduct.name.ilike(f"%{safe}%")
+            | CompetitorProduct.name_en.ilike(f"%{safe}%")
+        )
 
     # 計算總數
     count_query = select(func.count()).select_from(query.subquery())
@@ -284,6 +289,7 @@ async def list_competitor_products(
             id=product.id,
             competitor_id=product.competitor_id,
             name=product.name,
+            name_en=product.name_en,
             url=product.url,
             sku=product.sku,
             category=product.category,
@@ -437,6 +443,7 @@ async def get_product(
         id=product.id,
         competitor_id=product.competitor_id,
         name=product.name,
+        name_en=product.name_en,
         url=product.url,
         sku=product.sku,
         category=product.category,
@@ -492,6 +499,7 @@ async def update_product(
         id=product.id,
         competitor_id=product.competitor_id,
         name=product.name,
+        name_en=product.name_en,
         url=product.url,
         sku=product.sku,
         category=product.category,
@@ -554,6 +562,7 @@ async def get_price_history(
             id=product.id,
             competitor_id=product.competitor_id,
             name=product.name,
+            name_en=product.name_en,
             url=product.url,
             sku=product.sku,
             category=product.category,
@@ -1290,7 +1299,7 @@ async def get_product_price_history(
         series.append({"id": str(cp.id), "name": row.comp_name, "data": filled})
 
     return {
-        "product": {"id": str(product.id), "name": product.name.replace("GOGOJAP-", ""), "price": float(product.price) if product.price else None},
+        "product": {"id": str(product.id), "name": product.name.replace("GOGOJAP-", ""), "name_en": product.name_en, "price": float(product.price) if product.price else None},
         "dates": dates,
         "our_price": float(product.price) if product.price else None,
         "series": series,

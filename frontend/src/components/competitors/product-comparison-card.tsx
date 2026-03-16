@@ -3,6 +3,7 @@
 import { ProductComparison } from '@/lib/api'
 import { Crown, ChevronUp, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useLocale, localeName } from '@/components/providers/locale-provider'
 
 interface ProductComparisonCardProps {
   data: ProductComparison
@@ -12,6 +13,7 @@ interface ProductComparisonCardProps {
 }
 
 export function ProductComparisonCard({ data, selected, onClick }: ProductComparisonCardProps) {
+  const { t, locale } = useLocale()
   const { product, competitors, our_price_rank, total_competitors } = data
 
   const isWeCheapest = our_price_rank === 1
@@ -42,16 +44,16 @@ export function ProductComparisonCard({ data, selected, onClick }: ProductCompar
 
   // Stock label with quantity
   const stockLabel = outOfStockCount > 0 && inStockCount === 0
-    ? 'Delisted'
+    ? t('competitors.card.stock_delisted')
     : outOfStockCount > 0
-      ? `${inStockCount} in stock/${outOfStockCount} out`
+      ? `${inStockCount} ${t('competitors.card.stock_in')}/${outOfStockCount} ${t('competitors.card.stock_out')}`
       : inStockCount > 0
         ? (knownStockLevels.length > 0
           ? (knownStockLevels.length === 1
-            ? `Stock: ${knownStockLevels[0]}`
-            : `Stock: ${minStockLevel}-${maxStockLevel}`)
-          : 'In stock')
-        : 'No data'
+            ? `${t('competitors.card.stock_label')}: ${knownStockLevels[0]}`
+            : `${t('competitors.card.stock_label')}: ${minStockLevel}-${maxStockLevel}`)
+          : t('competitors.card.stock_in'))
+        : t('competitors.card.stock_no_data')
 
   return (
     <button
@@ -75,7 +77,7 @@ export function ProductComparisonCard({ data, selected, onClick }: ProductCompar
             'font-medium text-sm truncate min-w-0 flex-1',
             selected ? 'text-teal-700' : 'text-gray-800'
           )}>
-            {(product.name_en || product.name).replace(/^GOGOJAP-/, '')}
+            {localeName(product, locale).replace(/^GOGOJAP-/, '')}
           </span>
           {selected ? (
             <ChevronUp className="w-3.5 h-3.5 text-teal-400 shrink-0" />
@@ -88,7 +90,7 @@ export function ProductComparisonCard({ data, selected, onClick }: ProductCompar
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-x-3 gap-y-2 text-xs">
           {/* GoGoJap Price */}
           <div>
-            <div className="text-[10px] text-gray-400 mb-0.5">GoGoJap Price</div>
+            <div className="text-[10px] text-gray-400 mb-0.5">{t('competitors.card.our_price')}</div>
             <div className="font-mono font-bold text-teal-600 text-sm">
               ${ourPrice?.toFixed(0) || 'N/A'}
             </div>
@@ -96,7 +98,7 @@ export function ProductComparisonCard({ data, selected, onClick }: ProductCompar
 
           {/* Lowest competitor price + gap */}
           <div>
-            <div className="text-[10px] text-gray-400 mb-0.5">Lowest Competitor Price</div>
+            <div className="text-[10px] text-gray-400 mb-0.5">{t('competitors.card.lowest_price')}</div>
             <div className="flex items-baseline gap-1.5">
               {cheapestPrice ? (
                 <>
@@ -125,7 +127,7 @@ export function ProductComparisonCard({ data, selected, onClick }: ProductCompar
 
           {/* Cheaper competitor count */}
           <div>
-            <div className="text-[10px] text-gray-400 mb-0.5">Cheaper Competitors</div>
+            <div className="text-[10px] text-gray-400 mb-0.5">{t('competitors.card.cheaper_count')}</div>
             <div className={cn(
               'font-semibold',
               cheaperCount > 0 ? 'text-red-500' : 'text-emerald-500'
@@ -136,7 +138,7 @@ export function ProductComparisonCard({ data, selected, onClick }: ProductCompar
 
           {/* Ranking */}
           <div>
-            <div className="text-[10px] text-gray-400 mb-0.5">Ranking</div>
+            <div className="text-[10px] text-gray-400 mb-0.5">{t('competitors.card.ranking')}</div>
             <div className="flex items-center gap-1">
               {isWeCheapest ? (
                 <span className="flex items-center gap-0.5 text-emerald-600 font-semibold">
@@ -156,7 +158,7 @@ export function ProductComparisonCard({ data, selected, onClick }: ProductCompar
 
           {/* Stock status */}
           <div>
-            <div className="text-[10px] text-gray-400 mb-0.5">Stock</div>
+            <div className="text-[10px] text-gray-400 mb-0.5">{t('competitors.card.stock_label')}</div>
             <div className={cn(
               'font-medium text-[11px]',
               outOfStockCount > 0 && inStockCount === 0 ? 'text-red-500' :

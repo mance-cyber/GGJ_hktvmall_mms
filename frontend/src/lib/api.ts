@@ -6,12 +6,24 @@ import { getToken } from './secure-token'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
+// =============================================
+// Locale 感知：從 localStorage 讀取用戶語言偏好
+// =============================================
+const VALID_LOCALES = ['zh-HK', 'en'] as const
+
+function getCurrentLocale(): string {
+  if (typeof window === 'undefined') return 'zh-HK'
+  const stored = localStorage.getItem('gogojap-locale')
+  return stored && (VALID_LOCALES as readonly string[]).includes(stored) ? stored : 'zh-HK'
+}
+
 async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}${endpoint}`
   // 使用Security token Management器
   const token = getToken()
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'Accept-Language': getCurrentLocale(),
     ...(options?.headers as Record<string, string>),
   }
   if (token) {
@@ -806,6 +818,7 @@ export interface CompetitorProduct {
   id: string
   competitor_id: string
   name: string
+  name_en: string | null
   url: string
   sku: string | null
   category: string | null
@@ -864,6 +877,9 @@ export interface OwnProduct {
   sku: string
   hktv_product_id: string | null
   name: string
+  name_zh: string | null
+  name_ja: string | null
+  name_en: string | null
   description: string | null
   category: string | null
   brand: string | null
@@ -978,6 +994,7 @@ export interface BatchResultItem {
   success: boolean
   content_id?: string
   product_name: string
+  product_name_en?: string
   content?: GeneratedContent
   error?: string
 }
@@ -2092,6 +2109,7 @@ export interface CompetitorPrice {
   competitor_name: string
   competitor_tier: number
   product_name: string
+  product_name_en: string | null
   price: number | null
   original_price: number | null
   unit_price_per_100g: number | null
@@ -2106,6 +2124,7 @@ export interface ProductComparison {
   product: {
     id: string
     name: string
+    name_en: string | null
     sku: string
     price: number | null
     image_url: string | null
@@ -2136,6 +2155,7 @@ export interface MerchantOverview {
   }
   recent_changes: Array<{
     product_name: string
+    product_name_en: string | null
     change_type: string
     old_price: number | null
     new_price: number | null
@@ -2145,7 +2165,7 @@ export interface MerchantOverview {
 }
 
 export interface PriceHistoryData {
-  product: { id: string; name: string; price: number | null }
+  product: { id: string; name: string; name_en: string | null; price: number | null }
   dates: string[]
   our_price: number | null
   series: Array<{ id: string; name: string; data: (number | null)[] }>
@@ -2154,6 +2174,7 @@ export interface PriceHistoryData {
 export interface PricingSuggestion {
   product_id: string
   product_name: string
+  product_name_en: string | null
   category: string | null
   our_price: number
   cheapest_competitor_price: number

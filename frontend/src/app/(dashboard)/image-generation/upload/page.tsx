@@ -33,7 +33,7 @@ export default function ImageGenerationUploadPage() {
 
   const handleSubmit = async () => {
     if (files.length === 0) {
-      setError(t['image_gen.error_no_images'])
+      setError(t('image_gen.error_no_images'))
       return
     }
 
@@ -58,7 +58,7 @@ export default function ImageGenerationUploadPage() {
       router.push(`/image-generation/results/${task.id}`)
     } catch (err: any) {
       console.error('Image generation error:', err)
-      setError(err.response?.data?.detail || t['image_gen.error_generation_failed'])
+      setError(err.response?.data?.detail || t('image_gen.error_generation_failed'))
     } finally {
       setIsUploading(false)
     }
@@ -69,9 +69,9 @@ export default function ImageGenerationUploadPage() {
       {/* Title */}
       <div className="mb-8 flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{t['image_gen.upload_title']}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('image_gen.upload_title')}</h1>
           <p className="text-gray-600">
-            {t['image_gen.upload_subtitle']}
+            {t('image_gen.upload_subtitle')}
           </p>
         </div>
         <button
@@ -84,13 +84,13 @@ export default function ImageGenerationUploadPage() {
           "
         >
           <History className="w-4 h-4" />
-          {t['image_gen.view_history']}
+          {t('image_gen.view_history')}
         </button>
       </div>
 
       {/* Generate模式Select */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t['image_gen.select_mode']}</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('image_gen.select_mode')}</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* White background mode */}
@@ -116,12 +116,12 @@ export default function ImageGenerationUploadPage() {
             <div className="ml-3">
               <div className="flex items-center gap-2">
                 <ImageIcon className="w-5 h-5 text-gray-700" />
-                <span className="font-medium text-gray-900">{t['image_gen.mode_white_bg_topview']}</span>
+                <span className="font-medium text-gray-900">{t('image_gen.mode_white_bg_topview')}</span>
               </div>
               <p className="text-sm text-gray-600 mt-1">
-                {t['image_gen.mode_white_bg_desc']}
+                {t('image_gen.mode_white_bg_desc')}
               </p>
-              <p className="text-xs text-gray-500 mt-1">{t['image_gen.mode_white_bg_hint']}</p>
+              <p className="text-xs text-gray-500 mt-1">{t('image_gen.mode_white_bg_hint')}</p>
             </div>
           </label>
 
@@ -148,12 +148,12 @@ export default function ImageGenerationUploadPage() {
             <div className="ml-3">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-gray-700" />
-                <span className="font-medium text-gray-900">{t['image_gen.mode_professional_photo']}</span>
+                <span className="font-medium text-gray-900">{t('image_gen.mode_professional_photo')}</span>
               </div>
               <p className="text-sm text-gray-600 mt-1">
-                {t['image_gen.mode_professional_desc']}
+                {t('image_gen.mode_professional_desc')}
               </p>
-              <p className="text-xs text-gray-500 mt-1">{t['image_gen.mode_professional_hint']}</p>
+              <p className="text-xs text-gray-500 mt-1">{t('image_gen.mode_professional_hint')}</p>
             </div>
           </label>
         </div>
@@ -162,12 +162,12 @@ export default function ImageGenerationUploadPage() {
         {mode === 'professional_photo' && (
           <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t['image_gen.style_description']}
+              {t('image_gen.style_description')}
             </label>
             <textarea
               value={styleDescription}
               onChange={(e) => setStyleDescription(e.target.value)}
-              placeholder={t['image_gen.style_hint']}
+              placeholder={t('image_gen.style_hint')}
               rows={3}
               className="
                 w-full px-3 py-2 border border-gray-300 rounded-lg
@@ -176,7 +176,7 @@ export default function ImageGenerationUploadPage() {
               "
             />
             <p className="text-xs text-gray-500 mt-1">
-              {t['image_gen.style_help']}
+              {t('image_gen.style_help')}
             </p>
           </div>
         )}
@@ -184,7 +184,7 @@ export default function ImageGenerationUploadPage() {
         {/* Outputs per image */}
         <div className="mt-6 pt-6 border-t border-gray-200">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            {t['image_gen.outputs_per_image']}
+            {t('image_gen.outputs_per_image')}
           </label>
           <div className="flex items-center gap-4">
             <select
@@ -197,27 +197,27 @@ export default function ImageGenerationUploadPage() {
               "
             >
               {outputOptions.map((n) => (
-                <option key={n} value={n}>{n} {t['image_gen.pieces']}</option>
+                <option key={n} value={n}>{n} {t('image_gen.pieces')}</option>
               ))}
             </select>
             <span className="text-sm text-gray-600">
-              {t['image_gen.estimated_output'].replace('{count}', String(files.length * outputsPerImage))}
+              {t('image_gen.estimated_output').replace('{count}', String(files.length * outputsPerImage))}
               {files.length > 0 && (
                 <span className="text-gray-500">
-                  {`（${t['image_gen.inputs_label'].replace('{n}', String(files.length))} × ${t['image_gen.outputs_label'].replace('{n}', String(outputsPerImage))}）`}
+                  {`（${t('image_gen.inputs_label').replace('{n}', String(files.length))} × ${t('image_gen.outputs_label').replace('{n}', String(outputsPerImage))}）`}
                 </span>
               )}
             </span>
           </div>
           <p className="text-xs text-gray-500 mt-2">
-            {t['image_gen.outputs_help']}
+            {t('image_gen.outputs_help')}
           </p>
         </div>
       </div>
 
       {/* Image upload area */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t['image_gen.upload_section']}</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('image_gen.upload_section')}</h2>
         <ImageUploadZone onFilesChange={setFiles} maxFiles={maxFiles} />
       </div>
 
@@ -241,7 +241,7 @@ export default function ImageGenerationUploadPage() {
           "
           disabled={isUploading}
         >
-          {t['image_gen.cancel']}
+          {t('image_gen.cancel')}
         </button>
 
         <button
@@ -260,12 +260,12 @@ export default function ImageGenerationUploadPage() {
           {isUploading ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              {t['image_gen.uploading']}
+              {t('image_gen.uploading')}
             </>
           ) : (
             <>
               <Sparkles className="w-5 h-5" />
-              {t['image_gen.start_generation']}
+              {t('image_gen.start_generation')}
             </>
           )}
         </button>

@@ -5,6 +5,7 @@
 'use client'
 
 import { Check, X, Inbox } from 'lucide-react'
+import { useLocale } from '@/components/providers/locale-provider'
 import { Checkbox } from '@/components/ui/checkbox'
 import { HoloButton } from '@/components/ui/future-tech'
 import { ProposalCard } from './ProposalCard'
@@ -39,6 +40,7 @@ export function ProposalList({
   isBatchApproving,
   isBatchRejecting,
 }: ProposalListProps) {
+  const { t } = useLocale()
   const allSelected = proposals.length > 0 && selectedIds.size === proposals.length
   const someSelected = selectedIds.size > 0 && selectedIds.size < proposals.length
   const hasSelection = selectedIds.size > 0
@@ -50,9 +52,9 @@ export function ProposalList({
         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
           <Inbox className="w-8 h-8 text-gray-400" />
         </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No Pending Proposals</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">{t('pricing.list.no_pending')}</h3>
         <p className="text-gray-500 max-w-sm">
-          There are currently no pricing proposals awaiting approval. Click &quot;Trigger AI Analysis&quot; above to generate new proposals.
+          {t('pricing.list.no_pending_desc')}
         </p>
       </div>
     )
@@ -70,14 +72,14 @@ export function ProposalList({
             onCheckedChange={onSelectAll}
           />
           <span className="text-sm text-gray-600">
-            {allSelected ? 'Deselect All' : 'Select All'}
+            {allSelected ? t('pricing.list.deselect_all') : t('pricing.list.select_all')}
           </span>
         </div>
 
         {hasSelection && (
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500 mr-2">
-              {selectedIds.size} selected
+              {t('pricing.list.selected', { n: selectedIds.size })}
             </span>
             <HoloButton
               variant="primary"
@@ -87,7 +89,7 @@ export function ProposalList({
               className="bg-green-500 hover:bg-green-600 text-white"
             >
               <Check className="w-4 h-4 mr-1" />
-              Batch Approve
+              {t('pricing.list.batch_approve')}
             </HoloButton>
             <HoloButton
               variant="secondary"
@@ -97,7 +99,7 @@ export function ProposalList({
               className="hover:bg-red-50 hover:text-red-600"
             >
               <X className="w-4 h-4 mr-1" />
-              Batch Reject
+              {t('pricing.list.batch_reject')}
             </HoloButton>
           </div>
         )}

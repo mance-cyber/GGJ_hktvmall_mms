@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Competitor, CompetitorCreate } from '@/lib/api'
+import { useLocale } from '@/components/providers/locale-provider'
 import { Check, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -47,6 +48,7 @@ export function CompetitorFormDialog({
   isLoading: boolean
   title: string
 }) {
+  const { t } = useLocale()
   const [formData, setFormData] = useState<CompetitorCreate>({
     name: initialData?.name || '',
     platform: initialData?.platform || 'hktvmall',
@@ -68,25 +70,25 @@ export function CompetitorFormDialog({
         <form onSubmit={handleSubmit} className="space-y-6 mt-4">
           <div className="space-y-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Name <span className="text-destructive">*</span></Label>
+              <Label htmlFor="name">{t('competitors.form.name_label')} <span className="text-destructive">*</span></Label>
               <Input
                 id="name"
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g. Watsons"
+                placeholder={t('competitors.form.name_placeholder')}
                 className="bg-white/50"
               />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="platform">Platform <span className="text-destructive">*</span></Label>
+              <Label htmlFor="platform">{t('competitors.form.platform_label')} <span className="text-destructive">*</span></Label>
               <Select
                 value={formData.platform}
                 onValueChange={(value) => setFormData({ ...formData, platform: value })}
               >
                 <SelectTrigger className="bg-white/50">
-                  <SelectValue placeholder="Select platform" />
+                  <SelectValue placeholder={t('competitors.form.platform_placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {PLATFORMS.map((platform) => (
@@ -99,24 +101,24 @@ export function CompetitorFormDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="url">Website URL</Label>
+              <Label htmlFor="url">{t('competitors.form.url_label')}</Label>
               <Input
                 id="url"
                 type="url"
                 value={formData.base_url}
                 onChange={(e) => setFormData({ ...formData, base_url: e.target.value })}
-                placeholder="https://www.example.com"
+                placeholder={t('competitors.form.url_placeholder')}
                 className="bg-white/50"
               />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{t('competitors.form.notes_label')}</Label>
               <Textarea
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Notes about this competitor..."
+                placeholder={t('competitors.form.notes_placeholder')}
                 className="bg-white/50 min-h-[100px]"
               />
             </div>
@@ -128,7 +130,7 @@ export function CompetitorFormDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               type="submit"
@@ -140,7 +142,7 @@ export function CompetitorFormDialog({
               ) : (
                 <Check className="w-4 h-4 mr-2" />
               )}
-              {initialData ? 'Save Changes' : 'Add Now'}
+              {initialData ? t('competitors.form.save_changes') : t('competitors.form.add_now')}
             </Button>
           </div>
         </form>

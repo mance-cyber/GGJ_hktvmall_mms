@@ -58,8 +58,8 @@ export default function ContentHistoryPage() {
 
   // Language name mapping (from i18n dictionary)
   const LANGUAGE_NAMES: Record<string, string> = useMemo(() => ({
-    'zh-HK': t['content_history.lang_zh_HK'],
-    'zh-CN': t['content_history.lang_zh_CN'],
+    'zh-HK': t('content_history.lang_zh_HK'),
+    'zh-CN': t('content_history.lang_zh_CN'),
     'en': 'English',
     'ja': '日本語',
   }), [t])
@@ -95,7 +95,7 @@ export default function ContentHistoryPage() {
       })
       setHistory(response)
     } catch (err) {
-      setError(err instanceof Error ? err.message : t['content_history.fetch_failed'])
+      setError(err instanceof Error ? err.message : t('content_history.fetch_failed'))
     } finally {
       setIsLoading(false)
     }
@@ -118,7 +118,7 @@ export default function ContentHistoryPage() {
       setDeleteId(null)
       fetchHistory()
     } catch (err) {
-      setError(err instanceof Error ? err.message : t['content_history.delete_failed'])
+      setError(err instanceof Error ? err.message : t('content_history.delete_failed'))
     } finally {
       setIsDeleting(false)
     }
@@ -141,10 +141,10 @@ export default function ContentHistoryPage() {
     const diffHours = Math.floor(diffMs / 3600000)
     const diffDays = Math.floor(diffMs / 86400000)
 
-    if (diffMins < 1) return t['content_history.time_just_now']
-    if (diffMins < 60) return t['content_history.time_minutes_ago'].replace('{n}', String(diffMins))
-    if (diffHours < 24) return t['content_history.time_hours_ago'].replace('{n}', String(diffHours))
-    if (diffDays < 7) return t['content_history.time_days_ago'].replace('{n}', String(diffDays))
+    if (diffMins < 1) return t('content_history.time_just_now')
+    if (diffMins < 60) return t('content_history.time_minutes_ago').replace('{n}', String(diffMins))
+    if (diffHours < 24) return t('content_history.time_hours_ago').replace('{n}', String(diffHours))
+    if (diffDays < 7) return t('content_history.time_days_ago').replace('{n}', String(diffDays))
     return date.toLocaleDateString('zh-HK', {
       year: 'numeric',
       month: 'short',
@@ -223,10 +223,10 @@ export default function ContentHistoryPage() {
               <div className="p-2 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl shadow-lg shadow-purple-500/20">
                 <Clock className="w-6 h-6 text-white" />
               </div>
-              {t['content_history.title']}
+              {t('content_history.title')}
             </h1>
             <p className="text-slate-500 mt-2">
-              {t['content_history.subtitle']}
+              {t('content_history.subtitle')}
             </p>
           </div>
 
@@ -235,7 +235,7 @@ export default function ContentHistoryPage() {
             icon={<Zap className="w-4 h-4" />}
             onClick={() => router.push('/content-pipeline')}
           >
-            {t['content_history.go_generate']}
+            {t('content_history.go_generate')}
           </HoloButton>
         </div>
 
@@ -243,7 +243,7 @@ export default function ContentHistoryPage() {
         <StaggerContainer className="grid grid-cols-3 gap-4">
           <HoloCard className="p-4">
             <DataMetric
-              label={t['content_history.metric_total']}
+              label={t('content_history.metric_total')}
               value={stats.total}
               icon={<FileText className="w-5 h-5" />}
               color="purple"
@@ -251,7 +251,7 @@ export default function ContentHistoryPage() {
           </HoloCard>
           <HoloCard className="p-4">
             <DataMetric
-              label={t['content_history.metric_single']}
+              label={t('content_history.metric_single')}
               value={stats.single}
               icon={<Zap className="w-5 h-5" />}
               color="blue"
@@ -259,7 +259,7 @@ export default function ContentHistoryPage() {
           </HoloCard>
           <HoloCard className="p-4">
             <DataMetric
-              label={t['content_history.metric_batch']}
+              label={t('content_history.metric_batch')}
               value={stats.batch}
               icon={<CheckCheck className="w-5 h-5" />}
               color="green"
@@ -277,7 +277,7 @@ export default function ContentHistoryPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t['content_history.search_placeholder']}
+                placeholder={t('content_history.search_placeholder')}
                 className="pl-10"
               />
             </div>
@@ -292,7 +292,7 @@ export default function ContentHistoryPage() {
               )}
             >
               <SlidersHorizontal className="w-4 h-4" />
-              {t['content_history.filter']}
+              {t('content_history.filter')}
               {(filterLanguage || filterBatch) && (
                 <span className="w-2 h-2 bg-purple-500 rounded-full" />
               )}
@@ -322,15 +322,15 @@ export default function ContentHistoryPage() {
                   <div className="flex items-end gap-6">
                     {/* Language filter */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-600">{t['content_history.filter_language']}</label>
+                      <label className="text-sm font-medium text-slate-600">{t('content_history.filter_language')}</label>
                       <select
                         value={filterLanguage}
                         onChange={(e) => setFilterLanguage(e.target.value)}
                         className="h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400"
                       >
-                        <option value="">{t['content_history.filter_all_languages']}</option>
-                        <option value="zh-HK">🇭🇰 {t['content_history.lang_zh_HK']}</option>
-                        <option value="zh-CN">🇨🇳 {t['content_history.lang_zh_CN']}</option>
+                        <option value="">{t('content_history.filter_all_languages')}</option>
+                        <option value="zh-HK">🇭🇰 {t('content_history.lang_zh_HK')}</option>
+                        <option value="zh-CN">🇨🇳 {t('content_history.lang_zh_CN')}</option>
                         <option value="en">🇬🇧 English</option>
                         <option value="ja">🇯🇵 日本語</option>
                       </select>
@@ -338,15 +338,15 @@ export default function ContentHistoryPage() {
 
                     {/* TypeFilter */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-600">{t['content_history.filter_gen_type']}</label>
+                      <label className="text-sm font-medium text-slate-600">{t('content_history.filter_gen_type')}</label>
                       <select
                         value={filterBatch}
                         onChange={(e) => setFilterBatch(e.target.value)}
                         className="h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400"
                       >
-                        <option value="">{t['content_history.filter_all_types']}</option>
-                        <option value="false">{t['content_history.filter_single']}</option>
-                        <option value="true">{t['content_history.filter_batch']}</option>
+                        <option value="">{t('content_history.filter_all_types')}</option>
+                        <option value="false">{t('content_history.filter_single')}</option>
+                        <option value="true">{t('content_history.filter_batch')}</option>
                       </select>
                     </div>
 
@@ -362,7 +362,7 @@ export default function ContentHistoryPage() {
                         className="text-slate-500 hover:text-slate-700"
                       >
                         <X className="w-4 h-4 mr-1" />
-                        {t['content_history.clear_filter']}
+                        {t('content_history.clear_filter')}
                       </Button>
                     )}
                   </div>
@@ -393,22 +393,22 @@ export default function ContentHistoryPage() {
         {/* ========== History Record List ========== */}
         <HoloCard className="overflow-hidden">
           <HoloPanelHeader
-            title={`${t['content_history.table_title']}${history ? ` (${t['content_history.table_count'].replace('{total}', String(history.total))})` : ''}`}
+            title={`${t('content_history.table_title')}${history ? ` (${t('content_history.table_count').replace('{total}', String(history.total))})` : ''}`}
             icon={<Clock className="w-4 h-4" />}
           />
 
           {history?.items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-slate-400">
               <FileText className="w-12 h-12 mb-4 opacity-50" />
-              <p className="text-lg font-medium">{t['content_history.empty_title']}</p>
-              <p className="text-sm mt-1">{t['content_history.empty_desc']}</p>
+              <p className="text-lg font-medium">{t('content_history.empty_title')}</p>
+              <p className="text-sm mt-1">{t('content_history.empty_desc')}</p>
               <HoloButton
                 variant="primary"
                 icon={<Zap className="w-4 h-4" />}
                 className="mt-6"
                 onClick={() => router.push('/content-pipeline')}
               >
-                {t['content_history.start_generate']}
+                {t('content_history.start_generate')}
               </HoloButton>
             </div>
           ) : (
@@ -418,12 +418,12 @@ export default function ContentHistoryPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/80">
-                      <th className="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t['content_history.col_product']}</th>
-                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t['content_history.col_language']}</th>
-                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t['content_history.col_seo']}</th>
-                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t['content_history.col_duration']}</th>
-                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t['content_history.col_time']}</th>
-                      <th className="text-right py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t['content_history.col_actions']}</th>
+                      <th className="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('content_history.col_product')}</th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('content_history.col_language')}</th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('content_history.col_seo')}</th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('content_history.col_duration')}</th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('content_history.col_time')}</th>
+                      <th className="text-right py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('content_history.col_actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -451,7 +451,7 @@ export default function ContentHistoryPage() {
                               </div>
                               {item.is_batch && (
                                 <HoloBadge variant="info" size="sm">
-                                  {t['content_history.batch_label'].replace('{n}', String((item.batch_index ?? 0) + 1))}
+                                  {t('content_history.batch_label').replace('{n}', String((item.batch_index ?? 0) + 1))}
                                 </HoloBadge>
                               )}
                             </div>
@@ -510,7 +510,7 @@ export default function ContentHistoryPage() {
                                 className="gap-1.5 text-purple-600 border-purple-200 hover:bg-purple-50"
                               >
                                 <RefreshCw className="w-3.5 h-3.5" />
-                                {t['content_history.regenerate']}
+                                {t('content_history.regenerate')}
                               </Button>
                               <Button
                                 variant="ghost"
@@ -533,7 +533,7 @@ export default function ContentHistoryPage() {
               {history && history.total > 20 && (
                 <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
                   <p className="text-sm text-slate-500">
-                    {t['content_history.pagination']
+                    {t('content_history.pagination')
                       .replace('{total}', String(history.total))
                       .replace('{page}', String(history.page))
                       .replace('{pages}', String(Math.ceil(history.total / history.page_size)))}
@@ -547,7 +547,7 @@ export default function ContentHistoryPage() {
                       className="gap-1"
                     >
                       <ChevronLeft className="w-4 h-4" />
-                      {t['content_history.prev_page']}
+                      {t('content_history.prev_page')}
                     </Button>
                     <Button
                       variant="outline"
@@ -556,7 +556,7 @@ export default function ContentHistoryPage() {
                       disabled={!history.has_more}
                       className="gap-1"
                     >
-                      {t['content_history.next_page']}
+                      {t('content_history.next_page')}
                       <ChevronRight className="w-4 h-4" />
                     </Button>
                   </div>
@@ -587,17 +587,17 @@ export default function ContentHistoryPage() {
                   <div className="p-2 bg-red-100 rounded-lg">
                     <Trash2 className="w-5 h-5 text-red-600" />
                   </div>
-                  <h3 className="text-lg font-semibold text-slate-900">{t['content_history.dialog_delete_title']}</h3>
+                  <h3 className="text-lg font-semibold text-slate-900">{t('content_history.dialog_delete_title')}</h3>
                 </div>
                 <p className="text-slate-600 mb-6">
-                  {t['content_history.dialog_delete_message']}
+                  {t('content_history.dialog_delete_message')}
                 </p>
                 <div className="flex gap-3 justify-end">
                   <Button
                     variant="outline"
                     onClick={() => setDeleteId(null)}
                   >
-                    {t['common.cancel']}
+                    {t('common.cancel')}
                   </Button>
                   <Button
                     variant="destructive"
@@ -606,7 +606,7 @@ export default function ContentHistoryPage() {
                     className="gap-2"
                   >
                     {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {t['content_history.delete']}
+                    {t('content_history.delete')}
                   </Button>
                 </div>
               </motion.div>

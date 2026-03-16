@@ -90,7 +90,7 @@ export default function ProductsPage() {
     },
     onError: (err: any) => {
       const msg = err?.message || err?.detail || String(err)
-      alert(t['products.sync_failed'] + msg)
+      alert(t('products.sync_failed') + msg)
     }
   })
 
@@ -128,7 +128,7 @@ export default function ProductsPage() {
         <HoloCard className="p-6 border-red-200 bg-red-50/50">
           <div className="flex items-center text-red-600">
             <AlertCircle className="w-5 h-5 mr-3" />
-            <span className="font-medium">{t['products.load_error']}</span>
+            <span className="font-medium">{t('products.load_error')}</span>
           </div>
         </HoloCard>
       </PageTransition>
@@ -140,7 +140,7 @@ export default function ProductsPage() {
       <div className="space-y-3 sm:space-y-6">
         {/* ========== Page title ========== */}
         <div className="flex items-center justify-between gap-2">
-          <h1 className="page-title">{t['products.title']}</h1>
+          <h1 className="page-title">{t('products.title')}</h1>
           <div className="flex gap-1.5 sm:gap-2">
             <HoloButton
               variant="secondary"
@@ -150,10 +150,10 @@ export default function ProductsPage() {
               loading={syncMutation.isPending}
               icon={<RefreshCw className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", syncMutation.isPending && "animate-spin")} />}
             >
-              <span className="hidden sm:inline">{t['products.sync']}</span>
+              <span className="hidden sm:inline">{t('products.sync')}</span>
             </HoloButton>
             <HoloButton size="sm" icon={<Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}>
-              <span className="hidden sm:inline">{t['products.add']}</span>
+              <span className="hidden sm:inline">{t('products.add')}</span>
             </HoloButton>
           </div>
         </div>
@@ -161,21 +161,21 @@ export default function ProductsPage() {
         {/* ========== Data Metrics ========== */}
         <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           <DataMetric
-            label={t['products.total']}
+            label={t('products.total')}
             value={stats.total}
             color="blue"
             size="sm"
             icon={<Package className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />}
           />
           <DataMetric
-            label={t['products.active']}
+            label={t('products.active')}
             value={stats.active}
             color="green"
             size="sm"
             icon={<CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" />}
           />
           <DataMetric
-            label={t['products.low_stock']}
+            label={t('products.low_stock')}
             value={stats.lowStock}
             color="orange"
             size="sm"
@@ -184,9 +184,9 @@ export default function ProductsPage() {
           <HoloCard className="p-2 sm:p-4" glowColor="cyan">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] sm:text-sm text-slate-500">{t['products.sync']}</p>
+                <p className="text-[10px] sm:text-sm text-slate-500">{t('products.sync')}</p>
                 <p className="text-sm sm:text-lg font-semibold text-slate-800 mt-0.5 sm:mt-1">
-                  {syncMutation.isPending ? t['products.sync_in_progress'] : t['products.sync_done']}
+                  {syncMutation.isPending ? t('products.sync_in_progress') : t('products.sync_done')}
                 </p>
               </div>
               <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-cyan-50">
@@ -202,7 +202,7 @@ export default function ProductsPage() {
             <div className="relative flex-1">
               <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-400" />
               <Input
-                placeholder={t['products.search_placeholder']}
+                placeholder={t('products.search_placeholder')}
                 className="pl-8 sm:pl-9 h-9 sm:h-10 text-sm bg-white/50 border-slate-200"
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1) }}
@@ -211,24 +211,24 @@ export default function ProductsPage() {
             <div className="flex gap-1.5 sm:gap-2">
               <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1) }}>
                 <SelectTrigger className="flex-1 sm:w-[110px] h-9 sm:h-10 text-xs sm:text-sm bg-white/50 border-slate-200">
-                  <SelectValue placeholder={t['products.filter_status']} />
+                  <SelectValue placeholder={t('products.filter_status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t['products.filter_all']}</SelectItem>
-                  <SelectItem value="active">{t['products.filter_active']}</SelectItem>
-                  <SelectItem value="draft">{t['products.filter_draft']}</SelectItem>
-                  <SelectItem value="archived">{t['products.filter_archived']}</SelectItem>
+                  <SelectItem value="all">{t('products.filter_all')}</SelectItem>
+                  <SelectItem value="active">{t('products.filter_active')}</SelectItem>
+                  <SelectItem value="draft">{t('products.filter_draft')}</SelectItem>
+                  <SelectItem value="archived">{t('products.filter_archived')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setPage(1) }}>
                 <SelectTrigger className="flex-1 sm:w-[110px] h-9 sm:h-10 text-xs sm:text-sm bg-white/50 border-slate-200">
-                  <SelectValue placeholder={t['products.filter_category']} />
+                  <SelectValue placeholder={t('products.filter_category')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t['products.filter_all']}</SelectItem>
-                  <SelectItem value="health">{t['products.category_health']}</SelectItem>
-                  <SelectItem value="beauty">{t['products.category_beauty']}</SelectItem>
-                  <SelectItem value="food">{t['products.category_food']}</SelectItem>
+                  <SelectItem value="all">{t('products.filter_all')}</SelectItem>
+                  <SelectItem value="health">{t('products.category_health')}</SelectItem>
+                  <SelectItem value="beauty">{t('products.category_beauty')}</SelectItem>
+                  <SelectItem value="food">{t('products.category_food')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -265,16 +265,16 @@ export default function ProductsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem><Edit className="mr-2 h-4 w-4" /> {t['products.edit']}</DropdownMenuItem>
+                            <DropdownMenuItem><Edit className="mr-2 h-4 w-4" /> {t('products.edit')}</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => syncMutation.mutate()}>
-                              <RefreshCw className="mr-2 h-4 w-4" /> {t['products.sync']}
+                              <RefreshCw className="mr-2 h-4 w-4" /> {t('products.sync')}
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               className="text-red-600"
                               onClick={() => deleteMutation.mutate(product.id)}
                             >
-                              <Trash2 className="mr-2 h-4 w-4" /> {t['products.delete']}
+                              <Trash2 className="mr-2 h-4 w-4" /> {t('products.delete')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -285,7 +285,7 @@ export default function ProductsPage() {
                           ${product.price ? Number(product.price).toFixed(0) : '-'}
                         </span>
                         <span className={cn("text-xs", product.stock_quantity < 10 ? "text-red-500" : "text-slate-500")}>
-                          {t['products.stock_prefix']}{product.stock_quantity}
+                          {t('products.stock_prefix')}{product.stock_quantity}
                         </span>
                       </div>
                     </div>
@@ -300,19 +300,19 @@ export default function ProductsPage() {
         <div className="hidden sm:block">
           <HoloCard className="overflow-hidden">
             <HoloPanelHeader
-              title={t['products.table_title']}
-              subtitle={t['products.table_subtitle'].replace('{total}', String(productsData?.total || 0))}
+              title={t('products.table_title')}
+              subtitle={t('products.table_subtitle').replace('{total}', String(productsData?.total || 0))}
               icon={<Package className="w-5 h-5" />}
             />
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-slate-50/80 text-slate-600 font-medium border-b border-slate-100">
                   <tr>
-                    <th className="px-6 py-4 text-left">{t['products.col_product_info']}</th>
-                    <th className="px-6 py-4 text-left">{t['products.col_status']}</th>
-                    <th className="px-6 py-4 text-right">{t['products.col_price']}</th>
-                    <th className="px-6 py-4 text-right">{t['products.col_stock']}</th>
-                    <th className="px-6 py-4 text-right">{t['products.col_actions']}</th>
+                    <th className="px-6 py-4 text-left">{t('products.col_product_info')}</th>
+                    <th className="px-6 py-4 text-left">{t('products.col_status')}</th>
+                    <th className="px-6 py-4 text-right">{t('products.col_price')}</th>
+                    <th className="px-6 py-4 text-right">{t('products.col_stock')}</th>
+                    <th className="px-6 py-4 text-right">{t('products.col_actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100/50">
@@ -357,7 +357,7 @@ export default function ProductsPage() {
                             {product.stock_quantity}
                           </span>
                           {product.stock_quantity < 10 && (
-                            <span className="ml-2 text-xs text-red-400">{t['products.badge_low_stock']}</span>
+                            <span className="ml-2 text-xs text-red-400">{t('products.badge_low_stock')}</span>
                           )}
                         </td>
                         <td className="px-6 py-4 text-right">
@@ -368,17 +368,17 @@ export default function ProductsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>{t['products.actions_label']}</DropdownMenuLabel>
-                              <DropdownMenuItem><Edit className="mr-2 h-4 w-4" /> {t['products.edit']}</DropdownMenuItem>
+                              <DropdownMenuLabel>{t('products.actions_label')}</DropdownMenuLabel>
+                              <DropdownMenuItem><Edit className="mr-2 h-4 w-4" /> {t('products.edit')}</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => syncMutation.mutate()}>
-                                <RefreshCw className="mr-2 h-4 w-4" /> {t['products.sync_update']}
+                                <RefreshCw className="mr-2 h-4 w-4" /> {t('products.sync_update')}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 className="text-red-600"
                                 onClick={() => deleteMutation.mutate(product.id)}
                               >
-                                <Trash2 className="mr-2 h-4 w-4" /> {t['products.delete']}
+                                <Trash2 className="mr-2 h-4 w-4" /> {t('products.delete')}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -393,14 +393,14 @@ export default function ProductsPage() {
             {productsData?.data.length === 0 && (
               <div className="py-16 text-center text-slate-500">
                 <Package className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                <p>{t['products.no_results']}</p>
+                <p>{t('products.no_results')}</p>
               </div>
             )}
 
             {/* Pagination */}
             <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
               <div className="text-sm text-slate-500">
-                {t['products.pagination']
+                {t('products.pagination')
                   .replace('{from}', String(productsData?.total ? (page - 1) * 20 + 1 : 0))
                   .replace('{to}', String(Math.min(page * 20, productsData?.total || 0)))
                   .replace('{total}', String(productsData?.total || 0))}
@@ -462,9 +462,9 @@ function StatusBadge({ status }: { status: string }) {
   const { t } = useLocale()
 
   const config: Record<string, { variant: 'success' | 'warning' | 'default'; label: string }> = {
-    active: { variant: 'success', label: t['products.status_active'] },
-    draft: { variant: 'default', label: t['products.status_draft'] },
-    archived: { variant: 'warning', label: t['products.status_archived'] },
+    active: { variant: 'success', label: t('products.status_active') },
+    draft: { variant: 'default', label: t('products.status_draft') },
+    archived: { variant: 'warning', label: t('products.status_archived') },
   }
 
   const { variant, label } = config[status] || config.draft

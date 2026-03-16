@@ -321,16 +321,16 @@ export function CatalogPipelineDialog() {
   }, [resetState, isRunning])
 
   const stepLabels: Record<StepKey, string> = {
-    build: t['competitors.catalog_step_build'],
-    tag: t['competitors.catalog_step_tag'],
-    match: t['competitors.catalog_step_match'],
+    build: t('competitors.catalog_step_build'),
+    tag: t('competitors.catalog_step_tag'),
+    match: t('competitors.catalog_step_match'),
   }
 
   return (
     <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogTrigger asChild>
         <HoloButton variant="primary" size="sm" icon={<Database className="w-4 h-4" />}>
-          <span className="hidden sm:inline">{t['competitors.catalog_build']}</span>
+          <span className="hidden sm:inline">{t('competitors.catalog_build')}</span>
         </HoloButton>
       </DialogTrigger>
       <DialogContent
@@ -340,21 +340,21 @@ export function CatalogPipelineDialog() {
         {...(isRunning ? { 'data-lock': true } : {})}
       >
         <DialogHeader>
-          <DialogTitle>{t['competitors.catalog_title']}</DialogTitle>
-          <DialogDescription>{t['competitors.catalog_desc']}</DialogDescription>
+          <DialogTitle>{t('competitors.catalog_title')}</DialogTitle>
+          <DialogDescription>{t('competitors.catalog_desc')}</DialogDescription>
         </DialogHeader>
 
         {/* ========== idle: Platform Selection ========== */}
         {phase === 'idle' && (
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t['competitors.catalog_platform']}</label>
+              <label className="text-sm font-medium">{t('competitors.catalog_platform')}</label>
               <Select value={platform} onValueChange={setPlatform}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t['competitors.catalog_all_platforms']}</SelectItem>
+                  <SelectItem value="all">{t('competitors.catalog_all_platforms')}</SelectItem>
                   <SelectItem value="hktvmall">HKTVmall</SelectItem>
                   <SelectItem value="wellcome">Wellcome</SelectItem>
                 </SelectContent>
@@ -522,7 +522,7 @@ export function CatalogPipelineDialog() {
             {/* Completion summary */}
             {phase === 'done' && (
               <div className="rounded-lg bg-green-50 border border-green-200 p-3 text-sm text-green-700">
-                <p className="font-medium">{t['competitors.catalog_done']}</p>
+                <p className="font-medium">{t('competitors.catalog_done')}</p>
                 <p className="text-xs mt-1">
                   Total duration: {formatDuration(
                     STEPS.reduce((sum, s) => sum + (steps[s].duration ?? 0), 0)
@@ -537,11 +537,11 @@ export function CatalogPipelineDialog() {
           {phase === 'idle' && (
             <>
               <Button variant="outline" onClick={() => handleDialogClose(false)}>
-                {t['common.cancel']}
+                {t('common.cancel')}
               </Button>
               <Button onClick={() => runPipeline()}>
                 <Play className="mr-2 h-4 w-4" />
-                {t['competitors.catalog_start']}
+                {t('competitors.catalog_start')}
               </Button>
             </>
           )}
@@ -553,17 +553,17 @@ export function CatalogPipelineDialog() {
           {phase === 'error' && (
             <>
               <Button variant="outline" onClick={() => handleDialogClose(false)}>
-                {t['common.cancel']}
+                {t('common.cancel')}
               </Button>
               <Button onClick={() => runPipeline()}>
                 <RotateCcw className="mr-2 h-4 w-4" />
-                {t['competitors.catalog_retry']}
+                {t('competitors.catalog_retry')}
               </Button>
             </>
           )}
           {phase === 'done' && (
             <Button onClick={() => handleDialogClose(false)}>
-              {t['common.confirm']}
+              {t('common.confirm')}
             </Button>
           )}
         </DialogFooter>

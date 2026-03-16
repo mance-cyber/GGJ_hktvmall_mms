@@ -5,6 +5,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useLocale } from '@/components/providers/locale-provider'
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,7 @@ export function ApprovalDialog({
   onConfirm,
   isLoading,
 }: ApprovalDialogProps) {
+  const { t } = useLocale()
   const [finalPrice, setFinalPrice] = useState<string>('')
   const [useCustomPrice, setUseCustomPrice] = useState(false)
 
@@ -69,17 +71,17 @@ export function ApprovalDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Confirm Price Change Approval</DialogTitle>
+          <DialogTitle>{t('pricing.dialog.title')}</DialogTitle>
           <DialogDescription>
-            Please confirm the following pricing proposal. Once approved, HKTVmall prices will be automatically updated.
+            {t('pricing.dialog.desc')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {/* Product Info */}
           <div>
-            <Label className="text-gray-500">Product</Label>
-            <p className="font-medium">{proposal.product_name || 'Unknown Product'}</p>
+            <Label className="text-gray-500">{t('pricing.dialog.product')}</Label>
+            <p className="font-medium">{proposal.product_name || t('pricing.dialog.unknown_product')}</p>
             {proposal.product_sku && (
               <p className="text-sm text-gray-500">SKU: {proposal.product_sku}</p>
             )}
@@ -87,7 +89,7 @@ export function ApprovalDialog({
 
           {/* Price Change */}
           <div>
-            <Label className="text-gray-500">Price Change</Label>
+            <Label className="text-gray-500">{t('pricing.dialog.price_change')}</Label>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-lg font-semibold text-gray-700">
                 {formatPrice(proposal.current_price)}
@@ -111,7 +113,7 @@ export function ApprovalDialog({
           {/* AI Reasoning */}
           {proposal.reason && (
             <div>
-              <Label className="text-gray-500">AI Suggestion Rationale</Label>
+              <Label className="text-gray-500">{t('pricing.dialog.ai_rationale')}</Label>
               <p className="text-sm mt-1">{proposal.reason}</p>
             </div>
           )}
@@ -127,20 +129,20 @@ export function ApprovalDialog({
                 className="rounded border-gray-300"
               />
               <Label htmlFor="useCustomPrice" className="cursor-pointer">
-                Use custom final price
+                {t('pricing.dialog.custom_price')}
               </Label>
             </div>
 
             {useCustomPrice && (
               <div className="mt-2">
-                <Label htmlFor="finalPrice">Final Execution Price</Label>
+                <Label htmlFor="finalPrice">{t('pricing.dialog.final_price')}</Label>
                 <Input
                   id="finalPrice"
                   type="number"
                   step="0.01"
                   value={finalPrice}
                   onChange={(e) => setFinalPrice(e.target.value)}
-                  placeholder="Enter final price"
+                  placeholder={t('pricing.dialog.final_price_placeholder')}
                   className="mt-1"
                 />
               </div>
@@ -155,7 +157,7 @@ export function ApprovalDialog({
             disabled={isLoading}
           >
             <X className="w-4 h-4 mr-1" />
-            Cancel
+            {t('common.cancel')}
           </HoloButton>
           <HoloButton
             variant="primary"
@@ -164,7 +166,7 @@ export function ApprovalDialog({
             className="bg-green-500 hover:bg-green-600 text-white"
           >
             <Check className="w-4 h-4 mr-1" />
-            {isLoading ? 'Processing...' : 'Confirm Approval'}
+            {isLoading ? t('pricing.dialog.processing') : t('pricing.dialog.confirm')}
           </HoloButton>
         </DialogFooter>
       </DialogContent>

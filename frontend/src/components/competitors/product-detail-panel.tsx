@@ -5,6 +5,7 @@ import { api, ProductComparison } from '@/lib/api'
 import { X, TrendingUp, ExternalLink } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { cn } from '@/lib/utils'
+import { useLocale, localeName } from '@/components/providers/locale-provider'
 import { TierBadge } from './tier-badge'
 
 const CHART_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899']
@@ -52,8 +53,9 @@ interface ProductDetailPanelProps {
 }
 
 export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
+  const { t, locale } = useLocale()
   const { product, competitors, our_price_rank, total_competitors } = data
-  const productName = (product.name_en || product.name).replace(/^GOGOJAP-/, '')
+  const productName = localeName(product, locale).replace(/^GOGOJAP-/, '')
 
   const { data: history, isLoading: historyLoading } = useQuery({
     queryKey: ['price-history', product.id],
@@ -98,12 +100,12 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
           )}
           <h3 className="font-semibold text-gray-800 text-sm leading-snug">{productName}</h3>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <span className="text-xs text-gray-400">GoGoJap</span>
+            <span className="text-xs text-gray-400">{t('competitors.detail.our_merchant')}</span>
             <span className="font-mono font-bold text-teal-600 text-sm">${ourPrice?.toFixed(0) || 'N/A'}</span>
             {!isWeCheapest && cheapestPrice && (
               <>
                 <span className="text-gray-200">|</span>
-                <span className="text-xs text-gray-400">Lowest Price Gap</span>
+                <span className="text-xs text-gray-400">{t('competitors.detail.price_gap')}</span>
                 <span className={cn(
                   'font-mono font-semibold text-sm',
                   priceDiffPct > 20 ? 'text-red-500' : priceDiffPct > 5 ? 'text-amber-500' : 'text-gray-600'
@@ -118,7 +120,7 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
             )}
             {isWeCheapest && (
               <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">
-                Lowest Price 🏆
+                {t('competitors.detail.lowest_badge')} 🏆
               </span>
             )}
           </div>
@@ -139,7 +141,7 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
         <div className="p-3 sm:p-4 border-b border-gray-100">
           <div className="flex items-center gap-1.5 mb-3">
             <TrendingUp className="w-3.5 h-3.5 text-teal-500" />
-            <span className="text-xs font-medium text-gray-600">30-Day Price Trend</span>
+            <span className="text-xs font-medium text-gray-600">{t('competitors.detail.trend_title')}</span>
           </div>
 
           {historyLoading ? (
@@ -148,13 +150,13 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
             </div>
           ) : chartData.length === 0 || !history?.series.length ? (
             <div className="h-44 flex items-center justify-center">
-              <p className="text-xs text-gray-400">Not enough historical data</p>
+              <p className="text-xs text-gray-400">{t('competitors.detail.no_history')}</p>
             </div>
           ) : (
             <>
               {history?.our_price && (
                 <div className="mb-2 inline-flex items-center gap-1.5 bg-teal-50 border border-teal-200 rounded-lg px-2.5 py-1">
-                  <span className="text-[10px] text-teal-500">Current</span>
+                  <span className="text-[10px] text-teal-500">{t('competitors.detail.current_label')}</span>
                   <span className="font-mono font-bold text-teal-700 text-xs">${history.our_price.toFixed(0)}</span>
                 </div>
               )}
@@ -188,7 +190,7 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
               {/* "30-Day Trend" label below chart */}
               <div className="mt-1.5 text-center">
                 <span className="text-[10px] text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">
-                  30-Day Trend
+                  {t('competitors.detail.trend_label')}
                 </span>
               </div>
             </>
@@ -198,29 +200,29 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
         {/* Competitor Table */}
         <div className="p-3 sm:p-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-gray-600">Competitor Prices ({total_competitors} merchants)</span>
-            <span className="text-[10px] text-gray-400">Ranking {our_price_rank}/{total_competitors}</span>
+            <span className="text-xs font-medium text-gray-600">{t('competitors.detail.competitors_title', { n: total_competitors })}</span>
+            <span className="text-[10px] text-gray-400">{t('competitors.detail.ranking_display', { rank: our_price_rank, total: total_competitors })}</span>
           </div>
 
           {competitors.length === 0 ? (
-            <p className="text-xs text-gray-400 text-center py-6">No competitor pairs yet</p>
+            <p className="text-xs text-gray-400 text-center py-6">{t('competitors.detail.no_competitors')}</p>
           ) : (
             <div className="overflow-x-auto -mx-1">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-gray-100">
-                    <th className="text-left text-[10px] text-gray-400 font-normal py-1.5 px-2">Merchant</th>
-                    <th className="text-left text-[10px] text-gray-400 font-normal py-1.5 px-2">Competitor Product</th>
-                    <th className="text-right text-[10px] text-gray-400 font-normal py-1.5 px-2">Price</th>
-                    <th className="text-center text-[10px] text-gray-400 font-normal py-1.5 px-2 hidden sm:table-cell">7-Day Trend</th>
-                    <th className="text-center text-[10px] text-gray-400 font-normal py-1.5 px-2">Stock</th>
-                    <th className="text-right text-[10px] text-gray-400 font-normal py-1.5 px-2">Link</th>
+                    <th className="text-left text-[10px] text-gray-400 font-normal py-1.5 px-2">{t('competitors.detail.th_merchant')}</th>
+                    <th className="text-left text-[10px] text-gray-400 font-normal py-1.5 px-2">{t('competitors.detail.th_product')}</th>
+                    <th className="text-right text-[10px] text-gray-400 font-normal py-1.5 px-2">{t('competitors.detail.th_price')}</th>
+                    <th className="text-center text-[10px] text-gray-400 font-normal py-1.5 px-2 hidden sm:table-cell">{t('competitors.detail.th_trend')}</th>
+                    <th className="text-center text-[10px] text-gray-400 font-normal py-1.5 px-2">{t('competitors.detail.th_stock')}</th>
+                    <th className="text-right text-[10px] text-gray-400 font-normal py-1.5 px-2">{t('competitors.detail.th_link')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {/* GoGoJap row */}
                   <tr className="bg-teal-50/70 border-b border-teal-100">
-                    <td className="py-2 px-2 font-semibold text-teal-700 whitespace-nowrap">GoGoJap ⭐</td>
+                    <td className="py-2 px-2 font-semibold text-teal-700 whitespace-nowrap">{t('competitors.detail.our_merchant')} ⭐</td>
                     <td className="py-2 px-2 text-xs text-teal-600">{productName}</td>
                     <td className="py-2 px-2 text-right font-mono font-bold text-teal-600">
                       ${product.price?.toFixed(0) || 'N/A'}
@@ -254,8 +256,8 @@ export function ProductDetailPanel({ data, onClose }: ProductDetailPanelProps) {
                           </div>
                         </td>
                         <td className="py-2 px-2">
-                          <span className="text-[11px] text-gray-500 line-clamp-2 leading-tight" title={comp.product_name_en || comp.product_name}>
-                            {comp.product_name_en || comp.product_name}
+                          <span className="text-[11px] text-gray-500 line-clamp-2 leading-tight" title={localeName({ name: comp.product_name, name_en: comp.product_name_en }, locale)}>
+                            {localeName({ name: comp.product_name, name_en: comp.product_name_en }, locale)}
                           </span>
                         </td>
                         <td className="py-2 px-2 text-right">

@@ -112,6 +112,7 @@ class CompetitorProductResponse(BaseModel):
     id: UUID
     competitor_id: UUID
     name: str
+    name_en: Optional[str] = None
     url: str
     sku: Optional[str] = None
     category: Optional[str] = None

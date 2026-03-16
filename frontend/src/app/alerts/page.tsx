@@ -214,7 +214,7 @@ export default function AlertsPage() {
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              {t['alerts.title']}
+              {t('alerts.title')}
               {stats.unread > 0 && (
                 <HoloBadge variant="error" pulse>
                   {stats.unread}
@@ -222,7 +222,7 @@ export default function AlertsPage() {
               )}
             </h1>
             <p className="text-sm text-muted-foreground mt-1 hidden sm:block">
-              {t['alerts.subtitle']}
+              {t('alerts.subtitle')}
             </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -233,7 +233,7 @@ export default function AlertsPage() {
               icon={<RefreshCw className="w-3.5 h-3.5" />}
               className="px-2 sm:px-3"
             >
-              <span className="hidden sm:inline">{t['alerts.refresh']}</span>
+              <span className="hidden sm:inline">{t('alerts.refresh')}</span>
             </HoloButton>
             {stats.unread > 0 && (
               <HoloButton
@@ -243,8 +243,8 @@ export default function AlertsPage() {
                 disabled={markingAllRead}
                 icon={markingAllRead ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCheck className="w-3.5 h-3.5" />}
               >
-                <span className="hidden sm:inline">{markingAllRead ? 'Processing...' : t['alerts.mark_all_read']}</span>
-                <span className="sm:hidden">{markingAllRead ? '...' : t['alerts.read']}</span>
+                <span className="hidden sm:inline">{markingAllRead ? t('common.loading') : t('alerts.mark_all_read')}</span>
+                <span className="sm:hidden">{markingAllRead ? '...' : t('alerts.read')}</span>
               </HoloButton>
             )}
           </div>
@@ -253,7 +253,7 @@ export default function AlertsPage() {
         {/* ========== Stats Cards ========== */}
         <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
           <MetricCard
-            label={t['alerts.total']}
+            label={t('alerts.total')}
             value={stats.total}
             icon={<Bell className="w-4 h-4" />}
             color="cyan"
@@ -261,7 +261,7 @@ export default function AlertsPage() {
             onClick={() => setFilterType('all')}
           />
           <MetricCard
-            label={t['alerts.unread']}
+            label={t('alerts.unread')}
             value={stats.unread}
             icon={<Inbox className="w-4 h-4" />}
             color="blue"
@@ -269,7 +269,7 @@ export default function AlertsPage() {
             onClick={() => setFilterType('unread')}
           />
           <MetricCard
-            label={t['alerts.price_drop']}
+            label={t('alerts.price_drop')}
             value={stats.priceDrops}
             icon={<TrendingDown className="w-4 h-4" />}
             color="green"
@@ -277,7 +277,7 @@ export default function AlertsPage() {
             onClick={() => setFilterType('price_drop')}
           />
           <MetricCard
-            label={t['alerts.price_increase']}
+            label={t('alerts.price_increase')}
             value={stats.priceIncreases}
             icon={<TrendingUp className="w-4 h-4" />}
             color="orange"
@@ -293,7 +293,7 @@ export default function AlertsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
               type="text"
-              placeholder={t['alerts.search_placeholder']}
+              placeholder={t('alerts.search_placeholder')}
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
               className="pl-9 bg-white/50 h-9 text-sm"
@@ -314,38 +314,38 @@ export default function AlertsPage() {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="h-10">
                   <SlidersHorizontal className="w-4 h-4 mr-2" />
-                  {filterType === 'all' ? t['alerts.all_types'] :
-                   filterType === 'unread' ? t['alerts.unread'] :
-                   filterType === 'price_drop' ? t['alerts.price_drop'] :
-                   filterType === 'price_increase' ? t['alerts.price_increase'] :
-                   filterType === 'out_of_stock' ? t['alerts.out_of_stock'] : t['alerts.back_in_stock']}
+                  {filterType === 'all' ? t('alerts.all_types') :
+                   filterType === 'unread' ? t('alerts.unread') :
+                   filterType === 'price_drop' ? t('alerts.price_drop') :
+                   filterType === 'price_increase' ? t('alerts.price_increase') :
+                   filterType === 'out_of_stock' ? t('alerts.out_of_stock') : t('alerts.back_in_stock')}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={() => { setFilterType('all'); setCurrentPage(1); }}>
                   <Bell className="w-4 h-4 mr-2" />
-                  {t['alerts.all_types']}
+                  {t('alerts.all_types')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { setFilterType('unread'); setCurrentPage(1); }}>
                   <Inbox className="w-4 h-4 mr-2" />
-                  {t['alerts.unread_alerts']}
+                  {t('alerts.unread_alerts')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => { setFilterType('price_drop'); setCurrentPage(1); }}>
                   <TrendingDown className="w-4 h-4 mr-2 text-green-500" />
-                  {t['alerts.price_decreased']}
+                  {t('alerts.price_decreased')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { setFilterType('price_increase'); setCurrentPage(1); }}>
                   <TrendingUp className="w-4 h-4 mr-2 text-red-500" />
-                  {t['alerts.price_increased']}
+                  {t('alerts.price_increased')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { setFilterType('out_of_stock'); setCurrentPage(1); }}>
                   <AlertTriangle className="w-4 h-4 mr-2 text-orange-500" />
-                  {t['alerts.out_of_stock_alert']}
+                  {t('alerts.out_of_stock_alert')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { setFilterType('back_in_stock'); setCurrentPage(1); }}>
                   <Check className="w-4 h-4 mr-2 text-blue-500" />
-                  {t['alerts.back_in_stock_alert']}
+                  {t('alerts.back_in_stock_alert')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -370,16 +370,16 @@ export default function AlertsPage() {
                 </div>
               </button>
               <span className="text-xs sm:text-sm text-slate-600">
-                {filteredAlerts.length} {t['alerts.alert_count']}
-                {searchQuery && ` (${t['alerts.search_prefix']}: "${searchQuery}")`}
+                {filteredAlerts.length} {t('alerts.alert_count')}
+                {searchQuery && ` (${t('alerts.search_prefix')}: "${searchQuery}")`}
               </span>
             </div>
             {selectedAlerts.size > 0 && (
               <div className="flex items-center space-x-2">
-                <span className="text-xs sm:text-sm text-slate-500">{t['alerts.selected_count'].replace('{n}', String(selectedAlerts.size))}</span>
+                <span className="text-xs sm:text-sm text-slate-500">{t('alerts.selected_count').replace('{n}', String(selectedAlerts.size))}</span>
                 <HoloButton size="sm" variant="ghost">
                   <CheckCheck className="w-4 h-4 mr-1" />
-                  {t['alerts.mark_as_read']}
+                  {t('alerts.mark_as_read')}
                 </HoloButton>
               </div>
             )}
@@ -422,10 +422,10 @@ export default function AlertsPage() {
                 <Bell className="w-8 h-8 text-slate-300" />
               </div>
               <h3 className="text-lg font-medium text-slate-800">
-                {searchQuery ? t['alerts.no_search_results'] : t['alerts.no_alerts']}
+                {searchQuery ? t('alerts.no_search_results') : t('alerts.no_alerts')}
               </h3>
               <p className="text-slate-500 mt-1">
-                {searchQuery ? t['alerts.try_other_keywords'] : t['alerts.empty_hint']}
+                {searchQuery ? t('alerts.try_other_keywords') : t('alerts.empty_hint')}
               </p>
             </div>
           )}
@@ -434,7 +434,7 @@ export default function AlertsPage() {
           {totalPages > 1 && (
             <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
               <span className="text-sm text-slate-500">
-                {t['alerts.page_info'].replace('{current}', String(currentPage)).replace('{total}', String(totalPages)).replace('{count}', String(filteredAlerts.length))}
+                {t('alerts.page_info').replace('{current}', String(currentPage)).replace('{total}', String(totalPages)).replace('{count}', String(filteredAlerts.length))}
               </span>
               <div className="flex items-center space-x-2">
                 <HoloButton
@@ -444,7 +444,7 @@ export default function AlertsPage() {
                   disabled={currentPage <= 1}
                   icon={<ChevronLeft className="w-4 h-4" />}
                 >
-                  {t['alerts.prev_page']}
+                  {t('alerts.prev_page')}
                 </HoloButton>
                 <HoloButton
                   variant="secondary"
@@ -453,7 +453,7 @@ export default function AlertsPage() {
                   disabled={currentPage >= totalPages}
                   icon={<ChevronRight className="w-4 h-4" />}
                 >
-                  {t['alerts.next_page']}
+                  {t('alerts.next_page')}
                 </HoloButton>
               </div>
             </div>
@@ -529,28 +529,28 @@ function AlertCard({
       icon: TrendingDown,
       color: "text-green-600",
       bg: "bg-green-100",
-      label: t['alerts.price_drop'],
+      label: t('alerts.price_drop'),
       badgeVariant: "success" as const
     },
     price_increase: {
       icon: TrendingUp,
       color: "text-red-600",
       bg: "bg-red-100",
-      label: t['alerts.price_increase'],
+      label: t('alerts.price_increase'),
       badgeVariant: "error" as const
     },
     out_of_stock: {
       icon: AlertTriangle,
       color: "text-orange-600",
       bg: "bg-orange-100",
-      label: t['alerts.out_of_stock'],
+      label: t('alerts.out_of_stock'),
       badgeVariant: "warning" as const
     },
     back_in_stock: {
       icon: Check,
       color: "text-blue-600",
       bg: "bg-blue-100",
-      label: t['alerts.back_in_stock'],
+      label: t('alerts.back_in_stock'),
       badgeVariant: "info" as const
     },
   }), [t])
@@ -559,7 +559,7 @@ function AlertCard({
     icon: Bell,
     color: "text-slate-600",
     bg: "bg-slate-100",
-    label: t['alerts.notification'],
+    label: t('alerts.notification'),
     badgeVariant: "default" as const
   }
 
@@ -597,7 +597,7 @@ function AlertCard({
             {!isRead && (
               <span className="flex items-center text-xs text-blue-600 font-medium">
                 <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-1 animate-pulse" />
-                {t['alerts.unread']}
+                {t('alerts.unread')}
               </span>
             )}
           </div>
@@ -643,7 +643,7 @@ function AlertCard({
               onClick={onMarkRead}
               icon={<CheckCheck className="w-4 h-4" />}
             >
-              {t['alerts.read']}
+              {t('alerts.read')}
             </HoloButton>
           )}
           <DropdownMenu>
@@ -655,16 +655,16 @@ function AlertCard({
             <DropdownMenuContent align="end">
               <DropdownMenuItem>
                 <Eye className="w-4 h-4 mr-2" />
-                {t['alerts.view_details']}
+                {t('alerts.view_details')}
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <ExternalLink className="w-4 h-4 mr-2" />
-                {t['alerts.go_to_product']}
+                {t('alerts.go_to_product')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="text-slate-500">
                 <Archive className="w-4 h-4 mr-2" />
-                {t['alerts.archive']}
+                {t('alerts.archive')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -698,7 +698,7 @@ function AlertCard({
             {!isRead && (
               <span className="flex items-center text-xs text-blue-600 font-medium">
                 <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-1 animate-pulse" />
-                {t['alerts.unread']}
+                {t('alerts.unread')}
               </span>
             )}
           </div>
@@ -756,23 +756,23 @@ function AlertCard({
                 <>
                   <DropdownMenuItem onClick={onMarkRead}>
                     <CheckCheck className="w-4 h-4 mr-2" />
-                    {t['alerts.mark_as_read']}
+                    {t('alerts.mark_as_read')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </>
               )}
               <DropdownMenuItem>
                 <Eye className="w-4 h-4 mr-2" />
-                {t['alerts.view_details']}
+                {t('alerts.view_details')}
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <ExternalLink className="w-4 h-4 mr-2" />
-                {t['alerts.go_to_product']}
+                {t('alerts.go_to_product')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="text-slate-500">
                 <Archive className="w-4 h-4 mr-2" />
-                {t['alerts.archive']}
+                {t('alerts.archive')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

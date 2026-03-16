@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api, ProductComparison } from '@/lib/api'
+import { useLocale } from '@/components/providers/locale-provider'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Package, Building2, RefreshCw, Target, Globe,
@@ -34,14 +35,15 @@ function getThreatLevel(item: ProductComparison): ThreatLevel {
   return 'normal'
 }
 
-const THREAT_GROUPS: { key: ThreatLevel; label: string; color: string; badge: string }[] = [
-  { key: 'danger',   label: 'High Threat · Price gap >20%',     color: 'border-red-200 bg-red-50/60',     badge: 'bg-red-100 text-red-700 border-red-200' },
-  { key: 'warning',  label: 'Warning · Price gap 5-20%',       color: 'border-amber-200 bg-amber-50/60', badge: 'bg-amber-100 text-amber-700 border-amber-200' },
-  { key: 'normal',   label: 'Normal range',                color: 'border-gray-200 bg-gray-50/60',   badge: 'bg-gray-100 text-gray-600 border-gray-200' },
-  { key: 'cheapest', label: 'We are cheapest 🏆',             color: 'border-emerald-200 bg-emerald-50/60', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+const THREAT_GROUPS_STYLE: { key: ThreatLevel; labelKey: string; color: string; badge: string }[] = [
+  { key: 'danger',   labelKey: 'competitors.page.threat_danger',   color: 'border-red-200 bg-red-50/60',     badge: 'bg-red-100 text-red-700 border-red-200' },
+  { key: 'warning',  labelKey: 'competitors.page.threat_warning',  color: 'border-amber-200 bg-amber-50/60', badge: 'bg-amber-100 text-amber-700 border-amber-200' },
+  { key: 'normal',   labelKey: 'competitors.page.threat_normal',   color: 'border-gray-200 bg-gray-50/60',   badge: 'bg-gray-100 text-gray-600 border-gray-200' },
+  { key: 'cheapest', labelKey: 'competitors.page.threat_cheapest', color: 'border-emerald-200 bg-emerald-50/60', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
 ]
 
 export default function CompetitorsPage() {
+  const { t } = useLocale()
   const [view, setView] = useState<ViewMode>('products')
   const [scope, setScope] = useState<ScopeMode>('mapped')
 
@@ -222,7 +224,7 @@ export default function CompetitorsPage() {
         <div className="flex items-start sm:items-center justify-between gap-2">
           <div className="min-w-0">
             <h1 className="text-lg sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
-              <span className="text-teal-500">⚔️</span> Competitor Monitor
+              <span className="text-teal-500">⚔️</span> {t('competitors.title')}
             </h1>
             <p className="text-xs sm:text-sm text-gray-400 mt-0.5">
               {summary?.total_competitors || '...'} merchants · {summary?.total_tracked_products || '...'} products
@@ -234,10 +236,10 @@ export default function CompetitorsPage() {
               href="/api/v1/competitors/comparison/export"
               download
               className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300 transition-colors"
-              title="Export CSV"
+              title={t('competitors.page.export_csv')}
             >
               <Download className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Export</span>
+              <span className="hidden sm:inline">{t('competitors.page.export_csv')}</span>
             </a>
             <Button
               variant="outline"
@@ -265,7 +267,7 @@ export default function CompetitorsPage() {
               )}
             >
               <Package className="w-4 h-4" />
-              products
+              {t('competitors.page.tab_products')}
             </button>
             <button
               onClick={() => handleViewChange('merchants')}
@@ -275,7 +277,7 @@ export default function CompetitorsPage() {
               )}
             >
               <Building2 className="w-4 h-4" />
-              merchants
+              {t('competitors.page.tab_merchants')}
             </button>
             <button
               onClick={() => handleViewChange('suggestions')}
@@ -285,7 +287,7 @@ export default function CompetitorsPage() {
               )}
             >
               <Lightbulb className="w-4 h-4" />
-              suggestions
+              {t('competitors.page.tab_suggestions')}
             </button>
           </div>
 
@@ -299,7 +301,7 @@ export default function CompetitorsPage() {
                 )}
               >
                 <Target className="w-3.5 h-3.5 shrink-0" />
-                Own competitors
+                {t('competitors.page.scope_own')}
               </button>
               <button
                 onClick={() => setScope('all')}
@@ -309,7 +311,7 @@ export default function CompetitorsPage() {
                 )}
               >
                 <Globe className="w-3.5 h-3.5 shrink-0" />
-                All fresh food
+                {t('competitors.page.scope_all')}
               </button>
             </div>
           )}
@@ -362,10 +364,10 @@ export default function CompetitorsPage() {
                 ) : filteredProducts.length === 0 ? (
                   <div className="text-center py-16 sm:py-20 text-gray-400">
                     <Package className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-30" />
-                    <p className="text-sm">{search || categoryFilter ? 'No products matching the criteria' : 'No product comparison data yet'}</p>
+                    <p className="text-sm">{search || categoryFilter ? t('competitors.page.empty_filtered') : t('competitors.page.empty_no_data')}</p>
                   </div>
                 ) : (
-                  THREAT_GROUPS.map(group => {
+                  THREAT_GROUPS_STYLE.map(group => {
                     const items = groupedProducts[group.key]
                     if (items.length === 0) return null
                     const isCollapsed = collapsedGroups.has(group.key)
@@ -384,9 +386,9 @@ export default function CompetitorsPage() {
                             'text-[11px] font-semibold px-2 py-0.5 rounded-full border',
                             group.badge
                           )}>
-                            {group.label}
+                            {group.key === 'cheapest' ? `${t(group.labelKey)} 🏆` : t(group.labelKey)}
                           </span>
-                          <span className="text-[10px] text-gray-400 ml-auto">{items.length} items</span>
+                          <span className="text-[10px] text-gray-400 ml-auto">{t('competitors.page.items_count', { n: items.length })}</span>
                         </button>
 
                         {/* Group Items */}
@@ -478,7 +480,7 @@ export default function CompetitorsPage() {
               ) : filteredMerchants.length === 0 ? (
                 <div className="text-center py-16 sm:py-20 text-gray-400">
                   <Building2 className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">{search ? 'No merchants matching the criteria' : 'No merchant data yet'}</p>
+                  <p className="text-sm">{search ? t('competitors.page.empty_merchants_filtered') : t('competitors.page.empty_merchants_no_data')}</p>
                 </div>
               ) : (
                 filteredMerchants.map((item) => (

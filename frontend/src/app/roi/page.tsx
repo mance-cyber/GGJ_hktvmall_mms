@@ -39,9 +39,9 @@ export default function ROIDashboardPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <TrendingUp className="w-7 h-7 text-green-500" />
-            {t['roi.title']}
+            {t('roi.title')}
           </h1>
-          <p className="text-gray-500 mt-1">{t['roi.subtitle']}</p>
+          <p className="text-gray-500 mt-1">{t('roi.subtitle')}</p>
         </div>
 
         {/* Time Range Selector */}
@@ -55,7 +55,7 @@ export default function ROIDashboardPage() {
       <HoloCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <BarChart3 className="w-5 h-5 text-gray-400" />
-          <h2 className="text-lg font-semibold text-gray-900">{t['roi.value_trend']}</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t('roi.value_trend')}</h2>
         </div>
         <ROITrendChart days={getTrendDays(period)} />
       </HoloCard>
@@ -66,7 +66,7 @@ export default function ROIDashboardPage() {
         <HoloCard className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <Brain className="w-5 h-5 text-purple-500" />
-            <h2 className="text-lg font-semibold text-gray-900">{t['roi.pricing_impact']}</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t('roi.pricing_impact')}</h2>
           </div>
           <PricingImpactTable />
         </HoloCard>
@@ -75,7 +75,7 @@ export default function ROIDashboardPage() {
         <HoloCard className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <Eye className="w-5 h-5 text-cyan-500" />
-            <h2 className="text-lg font-semibold text-gray-900">{t['roi.competitor_value']}</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t('roi.competitor_value')}</h2>
           </div>
           <CompetitorValueCard period={period} />
         </HoloCard>
@@ -83,8 +83,8 @@ export default function ROIDashboardPage() {
 
       {/* Footer Notes */}
       <div className="text-center text-xs text-gray-400 py-4">
-        <p>{t['roi.footer_note1']}</p>
-        <p className="mt-1">{t['roi.footer_note2']}</p>
+        <p>{t('roi.footer_note1')}</p>
+        <p className="mt-1">{t('roi.footer_note2')}</p>
       </div>
     </div>
   )

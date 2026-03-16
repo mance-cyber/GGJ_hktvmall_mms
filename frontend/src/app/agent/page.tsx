@@ -192,11 +192,11 @@ function ThinkingMessage() {
   const [phraseIndex, setPhraseIndex] = useState(0)
 
   const phrases = [
-    t['agent.thinking_1'],
-    t['agent.thinking_2'],
-    t['agent.thinking_3'],
-    t['agent.thinking_4'],
-    t['agent.thinking_5'],
+    t('agent.thinking_1'),
+    t('agent.thinking_2'),
+    t('agent.thinking_3'),
+    t('agent.thinking_4'),
+    t('agent.thinking_5'),
   ]
 
   useEffect(() => {
@@ -283,7 +283,7 @@ function ClarificationCard({
           <div className="flex items-center gap-2">
             <span className="font-medium text-slate-700">{opt.label}</span>
             {opt.type === 'multi' && (
-              <span className="text-xs text-slate-400">{t['agent.multi_select']}</span>
+              <span className="text-xs text-slate-400">{t('agent.multi_select')}</span>
             )}
           </div>
           <div className="flex flex-wrap gap-2">
@@ -320,12 +320,12 @@ function ClarificationCard({
         {isLoading ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            {t['agent.processing']}
+            {t('agent.processing')}
           </>
         ) : (
           <>
             <Check className="w-4 h-4 mr-2" />
-            {t['agent.confirm_selection']}
+            {t('agent.confirm_selection')}
           </>
         )}
       </Button>
@@ -334,13 +334,13 @@ function ClarificationCard({
 }
 
 // Message time formatting
-function formatMessageTime(date: Date, t: Record<string, string>): string {
+function formatMessageTime(date: Date, t: (key: string, params?: Record<string, string | number>) => string): string {
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
   const diffMins = Math.floor(diffMs / 60000)
 
-  if (diffMins < 1) return t['agent.just_now']
-  if (diffMins < 60) return t['agent.minutes_ago'].replace('{n}', String(diffMins))
+  if (diffMins < 1) return t('agent.just_now')
+  if (diffMins < 60) return t('agent.minutes_ago', { n: diffMins })
 
   return date.toLocaleTimeString('zh-HK', {
     hour: '2-digit',
@@ -417,7 +417,7 @@ function MessageBubble({ message }: { message: Message }) {
               className="hover:text-slate-600 flex items-center gap-1 transition-colors"
             >
               {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-              {copied ? t['agent.copied'] : t['agent.copy']}
+              {copied ? t('agent.copied') : t('agent.copy')}
             </button>
           )}
         </div>
@@ -531,8 +531,8 @@ export default function AgentPage() {
       setMessages(prev => prev.filter(m => m.type !== 'thinking'))
       toast({
         variant: 'destructive',
-        title: t['agent.error_title'],
-        description: error.message || t['agent.error_desc'],
+        title: t('agent.error_title'),
+        description: error.message || t('agent.error_desc'),
       })
     }
   })
@@ -573,8 +573,8 @@ export default function AgentPage() {
       setMessages(prev => prev.filter(m => m.type !== 'thinking'))
       toast({
         variant: 'destructive',
-        title: t['agent.error_title'],
-        description: error.message || t['agent.error_selection_desc'],
+        title: t('agent.error_title'),
+        description: error.message || t('agent.error_selection_desc'),
       })
     }
   })
@@ -596,7 +596,7 @@ export default function AgentPage() {
       id: 'thinking',
       role: 'assistant',
       type: 'thinking',
-      content: t['agent.analyzing'],
+      content: t('agent.analyzing'),
       timestamp: new Date()
     }
     setMessages(prev => [...prev, thinkingMessage])
@@ -637,7 +637,7 @@ export default function AgentPage() {
       id: Date.now().toString(),
       role: 'user',
       type: 'message',
-      content: selectionText || t['agent.confirm'],
+      content: selectionText || t('agent.confirm'),
       timestamp: new Date()
     }
     setMessages(prev => [...prev, userMessage])
@@ -646,7 +646,7 @@ export default function AgentPage() {
       id: 'thinking',
       role: 'assistant',
       type: 'thinking',
-      content: t['agent.querying'],
+      content: t('agent.querying'),
       timestamp: new Date()
     }
     setMessages(prev => [...prev, thinkingMessage])
@@ -751,7 +751,7 @@ export default function AgentPage() {
             <summary className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors">
               <span className="flex items-center gap-2 text-sm font-medium text-slate-600">
                 <CalendarClock className="w-4 h-4 text-purple-500" />
-                {t['agent.schedule_reports']}
+                {t('agent.schedule_reports')}
               </span>
               <ChevronDown className="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180" />
             </summary>
@@ -785,7 +785,7 @@ export default function AgentPage() {
               <summary className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors">
                 <span className="flex items-center gap-2 text-sm font-medium text-slate-600">
                   <CalendarClock className="w-4 h-4 text-purple-500" />
-                  {t['agent.schedule_reports']}
+                  {t('agent.schedule_reports')}
                 </span>
                 <ChevronDown className="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180" />
               </summary>
@@ -808,7 +808,7 @@ export default function AgentPage() {
             variant="ghost"
             size="icon"
             onClick={() => setIsSidebarOpen(true)}
-            aria-label={t['agent.open_sidebar']}
+            aria-label={t('agent.open_sidebar')}
           >
             <Menu className="w-5 h-5" aria-hidden="true" />
           </Button>
@@ -822,7 +822,7 @@ export default function AgentPage() {
           className="flex-1 overflow-y-auto p-4 space-y-4 relative"
           role="log"
           aria-live="polite"
-          aria-label={t['agent.chat_label']}
+          aria-label={t('agent.chat_label')}
         >
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center px-4">
@@ -835,31 +835,31 @@ export default function AgentPage() {
                 />
               </div>
               <h2 className="text-xl font-semibold text-slate-700 mb-2">
-                {t['agent.welcome_title']}
+                {t('agent.welcome_title')}
               </h2>
               <p className="text-slate-500 mb-4 max-w-md">
-                {t['agent.welcome_desc']}
+                {t('agent.welcome_desc')}
               </p>
               {/* Keyboard shortcut hints - desktop only */}
               <div className="hidden sm:flex items-center gap-4 text-xs text-slate-400 mb-6">
                 <span className="flex items-center gap-1">
                   <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">⌘K</kbd>
-                  <span>{t['agent.new_conversation']}</span>
+                  <span>{t('agent.new_conversation')}</span>
                 </span>
                 <span className="flex items-center gap-1">
                   <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">⌘/</kbd>
-                  <span>{t['agent.focus_input']}</span>
+                  <span>{t('agent.focus_input')}</span>
                 </span>
                 <span className="flex items-center gap-1">
                   <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">Esc</kbd>
-                  <span>{t['agent.cancel']}</span>
+                  <span>{t('agent.cancel')}</span>
                 </span>
               </div>
               
               {/* Suggestions */}
               {suggestionsData?.suggestions && suggestionsData.suggestions.length > 0 && (
                 <div className="w-full max-w-lg space-y-2">
-                  <p className="text-sm text-slate-400 mb-3">{t['agent.try_these']}</p>
+                  <p className="text-sm text-slate-400 mb-3">{t('agent.try_these')}</p>
                   <div className="grid gap-2">
                     {suggestionsData.suggestions.slice(0, 4).map((suggestion, i) => (
                       <button
@@ -940,7 +940,7 @@ export default function AgentPage() {
                                 id: 'thinking',
                                 role: 'assistant',
                                 type: 'thinking',
-                                content: t['agent.regenerating'],
+                                content: t('agent.regenerating'),
                                 timestamp: new Date()
                               }
                               setMessages(prev => [...prev, thinkingMessage])
@@ -952,7 +952,7 @@ export default function AgentPage() {
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-50"
                         >
                           <RefreshCw className="w-3.5 h-3.5" />
-                          <span>{t['agent.regenerate']}</span>
+                          <span>{t('agent.regenerate')}</span>
                         </button>
                       </div>
 
@@ -982,7 +982,7 @@ export default function AgentPage() {
                                       id: 'thinking',
                                       role: 'assistant',
                                       type: 'thinking',
-                                      content: t['agent.looking'],
+                                      content: t('agent.looking'),
                                       timestamp: new Date()
                                     }
                                     setMessages(prev => [...prev, thinkingMessage])
@@ -1023,7 +1023,7 @@ export default function AgentPage() {
                 exit={{ opacity: 0, scale: 0.8 }}
                 onClick={scrollToBottom}
                 className="fixed bottom-32 right-6 md:right-10 w-10 h-10 rounded-full bg-purple-600 text-white shadow-lg hover:bg-purple-700 transition-colors flex items-center justify-center z-10"
-                aria-label={t['agent.scroll_to_bottom']}
+                aria-label={t('agent.scroll_to_bottom')}
               >
                 <ArrowDown className="w-5 h-5" />
               </motion.button>
@@ -1050,7 +1050,7 @@ export default function AgentPage() {
                   id: 'thinking',
                   role: 'assistant',
                   type: 'thinking',
-                  content: t['agent.analyzing'],
+                  content: t('agent.analyzing'),
                   timestamp: new Date()
                 }
                 setMessages(prev => [...prev, thinkingMessage])
@@ -1071,16 +1071,16 @@ export default function AgentPage() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                placeholder={t['agent.input_placeholder']}
+                placeholder={t('agent.input_placeholder')}
                 disabled={isLoading || !!pendingClarification}
                 className="flex-1"
-                aria-label={t['agent.input_label']}
+                aria-label={t('agent.input_label')}
               />
               <Button
                 onClick={handleSend}
                 disabled={!input.trim() || isLoading || !!pendingClarification}
                 className="bg-purple-600 hover:bg-purple-700"
-                aria-label={isLoading ? t['agent.sending'] : t['agent.send']}
+                aria-label={isLoading ? t('agent.sending') : t('agent.send')}
               >
                 {isLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
@@ -1091,7 +1091,7 @@ export default function AgentPage() {
             </div>
             {pendingClarification && (
               <p className="text-xs text-amber-600 mt-2 text-center">
-                {t['agent.complete_selection']}
+                {t('agent.complete_selection')}
               </p>
             )}
           </div>

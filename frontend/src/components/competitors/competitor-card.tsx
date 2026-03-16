@@ -1,6 +1,7 @@
 'use client'
 
 import { Competitor } from '@/lib/api'
+import { useLocale } from '@/components/providers/locale-provider'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
@@ -45,6 +46,7 @@ export function CompetitorCard({
   onScrape: () => void
   isScraping: boolean
 }) {
+  const { t } = useLocale()
   const platformLabel = PLATFORMS.find((p) => p.value === competitor.platform)?.label || competitor.platform
 
   return (
@@ -82,8 +84,8 @@ export function CompetitorCard({
             size="sm"
             pulse={competitor.is_active}
           >
-            <span className="hidden sm:inline">{competitor.is_active ? 'Monitoring' : 'Paused'}</span>
-            <span className="sm:hidden">{competitor.is_active ? 'Monitor' : 'Paused'}</span>
+            <span className="hidden sm:inline">{competitor.is_active ? t('competitors.card.status_active') : t('competitors.card.status_paused')}</span>
+            <span className="sm:hidden">{competitor.is_active ? t('competitors.card.status_active') : t('competitors.card.status_paused')}</span>
           </HoloBadge>
         </div>
 
@@ -94,7 +96,7 @@ export function CompetitorCard({
               {competitor.notes}
             </p>
           ) : (
-            <p className="text-xs sm:text-sm text-slate-400 italic">No notes yet</p>
+            <p className="text-xs sm:text-sm text-slate-400 italic">{t('competitors.card.no_notes')}</p>
           )}
         </div>
 
@@ -103,19 +105,19 @@ export function CompetitorCard({
           <div className="bg-gradient-to-br from-slate-50 to-white rounded-lg sm:rounded-xl p-2 sm:p-3 border border-slate-100/80">
             <div className="flex items-center text-[10px] sm:text-xs text-slate-500 mb-0.5 sm:mb-1">
               <Activity className="w-3 h-3 mr-1 text-cyan-500" />
-              Monitored Products
+              {t('competitors.card.product_count')}
             </div>
             <div className="text-lg sm:text-xl font-bold text-slate-800">{competitor.product_count}</div>
           </div>
           <div className="bg-gradient-to-br from-slate-50 to-white rounded-lg sm:rounded-xl p-2 sm:p-3 border border-slate-100/80">
             <div className="flex items-center text-[10px] sm:text-xs text-slate-500 mb-0.5 sm:mb-1">
               <Clock className="w-3 h-3 mr-1 text-cyan-500" />
-              Last Updated
+              {t('competitors.card.last_updated')}
             </div>
             <div className="text-xs sm:text-sm font-semibold text-slate-800 pt-0.5 sm:pt-1">
               {competitor.last_scraped_at
                 ? new Date(competitor.last_scraped_at).toLocaleDateString('en-HK')
-                : 'Not yet scraped'}
+                : t('competitors.card.not_scraped')}
             </div>
           </div>
         </div>
@@ -132,7 +134,7 @@ export function CompetitorCard({
             icon={isScraping ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 text-amber-500" />}
             className={cn(isScraping && "text-cyan-600 bg-cyan-50")}
           >
-            <span className="sr-only">Scrape</span>
+            <span className="sr-only">{t('competitors.card.scrape_tooltip')}</span>
           </HoloButton>
           <HoloButton
             size="sm"
@@ -140,7 +142,7 @@ export function CompetitorCard({
             onClick={onEdit}
             icon={<Edit className="w-4 h-4" />}
           >
-            <span className="sr-only">Edit</span>
+            <span className="sr-only">{t('competitors.card.edit_tooltip')}</span>
           </HoloButton>
           <HoloButton
             size="sm"
@@ -149,7 +151,7 @@ export function CompetitorCard({
             icon={<Trash2 className="w-4 h-4" />}
             className="hover:text-red-600 hover:bg-red-50"
           >
-            <span className="sr-only">Delete</span>
+            <span className="sr-only">{t('competitors.card.delete_tooltip')}</span>
           </HoloButton>
         </div>
 
@@ -160,7 +162,7 @@ export function CompetitorCard({
             icon={<ChevronRight className="w-4 h-4" />}
             className="text-cyan-600 hover:text-cyan-700"
           >
-            Details
+            {t('competitors.card.details_button')}
           </HoloButton>
         </Link>
       </div>

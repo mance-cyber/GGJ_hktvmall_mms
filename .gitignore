@@ -42,6 +42,12 @@ frontend/.env.local
 frontend/.env.*.local
 **/venv/
 
+# Temp/debug scripts & data dumps
+backend/alerts_out.json
+backend/scripts/debug_*.py
+backend/scripts/*_tmp.py
+backend/scripts/run_translate.py
+
 # Secrets
 *.pem
 *.key

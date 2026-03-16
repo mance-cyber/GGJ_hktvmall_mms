@@ -275,12 +275,12 @@ export default function SEORankingPage() {
         <div className="p-6">
           <HoloCard className="p-8 text-center">
             <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-white mb-2">{t['seo_ranking.error_title']}</h2>
-            <p className="text-gray-400 mb-4">{t['seo_ranking.error_desc']}</p>
+            <h2 className="text-xl font-bold text-white mb-2">{t('seo_ranking.error_title')}</h2>
+            <p className="text-gray-400 mb-4">{t('seo_ranking.error_desc')}</p>
             <div className="flex justify-center gap-3">
-              <HoloButton onClick={handleRefresh}>{t['seo_ranking.retry']}</HoloButton>
+              <HoloButton onClick={handleRefresh}>{t('seo_ranking.retry')}</HoloButton>
               <HoloButton variant="secondary" onClick={handleUseMockData}>
-                {t['seo_ranking.use_demo']}
+                {t('seo_ranking.use_demo')}
               </HoloButton>
             </div>
           </HoloCard>
@@ -302,14 +302,14 @@ export default function SEORankingPage() {
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-400" />
               <span className="text-amber-200 text-sm">
-                {t['seo_ranking.demo_notice']}
+                {t('seo_ranking.demo_notice')}
               </span>
             </div>
             <button
               onClick={handleRefresh}
               className="text-amber-400 hover:text-amber-300 text-sm underline"
             >
-              {t['seo_ranking.try_reload']}
+              {t('seo_ranking.try_reload')}
             </button>
           </div>
         )}
@@ -319,13 +319,13 @@ export default function SEORankingPage() {
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
               <Search className="w-6 h-6 text-cyan-400" />
-              {t['seo_ranking.title']}
+              {t('seo_ranking.title')}
               {useMockData && (
-                <HoloBadge variant="warning" size="sm">{t['seo_ranking.badge_demo']}</HoloBadge>
+                <HoloBadge variant="warning" size="sm">{t('seo_ranking.badge_demo')}</HoloBadge>
               )}
             </h1>
             <p className="text-gray-400 text-sm mt-1">
-              {t['seo_ranking.subtitle']}
+              {t('seo_ranking.subtitle')}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -335,10 +335,10 @@ export default function SEORankingPage() {
               onChange={(e) => setDays(Number(e.target.value))}
               className="bg-gray-800/50 border border-cyan-500/30 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
             >
-              <option value={7}>{t['seo_ranking.days_7']}</option>
-              <option value={14}>{t['seo_ranking.days_14']}</option>
-              <option value={30}>{t['seo_ranking.days_30']}</option>
-              <option value={90}>{t['seo_ranking.days_90']}</option>
+              <option value={7}>{t('seo_ranking.days_7')}</option>
+              <option value={14}>{t('seo_ranking.days_14')}</option>
+              <option value={30}>{t('seo_ranking.days_30')}</option>
+              <option value={90}>{t('seo_ranking.days_90')}</option>
             </select>
             {/* Trigger Scrape */}
             <HoloButton
@@ -349,12 +349,12 @@ export default function SEORankingPage() {
               {triggerScrape.isPending ? (
                 <>
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  {t['seo_ranking.scraping']}
+                  {t('seo_ranking.scraping')}
                 </>
               ) : (
                 <>
                   <Target className="w-4 h-4 mr-2" />
-                  {t['seo_ranking.start_scrape']}
+                  {t('seo_ranking.start_scrape')}
                 </>
               )}
             </HoloButton>
@@ -371,7 +371,7 @@ export default function SEORankingPage() {
           <HoloCard className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-xs uppercase tracking-wider">{t['seo_ranking.metric_health_score']}</p>
+                <p className="text-gray-400 text-xs uppercase tracking-wider">{t('seo_ranking.metric_health_score')}</p>
                 <div className="flex items-baseline gap-2 mt-1">
                   <span className="text-3xl font-bold text-white">
                     {overview?.seo_health_score || 0}
@@ -397,9 +397,9 @@ export default function SEORankingPage() {
           {/* Tracked Keywords Count */}
           <HoloCard className="p-4">
             <DataMetric
-              label={t['seo_ranking.metric_tracked_keywords']}
+              label={t('seo_ranking.metric_tracked_keywords')}
               value={overview?.total_keywords || 0}
-              suffix={t['seo_ranking.metric_active_suffix'].replace('{n}', String(overview?.active_keywords || 0))}
+              suffix={t('seo_ranking.metric_active_suffix').replace('{n}', String(overview?.active_keywords || 0))}
               color="cyan"
             />
           </HoloCard>
@@ -407,7 +407,7 @@ export default function SEORankingPage() {
           {/* Rankings Improved */}
           <HoloCard className="p-4">
             <DataMetric
-              label={t['seo_ranking.metric_improved']}
+              label={t('seo_ranking.metric_improved')}
               value={overview?.improved_keywords || 0}
               icon={<TrendingUp className="w-5 h-5" />}
               color="green"
@@ -417,7 +417,7 @@ export default function SEORankingPage() {
           {/* Rankings Declined */}
           <HoloCard className="p-4">
             <DataMetric
-              label={t['seo_ranking.metric_declined']}
+              label={t('seo_ranking.metric_declined')}
               value={overview?.declined_keywords || 0}
               icon={<TrendingDown className="w-5 h-5" />}
               color="orange"
@@ -430,8 +430,8 @@ export default function SEORankingPage() {
           {/* Google Ranking Summary */}
           <HoloCard>
             <HoloPanelHeader
-              title={t['seo_ranking.section_google']}
-              subtitle={t['seo_ranking.section_google_subtitle']}
+              title={t('seo_ranking.section_google')}
+              subtitle={t('seo_ranking.section_google_subtitle')}
               icon={<Search className="w-5 h-5" />}
             />
             <div className="p-4 space-y-4">
@@ -440,25 +440,25 @@ export default function SEORankingPage() {
                   <p className="text-2xl font-bold text-cyan-400">
                     {googleRankings?.ranked_keywords || 0}
                   </p>
-                  <p className="text-xs text-gray-500">{t['seo_ranking.stat_ranked']}</p>
+                  <p className="text-xs text-gray-500">{t('seo_ranking.stat_ranked')}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-green-400">
                     {googleRankings?.top_10_count || 0}
                   </p>
-                  <p className="text-xs text-gray-500">{t['seo_ranking.stat_top10']}</p>
+                  <p className="text-xs text-gray-500">{t('seo_ranking.stat_top10')}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-purple-400">
                     {googleRankings?.avg_rank?.toFixed(1) || "-"}
                   </p>
-                  <p className="text-xs text-gray-500">{t['seo_ranking.stat_avg_rank']}</p>
+                  <p className="text-xs text-gray-500">{t('seo_ranking.stat_avg_rank')}</p>
                 </div>
               </div>
               <TechDivider />
               <div className="flex justify-between text-sm">
                 <div>
-                  <span className="text-gray-500">{t['seo_ranking.stat_best_keyword']}</span>
+                  <span className="text-gray-500">{t('seo_ranking.stat_best_keyword')}</span>
                   {googleRankings?.best_keyword ? (
                     <span className="text-green-400">
                       {googleRankings.best_keyword.keyword} (#{googleRankings.best_keyword.rank})
@@ -474,8 +474,8 @@ export default function SEORankingPage() {
           {/* HKTVmall Ranking Summary */}
           <HoloCard>
             <HoloPanelHeader
-              title={t['seo_ranking.section_hktvmall']}
-              subtitle={t['seo_ranking.section_hktvmall_subtitle']}
+              title={t('seo_ranking.section_hktvmall')}
+              subtitle={t('seo_ranking.section_hktvmall_subtitle')}
               icon={<Target className="w-5 h-5" />}
             />
             <div className="p-4 space-y-4">
@@ -484,25 +484,25 @@ export default function SEORankingPage() {
                   <p className="text-2xl font-bold text-cyan-400">
                     {hktvmallRankings?.ranked_keywords || 0}
                   </p>
-                  <p className="text-xs text-gray-500">{t['seo_ranking.stat_ranked']}</p>
+                  <p className="text-xs text-gray-500">{t('seo_ranking.stat_ranked')}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-green-400">
                     {hktvmallRankings?.top_10_count || 0}
                   </p>
-                  <p className="text-xs text-gray-500">{t['seo_ranking.stat_top10']}</p>
+                  <p className="text-xs text-gray-500">{t('seo_ranking.stat_top10')}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-purple-400">
                     {hktvmallRankings?.avg_rank?.toFixed(1) || "-"}
                   </p>
-                  <p className="text-xs text-gray-500">{t['seo_ranking.stat_avg_rank']}</p>
+                  <p className="text-xs text-gray-500">{t('seo_ranking.stat_avg_rank')}</p>
                 </div>
               </div>
               <TechDivider />
               <div className="flex justify-between text-sm">
                 <div>
-                  <span className="text-gray-500">{t['seo_ranking.stat_best_keyword']}</span>
+                  <span className="text-gray-500">{t('seo_ranking.stat_best_keyword')}</span>
                   {hktvmallRankings?.best_keyword ? (
                     <span className="text-green-400">
                       {hktvmallRankings.best_keyword.keyword} (#{hktvmallRankings.best_keyword.rank})
@@ -519,8 +519,8 @@ export default function SEORankingPage() {
         {/* ==================== Leaderboard ==================== */}
         <HoloCard>
           <HoloPanelHeader
-            title={t['seo_ranking.section_leaderboard']}
-            subtitle={t['seo_ranking.section_leaderboard_subtitle']}
+            title={t('seo_ranking.section_leaderboard')}
+            subtitle={t('seo_ranking.section_leaderboard_subtitle')}
             icon={<TrendingUp className="w-5 h-5" />}
             action={
               <div className="flex items-center gap-2">
@@ -561,13 +561,13 @@ export default function SEORankingPage() {
           {/* Recent Alerts */}
           <HoloCard>
             <HoloPanelHeader
-              title={t['seo_ranking.section_alerts']}
-              subtitle={t['seo_ranking.section_alerts_subtitle']}
+              title={t('seo_ranking.section_alerts')}
+              subtitle={t('seo_ranking.section_alerts_subtitle')}
               icon={<AlertTriangle className="w-5 h-5" />}
               action={
                 dashboard?.recent_alerts?.filter((a) => !a.is_read).length ? (
                   <HoloBadge variant="warning" pulse>
-                    {dashboard.recent_alerts.filter((a) => !a.is_read).length} {t['seo_ranking.badge_unread']}
+                    {dashboard.recent_alerts.filter((a) => !a.is_read).length} {t('seo_ranking.badge_unread')}
                   </HoloBadge>
                 ) : null
               }
@@ -580,8 +580,8 @@ export default function SEORankingPage() {
           {/* Recent Jobs */}
           <HoloCard>
             <HoloPanelHeader
-              title={t['seo_ranking.section_jobs']}
-              subtitle={t['seo_ranking.section_jobs_subtitle']}
+              title={t('seo_ranking.section_jobs')}
+              subtitle={t('seo_ranking.section_jobs_subtitle')}
               icon={<Clock className="w-5 h-5" />}
             />
             <div className="p-4">
@@ -593,7 +593,7 @@ export default function SEORankingPage() {
         {/* ==================== Last Scrape Time ==================== */}
         {overview?.last_scrape_at && (
           <div className="text-center text-sm text-gray-500">
-            {t['seo_ranking.last_scrape']}{" "}
+            {t('seo_ranking.last_scrape')}{" "}
             {new Date(overview.last_scrape_at).toLocaleString("zh-TW", {
               year: "numeric",
               month: "2-digit",

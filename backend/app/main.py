@@ -237,7 +237,7 @@ def create_app() -> FastAPI:
         allow_origins=allowed_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-        allow_headers=["Authorization", "Content-Type", "X-Requested-With", "Accept"],
+        allow_headers=["Authorization", "Content-Type", "X-Requested-With", "Accept", "Accept-Language"],
         expose_headers=["Content-Type", "X-Total-Count"],
         max_age=3600,  # 預檢請求緩存 1 小時
     )

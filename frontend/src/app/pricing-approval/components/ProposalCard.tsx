@@ -5,6 +5,7 @@
 'use client'
 
 import { Check, X, ArrowRight, Bot, AlertTriangle, User, MessageSquare } from 'lucide-react'
+import { useLocale } from '@/components/providers/locale-provider'
 import Link from 'next/link'
 import { HoloCard, HoloBadge, HoloButton } from '@/components/ui/future-tech'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -21,19 +22,21 @@ interface SourceBadgeProps {
 }
 
 function SourceBadge({ sourceType, conversationId }: SourceBadgeProps) {
+  const { t } = useLocale()
+
   const config: Record<SourceType, { label: string; icon: React.ReactNode; variant: 'default' | 'info' | 'warning' }> = {
     manual: {
-      label: 'Manual',
+      label: t('pricing.card.source_manual'),
       icon: <User className="w-3 h-3" />,
       variant: 'info',
     },
     ai_suggestion: {
-      label: 'AI Suggestion',
+      label: t('pricing.card.source_ai'),
       icon: <Bot className="w-3 h-3" />,
       variant: 'default',
     },
     auto_alert: {
-      label: 'Auto Alert',
+      label: t('pricing.card.source_alert'),
       icon: <AlertTriangle className="w-3 h-3" />,
       variant: 'warning',
     },
@@ -58,13 +61,15 @@ interface ConversationLinkProps {
 }
 
 function ConversationLink({ conversationId }: ConversationLinkProps) {
+  const { t } = useLocale()
+
   return (
     <Link
       href={`/agent?conversation=${conversationId}`}
       className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline"
     >
       <MessageSquare className="w-3 h-3" />
-      View Conversation
+      {t('pricing.card.view_conversation')}
     </Link>
   )
 }
@@ -88,6 +93,8 @@ export function ProposalCard({
   isApproving,
   isRejecting,
 }: ProposalCardProps) {
+  const { t } = useLocale()
+
   const priceChange = calculatePriceChangePercent(
     proposal.current_price,
     proposal.proposed_price
@@ -105,9 +112,9 @@ export function ProposalCard({
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
-    if (diffMins < 60) return `${diffMins} min ago`
-    if (diffHours < 24) return `${diffHours} hr ago`
-    return `${diffDays} days ago`
+    if (diffMins < 60) return t('pricing.card.min_ago', { n: diffMins })
+    if (diffHours < 24) return t('pricing.card.hr_ago', { n: diffHours })
+    return t('pricing.card.days_ago', { n: diffDays })
   }
 
   // Format price
@@ -131,7 +138,7 @@ export function ProposalCard({
           {/* Product Info */}
           <div className="flex items-center gap-2 mb-2">
             <h3 className="font-medium text-gray-900 truncate">
-              {proposal.product_name || 'Unknown Product'}
+              {proposal.product_name || t('pricing.dialog.unknown_product')}
             </h3>
             {proposal.product_sku && (
               <HoloBadge variant="default" size="sm">
@@ -168,9 +175,9 @@ export function ProposalCard({
 
           {/* Meta Info */}
           <div className="flex items-center gap-4 text-xs text-gray-500">
-            <span>Suggested: {formatRelativeTime(proposal.created_at)}</span>
+            <span>{t('pricing.card.suggested_at', { time: formatRelativeTime(proposal.created_at) })}</span>
             {proposal.ai_model_used && (
-              <span>Model: {proposal.ai_model_used}</span>
+              <span>{t('pricing.card.model', { model: proposal.ai_model_used })}</span>
             )}
             {/* Conversation Link */}
             {proposal.source_conversation_id && (
@@ -189,7 +196,7 @@ export function ProposalCard({
             className="bg-green-500 hover:bg-green-600 text-white"
           >
             <Check className="w-4 h-4 mr-1" />
-            Approve
+            {t('pricing.card.approve')}
           </HoloButton>
           <HoloButton
             variant="secondary"
@@ -199,7 +206,7 @@ export function ProposalCard({
             className="hover:bg-red-50 hover:text-red-600 hover:border-red-200"
           >
             <X className="w-4 h-4 mr-1" />
-            Reject
+            {t('pricing.card.reject')}
           </HoloButton>
         </div>
       </div>
