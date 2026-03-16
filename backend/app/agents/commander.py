@@ -28,6 +28,7 @@ class CommanderAgent(AgentBase):
 
     # 每日排程表（時間 → 事件列表）
     DAILY_SCHEDULE = {
+        "02:00": [Events.SCHEDULE_TRANSLATE_NAMES],
         "08:00": [Events.SCHEDULE_OPS_DAILY_SYNC],
         "09:30": [Events.SCHEDULE_SCOUT_ANALYZE],
         "10:00": [Events.SCHEDULE_PRICER_BATCH],

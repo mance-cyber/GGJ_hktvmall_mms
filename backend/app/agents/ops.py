@@ -35,6 +35,10 @@ class OpsAgent(AgentBase):
             # 自訂閱：_on_daily_sync 發射 ORDER_SYNCED 後觸發異常檢查
             # 注意：_on_order_synced 內 **禁止** 再次發射 ORDER_SYNCED，否則無限遞歸
             Events.ORDER_SYNCED: self._on_order_synced,
+            # 抓取完成 → 即時翻譯新商品名稱
+            Events.SCRAPE_COMPLETED: self._on_scrape_translate,
+            # 每日 02:00 排程 → 補漏翻譯
+            Events.SCHEDULE_TRANSLATE_NAMES: self._on_schedule_translate,
         }
 
     # ==================== 事件處理 ====================
@@ -116,6 +120,35 @@ class OpsAgent(AgentBase):
                 "訂單超時預警",
                 f"有 {overdue_count} 筆訂單超過 48 小時未出貨",
                 {"overdue_count": overdue_count},
+            )
+
+    # ==================== 商品名稱翻譯 ====================
+
+    async def _on_scrape_translate(self, event: Event) -> None:
+        """抓取完成後即時翻譯新商品名稱"""
+        competitor_id = event.payload.get("competitor_id")
+        self._logger.info(f"抓取完成 → 翻譯新商品 (competitor={competitor_id})")
+
+        from app.services.translate_service import translate_new_competitor_products
+
+        async with self.get_db_session() as session:
+            count = await translate_new_competitor_products(
+                session, competitor_id=competitor_id, limit=50,
+            )
+            if count > 0:
+                self._logger.info(f"即時翻譯完成: {count} 個競品商品")
+
+    async def _on_schedule_translate(self, event: Event) -> None:
+        """每日排程：補漏翻譯所有缺失 name_en 的商品"""
+        self._logger.info("排程觸發：每日翻譯補漏")
+
+        from app.services.translate_service import translate_all_missing
+
+        async with self.get_db_session() as session:
+            result = await translate_all_missing(session, limit=200)
+            total = result["competitor"] + result["own"]
+            self._logger.info(
+                f"每日翻譯補漏完成: 競品 {result['competitor']} + 自家 {result['own']} = {total}"
             )
 
     # ==================== 工具方法 ====================

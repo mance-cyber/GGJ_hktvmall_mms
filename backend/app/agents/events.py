@@ -69,6 +69,7 @@ class Events:
     SCHEDULE_SCOUT_ANALYZE = "schedule.scout.analyze"
     SCHEDULE_PRICER_BATCH = "schedule.pricer.batch"
     SCHEDULE_STRATEGIST_BRIEFING = "schedule.strategist.briefing"
+    SCHEDULE_TRANSLATE_NAMES = "schedule.translate.names"
 
     # Agent 內部通訊
     AGENT_TASK_COMPLETED = "agent.task_completed"

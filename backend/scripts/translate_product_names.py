@@ -125,7 +125,7 @@ def translate_name(name: str, retries: int = 3) -> str:
         except Exception as e:
             log(f"  Translate error (attempt {attempt+1}): {e}")
             if attempt < retries - 1:
-                time.sleep(3)
+                time.sleep(10)  # longer backoff to avoid Gateway overload
     return None
 
 
@@ -175,13 +175,61 @@ def fetch_todo():
     return [('competitor_products', r) for r in cp_rows] + [('products', r) for r in own_rows]
 
 
+import threading
+
+class RateLimiter:
+    """線程安全的令牌桶限速器。"""
+    def __init__(self, max_per_second: float):
+        self._interval = 1.0 / max_per_second
+        self._lock = threading.Lock()
+        self._last = 0.0
+
+    def acquire(self):
+        with self._lock:
+            now = time.time()
+            wait = self._last + self._interval - now
+            if wait > 0:
+                time.sleep(wait)
+            self._last = time.time()
+
+_rate_limiter = RateLimiter(max_per_second=2)  # 每秒最多 2 個請求
+
+
+def _translate_one(idx, batch_total, table, item_id, name):
+    """翻譯單個商品（供並行調用，含限速）。"""
+    _rate_limiter.acquire()
+    done = idx + 1
+    try:
+        name_en = translate_name(name)
+    except Exception as e:
+        log(f"  [{done}/{batch_total}] translate exception: {e}")
+        return False
+
+    if name_en:
+        saved = db_write(table, item_id, name_en)
+        if saved:
+            try:
+                log(f"  [{done}/{batch_total}] {name} → {name_en}")
+            except Exception:
+                log(f"  [{done}/{batch_total}] [saved to {table} id={item_id}]")
+            return True
+        else:
+            log(f"  [{done}/{batch_total}] WRITE FAILED for id={item_id}")
+    else:
+        log(f"  [{done}/{batch_total}] SKIP (no translation) for id={item_id}")
+    return False
+
+
 def main():
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--offset', type=int, default=0, help='Start from item N (0-indexed)')
     parser.add_argument('--limit', type=int, default=0, help='Process at most N items (0=all)')
+    parser.add_argument('--workers', type=int, default=5, help='Parallel worker threads (default 5)')
     args = parser.parse_args()
 
-    log(f"Fetching items to translate (offset={args.offset}, limit={args.limit})...")
+    log(f"Fetching items to translate (offset={args.offset}, limit={args.limit}, workers={args.workers})...")
     all_items = fetch_todo()
     total_remaining = len(all_items)
     log(f"Total remaining: {total_remaining}")
@@ -192,34 +240,21 @@ def main():
         items = items[:args.limit]
 
     batch_total = len(items)
-    log(f"This batch: {batch_total} items")
+    log(f"This batch: {batch_total} items (parallel={args.workers})")
 
     if batch_total == 0:
         log("Nothing to do!")
         return
 
     translated = 0
-    for idx, (table, (item_id, name)) in enumerate(items):
-        done = idx + 1
-
-        try:
-            name_en = translate_name(name)
-        except Exception as e:
-            log(f"  [{done}/{batch_total}] translate exception: {e}")
-            name_en = None
-
-        if name_en:
-            saved = db_write(table, item_id, name_en)
-            if saved:
+    with ThreadPoolExecutor(max_workers=args.workers) as pool:
+        futures = {
+            pool.submit(_translate_one, idx, batch_total, table, item_id, name): idx
+            for idx, (table, (item_id, name)) in enumerate(items)
+        }
+        for future in as_completed(futures):
+            if future.result():
                 translated += 1
-                try:
-                    log(f"  [{done}/{batch_total}] {name} → {name_en}")
-                except Exception:
-                    log(f"  [{done}/{batch_total}] [saved to {table} id={item_id}]")
-            else:
-                log(f"  [{done}/{batch_total}] WRITE FAILED for id={item_id}")
-        else:
-            log(f"  [{done}/{batch_total}] SKIP (no translation) for id={item_id}")
 
     log(f"Batch done: translated {translated}/{batch_total}")
 
