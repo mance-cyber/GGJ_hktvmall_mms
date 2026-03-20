@@ -1,71 +1,50 @@
 # =============================================
-# 類別數據庫 Celery 任務
+# 類別數據庫任務（純 async，無 Celery 依賴）
 # =============================================
 
 from typing import Optional, List, Dict, Any
-from uuid import UUID
+from uuid import UUID, uuid4
 from datetime import datetime
 from decimal import Decimal
 import logging
 import re
 import asyncio
 
-from celery import shared_task
 from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
+from app.models.database import async_session_maker
 from app.models.category import (
     CategoryDatabase,
     CategoryProduct,
     CategoryPriceSnapshot,
-    CategoryAnalysisReport
+    CategoryAnalysisReport,
 )
 from app.connectors.hktv_scraper import get_hktv_scraper, HKTVUrlParser
 
 logger = logging.getLogger(__name__)
-
-# 數據庫連接（用於 Celery 任務）
 settings = get_settings()
-engine = create_async_engine(settings.database_url, echo=False)
-AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
 # =============================================
-# 類別商品抓取任務
+# 類別商品抓取
 # =============================================
 
-@shared_task(bind=True, name="scrape_category_products")
-def scrape_category_products(self, category_id: str, max_products: Optional[int] = None):
+async def scrape_category_products_async(
+    category_id: str,
+    max_products: Optional[int] = None,
+) -> dict:
     """
     抓取類別內的所有商品
 
-    1. 使用 Firecrawl Map 發現類別頁面所有 URL
+    1. 使用 HKTVScraper 發現類別頁面所有 URL
     2. 過濾出商品 URL
     3. 批量抓取商品資訊
     4. 保存到數據庫
     """
-    return asyncio.run(_scrape_category_products_async(
-        task_id=self.request.id,
-        category_id=category_id,
-        max_products=max_products
-    ))
-
-
-async def _scrape_category_products_async(
-    task_id: str,
-    category_id: str,
-    max_products: Optional[int]
-):
-    """
-    異步執行類別抓取
-
-    使用 HKTVScraper 專用抓取器，針對 JavaScript SPA 優化
-    """
-    async with AsyncSessionLocal() as db:
+    async with async_session_maker() as db:
         try:
-            # 獲取類別
             result = await db.execute(
                 select(CategoryDatabase).where(CategoryDatabase.id == UUID(category_id))
             )
@@ -76,31 +55,29 @@ async def _scrape_category_products_async(
 
             logger.info(f"開始抓取類別: {category.name} ({category.hktv_category_url})")
 
-            # ==================== 階段 1: 發現商品 URL ====================
-            # 使用 HKTVScraper 專用抓取器（針對 JavaScript SPA 優化）
+            # 階段 1: 發現商品 URL
             scraper = get_hktv_scraper()
 
-            logger.info("正在使用 HKTVScraper 發現商品 URL（JavaScript 渲染模式）...")
+            logger.info("正在使用 HKTVScraper 發現商品 URL...")
 
-            # 發現商品 URL（使用 JS 渲染等待）
             product_urls = scraper.discover_product_urls_from_store(
                 category.hktv_category_url,
-                max_products=max_products or 50
+                max_products=max_products or 50,
             )
 
             total_urls = len(product_urls)
             logger.info(f"發現 {total_urls} 個有效商品 URL")
 
             if total_urls == 0:
-                logger.warning("未發現任何商品 URL - HKTVmall 頁面可能需要更長的渲染時間")
+                logger.warning("未發現任何商品 URL")
                 return {
                     "success": True,
                     "products_scraped": 0,
                     "products_failed": 0,
-                    "message": "未發現商品 URL，請檢查類別頁面是否正確"
+                    "message": "未發現商品 URL，請檢查類別頁面是否正確",
                 }
 
-            # ==================== 階段 2: 批量抓取商品 ====================
+            # 階段 2: 批量抓取商品
             logger.info("開始批量抓取商品資訊...")
 
             products_scraped = 0
@@ -111,28 +88,24 @@ async def _scrape_category_products_async(
                 try:
                     logger.info(f"[{i}/{total_urls}] 抓取: {url[:60]}...")
 
-                    # 使用 HKTVScraper 抓取商品詳情
                     raw_data = scraper.scrape_product_page(url)
                     product_info = scraper.parse_product_data(url, raw_data)
 
-                    # 驗證商品名稱有效性
                     if not product_info.name or product_info.name == "未知商品":
-                        logger.warning(f"  ⚠ 商品名稱無效，跳過: {url}")
+                        logger.warning(f"  商品名稱無效，跳過: {url}")
                         products_failed += 1
                         errors.append(f"商品名稱無效: {url}")
                         continue
 
-                    # 檢查商品是否已存在（通過 URL 或 SKU）
                     existing_result = await db.execute(
                         select(CategoryProduct).where(
                             CategoryProduct.category_id == UUID(category_id),
-                            CategoryProduct.url == url
+                            CategoryProduct.url == url,
                         )
                     )
                     existing_product = existing_result.scalar_one_or_none()
 
                     if existing_product:
-                        # 更新現有商品
                         existing_product.name = product_info.name
                         existing_product.price = product_info.price
                         existing_product.original_price = product_info.original_price
@@ -146,14 +119,11 @@ async def _scrape_category_products_async(
                         existing_product.sku = product_info.sku
                         existing_product.last_updated_at = datetime.utcnow()
 
-                        # 計算標準化單價
                         if product_info.price:
                             existing_product.unit_price = _calculate_unit_price(
-                                product_info.price,
-                                product_info.name
+                                product_info.price, product_info.name,
                             )
 
-                        # 創建價格快照
                         snapshot = CategoryPriceSnapshot(
                             category_product_id=existing_product.id,
                             price=product_info.price,
@@ -165,9 +135,8 @@ async def _scrape_category_products_async(
                         )
                         db.add(snapshot)
 
-                        logger.info(f"  ✓ 更新: {product_info.name[:40]}... (HK${product_info.price})")
+                        logger.info(f"  更新: {product_info.name[:40]}... (HK${product_info.price})")
                     else:
-                        # 創建新商品
                         unit_price = None
                         if product_info.price:
                             unit_price = _calculate_unit_price(product_info.price, product_info.name)
@@ -195,9 +164,8 @@ async def _scrape_category_products_async(
                             },
                         )
                         db.add(new_product)
-                        await db.flush()  # 獲取 ID
+                        await db.flush()
 
-                        # 創建價格快照
                         snapshot = CategoryPriceSnapshot(
                             category_product_id=new_product.id,
                             price=product_info.price,
@@ -209,16 +177,14 @@ async def _scrape_category_products_async(
                         )
                         db.add(snapshot)
 
-                        logger.info(f"  ✓ 新增: {product_info.name[:40]}... (HK${product_info.price})")
+                        logger.info(f"  新增: {product_info.name[:40]}... (HK${product_info.price})")
 
                     products_scraped += 1
 
-                    # 每 5 個商品提交一次（減少丟失風險）
                     if products_scraped % 5 == 0:
                         await db.commit()
                         logger.info(f"已提交 {products_scraped}/{total_urls} 個商品")
 
-                    # 防止請求過快（Firecrawl 速率限制）
                     await asyncio.sleep(0.3)
 
                 except Exception as e:
@@ -228,10 +194,9 @@ async def _scrape_category_products_async(
                     errors.append(error_msg)
                     continue
 
-            # 最終提交
             await db.commit()
 
-            # ==================== 階段 3: 更新類別統計 ====================
+            # 階段 3: 更新類別統計
             count_result = await db.execute(
                 select(func.count(CategoryProduct.id)).where(
                     CategoryProduct.category_id == UUID(category_id)
@@ -253,26 +218,18 @@ async def _scrape_category_products_async(
                 "products_failed": products_failed,
                 "total_products": total_products,
                 "urls_discovered": total_urls,
-                "errors": errors[:10],  # 只返回前 10 個錯誤
+                "errors": errors[:10],
             }
 
         except Exception as e:
             logger.error(f"類別抓取任務失敗: {e}")
             await db.rollback()
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
 
 def _calculate_unit_price(price: Decimal, product_name: str) -> Optional[Decimal]:
-    """
-    計算標準化單價（每 100g）
-
-    從商品名稱中提取重量/容量，計算每 100g 的價格
-    """
+    """計算標準化單價（每 100g）"""
     try:
-        # 匹配重量格式：500g, 1kg, 1.5kg 等
         weight_match = re.search(r'(\d+(?:\.\d+)?)\s?(g|kg|克|公斤)', product_name, re.IGNORECASE)
 
         if not weight_match:
@@ -281,11 +238,9 @@ def _calculate_unit_price(price: Decimal, product_name: str) -> Optional[Decimal
         weight_value = float(weight_match.group(1))
         weight_unit = weight_match.group(2).lower()
 
-        # 統一轉換為克
         if weight_unit in ['kg', '公斤']:
             weight_value *= 1000
 
-        # 計算每 100g 價格
         if weight_value > 0:
             unit_price = (price / Decimal(str(weight_value))) * 100
             return round(unit_price, 2)
@@ -301,36 +256,14 @@ def _calculate_unit_price(price: Decimal, product_name: str) -> Optional[Decimal
 # AI 分析任務
 # =============================================
 
-@shared_task(bind=True, name="analyze_category_data")
-def analyze_category_data(
-    self,
+async def analyze_category_data_async(
     category_id: str,
     analysis_type: str,
-    model: str = "claude-sonnet-4-20250514"
-):
-    """
-    AI 分析類別數據
-
-    - analysis_type: "summary" (數據摘要) 或 "trend" (趨勢預測)
-    """
-    return asyncio.run(_analyze_category_data_async(
-        task_id=self.request.id,
-        category_id=category_id,
-        analysis_type=analysis_type,
-        model=model
-    ))
-
-
-async def _analyze_category_data_async(
-    task_id: str,
-    category_id: str,
-    analysis_type: str,
-    model: str
-):
-    """異步執行 AI 分析"""
-    async with AsyncSessionLocal() as db:
+    model: str = "claude-sonnet-4-20250514",
+) -> dict:
+    """AI 分析類別數據"""
+    async with async_session_maker() as db:
         try:
-            # 獲取類別
             result = await db.execute(
                 select(CategoryDatabase).where(CategoryDatabase.id == UUID(category_id))
             )
@@ -341,22 +274,18 @@ async def _analyze_category_data_async(
 
             logger.info(f"開始 AI 分析: {category.name} - {analysis_type}")
 
-            # ==================== 階段 1: 收集數據 ====================
+            # 收集數據
             products_result = await db.execute(
                 select(CategoryProduct).where(
                     CategoryProduct.category_id == UUID(category_id),
-                    CategoryProduct.is_available == True
+                    CategoryProduct.is_available == True,
                 )
             )
             products = products_result.scalars().all()
 
             if len(products) == 0:
-                return {
-                    "success": False,
-                    "error": "類別內沒有可用商品數據"
-                }
+                return {"success": False, "error": "類別內沒有可用商品數據"}
 
-            # 構建數據快照
             data_snapshot = {
                 "total_products": len(products),
                 "products": [
@@ -370,7 +299,7 @@ async def _analyze_category_data_async(
                         "rating": float(p.rating) if p.rating else None,
                         "review_count": p.review_count,
                     }
-                    for p in products[:100]  # 最多 100 個商品
+                    for p in products[:100]
                 ],
                 "price_stats": {
                     "avg": float(sum(p.price for p in products if p.price) / len([p for p in products if p.price])) if any(p.price for p in products) else None,
@@ -380,7 +309,7 @@ async def _analyze_category_data_async(
                 "brands": list(set(p.brand for p in products if p.brand))[:20],
             }
 
-            # ==================== 階段 2: 調用 Claude AI ====================
+            # 調用 Claude AI
             from anthropic import Anthropic
 
             anthropic_client = Anthropic(api_key=settings.anthropic_api_key)
@@ -388,7 +317,7 @@ async def _analyze_category_data_async(
             if analysis_type == "summary":
                 prompt = _build_summary_prompt(category.name, data_snapshot)
                 report_title = f"{category.name} - 數據摘要"
-            else:  # trend
+            else:
                 prompt = _build_trend_prompt(category.name, data_snapshot)
                 report_title = f"{category.name} - 趨勢預測"
 
@@ -397,17 +326,13 @@ async def _analyze_category_data_async(
             response = anthropic_client.messages.create(
                 model=model,
                 max_tokens=2000,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ]
+                messages=[{"role": "user", "content": prompt}],
             )
 
             ai_response = response.content[0].text
 
-            # 解析 AI 響應
             summary, key_findings, recommendations = _parse_ai_response(ai_response)
 
-            # ==================== 階段 3: 保存報告 ====================
             report = CategoryAnalysisReport(
                 category_id=UUID(category_id),
                 report_type=analysis_type,
@@ -428,16 +353,13 @@ async def _analyze_category_data_async(
                 "report_id": str(report.id),
                 "category_name": category.name,
                 "analysis_type": analysis_type,
-                "summary": summary[:200] + "...",  # 摘要前 200 字
+                "summary": summary[:200] + "...",
             }
 
         except Exception as e:
             logger.error(f"AI 分析任務失敗: {e}")
             await db.rollback()
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
 
 def _build_summary_prompt(category_name: str, data: Dict[str, Any]) -> str:
@@ -507,11 +429,7 @@ def _build_trend_prompt(category_name: str, data: Dict[str, Any]) -> str:
 
 
 def _parse_ai_response(response: str) -> tuple[str, Dict[str, Any], Dict[str, Any]]:
-    """
-    解析 AI 響應
-
-    返回：(summary, key_findings, recommendations)
-    """
+    """解析 AI 響應"""
     lines = response.strip().split('\n')
 
     summary = ""
@@ -527,7 +445,6 @@ def _parse_ai_response(response: str) -> tuple[str, Dict[str, Any], Dict[str, An
         if not line:
             continue
 
-        # 檢測章節標題
         if '摘要' in line or 'Summary' in line:
             if current_section and current_content:
                 _save_section(current_section, current_content, key_findings, recommendations)
@@ -546,7 +463,6 @@ def _parse_ai_response(response: str) -> tuple[str, Dict[str, Any], Dict[str, An
         else:
             current_content.append(line)
 
-    # 保存最後一個章節
     if current_section == 'summary':
         summary = '\n'.join(current_content).strip()
     elif current_section and current_content:
@@ -559,10 +475,8 @@ def _save_section(section: str, content: List[str], findings: Dict, recommendati
     """保存章節內容"""
     text = '\n'.join(content).strip()
 
-    # 解析列表項
     items = {}
     for line in content:
-        # 匹配 "1. 標題 - 描述" 格式
         match = re.match(r'^(\d+)\.\s*(.+?)\s*[-–—]\s*(.+)$', line)
         if match:
             num = match.group(1)

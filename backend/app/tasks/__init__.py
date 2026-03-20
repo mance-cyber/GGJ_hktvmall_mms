@@ -1,20 +1,31 @@
-# Celery 任務模組
-from app.tasks.celery_app import celery_app
-from app.tasks.scrape_tasks import scrape_competitor, scrape_all_competitors, scrape_single_product
+# =============================================
+# 任務模組（純 async，無 Celery 依賴）
+# =============================================
+
+from app.tasks.scrape_tasks import (
+    scrape_competitor_async,
+    scrape_all_competitors_async,
+    scrape_single_product_async,
+    scrape_by_priority_async,
+    auto_classify_monitoring_priority_async,
+)
 from app.tasks.agent_tasks import (
-    trigger_ops_daily_sync,
-    trigger_scout_analyze,
-    trigger_pricer_batch,
-    trigger_strategist_briefing,
+    trigger_ops_daily_sync_async,
+    trigger_scout_analyze_async,
+    trigger_pricer_batch_async,
+    trigger_strategist_briefing_async,
+    daily_catalog_sync_async,
 )
 
 __all__ = [
-    "celery_app",
-    "scrape_competitor",
-    "scrape_all_competitors",
-    "scrape_single_product",
-    "trigger_ops_daily_sync",
-    "trigger_scout_analyze",
-    "trigger_pricer_batch",
-    "trigger_strategist_briefing",
+    "scrape_competitor_async",
+    "scrape_all_competitors_async",
+    "scrape_single_product_async",
+    "scrape_by_priority_async",
+    "auto_classify_monitoring_priority_async",
+    "trigger_ops_daily_sync_async",
+    "trigger_scout_analyze_async",
+    "trigger_pricer_batch_async",
+    "trigger_strategist_briefing_async",
+    "daily_catalog_sync_async",
 ]

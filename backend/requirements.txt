@@ -13,8 +13,10 @@ asyncpg==0.31.0
 psycopg2-binary==2.9.11
 alembic==1.13.1
 
-# Task Queue
-celery==5.3.6
+# Task Scheduling (APScheduler 替代 Celery Beat)
+apscheduler>=3.10.0
+
+# Redis（rate_limiter 分佈式限速仍需要）
 redis==5.0.1
 
 # External APIs

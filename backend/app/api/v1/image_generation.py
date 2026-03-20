@@ -28,7 +28,7 @@ from app.schemas.image_generation import (
 from app.models.user import User
 from app.api.deps import get_current_user
 from app.config import get_settings
-from app.tasks.image_generation_tasks import process_image_generation
+from app.tasks.image_generation_tasks import process_image_generation_async
 from app.services.storage_service import get_storage
 from sqlalchemy import select, func
 
@@ -251,11 +251,11 @@ async def start_image_generation(
             detail="No input images uploaded"
         )
 
-    # 調度 Celery 任務
-    celery_task = process_image_generation.delay(str(task_id))
+    # 調度異步任務（替代 Celery）
+    import asyncio
+    asyncio.create_task(process_image_generation_async(str(task_id)))
 
     # 更新任務狀態
-    task.celery_task_id = celery_task.id
     task.status = TaskStatus.PROCESSING
     await db.commit()
 
@@ -270,7 +270,7 @@ async def start_image_generation(
     )
     task = result.scalar_one()
 
-    logger.info(f"Started image generation for task {task_id}, Celery task {celery_task.id}")
+    logger.info(f"Started image generation for task {task_id}")
 
     return task
 

@@ -133,9 +133,9 @@ class Settings(BaseSettings):
     # Agent Browser（用於 HKTVmall SPA 搜索頁面的商品 URL 發現）
     agent_browser_enabled: bool = Field(default=True, alias="AGENT_BROWSER_ENABLED")
 
-    # Celery
-    celery_broker_url: str = Field(default="redis://localhost:6379/0", alias="CELERY_BROKER_URL")
-    celery_result_backend: str = Field(default="redis://localhost:6379/0", alias="CELERY_RESULT_BACKEND")
+    # Celery（已遷移至 APScheduler，保留配置向後兼容）
+    celery_broker_url: str = Field(default="", alias="CELERY_BROKER_URL")
+    celery_result_backend: str = Field(default="", alias="CELERY_RESULT_BACKEND")
 
     # Nano-Banana 圖片生成 API
     nano_banana_api_base: str = Field(default="https://ai.t8star.cn/v1", alias="NANO_BANANA_API_BASE")
